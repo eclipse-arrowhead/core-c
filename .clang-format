@@ -1,0 +1,33 @@
+AlignAfterOpenBracket: DontAlign
+AlignArrayOfStructures: Left
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveMacros: Consecutive
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+BasedOnStyle: WebKit
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterControlStatement: MultiLine
+  AfterEnum: false
+  AfterFunction: true
+  AfterStruct: false
+  AfterUnion: false
+  BeforeElse: true
+  BeforeWhile: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+BreakBeforeBraces: Custom
+ColumnLimit: 120
+ContinuationIndentWidth: 4
+DerivePointerAlignment: false
+IncludeBlocks: Regroup
+IndentPPDirectives: AfterHash
+IndentWidth: 4
+Language: Cpp
+MaxEmptyLinesToKeep: 1
+PenaltyBreakAssignment: 1000
+PointerAlignment: Left
+SpaceAfterCStyleCast: true
+SpacesInContainerLiterals: false

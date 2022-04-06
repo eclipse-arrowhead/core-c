@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.12)
+project(arrowhead_core_c)
+
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+if (NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif ()
+
+if (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+    if (NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+        add_compile_options(-ffile-prefix-map=${PROJECT_SOURCE_DIR}/=)
+    endif ()
+elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(/W4 /WX)
+endif()
+
+add_subdirectory(libraries)
+add_subdirectory(tools)

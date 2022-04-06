@@ -1,0 +1,1 @@
+add_subdirectory(git_metadata_to_header)
