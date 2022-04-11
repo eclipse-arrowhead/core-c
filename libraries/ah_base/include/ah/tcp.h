@@ -36,11 +36,20 @@ struct ah_tcp_listen_ctx {
     void (*listen_cb)(struct ah_tcp_sock* sock, ah_err_t err);
     void (*accept_cb)(struct ah_tcp_sock* sock, struct ah_tcp_sock* conn, union ah_sockaddr* remote_addr, ah_err_t err);
     void (*alloc_cb)(struct ah_tcp_sock* sock, struct ah_tcp_sock** conn);
+
+#if AH_USE_URING
+    union ah_sockaddr _remote_addr;
+    socklen_t _remote_addr_len;
+#endif
 };
 
 struct ah_tcp_read_ctx {
-    void (*read_cb)(struct ah_tcp_sock* sock, struct ah_buf* buf, ah_err_t err);
-    void (*alloc_cb)(struct ah_tcp_sock* sock, struct ah_buf* buf);
+    void (*read_cb)(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, size_t n_bytes_read, ah_err_t err);
+    void (*alloc_cb)(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, size_t n_bytes_expected);
+
+#if AH_USE_URING
+    struct ah_bufvec _bufvec;
+#endif
 };
 
 struct ah_tcp_write_ctx {
@@ -57,11 +66,8 @@ struct ah_tcp_sock {
 #endif
 
     uint8_t _state;
-
-    bool _is_reading                : 1;
-    bool _is_reading_shutdown       : 1;
-    bool _is_writing                : 1;
-    bool _is_writing_shutdown       : 1;
+    uint8_t _state_read;
+    uint8_t _state_write;
 };
 
 ah_extern ah_err_t ah_tcp_init(struct ah_tcp_sock* sock, struct ah_loop* loop, void* user_data);
@@ -101,9 +107,9 @@ ah_extern_inline void ah_tcp_set_user_data(struct ah_tcp_sock* sock, void* user_
 }
 
 ah_extern ah_err_t ah_tcp_connect(struct ah_tcp_sock* sock, const union ah_sockaddr* remote_addr, ah_tcp_connect_cb cb);
-ah_extern ah_err_t ah_tcp_listen(struct ah_tcp_sock* sock, unsigned backlog, const struct ah_tcp_listen_ctx* ctx);
+ah_extern ah_err_t ah_tcp_listen(struct ah_tcp_sock* sock, unsigned backlog, struct ah_tcp_listen_ctx* ctx);
 
-ah_extern ah_err_t ah_tcp_read_start(struct ah_tcp_sock* sock, const struct ah_tcp_read_ctx* ctx);
+ah_extern ah_err_t ah_tcp_read_start(struct ah_tcp_sock* sock, struct ah_tcp_read_ctx* ctx);
 ah_extern ah_err_t ah_tcp_read_stop(struct ah_tcp_sock* sock);
 ah_extern ah_err_t ah_tcp_write(struct ah_tcp_sock* sock, struct ah_tcp_write_ctx* ctx);
 ah_extern ah_err_t ah_tcp_shutdown(struct ah_tcp_sock* sock, ah_tcp_shutdown_t flags);

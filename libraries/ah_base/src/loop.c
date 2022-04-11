@@ -408,7 +408,7 @@ static ah_err_t s_poll_no_longer_than_until(struct ah_loop* loop, struct ah_time
 
         if (evt != NULL && cqe->res != -ECANCELED) {
             if (evt->_cb != NULL) {
-                evt->_cb(evt, kev);
+                evt->_cb(evt, cqe);
             }
             ah_i_loop_dealloc_evt(loop, evt);
         }

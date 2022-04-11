@@ -60,7 +60,7 @@ ah_extern socklen_t ah_sockaddr_get_size(const union ah_sockaddr* sockaddr)
 #    if AH_I_SOCKADDR_HAS_SIZE
     return sockaddr->as_any.size;
 #    else
-    switch (sockaddr->as_any.domain) {
+    switch (sockaddr->as_any.family) {
     case AH_SOCKFAMILY_IPV4:
         return sizeof(struct sockaddr_in);
 
@@ -78,7 +78,7 @@ ah_extern const struct sockaddr* ah_sockaddr_cast_const(const union ah_sockaddr*
     return (const struct sockaddr*) sockaddr;
 }
 
-ah_extern struct sockaddr* ah_sockaddr_cast_mut(union ah_sockaddr* sockaddr)
+ah_extern struct sockaddr* ah_sockaddr_cast(union ah_sockaddr* sockaddr)
 {
     return (struct sockaddr*) sockaddr;
 }
@@ -151,11 +151,11 @@ ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, union ah_sockaddr* lo
     ah_assert_if_debug(local_addr != NULL);
 
     socklen_t socklen = sizeof(union ah_sockaddr);
-    if (getsockname(fd, ah_sockaddr_cast_mut(local_addr), &socklen) != 0) {
+    if (getsockname(fd, ah_sockaddr_cast(local_addr), &socklen) != 0) {
         return errno;
     }
 
-#    ifdef AH_I_SOCKADDR_HAS_SIZE
+#    if AH_I_SOCKADDR_HAS_SIZE
     ah_assert_if_debug(socklen <= UINT8_MAX);
     local_addr->as_any.size = (uint8_t) socklen;
 #    endif
@@ -168,11 +168,11 @@ ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, union ah_sockaddr* re
     ah_assert_if_debug(remote_addr != NULL);
 
     socklen_t socklen = sizeof(union ah_sockaddr);
-    if (getpeername(fd, ah_sockaddr_cast_mut(remote_addr), &socklen) != 0) {
+    if (getpeername(fd, ah_sockaddr_cast(remote_addr), &socklen) != 0) {
         return errno;
     }
 
-#    ifdef AH_I_SOCKADDR_HAS_SIZE
+#    if AH_I_SOCKADDR_HAS_SIZE
     ah_assert_if_debug(socklen <= UINT8_MAX);
     remote_addr->as_any.size = (uint8_t) socklen;
 #    endif

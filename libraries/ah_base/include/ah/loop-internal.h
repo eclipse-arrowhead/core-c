@@ -49,7 +49,7 @@ struct ah_i_loop_evt_body_tcp_connect {
 
 struct ah_i_loop_evt_body_tcp_listen {
     struct ah_tcp_sock* _sock;
-    const struct ah_tcp_listen_ctx* _ctx;
+    struct ah_tcp_listen_ctx* _ctx;
 };
 
 #if 0
@@ -61,7 +61,7 @@ struct ah_i_loop_evt_body_tcp_open {
 
 struct ah_i_loop_evt_body_tcp_read {
     struct ah_tcp_sock* _sock;
-    const struct ah_tcp_read_ctx* _ctx;
+    struct ah_tcp_read_ctx* _ctx;
 };
 
 struct ah_i_loop_evt_body_tcp_write {

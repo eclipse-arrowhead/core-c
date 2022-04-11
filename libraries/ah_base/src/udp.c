@@ -329,7 +329,7 @@ static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 
     union ah_sockaddr remote_addr;
     socklen_t socklen = sizeof(remote_addr);
-    ssize_t size = recvfrom(sock->_fd, buf.octets, buf.size, 0, ah_sockaddr_cast_mut(&remote_addr), &socklen);
+    ssize_t size = recvfrom(sock->_fd, buf.octets, buf.size, 0, ah_sockaddr_cast(&remote_addr), &socklen);
     if (size < 0) {
         err = errno;
         goto call_recv_cb_with_err_and_return;
@@ -451,7 +451,7 @@ static void s_on_send(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     }
 
     struct msghdr msghdr = {
-        .msg_name = ah_sockaddr_cast_mut(&ctx->remote_addr),
+        .msg_name = ah_sockaddr_cast(&ctx->remote_addr),
         .msg_namelen = ah_sockaddr_get_size(&ctx->remote_addr),
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
