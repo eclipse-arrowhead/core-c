@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void test_buf(struct ah_unit* unit);
 void test_err(struct ah_unit* unit);
 void test_math(struct ah_unit* unit);
 void test_sock(struct ah_unit* unit);
@@ -26,6 +27,7 @@ int main()
 
     struct ah_unit unit = { 0 };
 
+    test_buf(&unit);
     test_err(&unit);
     test_math(&unit);
     test_sock(&unit);

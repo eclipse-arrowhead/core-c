@@ -33,22 +33,22 @@ static const struct ah_ipaddr_v6 ah_ipaddr_v6_wildcard = {
     .octets = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u},
 };
 
-static inline bool ah_ipaddr_v4_is_loopback(const struct ah_ipaddr_v4 addr)
+ah_extern_inline bool ah_ipaddr_v4_is_loopback(const struct ah_ipaddr_v4 addr)
 {
     return memcmp(addr.octets, ah_ipaddr_v4_loopback.octets, 4u) == 0;
 }
 
-static inline bool ah_ipaddr_v4_is_wildcard(const struct ah_ipaddr_v4 addr)
+ah_extern_inline bool ah_ipaddr_v4_is_wildcard(const struct ah_ipaddr_v4 addr)
 {
     return memcmp(addr.octets, ah_ipaddr_v4_wildcard.octets, 4u) == 0;
 }
 
-static inline bool ah_ipaddr_v6_is_loopback(const struct ah_ipaddr_v6 addr)
+ah_extern_inline bool ah_ipaddr_v6_is_loopback(const struct ah_ipaddr_v6 addr)
 {
     return memcmp(addr.octets, ah_ipaddr_v6_loopback.octets, 16u) == 0;
 }
 
-static inline bool ah_ipaddr_v6_is_wildcard(const struct ah_ipaddr_v6 addr)
+ah_extern_inline bool ah_ipaddr_v6_is_wildcard(const struct ah_ipaddr_v6 addr)
 {
     return memcmp(addr.octets, ah_ipaddr_v6_wildcard.octets, 16u) == 0;
 }

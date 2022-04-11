@@ -31,15 +31,11 @@
 #define AH_TIMEDIFF_MAX INT64_MAX
 
 struct ah_time {
-    // INTERNAL START
-
 #if AH_USE_KQUEUE && AH_IS_DARWIN
     uint64_t _mach_absolute_time;
 #elif AH_USE_URING
     struct __kernel_timespec _timespec;
 #endif
-
-    // INTERNAL STOP
 };
 
 typedef int64_t ah_timediff_t; // Nanoseconds.

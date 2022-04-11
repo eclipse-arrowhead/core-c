@@ -23,6 +23,7 @@ set(
     include/ah/udp.h
     src/abort.c
     src/alloc.c
+    src/buf.c
     src/err.c
     src/lib.c
     src/loop.c
@@ -36,6 +37,7 @@ set(
 )
 set(
     TEST_FILES
+    test/buf.c
     test/err.c
     test/main.c
     test/math.c

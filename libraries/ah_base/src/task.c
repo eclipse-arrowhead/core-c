@@ -15,6 +15,8 @@
 #    include <liburing.h>
 #endif
 
+#define S_STATE_MASK (AH_TASK_STATE_INITIAL | AH_TASK_STATE_SCHEDULED | AH_TASK_STATE_EXECUTED | AH_TASK_STATE_CANCELED)
+
 static void s_cancel(struct ah_task* task);
 static void s_on_execution(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res);
 
@@ -34,17 +36,19 @@ ah_extern ah_err_t ah_task_init(struct ah_task* task, const struct ah_task_opts*
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_task_term(struct ah_task* task)
+ah_extern ah_err_t ah_task_cancel(struct ah_task* task)
 {
     if (task == NULL) {
         return AH_EINVAL;
     }
-    if (task->_state == AH_TASK_STATE_SCHEDULED) {
-        s_cancel(task);
+    if ((task->_state & S_STATE_MASK) == 0) {
+        return AH_ESTATE;
     }
-#ifndef NDEBUG
-    *task = (struct ah_task) { 0 };
-#endif
+
+    s_cancel(task);
+
+    task->_cb(task, AH_ECANCELED);
+
     return AH_ENONE;
 }
 
@@ -87,51 +91,10 @@ static void s_cancel(struct ah_task* task)
         break;
 
     default:
-        ah_abort();
+        ah_unreachable();
     }
 
     task->_state = AH_TASK_STATE_CANCELED;
-}
-
-ah_extern void* ah_task_get_data(const struct ah_task* task)
-{
-    ah_assert(task != NULL);
-
-    return task->_data;
-}
-
-ah_extern struct ah_loop* ah_task_get_loop(const struct ah_task* task)
-{
-    ah_assert(task != NULL);
-
-    return task->_loop;
-}
-
-ah_extern ah_task_state_t ah_task_get_state(const struct ah_task* task)
-{
-    ah_assert(task != NULL);
-
-    return task->_state;
-}
-
-ah_extern void ah_task_set_data(struct ah_task* task, void* data)
-{
-    ah_assert(task != NULL);
-
-    task->_data = data;
-}
-
-ah_extern ah_err_t ah_task_cancel(struct ah_task* task)
-{
-    if (task == NULL) {
-        return AH_EINVAL;
-    }
-
-    s_cancel(task);
-
-    task->_cb(task, AH_ECANCELED);
-
-    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_task_schedule_at(struct ah_task* task, struct ah_time baseline)
@@ -223,4 +186,18 @@ static void s_on_execution(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 
     task->_state = AH_TASK_STATE_EXECUTED;
     task->_cb(task, err);
+}
+
+ah_extern ah_err_t ah_task_term(struct ah_task* task)
+{
+    if (task == NULL) {
+        return AH_EINVAL;
+    }
+    if (task->_state == AH_TASK_STATE_SCHEDULED) {
+        s_cancel(task);
+    }
+#ifndef NDEBUG
+    *task = (struct ah_task) { 0 };
+#endif
+    return AH_ENONE;
 }

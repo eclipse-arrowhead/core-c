@@ -25,6 +25,11 @@
 #    include <sys/uio.h>
 #endif
 
+#define S_STATE_CLOSED    0x1
+#define S_STATE_OPEN      0x2
+#define S_STATE_CONNECTED 0x4
+#define S_STATE_LISTENING 0x8
+
 static void s_on_accept(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res);
 #if AH_USE_URING
 static void s_on_close(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res);
@@ -41,6 +46,7 @@ ah_extern ah_err_t ah_tcp_init(struct ah_tcp_sock* sock, struct ah_loop* loop, v
     *sock = (struct ah_tcp_sock) {
         ._loop = loop,
         ._user_data = user_data,
+        ._state = S_STATE_CLOSED,
     };
     return AH_ENONE;
 }
@@ -49,6 +55,9 @@ ah_extern ah_err_t ah_tcp_open(struct ah_tcp_sock* sock, const union ah_sockaddr
 {
     if (sock == NULL || local_addr == NULL) {
         return AH_EINVAL;
+    }
+    if (sock->_state != S_STATE_CLOSED) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
@@ -64,28 +73,13 @@ ah_extern ah_err_t ah_tcp_open(struct ah_tcp_sock* sock, const union ah_sockaddr
 #endif
 }
 
-#if AH_USE_BSD_SOCKETS
-ah_extern ah_err_t ah_tcp_get_fd(const struct ah_tcp_sock* sock, ah_sockfd_t* fd)
-{
-    if (sock == NULL || fd == NULL) {
-        return AH_EINVAL;
-    }
-#    ifndef NDEBUG
-    if (sock->_fd == 0) {
-        return AH_EBADF;
-    }
-#    endif
-
-    *fd = sock->_fd;
-
-    return AH_ENONE;
-}
-#endif
-
 ah_extern ah_err_t ah_tcp_get_local_addr(const struct ah_tcp_sock* sock, union ah_sockaddr* local_addr)
 {
     if (sock == NULL || local_addr == NULL) {
         return AH_EINVAL;
+    }
+    if ((sock->_state & (S_STATE_OPEN | S_STATE_CONNECTED | S_STATE_LISTENING)) == 0u) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
@@ -93,21 +87,13 @@ ah_extern ah_err_t ah_tcp_get_local_addr(const struct ah_tcp_sock* sock, union a
 #endif
 }
 
-ah_extern ah_err_t ah_tcp_get_loop(const struct ah_tcp_sock* sock, struct ah_loop** loop)
-{
-    if (sock == NULL || loop == NULL) {
-        return AH_EINVAL;
-    }
-
-    *loop = sock->_loop;
-
-    return AH_ENONE;
-}
-
 ah_extern ah_err_t ah_tcp_get_remote_addr(const struct ah_tcp_sock* sock, union ah_sockaddr* remote_addr)
 {
     if (sock == NULL || remote_addr == NULL) {
         return AH_EINVAL;
+    }
+    if ((sock->_state & (S_STATE_OPEN | S_STATE_CONNECTED | S_STATE_LISTENING)) == 0u) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
@@ -115,21 +101,13 @@ ah_extern ah_err_t ah_tcp_get_remote_addr(const struct ah_tcp_sock* sock, union 
 #endif
 }
 
-ah_extern ah_err_t ah_tcp_get_user_data(const struct ah_tcp_sock* sock, void** user_data)
-{
-    if (sock == NULL || user_data == NULL) {
-        return AH_EINVAL;
-    }
-
-    *user_data = sock->_user_data;
-
-    return AH_ENONE;
-}
-
 ah_extern ah_err_t ah_tcp_set_keepalive(struct ah_tcp_sock* sock, bool keepalive)
 {
     if (sock == NULL) {
         return AH_EINVAL;
+    }
+    if ((sock->_state & (S_STATE_OPEN | S_STATE_CONNECTED | S_STATE_LISTENING)) == 0u) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
@@ -146,6 +124,9 @@ ah_extern ah_err_t ah_tcp_set_no_delay(struct ah_tcp_sock* sock, bool no_delay)
     if (sock == NULL) {
         return AH_EINVAL;
     }
+    if ((sock->_state & (S_STATE_OPEN | S_STATE_CONNECTED | S_STATE_LISTENING)) == 0u) {
+        return AH_ESTATE;
+    }
 
 #if AH_USE_BSD_SOCKETS
     int value = no_delay ? 1 : 0;
@@ -161,6 +142,9 @@ ah_extern ah_err_t ah_tcp_set_reuse_addr(struct ah_tcp_sock* sock, bool reuse_ad
     if (sock == NULL) {
         return AH_EINVAL;
     }
+    if ((sock->_state & (S_STATE_OPEN | S_STATE_CONNECTED | S_STATE_LISTENING)) == 0u) {
+        return AH_ESTATE;
+    }
 
 #if AH_USE_BSD_SOCKETS
     int value = reuse_addr ? 1 : 0;
@@ -171,21 +155,13 @@ ah_extern ah_err_t ah_tcp_set_reuse_addr(struct ah_tcp_sock* sock, bool reuse_ad
 #endif
 }
 
-ah_extern ah_err_t ah_tcp_set_user_data(struct ah_tcp_sock* sock, void* user_data)
-{
-    if (sock == NULL) {
-        return AH_EINVAL;
-    }
-
-    sock->_user_data = user_data;
-
-    return AH_ENONE;
-}
-
 ah_extern ah_err_t ah_tcp_connect(struct ah_tcp_sock* sock, const union ah_sockaddr* remote_addr, ah_tcp_connect_cb cb)
 {
     if (sock == NULL || !ah_sockaddr_is_ip(remote_addr) || cb == NULL) {
         return AH_EINVAL;
+    }
+    if (sock->_state != S_STATE_OPEN) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_KQUEUE
@@ -208,6 +184,7 @@ ah_extern ah_err_t ah_tcp_connect(struct ah_tcp_sock* sock, const union ah_socka
 
             EV_SET(req, sock->_fd, EVFILT_WRITE, EV_ADD, 0u, 0u, evt);
 
+            sock->_state = S_STATE_CONNECTED;
             return AH_ENONE;
         }
         err = errno;
@@ -221,8 +198,8 @@ ah_extern ah_err_t ah_tcp_connect(struct ah_tcp_sock* sock, const union ah_socka
         return AH_ENONE;
     }
 
+    sock->_state = S_STATE_CONNECTED;
     cb(sock, AH_ENONE);
-
     return AH_ENONE;
 
 #endif
@@ -233,8 +210,8 @@ static void s_on_connect(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(res != NULL);
 
-    struct ah_tcp_sock* conn = evt->_body._tcp_connect._sock;
-    ah_assert_if_debug(conn != NULL);
+    struct ah_tcp_sock* sock = evt->_body._tcp_connect._sock;
+    ah_assert_if_debug(sock != NULL);
 
     ah_tcp_connect_cb cb = evt->_body._tcp_connect._cb;
 
@@ -252,7 +229,7 @@ static void s_on_connect(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
         cb_err = AH_ENONE;
     }
 
-    cb(conn, cb_err);
+    cb(sock, cb_err);
 
 #endif
 }
@@ -261,6 +238,9 @@ ah_extern ah_err_t ah_tcp_listen(struct ah_tcp_sock* sock, unsigned backlog, con
 {
     if (sock == NULL || ctx == NULL || ctx->listen_cb == NULL || ctx->accept_cb == NULL || ctx->alloc_cb == NULL) {
         return AH_EINVAL;
+    }
+    if (sock->_state != S_STATE_OPEN) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_KQUEUE
@@ -294,8 +274,8 @@ ah_extern ah_err_t ah_tcp_listen(struct ah_tcp_sock* sock, unsigned backlog, con
 
     EV_SET(req, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
 
+    sock->_state = S_STATE_LISTENING;
     ctx->listen_cb(sock, AH_ENONE);
-
     return AH_ENONE;
 
 #endif
@@ -351,8 +331,9 @@ static void s_on_accept(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 #    endif
 
         *conn = (struct ah_tcp_sock) {
-            ._fd = fd,
             ._loop = listener->_loop,
+            ._fd = fd,
+            ._state = S_STATE_CONNECTED,
         };
 
         ctx->accept_cb(listener, conn, &sockaddr, AH_ENONE);
@@ -370,7 +351,7 @@ ah_extern ah_err_t ah_tcp_read_start(struct ah_tcp_sock* sock, const struct ah_t
     if (sock == NULL || ctx == NULL || ctx->alloc_cb == NULL || ctx->read_cb == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_is_reading || sock->_is_reading_shutdown) {
+    if (sock->_state != S_STATE_CONNECTED || sock->_is_reading || sock->_is_reading_shutdown) {
         return AH_ESTATE;
     }
 
@@ -402,15 +383,15 @@ static void s_on_read(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(res != NULL);
 
-    struct ah_tcp_sock* conn = evt->_body._tcp_read._sock;
-    ah_assert_if_debug(conn != NULL);
+    struct ah_tcp_sock* sock = evt->_body._tcp_read._sock;
+    ah_assert_if_debug(sock != NULL);
 
     const struct ah_tcp_read_ctx* ctx = evt->_body._tcp_read._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->read_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
 
-    if (!conn->_is_reading || conn->_is_reading_shutdown) {
+    if (sock->_state != S_STATE_CONNECTED || !sock->_is_reading || sock->_is_reading_shutdown) {
         return;
     }
 
@@ -434,7 +415,7 @@ static void s_on_read(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     buf = (struct ah_buf) { .octets = NULL, .size = n_bytes_left };
 
     while (n_bytes_left != 0u) {
-        ctx->alloc_cb(conn, &buf);
+        ctx->alloc_cb(sock, &buf);
 
         if (buf.octets == NULL || buf.size == 0u) {
             err = AH_ENOMEM;
@@ -445,7 +426,7 @@ static void s_on_read(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
             buf.size = n_bytes_left;
         }
 
-        ssize_t size = read(conn->_fd, buf.octets, buf.size);
+        ssize_t size = read(sock->_fd, buf.octets, buf.size);
         if (size < 0) {
             err = errno;
             goto call_read_cb_with_err_and_return;
@@ -453,7 +434,7 @@ static void s_on_read(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 
         buf.size = size;
 
-        ctx->read_cb(conn, &buf, AH_ENONE);
+        ctx->read_cb(sock, &buf, AH_ENONE);
 
         if (ah_i_sub_overflow(n_bytes_left, size, &n_bytes_left)) {
             err = AH_ERANGE;
@@ -463,7 +444,7 @@ static void s_on_read(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 
     if (ah_unlikely((res->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
-        conn->_is_reading_shutdown = true;
+        sock->_is_reading_shutdown = true;
         goto call_read_cb_with_err_and_return;
     }
 
@@ -472,7 +453,7 @@ static void s_on_read(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     return;
 
 call_read_cb_with_err_and_return:
-    ctx->read_cb(conn, err != AH_ENONE ? &buf : NULL, err);
+    ctx->read_cb(sock, err != AH_ENONE ? &buf : NULL, err);
 }
 
 ah_extern ah_err_t ah_tcp_read_stop(struct ah_tcp_sock* sock)
@@ -513,7 +494,7 @@ ah_extern ah_err_t ah_tcp_write(struct ah_tcp_sock* sock, struct ah_tcp_write_ct
     if (ctx->bufvec.items == NULL && ctx->bufvec.length != 0u) {
         return AH_EINVAL;
     }
-    if (sock->_is_writing || sock->_is_writing_shutdown) {
+    if (sock->_state != S_STATE_CONNECTED || sock->_is_writing || sock->_is_writing_shutdown) {
         return AH_ESTATE;
     }
 
@@ -545,15 +526,15 @@ static void s_on_write(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(res != NULL);
 
-    struct ah_tcp_sock* conn = evt->_body._tcp_write._sock;
-    ah_assert_if_debug(conn != NULL);
+    struct ah_tcp_sock* sock = evt->_body._tcp_write._sock;
+    ah_assert_if_debug(sock != NULL);
 
     struct ah_tcp_write_ctx* ctx = evt->_body._tcp_write._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->write_cb != NULL);
     ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);
 
-    if (!conn->_is_writing || conn->_is_writing_shutdown) {
+    if (sock->_state != S_STATE_CONNECTED || !sock->_is_writing || sock->_is_writing_shutdown) {
         return;
     }
 
@@ -568,7 +549,7 @@ static void s_on_write(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 
     if (ah_unlikely((res->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
-        conn->_is_writing_shutdown = true;
+        sock->_is_writing_shutdown = true;
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
     }
 
@@ -580,7 +561,7 @@ static void s_on_write(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
     }
 
-    ssize_t write_res = writev(conn->_fd, iov, iovcnt);
+    ssize_t write_res = writev(sock->_fd, iov, iovcnt);
     if (ah_unlikely(write_res < 0)) {
         err = errno;
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
@@ -630,20 +611,20 @@ static void s_on_write(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 #if AH_USE_KQUEUE
 
     ah_i_loop_req_t* req;
-    err = ah_i_loop_alloc_req(conn->_loop, &req);
+    err = ah_i_loop_alloc_req(sock->_loop, &req);
     if (err != AH_ENONE && err != AH_ENOMEM) {
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
     }
 
-    EV_SET(req, conn->_fd, EVFILT_WRITE, EV_DISABLE, 0u, 0, NULL);
+    EV_SET(req, sock->_fd, EVFILT_WRITE, EV_DISABLE, 0u, 0, NULL);
 
 #endif
 
     err = AH_ENONE;
 
 set_is_writing_to_false_and_call_write_cb_with_conn_err:
-    conn->_is_writing = false;
-    ctx->write_cb(conn, err);
+    sock->_is_writing = false;
+    ctx->write_cb(sock, err);
 }
 
 ah_extern ah_err_t ah_tcp_shutdown(struct ah_tcp_sock* sock, ah_tcp_shutdown_t flags)
@@ -653,6 +634,9 @@ ah_extern ah_err_t ah_tcp_shutdown(struct ah_tcp_sock* sock, ah_tcp_shutdown_t f
     }
     if ((flags & AH_TCP_SHUTDOWN_RDWR) == 0u) {
         return AH_ENONE;
+    }
+    if (sock->_state != S_STATE_CONNECTED) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_POSIX
@@ -712,6 +696,10 @@ ah_extern ah_err_t ah_tcp_close(struct ah_tcp_sock* sock, ah_tcp_close_cb cb)
     if (sock == NULL) {
         return AH_EINVAL;
     }
+    if ((sock->_state & (S_STATE_OPEN | S_STATE_CONNECTED | S_STATE_LISTENING)) == 0u) {
+        return AH_ESTATE;
+    }
+    sock->_state = S_STATE_CLOSED;
 
 #if AH_USE_BSD_SOCKETS
 

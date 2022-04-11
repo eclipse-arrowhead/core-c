@@ -26,6 +26,7 @@ ah_extern ah_err_t ah_udp_init(struct ah_udp_sock* sock, struct ah_loop* loop, v
     *sock = (struct ah_udp_sock) {
         ._loop = loop,
         ._user_data = user_data,
+        ._is_open = false,
     };
     return AH_ENONE;
 }
@@ -34,6 +35,9 @@ ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, const union ah_sockaddr
 {
     if (sock == NULL || local_addr == NULL) {
         return AH_EINVAL;
+    }
+    if (sock->_is_open) {
+        return AH_ESTATE;
     }
 
     sock->_is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6;
@@ -51,28 +55,13 @@ ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, const union ah_sockaddr
 #endif
 }
 
-#if AH_USE_BSD_SOCKETS
-ah_extern ah_err_t ah_udp_get_fd(const struct ah_udp_sock* sock, ah_sockfd_t* fd)
-{
-    if (sock == NULL || fd == NULL) {
-        return AH_EINVAL;
-    }
-#    ifndef NDEBUG
-    if (sock->_fd == 0) {
-        return AH_EBADF;
-    }
-#    endif
-
-    *fd = sock->_fd;
-
-    return AH_ENONE;
-}
-#endif
-
 ah_extern ah_err_t ah_udp_get_local_addr(const struct ah_udp_sock* sock, union ah_sockaddr* local_addr)
 {
     if (sock == NULL || local_addr == NULL) {
         return AH_EINVAL;
+    }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
@@ -80,32 +69,13 @@ ah_extern ah_err_t ah_udp_get_local_addr(const struct ah_udp_sock* sock, union a
 #endif
 }
 
-ah_extern ah_err_t ah_udp_get_loop(const struct ah_udp_sock* sock, struct ah_loop** loop)
-{
-    if (sock == NULL || loop == NULL) {
-        return AH_EINVAL;
-    }
-
-    *loop = sock->_loop;
-
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_udp_get_user_data(const struct ah_udp_sock* sock, void** user_data)
-{
-    if (sock == NULL || user_data == NULL) {
-        return AH_EINVAL;
-    }
-
-    *user_data = sock->_user_data;
-
-    return AH_ENONE;
-}
-
 ah_extern ah_err_t ah_udp_set_multicast_hop_limit(struct ah_udp_sock* sock, uint8_t hop_limit)
 {
     if (sock == NULL) {
         return AH_EINVAL;
+    }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
@@ -137,6 +107,9 @@ ah_extern ah_err_t ah_udp_set_multicast_loopback(struct ah_udp_sock* sock, bool 
     if (sock == NULL) {
         return AH_EINVAL;
     }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
+    }
 
 #if AH_USE_BSD_SOCKETS
 
@@ -167,6 +140,9 @@ ah_extern ah_err_t ah_udp_set_reuse_addr(struct ah_udp_sock* sock, bool reuse_ad
     if (sock == NULL) {
         return AH_EINVAL;
     }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
+    }
 
 #if AH_USE_BSD_SOCKETS
     int value = reuse_addr ? 1 : 0;
@@ -181,6 +157,9 @@ ah_extern ah_err_t ah_udp_set_unicast_hop_limit(struct ah_udp_sock* sock, uint8_
 {
     if (sock == NULL) {
         return AH_EINVAL;
+    }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
@@ -207,21 +186,13 @@ ah_extern ah_err_t ah_udp_set_unicast_hop_limit(struct ah_udp_sock* sock, uint8_
 #endif
 }
 
-ah_extern ah_err_t ah_udp_set_user_data(struct ah_udp_sock* sock, void* user_data)
-{
-    if (sock == NULL) {
-        return AH_EINVAL;
-    }
-
-    sock->_user_data = user_data;
-
-    return AH_ENONE;
-}
-
 ah_extern ah_err_t ah_udp_join(struct ah_udp_sock* sock, const union ah_udp_group* group)
 {
     if (sock == NULL || group == NULL) {
         return AH_EINVAL;
+    }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
@@ -252,6 +223,9 @@ ah_extern ah_err_t ah_udp_leave(struct ah_udp_sock* sock, const union ah_udp_gro
     if (sock == NULL || group == NULL) {
         return AH_EINVAL;
     }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
+    }
 
 #if AH_USE_BSD_SOCKETS
 
@@ -281,7 +255,7 @@ ah_extern ah_err_t ah_udp_recv_start(struct ah_udp_sock* sock, const struct ah_u
     if (sock == NULL || ctx == NULL || ctx->alloc_cb == NULL || ctx->recv_cb == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_is_receiving) {
+    if (!sock->_is_open || sock->_is_receiving) {
         return AH_ESTATE;
     }
 
@@ -321,7 +295,7 @@ static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     ah_assert_if_debug(ctx->recv_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
 
-    if (!sock->_is_receiving) {
+    if (!sock->_is_open || !sock->_is_receiving) {
         return;
     }
 
@@ -416,6 +390,9 @@ ah_extern ah_err_t ah_udp_send(struct ah_udp_sock* sock, struct ah_udp_send_ctx*
     if (ctx->bufvec.items == NULL && ctx->bufvec.length != 0u) {
         return AH_EINVAL;
     }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
+    }
 
     struct ah_i_loop_evt* evt;
     ah_i_loop_req_t* req;
@@ -499,6 +476,10 @@ ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb)
     if (sock == NULL) {
         return AH_EINVAL;
     }
+    if (!sock->_is_open) {
+        return AH_ESTATE;
+    }
+    sock->_is_open = false;
 
 #if AH_USE_BSD_SOCKETS
 

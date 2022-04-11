@@ -7,7 +7,7 @@
 #ifndef AH_LOOP_INTERNAL_H_
 #define AH_LOOP_INTERNAL_H_
 
-// This file is intended only for direct use only by this library and other
+// This file is intended for direct use only by this library and other
 // officially supported core-c libraries. While ABI-compatibility will not be
 // compromised between minor or patch releases of this library, other breaking
 // changes may be introduced.

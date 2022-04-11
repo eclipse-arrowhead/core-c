@@ -1,3 +1,9 @@
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// http://www.eclipse.org/legal/epl-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0
+
 #include <ah/abort.h>
 #include <ah/defs.h>
 #include <signal.h>
@@ -21,13 +27,7 @@ ah_extern void ah_abort()
 
 #endif
 
-#if AH_VIA_GCC || AH_VIA_CLANG
-
-    __builtin_trap();
-
-#else
-#    error "No trap builtin is available via the used compiler."
-#endif
+    ah_trap();
 }
 
 ah_extern ah_noreturn void ah_abortf(const char* format, ...)

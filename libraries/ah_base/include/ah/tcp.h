@@ -7,6 +7,7 @@
 #ifndef AH_TCP_H_
 #define AH_TCP_H_
 
+#include "assert.h"
 #include "buf.h"
 #include "err.h"
 
@@ -48,8 +49,6 @@ struct ah_tcp_write_ctx {
 };
 
 struct ah_tcp_sock {
-    // INTERNAL START
-
     struct ah_loop* _loop;
     void* _user_data;
 
@@ -57,29 +56,49 @@ struct ah_tcp_sock {
     ah_sockfd_t _fd;
 #endif
 
-    bool _is_reading          : 1;
-    bool _is_reading_shutdown : 1;
-    bool _is_writing          : 1;
-    bool _is_writing_shutdown : 1;
+    uint8_t _state;
 
-    // INTERNAL STOP
+    bool _is_reading                : 1;
+    bool _is_reading_shutdown       : 1;
+    bool _is_writing                : 1;
+    bool _is_writing_shutdown       : 1;
 };
 
 ah_extern ah_err_t ah_tcp_init(struct ah_tcp_sock* sock, struct ah_loop* loop, void* user_data);
 ah_extern ah_err_t ah_tcp_open(struct ah_tcp_sock* sock, const union ah_sockaddr* local_addr, ah_tcp_open_cb cb);
 
-#if AH_USE_BSD_SOCKETS
-ah_extern ah_err_t ah_tcp_get_fd(const struct ah_tcp_sock* sock, ah_sockfd_t* fd);
-#endif
 ah_extern ah_err_t ah_tcp_get_local_addr(const struct ah_tcp_sock* sock, union ah_sockaddr* local_addr);
-ah_extern ah_err_t ah_tcp_get_loop(const struct ah_tcp_sock* sock, struct ah_loop** loop);
 ah_extern ah_err_t ah_tcp_get_remote_addr(const struct ah_tcp_sock* sock, union ah_sockaddr* remote_addr);
-ah_extern ah_err_t ah_tcp_get_user_data(const struct ah_tcp_sock* sock, void** user_data);
+
+#if AH_USE_BSD_SOCKETS
+ah_extern_inline ah_sockfd_t ah_tcp_get_fd(const struct ah_tcp_sock* sock)
+{
+    ah_assert_if_debug(sock != NULL);
+    return sock->_fd;
+}
+#endif
+
+ah_extern_inline struct ah_loop* ah_tcp_get_loop(const struct ah_tcp_sock* sock)
+{
+    ah_assert_if_debug(sock != NULL);
+    return sock->_loop;
+}
+
+ah_extern_inline void* ah_tcp_get_user_data(const struct ah_tcp_sock* sock)
+{
+    ah_assert_if_debug(sock != NULL);
+    return sock->_user_data;
+}
 
 ah_extern ah_err_t ah_tcp_set_keepalive(struct ah_tcp_sock* sock, bool keepalive);
 ah_extern ah_err_t ah_tcp_set_no_delay(struct ah_tcp_sock* sock, bool no_delay);
 ah_extern ah_err_t ah_tcp_set_reuse_addr(struct ah_tcp_sock* sock, bool reuse_addr);
-ah_extern ah_err_t ah_tcp_set_user_data(struct ah_tcp_sock* sock, void* user_data);
+
+ah_extern_inline void ah_tcp_set_user_data(struct ah_tcp_sock* sock, void* user_data)
+{
+    ah_assert_if_debug(sock != NULL);
+    sock->_user_data = user_data;
+}
 
 ah_extern ah_err_t ah_tcp_connect(struct ah_tcp_sock* sock, const union ah_sockaddr* remote_addr, ah_tcp_connect_cb cb);
 ah_extern ah_err_t ah_tcp_listen(struct ah_tcp_sock* sock, unsigned backlog, const struct ah_tcp_listen_ctx* ctx);
