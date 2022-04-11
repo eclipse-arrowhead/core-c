@@ -88,8 +88,8 @@ ah_extern bool ah_sockaddr_is_ip_with_port_zero(const union ah_sockaddr* sockadd
 
 #if AH_USE_BSD_SOCKETS
 ah_extern socklen_t ah_sockaddr_get_size(const union ah_sockaddr* sockaddr);
-ah_extern const struct sockaddr* ah_sockaddr_cast_const(const union ah_sockaddr* sockaddr);
 ah_extern struct sockaddr* ah_sockaddr_cast(union ah_sockaddr* sockaddr);
+ah_extern const struct sockaddr* ah_sockaddr_cast_const(const union ah_sockaddr* sockaddr);
 #endif
 
 #endif

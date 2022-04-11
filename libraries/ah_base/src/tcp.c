@@ -500,7 +500,7 @@ static ah_err_t s_prep_read(struct ah_tcp_sock* sock, struct ah_tcp_read_ctx* ct
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_to_iovec(&ctx->_bufvec, &iov, &iovcnt);
+    err = ah_bufvec_into_iovec(&ctx->_bufvec, &iov, &iovcnt);
     if (err != AH_ENONE) {
         return err;
     }
@@ -553,7 +553,7 @@ static void s_on_read(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 
         struct iovec* iov;
         int iovcnt;
-        err = ah_bufvec_to_iovec(&bufvec, &iov, &iovcnt);
+        err = ah_bufvec_into_iovec(&bufvec, &iov, &iovcnt);
         if (err != AH_ENONE) {
             goto call_read_cb_with_err_and_return;
         }
@@ -615,6 +615,7 @@ ah_extern ah_err_t ah_tcp_read_stop(struct ah_tcp_sock* sock)
     if (sock->_state_read != S_STATE_READ_STARTED) {
         return AH_ESTATE;
     }
+    sock->_state_read = S_STATE_READ_STOPPED;
 
 #if AH_USE_KQUEUE
 
@@ -629,7 +630,6 @@ ah_extern ah_err_t ah_tcp_read_stop(struct ah_tcp_sock* sock)
 
 #endif
 
-    sock->_state_read = S_STATE_READ_STOPPED;
     return AH_ENONE;
 }
 
@@ -665,7 +665,7 @@ ah_extern ah_err_t ah_tcp_write(struct ah_tcp_sock* sock, struct ah_tcp_write_ct
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_to_iovec(&ctx->bufvec, &iov, &iovcnt);
+    err = ah_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
     if (err != AH_ENONE) {
         return err;
     }
@@ -714,7 +714,7 @@ static void s_on_write(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_to_iovec(&ctx->bufvec, &iov, &iovcnt);
+    err = ah_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
     if (ah_unlikely(err != AH_ENONE)) {
         err = AH_EDOM;
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;

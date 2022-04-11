@@ -11,21 +11,29 @@
 
 #    include <limits.h>
 #    include <sys/uio.h>
-#endif
 
-#if AH_USE_IOVEC
-ah_extern ah_err_t ah_bufvec_to_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt)
+ah_extern ah_err_t ah_bufvec_from_iovec(struct ah_bufvec* bufvec, struct iovec* iov, int iovcnt)
 {
-    ah_assert_if_debug(offsetof(struct iovec, iov_base) == offsetof(struct ah_buf, octets));
-    ah_assert_if_debug(offsetof(struct iovec, iov_len) == offsetof(struct ah_buf, size));
-    ah_assert_if_debug(sizeof(struct iovec) == sizeof(struct ah_buf));
+    ah_assert_if_debug(bufvec != NULL);
+    ah_assert_if_debug(iov != NULL);
 
-    if (bufvec == NULL || iov == NULL || iovcnt == NULL) {
-        return AH_EINVAL;
+    if (iovcnt < 0 || ((uintmax_t) iovcnt) > ((uintmax_t) SIZE_MAX)) {
+        return AH_EOVERFLOW;
     }
 
+    bufvec->items = (struct ah_buf*) iov;
+    bufvec->length = iovcnt;
+
+    return AH_ENONE;
+}
+
+ah_extern ah_err_t ah_bufvec_into_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt)
+{
+    ah_assert_if_debug(bufvec != NULL);
+    ah_assert_if_debug(iov != NULL);
+    ah_assert_if_debug(iovcnt != NULL);
+
     if (bufvec->length > INT_MAX) {
-        *iovcnt = -1;
         return AH_EOVERFLOW;
     }
 
@@ -34,4 +42,5 @@ ah_extern ah_err_t ah_bufvec_to_iovec(struct ah_bufvec* bufvec, struct iovec** i
 
     return AH_ENONE;
 }
+
 #endif

@@ -37,14 +37,24 @@ union ah_udp_group {
 };
 
 struct ah_udp_recv_ctx {
-    void (*recv_cb)(struct ah_udp_sock* sock, union ah_sockaddr* addr, struct ah_buf* buf, ah_err_t err);
-    void (*alloc_cb)(struct ah_udp_sock* sock, struct ah_buf* buf);
+    void (*recv_cb)(struct ah_udp_sock* sock, union ah_sockaddr* remote_addr, struct ah_bufvec* bufvec,
+        size_t n_bytes_read, ah_err_t err);
+    void (*alloc_cb)(struct ah_udp_sock* sock, struct ah_bufvec* bufvec, size_t n_bytes_expected);
+
+#if AH_USE_URING
+    union ah_sockaddr _remote_addr;
+    struct msghdr _msghdr;
+#endif
 };
 
 struct ah_udp_send_ctx {
     void (*send_cb)(struct ah_udp_sock* sock, ah_err_t err);
     union ah_sockaddr remote_addr;
     struct ah_bufvec bufvec;
+
+#if AH_USE_URING
+    struct msghdr _msghdr;
+#endif
 };
 
 struct ah_udp_sock {
@@ -100,7 +110,7 @@ ah_extern ah_err_t ah_udp_join(struct ah_udp_sock* sock, const union ah_udp_grou
 ah_extern ah_err_t ah_udp_leave(struct ah_udp_sock* sock, const union ah_udp_group* group);
 
 ah_extern ah_err_t ah_udp_send(struct ah_udp_sock* sock, struct ah_udp_send_ctx* ctx);
-ah_extern ah_err_t ah_udp_recv_start(struct ah_udp_sock* sock, const struct ah_udp_recv_ctx* ctx);
+ah_extern ah_err_t ah_udp_recv_start(struct ah_udp_sock* sock, struct ah_udp_recv_ctx* ctx);
 ah_extern ah_err_t ah_udp_recv_stop(struct ah_udp_sock* sock);
 
 ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb);

@@ -73,14 +73,14 @@ ah_extern socklen_t ah_sockaddr_get_size(const union ah_sockaddr* sockaddr)
 #    endif
 }
 
-ah_extern const struct sockaddr* ah_sockaddr_cast_const(const union ah_sockaddr* sockaddr)
-{
-    return (const struct sockaddr*) sockaddr;
-}
-
 ah_extern struct sockaddr* ah_sockaddr_cast(union ah_sockaddr* sockaddr)
 {
     return (struct sockaddr*) sockaddr;
+}
+
+ah_extern const struct sockaddr* ah_sockaddr_cast_const(const union ah_sockaddr* sockaddr)
+{
+    return (const struct sockaddr*) sockaddr;
 }
 
 ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const union ah_sockaddr* local_addr,

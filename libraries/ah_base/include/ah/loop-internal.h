@@ -69,9 +69,23 @@ struct ah_i_loop_evt_body_tcp_write {
     struct ah_tcp_write_ctx* _ctx;
 };
 
+#if AH_USE_URING
+struct ah_i_loop_evt_body_udp_close {
+    struct ah_udp_sock* _sock;
+    void (*_cb)(struct ah_udp_sock*, ah_err_t);
+};
+#endif
+
+#if 0
+struct ah_i_loop_evt_body_udp_open {
+    struct ah_udp_sock* _sock;
+    void (*_cb)(struct ah_udp_sock*, ah_err_t);
+};
+#endif
+
 struct ah_i_loop_evt_body_udp_recv {
     struct ah_udp_sock* _sock;
-    const struct ah_udp_recv_ctx* _ctx;
+    struct ah_udp_recv_ctx* _ctx;
 };
 
 struct ah_i_loop_evt_body_udp_send {
@@ -91,6 +105,12 @@ union ah_i_loop_evt_body {
 #endif
     struct ah_i_loop_evt_body_tcp_read _tcp_read;
     struct ah_i_loop_evt_body_tcp_write _tcp_write;
+#if AH_USE_URING
+    struct ah_i_loop_evt_body_udp_close _udp_close;
+#endif
+#if 0
+    struct ah_i_loop_evt_body_udp_open _udp_open;
+#endif
     struct ah_i_loop_evt_body_udp_recv _udp_recv;
     struct ah_i_loop_evt_body_udp_send _udp_send;
 };

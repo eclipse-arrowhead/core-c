@@ -28,7 +28,8 @@ struct ah_bufvec {
 };
 
 #if AH_USE_IOVEC
-ah_extern ah_err_t ah_bufvec_to_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt);
+ah_extern ah_err_t ah_bufvec_from_iovec(struct ah_bufvec* bufvec, struct iovec* iov, int iovcnt);
+ah_extern ah_err_t ah_bufvec_into_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt);
 #endif
 
 #endif
