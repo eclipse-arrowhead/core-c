@@ -42,11 +42,14 @@ ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, const union ah_sockaddr
         return AH_ESTATE;
     }
 
-    sock->_is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6;
-
 #if AH_USE_BSD_SOCKETS
 
     ah_err_t err = ah_i_sock_open(sock->_loop, AH_I_SOCK_DGRAM, local_addr, &sock->_fd);
+
+    if (err == AH_ENONE) {
+        sock->_is_open = true;
+        sock->_is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6;
+    }
 
     if (cb != NULL) {
         cb(sock, err);
@@ -309,7 +312,7 @@ static ah_err_t s_prep_recv(struct ah_udp_sock* sock, struct ah_udp_recv_ctx* ct
 
     ctx->_msghdr = (struct msghdr) {
         .msg_name = ah_sockaddr_cast(&ctx->_remote_addr),
-        .msg_namelen = ah_sockaddr_get_size(&ctx->_remote_addr),
+        .msg_namelen = sizeof(union ah_sockaddr),
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
     };
@@ -403,10 +406,11 @@ static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     }
 
     struct ah_bufvec bufvec;
-    err = ah_bufvec_from_iovec(&bufvec, ctx->_msghdr.msg_iov, ctx->_msghdr.msg_iovlen);
+    err = ah_bufvec_from_iovec(&bufvec, ctx->_msghdr.msg_iov, 0);
     if (err != AH_ENONE) {
         goto call_recv_cb_with_err_and_return;
     }
+    bufvec.length = ctx->_msghdr.msg_iovlen;
 
     ctx->recv_cb(sock, &ctx->_remote_addr, &bufvec, cqe->res, AH_ENONE);
 
