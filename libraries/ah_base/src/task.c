@@ -66,6 +66,7 @@ static void s_cancel(struct ah_task* task)
     case AH_TASK_STATE_SCHEDULED:
         err = ah_i_loop_alloc_req(task->_loop, &req);
         if (ah_unlikely(err != AH_ENONE)) {
+            ah_assert_if_debug(task->_evt != NULL);
             task->_evt->_cb = NULL;
             break;
         }
@@ -77,14 +78,14 @@ static void s_cancel(struct ah_task* task)
 #if AH_USE_KQUEUE
 
         EV_SET(req, (uintptr_t) task, EVFILT_TIMER, EV_DELETE, 0u, 0, 0u);
-        break;
 
 #elif AH_USE_URING
 
-        io_uring_prep_timeout_remove(req, (uint64_t) task, 0u);
-        break;
+        io_uring_prep_timeout_remove(req, (uint64_t) task->_evt, 0u);
+        io_uring_sqe_set_data(req, NULL);
 
 #endif
+        break;
 
     case AH_TASK_STATE_EXECUTED:
     case AH_TASK_STATE_CANCELED:
@@ -148,11 +149,6 @@ ah_extern ah_err_t ah_task_schedule_at(struct ah_task* task, struct ah_time base
     io_uring_prep_timeout(req, &evt->_body._task_schedule_at._baseline._timespec, 0u, IORING_TIMEOUT_ABS);
     io_uring_sqe_set_data(req, evt);
 
-#else
-
-    (void) baseline;
-    return AH_ENOIMPL;
-
 #endif
 
     task->_evt = evt;
@@ -165,6 +161,13 @@ static void s_on_execution(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(res != NULL);
+
+    struct ah_task* task = evt->_body._task_schedule_at._task;
+    ah_assert_if_debug(task != NULL);
+
+    if (task->_state == AH_TASK_STATE_CANCELED) {
+        return;
+    }
 
     ah_err_t err;
 
@@ -181,8 +184,6 @@ static void s_on_execution(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     err = AH_ENOIMPL;
 
 #endif
-
-    struct ah_task* task = evt->_body._task_schedule_at._task;
 
     task->_state = AH_TASK_STATE_EXECUTED;
     task->_cb(task, err);
