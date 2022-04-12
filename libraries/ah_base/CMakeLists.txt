@@ -43,6 +43,7 @@ set(
     test/math.c
     test/sock.c
     test/task.c
+    test/tcp.c
     test/time.c
     test/udp.c
 )

@@ -344,17 +344,19 @@ static ah_err_t s_poll_no_longer_than_until(struct ah_loop* loop, struct ah_time
 
     for (int i = 0; i < nevents; i += 1) {
         struct kevent* kev = &loop->_kqueue_eventlist[i];
-        s_evt_t* evt = (void*) kev->udata;
+        s_evt_t* evt = kev->udata;
 
-        if (evt != NULL) {
-            if (evt->_cb != NULL) {
+        if (ah_likely(evt != NULL)) {
+            if (ah_likely(evt->_cb != NULL)) {
                 evt->_cb(evt, kev);
             }
-            ah_i_loop_dealloc_evt(loop, evt);
+            if ((kev->flags & (EV_DELETE | EV_ONESHOT | EV_ERROR)) != 0) {
+                ah_i_loop_dealloc_evt(loop, evt);
+            }
         }
 
         err = s_get_pending_err(loop);
-        if (err != AH_ENONE) {
+        if (ah_unlikely(err != AH_ENONE)) {
             return err;
         }
 

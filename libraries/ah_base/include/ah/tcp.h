@@ -61,6 +61,10 @@ struct ah_tcp_sock {
     struct ah_loop* _loop;
     void* _user_data;
 
+#if AH_USE_KQUEUE
+    struct ah_i_loop_evt* _read_or_listen_evt;
+#endif
+
 #if AH_USE_BSD_SOCKETS
     ah_sockfd_t _fd;
 #endif
@@ -70,8 +74,8 @@ struct ah_tcp_sock {
     uint8_t _state_write;
 };
 
-ah_extern ah_err_t ah_tcp_init(struct ah_tcp_sock* sock, struct ah_loop* loop, void* user_data);
-ah_extern ah_err_t ah_tcp_open(struct ah_tcp_sock* sock, const union ah_sockaddr* local_addr, ah_tcp_open_cb cb);
+ah_extern ah_err_t ah_tcp_open(struct ah_tcp_sock* sock, struct ah_loop* loop, const union ah_sockaddr* local_addr,
+    ah_tcp_open_cb cb);
 
 ah_extern ah_err_t ah_tcp_get_local_addr(const struct ah_tcp_sock* sock, union ah_sockaddr* local_addr);
 ah_extern ah_err_t ah_tcp_get_remote_addr(const struct ah_tcp_sock* sock, union ah_sockaddr* remote_addr);
@@ -115,6 +119,5 @@ ah_extern ah_err_t ah_tcp_write(struct ah_tcp_sock* sock, struct ah_tcp_write_ct
 ah_extern ah_err_t ah_tcp_shutdown(struct ah_tcp_sock* sock, ah_tcp_shutdown_t flags);
 
 ah_extern ah_err_t ah_tcp_close(struct ah_tcp_sock* sock, ah_tcp_close_cb cb);
-ah_extern ah_err_t ah_tcp_term(struct ah_tcp_sock* sock);
 
 #endif

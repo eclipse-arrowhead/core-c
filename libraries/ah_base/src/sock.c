@@ -142,10 +142,12 @@ ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const union ah
         return errno;
     }
 
+#if !AH_USE_URING
     if (fcntl(fd0, F_SETFL, O_NONBLOCK, 0) == -1) {
         err = errno;
         goto close_fd_and_return;
     }
+#endif
 
     if (local_addr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(local_addr)) {
         if (bind(fd0, ah_sockaddr_cast_const(local_addr), ah_sockaddr_get_size(local_addr)) != 0) {

@@ -12,11 +12,10 @@
 #include "ah/sock.h"
 #include "ah/unit.h"
 
-struct s_user_data {
-    struct ah_buf* buf;
+struct s_udp_user_data {
+    struct ah_buf* free_buf;
 
     bool _did_alloc;
-    bool _did_dealloc;
     bool _did_receive;
     bool _did_send;
 
@@ -38,7 +37,9 @@ void test_udp(struct ah_unit* unit)
 
 static void s_on_alloc(struct ah_udp_sock* sock, struct ah_bufvec* bufvec, size_t size)
 {
-    struct s_user_data* user_data = ah_udp_get_user_data(sock);
+    (void) size;
+
+    struct s_udp_user_data* user_data = ah_udp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
@@ -51,37 +52,24 @@ static void s_on_alloc(struct ah_udp_sock* sock, struct ah_bufvec* bufvec, size_
     if (!ah_unit_assert(unit, bufvec != NULL, "bufvec == NULL")) {
         return;
     }
-
-    if (bufvec->items == NULL) {
-        if (!ah_unit_assert(unit, user_data->buf != NULL, "user_data->buf == NULL")) {
-            return;
-        }
-
-        bufvec->items = user_data->buf;
-        bufvec->length = 1u;
-
-        user_data->buf = NULL;
-        user_data->_did_alloc = true;
+    if (!ah_unit_assert(unit, bufvec->items == NULL, "bufvec->items != NULL")) {
+        return;
     }
-    else {
-        if (!ah_unit_assert_unsigned_eq(unit, 1u, bufvec->length)) {
-            return;
-        }
-
-        user_data->buf = bufvec->items;
-        user_data->_did_dealloc = true;
-
-        bufvec->items = 0u;
-        bufvec->length = 0u;
+    if (!ah_unit_assert(unit, user_data->free_buf != NULL, "user_data->buf == NULL")) {
+        return;
     }
 
-    (void) size;
+    bufvec->items = user_data->free_buf;
+    bufvec->length = 1u;
+
+    user_data->free_buf = NULL;
+    user_data->_did_alloc = true;
 }
 
 static void s_on_recv(struct ah_udp_sock* sock, union ah_sockaddr* remote_addr, struct ah_bufvec* bufvec, size_t size,
     ah_err_t err)
 {
-    struct s_user_data* user_data = ah_udp_get_user_data(sock);
+    struct s_udp_user_data* user_data = ah_udp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
@@ -111,12 +99,17 @@ static void s_on_recv(struct ah_udp_sock* sock, union ah_sockaddr* remote_addr, 
         return;
     }
 
+    // Free bufvec.
+    user_data->free_buf = bufvec->items;
+    bufvec->items = NULL;
+    bufvec->length = 0u;
+
     user_data->_did_receive = true;
 }
 
 static void s_on_send(struct ah_udp_sock* sock, ah_err_t err)
 {
-    struct s_user_data* user_data = ah_udp_get_user_data(sock);
+    struct s_udp_user_data* user_data = ah_udp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
@@ -139,10 +132,10 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
 
     // Setup user data.
 
-    uint8_t recv_buf_octets[24] = { 0 };
+    uint8_t recv_buf_octets[24] = { 0u };
 
-    struct s_user_data user_data = {
-        .buf = &(struct ah_buf) {
+    struct s_udp_user_data user_data = {
+        .free_buf = &(struct ah_buf) {
             .octets = recv_buf_octets,
             .size = sizeof(recv_buf_octets),
         },
@@ -241,7 +234,6 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
     // Check results.
 
     ah_unit_assert(unit, user_data._did_alloc, "receiver did not allocate memory for message");
-    ah_unit_assert(unit, user_data._did_dealloc, "receiver did not deallocate memory for message");
     ah_unit_assert(unit, user_data._did_receive, "receiver did not receive sent message");
     ah_unit_assert(unit, user_data._did_send, "sender send callback never invoked");
 

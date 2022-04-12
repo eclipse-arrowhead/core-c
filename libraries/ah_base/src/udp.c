@@ -380,7 +380,10 @@ static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     }
 
     ctx->recv_cb(sock, &remote_addr, &bufvec, n_bytes_read, AH_ENONE);
-    ctx->alloc_cb(sock, &bufvec, 0); // Deallocate.
+
+    if (!sock->_is_open) {
+        return;
+    }
 
     if (ah_unlikely((res->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
@@ -405,7 +408,10 @@ static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     bufvec.length = ctx->_msghdr.msg_iovlen;
 
     ctx->recv_cb(sock, &ctx->_remote_addr, &bufvec, cqe->res, AH_ENONE);
-    ctx->alloc_cb(sock, &bufvec, 0); // Deallocate.
+
+    if (!sock->_is_open) {
+        return;
+    }
 
     err = s_prep_recv(sock, ctx);
     if (err != AH_ENONE) {
@@ -607,7 +613,7 @@ ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb)
     err = ah_i_sock_close(sock->_loop, sock->_fd);
 
 #    ifndef NDEBUG
-    *sock = (struct ah_udp_sock) { 0 };
+    sock->_fd = 0;
 #    endif
 
     if (cb != NULL) {
@@ -629,7 +635,7 @@ static void s_on_close(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     ah_assert_if_debug(sock != NULL);
 
 #    ifndef NDEBUG
-    *sock = (struct ah_udp_sock) { 0 };
+    sock->_fd = 0;
 #    endif
 
     ah_udp_close_cb cb = evt->_body._udp_close._cb;
