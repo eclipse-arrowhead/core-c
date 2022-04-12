@@ -268,6 +268,9 @@ ah_extern ah_err_t ah_loop_run_until(struct ah_loop* loop, struct ah_time* time)
     if (loop->_state == S_STATE_TERMINATING) {
         s_term(loop);
     }
+    else {
+        loop->_state = S_STATE_STOPPED;
+    }
 
     return err;
 }

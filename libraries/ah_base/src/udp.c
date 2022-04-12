@@ -20,35 +20,26 @@ static void s_on_send(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res);
 
 static ah_err_t s_prep_recv(struct ah_udp_sock* sock, struct ah_udp_recv_ctx* ctx);
 
-ah_extern ah_err_t ah_udp_init(struct ah_udp_sock* sock, struct ah_loop* loop, void* user_data)
+ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, struct ah_loop* loop, const union ah_sockaddr* local_addr,
+    ah_udp_open_cb cb)
 {
-    if (sock == NULL || loop == NULL) {
+    if (sock == NULL || loop == NULL || local_addr == NULL) {
         return AH_EINVAL;
-    }
-    *sock = (struct ah_udp_sock) {
-        ._loop = loop,
-        ._user_data = user_data,
-        ._is_open = false,
-    };
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, const union ah_sockaddr* local_addr, ah_udp_open_cb cb)
-{
-    if (sock == NULL || local_addr == NULL) {
-        return AH_EINVAL;
-    }
-    if (sock->_is_open) {
-        return AH_ESTATE;
     }
 
 #if AH_USE_BSD_SOCKETS
 
-    ah_err_t err = ah_i_sock_open(sock->_loop, AH_I_SOCK_DGRAM, local_addr, &sock->_fd);
+    ah_i_sockfd_t fd;
+
+    ah_err_t err = ah_i_sock_open(loop, AH_I_SOCK_DGRAM, local_addr, &fd);
 
     if (err == AH_ENONE) {
-        sock->_is_open = true;
-        sock->_is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6;
+        *sock = (struct ah_udp_sock) {
+            ._loop = loop,
+            ._fd = fd,
+            ._is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6,
+            ._is_open = true,
+        };
     }
 
     if (cb != NULL) {
@@ -389,6 +380,7 @@ static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     }
 
     ctx->recv_cb(sock, &remote_addr, &bufvec, n_bytes_read, AH_ENONE);
+    ctx->alloc_cb(sock, &bufvec, 0); // Deallocate.
 
     if (ah_unlikely((res->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
@@ -413,6 +405,7 @@ static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     bufvec.length = ctx->_msghdr.msg_iovlen;
 
     ctx->recv_cb(sock, &ctx->_remote_addr, &bufvec, cqe->res, AH_ENONE);
+    ctx->alloc_cb(sock, &bufvec, 0); // Deallocate.
 
     err = s_prep_recv(sock, ctx);
     if (err != AH_ENONE) {
@@ -579,25 +572,32 @@ ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb)
     if (!sock->_is_open) {
         return AH_ESTATE;
     }
+#ifndef NDEBUG
+    if (sock->_fd == 0) {
+        return AH_ESTATE;
+    }
+#endif
     sock->_is_open = false;
 
     ah_err_t err;
 
 #if AH_USE_URING
 
-    struct ah_i_loop_evt* evt;
-    ah_i_loop_req_t* req;
+    if (cb != NULL) {
+        struct ah_i_loop_evt* evt;
+        ah_i_loop_req_t* req;
 
-    err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
-    if (err == AH_ENONE) {
-        evt->_cb = s_on_close;
-        evt->_body._udp_close._sock = sock;
-        evt->_body._udp_close._cb = cb;
+        err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+        if (err == AH_ENONE) {
+            evt->_cb = s_on_close;
+            evt->_body._udp_close._sock = sock;
+            evt->_body._udp_close._cb = cb;
 
-        io_uring_prep_close(req, sock->_fd);
-        io_uring_sqe_set_data(req, evt);
+            io_uring_prep_close(req, sock->_fd);
+            io_uring_sqe_set_data(req, evt);
 
-        return AH_ENONE;
+            return AH_ENONE;
+        }
     }
 
 #endif
@@ -607,7 +607,7 @@ ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb)
     err = ah_i_sock_close(sock->_loop, sock->_fd);
 
 #    ifndef NDEBUG
-    sock->_fd = 0;
+    *sock = (struct ah_udp_sock) { 0 };
 #    endif
 
     if (cb != NULL) {
@@ -628,26 +628,13 @@ static void s_on_close(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     struct ah_udp_sock* sock = evt->_body._udp_close._sock;
     ah_assert_if_debug(sock != NULL);
 
-    ah_udp_close_cb cb = evt->_body._udp_close._cb;
-
-    if (cb != NULL) {
-        cb(sock, -(res->res));
-    }
-}
-#endif
-
-ah_extern ah_err_t ah_udp_term(struct ah_udp_sock* sock)
-{
-    if (sock == NULL) {
-        return AH_EINVAL;
-    }
-
-#ifndef NDEBUG
-    if (sock->_fd != 0) {
-        return AH_ESTATE;
-    }
+#    ifndef NDEBUG
     *sock = (struct ah_udp_sock) { 0 };
-#endif
+#    endif
 
-    return AH_ENONE;
+    ah_udp_close_cb cb = evt->_body._udp_close._cb;
+    ah_assert_if_debug(cb != NULL);
+
+    cb(sock, -(res->res));
 }
+#endif

@@ -65,13 +65,13 @@ struct ah_udp_sock {
     ah_sockfd_t _fd;
 #endif
 
-    bool _is_open;
     bool _is_ipv6;
+    bool _is_open;
     bool _is_receiving;
 };
 
-ah_extern ah_err_t ah_udp_init(struct ah_udp_sock* sock, struct ah_loop* loop, void* user_data);
-ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, const union ah_sockaddr* local_addr, ah_udp_open_cb cb);
+ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, struct ah_loop* loop, const union ah_sockaddr* local_addr,
+    ah_udp_open_cb cb);
 
 ah_extern ah_err_t ah_udp_get_local_addr(const struct ah_udp_sock* sock, union ah_sockaddr* local_addr);
 
@@ -114,6 +114,5 @@ ah_extern ah_err_t ah_udp_recv_start(struct ah_udp_sock* sock, struct ah_udp_rec
 ah_extern ah_err_t ah_udp_recv_stop(struct ah_udp_sock* sock);
 
 ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb);
-ah_extern ah_err_t ah_udp_term(struct ah_udp_sock* sock);
 
 #endif
