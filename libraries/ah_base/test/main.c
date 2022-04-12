@@ -10,10 +10,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void test_buf(struct ah_unit* unit);
 void test_err(struct ah_unit* unit);
 void test_math(struct ah_unit* unit);
 void test_sock(struct ah_unit* unit);
 void test_task(struct ah_unit* unit);
+void test_tcp(struct ah_unit* unit);
 void test_time(struct ah_unit* unit);
 void test_udp(struct ah_unit* unit);
 
@@ -26,10 +28,12 @@ int main()
 
     struct ah_unit unit = { 0 };
 
+    test_buf(&unit);
     test_err(&unit);
     test_math(&unit);
     test_sock(&unit);
     test_task(&unit);
+    test_tcp(&unit);
     test_time(&unit);
     test_udp(&unit);
 

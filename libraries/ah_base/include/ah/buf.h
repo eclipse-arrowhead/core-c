@@ -13,11 +13,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if AH_IS_DARWIN || AH_IS_LINUX
-#    include "ah/assert.h"
-
-#    include <limits.h>
-#    include <sys/uio.h>
+#if AH_USE_IOVEC
+struct iovec;
 #endif
 
 struct ah_buf {
@@ -30,27 +27,9 @@ struct ah_bufvec {
     size_t length;
 };
 
-#if AH_IS_DARWIN || AH_IS_LINUX
-static inline ah_err_t ah_bufvec_to_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt)
-{
-    ah_assert_if_debug(offsetof(struct iovec, iov_base) == offsetof(struct ah_buf, octets));
-    ah_assert_if_debug(offsetof(struct iovec, iov_len) == offsetof(struct ah_buf, size));
-    ah_assert_if_debug(sizeof(struct iovec) == sizeof(struct ah_buf));
-
-    if (bufvec == NULL || iov == NULL || iovcnt == NULL) {
-        return AH_EINVAL;
-    }
-
-    if (bufvec->length > INT_MAX) {
-        *iovcnt = -1;
-        return AH_EOVERFLOW;
-    }
-
-    *iov = (struct iovec*) bufvec->items;
-    *iovcnt = (int) bufvec->length;
-
-    return AH_ENONE;
-}
+#if AH_USE_IOVEC
+ah_extern ah_err_t ah_bufvec_from_iovec(struct ah_bufvec* bufvec, struct iovec* iov, int iovcnt);
+ah_extern ah_err_t ah_bufvec_into_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt);
 #endif
 
 #endif

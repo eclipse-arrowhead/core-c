@@ -32,7 +32,7 @@ static void s_on_execution(struct ah_task* task, ah_err_t err)
         return;
     }
 
-    struct s_task_data* task_data = ah_task_get_data(task);
+    struct s_task_data* task_data = ah_task_get_user_data(task);
 
     task_data->call_count += 1;
     task_data->call_err = err;

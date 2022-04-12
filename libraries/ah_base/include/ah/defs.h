@@ -36,7 +36,8 @@
 #endif
 
 #define AH_USE_BSD_SOCKETS (AH_USE_IOCP || AH_USE_KQUEUE || AH_USE_URING)
-#define AH_USE_POSIX (AH_USE_KQUEUE || AH_USE_URING)
+#define AH_USE_IOVEC       (AH_USE_KQUEUE || AH_USE_URING)
+#define AH_USE_POSIX       (AH_USE_KQUEUE || AH_USE_URING)
 
 #if defined(__clang__)
 #    if __clang_major__ < 13
@@ -76,31 +77,27 @@
 #endif
 
 #if AH_VIA_CLANG || AH_VIA_GCC
-#    define ah_extern __attribute__((visibility("default"), unused))
-#else
-#    define ah_extern
-#endif
+#    define ah_extern        __attribute__((visibility("default"), unused))
+#    define ah_extern_inline static inline __attribute__((unused))
+#    define ah_noreturn      __attribute__((noreturn))
+#    define ah_unused        __attribute__((unused))
 
-#if AH_VIA_GCC || AH_VIA_CLANG
 #    define ah_likely(expr)   __builtin_expect(!!(expr), 1)
+#    define ah_trap()         __builtin_trap()
 #    define ah_unlikely(expr) __builtin_expect(!!(expr), 0)
-#else
-#    define ah_likely(expr)
-#    define ah_unlikely(expr)
-#endif
-
-#if AH_VIA_GCC || AH_VIA_CLANG
-#    define ah_noreturn __attribute__((noreturn))
+#    define ah_unreachable()  __builtin_unreachable()
 #elif AH_VIA_MSVC
-#    define ah_noreturn __declspec__((noreturn))
-#else
-#    define ah_noreturn
-#endif
+#    include <intrin.h>
 
-#if AH_VIA_GCC || AH_VIA_CLANG
-#    define ah_unused __attribute__((unused))
-#else
+#    define ah_extern
+#    define ah_extern_inline static inline
+#    define ah_noreturn      __declspec__((noreturn))
 #    define ah_unused
+
+#    define ah_likely(expr)
+#    define ah_trap() __debugbreak()
+#    define ah_unlikely(expr)
+#    define ah_unreachable() __assume(0)
 #endif
 
 struct ah_buf;

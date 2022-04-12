@@ -6,7 +6,6 @@
 
 #include "ah/sock.h"
 
-#include "ah/err.h"
 #include "ah/unit.h"
 
 #if AH_USE_BSD_SOCKETS

@@ -20,8 +20,6 @@
 #endif
 
 struct ah_loop {
-    // INTERNAL START
-
     ah_alloc_cb _alloc_cb;
 
     struct ah_i_loop_evt_page* _evt_page_list;
@@ -44,8 +42,6 @@ struct ah_loop {
     struct io_uring _uring;
 
 #endif
-
-    // INTERNAL STOP
 };
 
 struct ah_loop_opts {
@@ -54,11 +50,11 @@ struct ah_loop_opts {
 };
 
 ah_extern ah_err_t ah_loop_init(struct ah_loop* loop, const struct ah_loop_opts* opts);
-ah_extern ah_err_t ah_loop_term(struct ah_loop* loop);
 ah_extern bool ah_loop_is_term(const struct ah_loop* loop);
 ah_extern struct ah_time ah_loop_now(const struct ah_loop* loop);
 ah_extern ah_err_t ah_loop_run(struct ah_loop* loop);
 ah_extern ah_err_t ah_loop_run_until(struct ah_loop* loop, struct ah_time* time);
 ah_extern ah_err_t ah_loop_stop(struct ah_loop* loop);
+ah_extern ah_err_t ah_loop_term(struct ah_loop* loop);
 
 #endif

@@ -227,67 +227,6 @@ static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, s_evt_page_t* evt_page
     }
 }
 
-ah_err_t ah_loop_term(struct ah_loop* loop)
-{
-    if (loop == NULL) {
-        return AH_EINVAL;
-    }
-
-    ah_err_t err;
-
-    switch (loop->_state) {
-    case S_STATE_INITIAL:
-#ifndef NDEBUG
-        *loop = (struct ah_loop) { 0 };
-#endif
-        loop->_state = S_STATE_TERMINATED;
-        err = AH_ENONE;
-        break;
-
-    case S_STATE_STOPPED:
-        s_term(loop);
-        err = AH_ENONE;
-        break;
-
-    case S_STATE_RUNNING:
-        loop->_state = S_STATE_TERMINATING;
-        err = AH_ENONE;
-        break;
-
-    default:
-        err = AH_ESTATE;
-        break;
-    }
-
-    return err;
-}
-
-static void s_term(struct ah_loop* loop)
-{
-    ah_assert_if_debug(loop != NULL);
-
-    s_dealloc_evt_page_list(loop->_alloc_cb, loop->_evt_page_list);
-
-#if AH_USE_KQUEUE
-
-    ah_dealloc(loop->_alloc_cb, loop->_kqueue_changelist);
-    ah_dealloc(loop->_alloc_cb, loop->_kqueue_eventlist);
-
-    (void) close(loop->_kqueue_fd);
-
-#elif AH_USE_URING
-
-    io_uring_queue_exit(&loop->_uring);
-
-#endif
-
-#ifndef NDEBUG
-    *loop = (struct ah_loop) { 0 };
-#endif
-
-    loop->_state = S_STATE_TERMINATED;
-}
-
 ah_extern bool ah_loop_is_term(const struct ah_loop* loop)
 {
     ah_assert(loop != NULL);
@@ -329,8 +268,37 @@ ah_extern ah_err_t ah_loop_run_until(struct ah_loop* loop, struct ah_time* time)
     if (loop->_state == S_STATE_TERMINATING) {
         s_term(loop);
     }
+    else {
+        loop->_state = S_STATE_STOPPED;
+    }
 
     return err;
+}
+
+static void s_term(struct ah_loop* loop)
+{
+    ah_assert_if_debug(loop != NULL);
+
+    s_dealloc_evt_page_list(loop->_alloc_cb, loop->_evt_page_list);
+
+#if AH_USE_KQUEUE
+
+    ah_dealloc(loop->_alloc_cb, loop->_kqueue_changelist);
+    ah_dealloc(loop->_alloc_cb, loop->_kqueue_eventlist);
+
+    (void) close(loop->_kqueue_fd);
+
+#elif AH_USE_URING
+
+    io_uring_queue_exit(&loop->_uring);
+
+#endif
+
+#ifndef NDEBUG
+    *loop = (struct ah_loop) { 0 };
+#endif
+
+    loop->_state = S_STATE_TERMINATED;
 }
 
 static ah_err_t s_poll_no_longer_than_until(struct ah_loop* loop, struct ah_time* time)
@@ -376,17 +344,19 @@ static ah_err_t s_poll_no_longer_than_until(struct ah_loop* loop, struct ah_time
 
     for (int i = 0; i < nevents; i += 1) {
         struct kevent* kev = &loop->_kqueue_eventlist[i];
-        s_evt_t* evt = (void*) kev->udata;
+        s_evt_t* evt = kev->udata;
 
-        if (evt != NULL) {
-            if (evt->_cb != NULL) {
+        if (ah_likely(evt != NULL)) {
+            if (ah_likely(evt->_cb != NULL)) {
                 evt->_cb(evt, kev);
             }
-            ah_i_loop_dealloc_evt(loop, evt);
+            if ((kev->flags & (EV_DELETE | EV_ONESHOT | EV_ERROR)) != 0) {
+                ah_i_loop_dealloc_evt(loop, evt);
+            }
         }
 
         err = s_get_pending_err(loop);
-        if (err != AH_ENONE) {
+        if (ah_unlikely(err != AH_ENONE)) {
             return err;
         }
 
@@ -443,7 +413,7 @@ static ah_err_t s_poll_no_longer_than_until(struct ah_loop* loop, struct ah_time
 
         if (evt != NULL && cqe->res != -ECANCELED) {
             if (evt->_cb != NULL) {
-                evt->_cb(evt, kev);
+                evt->_cb(evt, cqe);
             }
             ah_i_loop_dealloc_evt(loop, evt);
         }
@@ -496,6 +466,41 @@ ah_extern ah_err_t ah_loop_stop(struct ah_loop* loop)
     }
     loop->_state = S_STATE_STOPPED;
     return AH_ENONE;
+}
+
+ah_err_t ah_loop_term(struct ah_loop* loop)
+{
+    if (loop == NULL) {
+        return AH_EINVAL;
+    }
+
+    ah_err_t err;
+
+    switch (loop->_state) {
+    case S_STATE_INITIAL:
+#ifndef NDEBUG
+        *loop = (struct ah_loop) { 0 };
+#endif
+        loop->_state = S_STATE_TERMINATED;
+        err = AH_ENONE;
+        break;
+
+    case S_STATE_STOPPED:
+        s_term(loop);
+        err = AH_ENONE;
+        break;
+
+    case S_STATE_RUNNING:
+        loop->_state = S_STATE_TERMINATING;
+        err = AH_ENONE;
+        break;
+
+    default:
+        err = AH_ESTATE;
+        break;
+    }
+
+    return err;
 }
 
 ah_err_t ah_i_loop_alloc_evt(struct ah_loop* loop, s_evt_t** evt)
