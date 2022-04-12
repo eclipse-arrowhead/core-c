@@ -13,11 +13,11 @@
 #include "ah/unit.h"
 
 struct s_tcp_user_data {
-    struct ah_tcp_sock* free_read_conn;
-    struct ah_buf* free_read_buf;
-    struct ah_tcp_read_ctx* free_read_ctx;
-    struct ah_buf* free_write_buf;
-    struct ah_tcp_write_ctx* free_write_ctx;
+    ah_tcp_sock_t* free_read_conn;
+    ah_buf_t* free_read_buf;
+    ah_tcp_read_ctx_t* free_read_ctx;
+    ah_buf_t* free_write_buf;
+    ah_tcp_write_ctx_t* free_write_ctx;
 
     bool _did_accept;
     bool _did_alloc_mem;
@@ -27,29 +27,28 @@ struct s_tcp_user_data {
     bool _did_read;
     bool _did_write;
 
-    struct ah_unit* unit;
+    ah_unit_t* unit;
 };
 
-static void s_should_read_and_write_data(struct ah_unit* unit);
+static void s_should_read_and_write_data(ah_unit_t* unit);
 
-void test_tcp(struct ah_unit* unit)
+void test_tcp(ah_unit_t* unit)
 {
     s_should_read_and_write_data(unit);
 }
 
-static void s_on_alloc_mem(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, size_t size);
-static void s_on_read(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, size_t size, ah_err_t err);
-static void s_on_write(struct ah_tcp_sock* sock, ah_err_t err);
+static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size);
+static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_err_t err);
+static void s_on_write(ah_tcp_sock_t* sock, ah_err_t err);
 
-static void s_on_accept(struct ah_tcp_sock* sock, struct ah_tcp_sock* conn, union ah_sockaddr* remote_addr,
-    ah_err_t err)
+static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, ah_sockaddr_t* remote_addr, ah_err_t err)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -69,10 +68,10 @@ static void s_on_accept(struct ah_tcp_sock* sock, struct ah_tcp_sock* conn, unio
     if (!ah_unit_assert(unit, user_data->free_read_ctx != NULL, "user_data->free_read_ctx == NULL")) {
         return;
     }
-    struct ah_tcp_read_ctx* read_ctx = user_data->free_read_ctx;
+    ah_tcp_read_ctx_t* read_ctx = user_data->free_read_ctx;
     user_data->free_read_ctx = NULL;
 
-    *read_ctx = (struct ah_tcp_read_ctx) {
+    *read_ctx = (ah_tcp_read_ctx_t) {
         .alloc_cb = s_on_alloc_mem,
         .read_cb = s_on_read,
     };
@@ -85,7 +84,7 @@ static void s_on_accept(struct ah_tcp_sock* sock, struct ah_tcp_sock* conn, unio
     user_data->_did_accept = true;
 }
 
-static void s_on_alloc_mem(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, size_t size)
+static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size)
 {
     (void) size;
 
@@ -94,7 +93,7 @@ static void s_on_alloc_mem(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, s
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -116,14 +115,14 @@ static void s_on_alloc_mem(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, s
     user_data->_did_alloc_mem = true;
 }
 
-static void s_on_alloc_sock(struct ah_tcp_sock* sock, struct ah_tcp_sock** conn)
+static void s_on_alloc_sock(ah_tcp_sock_t* sock, ah_tcp_sock_t** conn)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -144,14 +143,14 @@ static void s_on_alloc_sock(struct ah_tcp_sock* sock, struct ah_tcp_sock** conn)
     user_data->_did_alloc_sock = true;
 }
 
-static void s_on_connect(struct ah_tcp_sock* conn, ah_err_t err)
+static void s_on_connect(ah_tcp_sock_t* conn, ah_err_t err)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(conn);
     if (user_data == NULL) {
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -163,10 +162,10 @@ static void s_on_connect(struct ah_tcp_sock* conn, ah_err_t err)
     if (!ah_unit_assert(unit, user_data->free_write_buf != NULL, "user_data->free_write_buf == NULL")) {
         return;
     }
-    struct ah_buf* write_buf = user_data->free_write_buf;
+    ah_buf_t* write_buf = user_data->free_write_buf;
     user_data->free_write_buf = NULL;
 
-    *write_buf = (struct ah_buf) {
+    *write_buf = (ah_buf_t) {
         .octets = (uint8_t*) "Hello, Arrowhead!",
         .size = 18u,
     };
@@ -174,11 +173,11 @@ static void s_on_connect(struct ah_tcp_sock* conn, ah_err_t err)
     if (!ah_unit_assert(unit, user_data->free_write_ctx != NULL, "user_data->free_write_ctx == NULL")) {
         return;
     }
-    struct ah_tcp_write_ctx* write_ctx = user_data->free_write_ctx;
+    ah_tcp_write_ctx_t* write_ctx = user_data->free_write_ctx;
     user_data->free_write_ctx = NULL;
 
-    *write_ctx = (struct ah_tcp_write_ctx) {
-        .bufvec = (struct ah_bufvec) {
+    *write_ctx = (ah_tcp_write_ctx_t) {
+        .bufvec = (ah_bufvec_t) {
             .items = write_buf,
             .length = 1u,
         },
@@ -193,14 +192,14 @@ static void s_on_connect(struct ah_tcp_sock* conn, ah_err_t err)
     user_data->_did_connect = true;
 }
 
-static void s_on_listen(struct ah_tcp_sock* sock, ah_err_t err)
+static void s_on_listen(ah_tcp_sock_t* sock, ah_err_t err)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -212,14 +211,14 @@ static void s_on_listen(struct ah_tcp_sock* sock, ah_err_t err)
     user_data->_did_listen = true;
 }
 
-static void s_on_read(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, size_t size, ah_err_t err)
+static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_err_t err)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -230,10 +229,10 @@ static void s_on_read(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, size_t
 
     ah_unit_assert(unit, bufvec != NULL, "bufvec == NULL");
 
-    if (!ah_unit_assert_unsigned_eq(unit, 18, size)) {
+    if (!ah_unit_assert_unsigned_eq(unit, 18u, size)) {
         return;
     }
-    if (!ah_unit_assert_unsigned_eq(unit, 1, bufvec->length)) {
+    if (!ah_unit_assert_unsigned_eq(unit, 1u, bufvec->length)) {
         return;
     }
     if (!ah_unit_assert(unit, bufvec->items != NULL, "bufvec->items == NULL")) {
@@ -256,14 +255,14 @@ static void s_on_read(struct ah_tcp_sock* sock, struct ah_bufvec* bufvec, size_t
     user_data->_did_read = true;
 }
 
-static void s_on_write(struct ah_tcp_sock* sock, ah_err_t err)
+static void s_on_write(ah_tcp_sock_t* sock, ah_err_t err)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -275,33 +274,33 @@ static void s_on_write(struct ah_tcp_sock* sock, ah_err_t err)
     user_data->_did_write = true;
 }
 
-static void s_should_read_and_write_data(struct ah_unit* unit)
+static void s_should_read_and_write_data(ah_unit_t* unit)
 {
     ah_err_t err;
 
     // Setup user data.
 
-    uint8_t read_buf_octets[24] = { 0 };
+    uint8_t read_buf_octets[24] = { 0u };
 
     struct s_tcp_user_data user_data = {
-        .free_read_buf = &(struct ah_buf) {
+        .free_read_buf = &(ah_buf_t) {
             .octets = read_buf_octets,
             .size = sizeof(read_buf_octets),
         },
-        .free_read_conn = &(struct ah_tcp_sock) { 0 },
-        .free_read_ctx = &(struct ah_tcp_read_ctx) { 0 },
-        .free_write_buf = &(struct ah_buf) { 0 },
-        .free_write_ctx = &(struct ah_tcp_write_ctx) { 0 },
+        .free_read_conn = &(ah_tcp_sock_t) { 0 },
+        .free_read_ctx = &(ah_tcp_read_ctx_t) { 0 },
+        .free_write_buf = &(ah_buf_t) { 0 },
+        .free_write_ctx = &(ah_tcp_write_ctx_t) { 0 },
         .unit = unit,
     };
 
     // Setup reader.
 
-    struct ah_loop read_loop;
-    struct ah_tcp_sock read_sock;
-    union ah_sockaddr read_addr;
+    ah_loop_t read_loop;
+    ah_tcp_sock_t read_sock;
+    ah_sockaddr_t read_addr;
 
-    err = ah_loop_init(&read_loop, &(struct ah_loop_opts) { .capacity = 4 });
+    err = ah_loop_init(&read_loop, &(ah_loop_opts_t) { .capacity = 4u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -322,7 +321,7 @@ static void s_should_read_and_write_data(struct ah_unit* unit)
     // Listen for writer connection.
 
     err = ah_tcp_listen(&read_sock, 4,
-        &(struct ah_tcp_listen_ctx) {
+        &(ah_tcp_listen_ctx_t) {
             .alloc_cb = s_on_alloc_sock,
             .listen_cb = s_on_listen,
             .accept_cb = s_on_accept,
@@ -333,11 +332,11 @@ static void s_should_read_and_write_data(struct ah_unit* unit)
 
     // Setup writer.
 
-    struct ah_loop write_loop;
-    struct ah_tcp_sock write_sock;
-    union ah_sockaddr write_addr;
+    ah_loop_t write_loop;
+    ah_tcp_sock_t write_sock;
+    ah_sockaddr_t write_addr;
 
-    err = ah_loop_init(&write_loop, &(struct ah_loop_opts) { .capacity = 4 });
+    err = ah_loop_init(&write_loop, &(ah_loop_opts_t) { .capacity = 4u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -359,7 +358,7 @@ static void s_should_read_and_write_data(struct ah_unit* unit)
 
     // Submit.
 
-    struct ah_time deadline;
+    ah_time_t deadline;
 
     err = ah_time_add(ah_time_now(), 10 * AH_TIMEDIFF_MS, &deadline);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {

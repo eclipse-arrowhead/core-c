@@ -25,7 +25,7 @@ struct ah_loop {
     struct ah_i_loop_evt_page* _evt_page_list;
     struct ah_i_loop_evt* _evt_free_list;
 
-    struct ah_time _now;
+    ah_time_t _now;
     ah_err_t _pending_err;
     int _state;
 
@@ -49,12 +49,12 @@ struct ah_loop_opts {
     size_t capacity;
 };
 
-ah_extern ah_err_t ah_loop_init(struct ah_loop* loop, const struct ah_loop_opts* opts);
-ah_extern bool ah_loop_is_term(const struct ah_loop* loop);
-ah_extern struct ah_time ah_loop_now(const struct ah_loop* loop);
-ah_extern ah_err_t ah_loop_run(struct ah_loop* loop);
-ah_extern ah_err_t ah_loop_run_until(struct ah_loop* loop, struct ah_time* time);
-ah_extern ah_err_t ah_loop_stop(struct ah_loop* loop);
-ah_extern ah_err_t ah_loop_term(struct ah_loop* loop);
+ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts);
+ah_extern bool ah_loop_is_term(const ah_loop_t* loop);
+ah_extern ah_time_t ah_loop_now(const ah_loop_t* loop);
+ah_extern ah_err_t ah_loop_run(ah_loop_t* loop);
+ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, ah_time_t* time);
+ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop);
+ah_extern ah_err_t ah_loop_term(ah_loop_t* loop);
 
 #endif

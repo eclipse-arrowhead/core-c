@@ -8,7 +8,6 @@
 #define AH_TIME_H_
 
 #include "defs.h"
-#include "err.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -40,15 +39,15 @@ struct ah_time {
 
 typedef int64_t ah_timediff_t; // Nanoseconds.
 
-ah_extern struct ah_time ah_time_now();
-ah_extern ah_err_t ah_time_diff(struct ah_time a, struct ah_time b, ah_timediff_t* diff);
-ah_extern bool ah_time_eq(struct ah_time a, struct ah_time b);
-ah_extern int ah_time_cmp(struct ah_time a, struct ah_time b);
-ah_extern ah_err_t ah_time_add(struct ah_time time, ah_timediff_t diff, struct ah_time* result);
-ah_extern ah_err_t ah_time_sub(struct ah_time time, ah_timediff_t diff, struct ah_time* result);
-ah_extern bool ah_time_is_after(struct ah_time a, struct ah_time b);
-ah_extern bool ah_time_is_before(struct ah_time a, struct ah_time b);
-ah_extern bool ah_time_is_zero(struct ah_time time);
+ah_extern ah_time_t ah_time_now(void);
+ah_extern ah_err_t ah_time_diff(ah_time_t a, ah_time_t b, ah_timediff_t* diff);
+ah_extern bool ah_time_eq(ah_time_t a, ah_time_t b);
+ah_extern int ah_time_cmp(ah_time_t a, ah_time_t b);
+ah_extern ah_err_t ah_time_add(ah_time_t time, ah_timediff_t diff, ah_time_t* result);
+ah_extern ah_err_t ah_time_sub(ah_time_t time, ah_timediff_t diff, ah_time_t* result);
+ah_extern bool ah_time_is_after(ah_time_t a, ah_time_t b);
+ah_extern bool ah_time_is_before(ah_time_t a, ah_time_t b);
+ah_extern bool ah_time_is_zero(ah_time_t time);
 
 ah_extern ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);
 ah_extern ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);

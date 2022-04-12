@@ -8,7 +8,6 @@
 #define AH_MATH_H_
 
 #include "defs.h"
-#include "err.h"
 
 #include <stddef.h>
 #include <stdint.h>

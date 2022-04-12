@@ -6,13 +6,15 @@
 
 #include "ah/buf.h"
 
+#include "ah/err.h"
+
 #if AH_USE_IOVEC
 #    include "ah/assert.h"
 
 #    include <limits.h>
 #    include <sys/uio.h>
 
-ah_extern ah_err_t ah_bufvec_from_iovec(struct ah_bufvec* bufvec, struct iovec* iov, int iovcnt)
+ah_extern ah_err_t ah_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt)
 {
     ah_assert_if_debug(bufvec != NULL);
     ah_assert_if_debug(iov != NULL);
@@ -21,13 +23,13 @@ ah_extern ah_err_t ah_bufvec_from_iovec(struct ah_bufvec* bufvec, struct iovec* 
         return AH_EOVERFLOW;
     }
 
-    bufvec->items = (struct ah_buf*) iov;
+    bufvec->items = (ah_buf_t*) iov;
     bufvec->length = iovcnt;
 
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_bufvec_into_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt)
+ah_extern ah_err_t ah_bufvec_into_iovec(ah_bufvec_t* bufvec, struct iovec** iov, int* iovcnt)
 {
     ah_assert_if_debug(bufvec != NULL);
     ah_assert_if_debug(iov != NULL);

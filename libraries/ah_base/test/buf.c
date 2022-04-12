@@ -13,10 +13,10 @@
 #endif
 
 #if AH_USE_IOVEC
-static void s_should_use_same_data_layout_as_platform_iovec(struct ah_unit* unit);
+static void s_should_use_same_data_layout_as_platform_iovec(ah_unit_t* unit);
 #endif
 
-void test_buf(struct ah_unit* unit)
+void test_buf(ah_unit_t* unit)
 {
 #if AH_USE_IOVEC
     s_should_use_same_data_layout_as_platform_iovec(unit);
@@ -24,17 +24,16 @@ void test_buf(struct ah_unit* unit)
 }
 
 #if AH_USE_IOVEC
-static void s_should_use_same_data_layout_as_platform_iovec(struct ah_unit* unit)
+static void s_should_use_same_data_layout_as_platform_iovec(ah_unit_t* unit)
 {
 #    define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)                                          \
         ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2));                            \
         ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
 
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_buf, octets, struct iovec, iov_base);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_buf, size, struct iovec, iov_len);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_buf_t, octets, struct iovec, iov_base);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_buf_t, size, struct iovec, iov_len);
 
-    ah_unit_assert(unit, sizeof(struct ah_buf) >= sizeof(struct iovec),
-        "struct ah_buf seems to be missing fields");
+    ah_unit_assert(unit, sizeof(ah_buf_t) >= sizeof(struct iovec), "ah_buf_t seems to be missing fields");
 
 #    undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
 }

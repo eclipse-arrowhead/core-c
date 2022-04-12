@@ -7,21 +7,21 @@
 #include "ah/udp.h"
 
 #include "ah/assert.h"
+#include "ah/err.h"
 #include "ah/loop-internal.h"
 #include "ah/loop.h"
 #include "ah/math.h"
 #include "sock-internal.h"
 
 #if AH_USE_URING
-static void s_on_close(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res);
+static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
 #endif
-static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res);
-static void s_on_send(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res);
+static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
+static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
 
-static ah_err_t s_prep_recv(struct ah_udp_sock* sock, struct ah_udp_recv_ctx* ctx);
+static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx);
 
-ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, struct ah_loop* loop, const union ah_sockaddr* local_addr,
-    ah_udp_open_cb cb)
+ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr, ah_udp_open_cb cb)
 {
     if (sock == NULL || loop == NULL || local_addr == NULL) {
         return AH_EINVAL;
@@ -34,7 +34,7 @@ ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, struct ah_loop* loop, c
     ah_err_t err = ah_i_sock_open(loop, AH_I_SOCK_DGRAM, local_addr, &fd);
 
     if (err == AH_ENONE) {
-        *sock = (struct ah_udp_sock) {
+        *sock = (ah_udp_sock_t) {
             ._loop = loop,
             ._fd = fd,
             ._is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6,
@@ -51,7 +51,7 @@ ah_extern ah_err_t ah_udp_open(struct ah_udp_sock* sock, struct ah_loop* loop, c
 #endif
 }
 
-ah_extern ah_err_t ah_udp_get_local_addr(const struct ah_udp_sock* sock, union ah_sockaddr* local_addr)
+ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr)
 {
     if (sock == NULL || local_addr == NULL) {
         return AH_EINVAL;
@@ -65,7 +65,7 @@ ah_extern ah_err_t ah_udp_get_local_addr(const struct ah_udp_sock* sock, union a
 #endif
 }
 
-ah_extern ah_err_t ah_udp_set_multicast_hop_limit(struct ah_udp_sock* sock, uint8_t hop_limit)
+ah_extern ah_err_t ah_udp_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -98,7 +98,7 @@ ah_extern ah_err_t ah_udp_set_multicast_hop_limit(struct ah_udp_sock* sock, uint
 #endif
 }
 
-ah_extern ah_err_t ah_udp_set_multicast_loopback(struct ah_udp_sock* sock, bool loopback)
+ah_extern ah_err_t ah_udp_set_multicast_loopback(ah_udp_sock_t* sock, bool loopback)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -131,7 +131,7 @@ ah_extern ah_err_t ah_udp_set_multicast_loopback(struct ah_udp_sock* sock, bool 
 #endif
 }
 
-ah_extern ah_err_t ah_udp_set_reuse_addr(struct ah_udp_sock* sock, bool reuse_addr)
+ah_extern ah_err_t ah_udp_set_reuse_addr(ah_udp_sock_t* sock, bool reuse_addr)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -149,7 +149,7 @@ ah_extern ah_err_t ah_udp_set_reuse_addr(struct ah_udp_sock* sock, bool reuse_ad
 #endif
 }
 
-ah_extern ah_err_t ah_udp_set_unicast_hop_limit(struct ah_udp_sock* sock, uint8_t hop_limit)
+ah_extern ah_err_t ah_udp_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -182,7 +182,7 @@ ah_extern ah_err_t ah_udp_set_unicast_hop_limit(struct ah_udp_sock* sock, uint8_
 #endif
 }
 
-ah_extern ah_err_t ah_udp_join(struct ah_udp_sock* sock, const union ah_udp_group* group)
+ah_extern ah_err_t ah_udp_join(ah_udp_sock_t* sock, const ah_udp_group_t* group)
 {
     if (sock == NULL || group == NULL) {
         return AH_EINVAL;
@@ -205,7 +205,7 @@ ah_extern ah_err_t ah_udp_join(struct ah_udp_sock* sock, const union ah_udp_grou
         name = IP_ADD_MEMBERSHIP;
     }
 
-    if (setsockopt(sock->_fd, level, name, (void*) group, sizeof(union ah_udp_group)) != 0) {
+    if (setsockopt(sock->_fd, level, name, (void*) group, sizeof(ah_udp_group_t)) != 0) {
         return errno;
     }
 
@@ -214,7 +214,7 @@ ah_extern ah_err_t ah_udp_join(struct ah_udp_sock* sock, const union ah_udp_grou
 #endif
 }
 
-ah_extern ah_err_t ah_udp_leave(struct ah_udp_sock* sock, const union ah_udp_group* group)
+ah_extern ah_err_t ah_udp_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group)
 {
     if (sock == NULL || group == NULL) {
         return AH_EINVAL;
@@ -237,7 +237,7 @@ ah_extern ah_err_t ah_udp_leave(struct ah_udp_sock* sock, const union ah_udp_gro
         name = IP_DROP_MEMBERSHIP;
     }
 
-    if (setsockopt(sock->_fd, level, name, (void*) group, sizeof(union ah_udp_group)) != 0) {
+    if (setsockopt(sock->_fd, level, name, (void*) group, sizeof(ah_udp_group_t)) != 0) {
         return errno;
     }
 
@@ -246,7 +246,7 @@ ah_extern ah_err_t ah_udp_leave(struct ah_udp_sock* sock, const union ah_udp_gro
 #endif
 }
 
-ah_extern ah_err_t ah_udp_recv_start(struct ah_udp_sock* sock, struct ah_udp_recv_ctx* ctx)
+ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
 {
     if (sock == NULL || ctx == NULL || ctx->alloc_cb == NULL || ctx->recv_cb == NULL) {
         return AH_EINVAL;
@@ -265,12 +265,12 @@ ah_extern ah_err_t ah_udp_recv_start(struct ah_udp_sock* sock, struct ah_udp_rec
     return AH_ENONE;
 }
 
-static ah_err_t s_prep_recv(struct ah_udp_sock* sock, struct ah_udp_recv_ctx* ctx)
+static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
 {
     ah_assert_if_debug(sock != NULL);
     ah_assert_if_debug(ctx != NULL);
 
-    struct ah_i_loop_evt* evt;
+    ah_i_loop_evt_t* evt;
     ah_i_loop_req_t* req;
 
     ah_err_t err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
@@ -303,7 +303,7 @@ static ah_err_t s_prep_recv(struct ah_udp_sock* sock, struct ah_udp_recv_ctx* ct
 
     ctx->_msghdr = (struct msghdr) {
         .msg_name = ah_sockaddr_cast(&ctx->_remote_addr),
-        .msg_namelen = sizeof(union ah_sockaddr),
+        .msg_namelen = sizeof(ah_sockaddr_t),
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
     };
@@ -316,15 +316,15 @@ static ah_err_t s_prep_recv(struct ah_udp_sock* sock, struct ah_udp_recv_ctx* ct
     return AH_ENONE;
 }
 
-static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
+static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(res != NULL);
 
-    struct ah_udp_sock* sock = evt->_body._udp_recv._sock;
+    ah_udp_sock_t* sock = evt->_body._udp_recv._sock;
     ah_assert_if_debug(sock != NULL);
 
-    struct ah_udp_recv_ctx* ctx = evt->_body._udp_recv._ctx;
+    ah_udp_recv_ctx_t* ctx = evt->_body._udp_recv._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->recv_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
@@ -363,7 +363,7 @@ static void s_on_recv(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
         goto call_recv_cb_with_err_and_return;
     }
 
-    union ah_sockaddr remote_addr;
+    ah_sockaddr_t remote_addr;
     socklen_t socklen = sizeof(remote_addr);
 
     struct msghdr msghdr = {
@@ -426,7 +426,7 @@ call_recv_cb_with_err_and_return:
     ctx->recv_cb(sock, NULL, NULL, 0u, err);
 }
 
-ah_extern ah_err_t ah_udp_recv_stop(struct ah_udp_sock* sock)
+ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -452,7 +452,7 @@ ah_extern ah_err_t ah_udp_recv_stop(struct ah_udp_sock* sock)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_send(struct ah_udp_sock* sock, struct ah_udp_send_ctx* ctx)
+ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
 {
     if (sock == NULL || ctx == NULL || ctx->send_cb == NULL) {
         return AH_EINVAL;
@@ -464,7 +464,7 @@ ah_extern ah_err_t ah_udp_send(struct ah_udp_sock* sock, struct ah_udp_send_ctx*
         return AH_ESTATE;
     }
 
-    struct ah_i_loop_evt* evt;
+    ah_i_loop_evt_t* evt;
     ah_i_loop_req_t* req;
 
     ah_err_t err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
@@ -504,15 +504,15 @@ ah_extern ah_err_t ah_udp_send(struct ah_udp_sock* sock, struct ah_udp_send_ctx*
     return AH_ENONE;
 }
 
-static void s_on_send(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
+static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(res != NULL);
 
-    struct ah_udp_sock* sock = evt->_body._udp_send._sock;
+    ah_udp_sock_t* sock = evt->_body._udp_send._sock;
     ah_assert_if_debug(sock != NULL);
 
-    struct ah_udp_send_ctx* ctx = evt->_body._udp_send._ctx;
+    ah_udp_send_ctx_t* ctx = evt->_body._udp_send._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->send_cb != NULL);
     ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);
@@ -570,7 +570,7 @@ call_send_cb_with_sock_and_err:
     ctx->send_cb(sock, err);
 }
 
-ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb)
+ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -590,7 +590,7 @@ ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb)
 #if AH_USE_URING
 
     if (cb != NULL) {
-        struct ah_i_loop_evt* evt;
+        ah_i_loop_evt_t* evt;
         ah_i_loop_req_t* req;
 
         err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
@@ -626,12 +626,12 @@ ah_extern ah_err_t ah_udp_close(struct ah_udp_sock* sock, ah_udp_close_cb cb)
 }
 
 #if AH_USE_URING
-static void s_on_close(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
+static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(res != NULL);
 
-    struct ah_udp_sock* sock = evt->_body._udp_close._sock;
+    ah_udp_sock_t* sock = evt->_body._udp_close._sock;
     ah_assert_if_debug(sock != NULL);
 
 #    ifndef NDEBUG

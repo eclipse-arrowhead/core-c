@@ -9,10 +9,10 @@
 #include "ah/unit.h"
 
 #if AH_USE_BSD_SOCKETS
-static void s_should_use_same_data_layout_as_platform_sockaddr(struct ah_unit* unit);
+static void s_should_use_same_data_layout_as_platform_sockaddr(ah_unit_t* unit);
 #endif
 
-void test_sock(struct ah_unit* unit)
+void test_sock(ah_unit_t* unit)
 {
 #if AH_USE_BSD_SOCKETS
     s_should_use_same_data_layout_as_platform_sockaddr(unit);
@@ -20,35 +20,35 @@ void test_sock(struct ah_unit* unit)
 }
 
 #if AH_USE_BSD_SOCKETS
-static void s_should_use_same_data_layout_as_platform_sockaddr(struct ah_unit* unit)
+static void s_should_use_same_data_layout_as_platform_sockaddr(ah_unit_t* unit)
 {
 #    define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)                                          \
         ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2));                            \
         ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
 
 #    if AH_I_SOCKADDR_HAS_SIZE
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_any, size, struct sockaddr, sa_len);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ip, size, struct sockaddr_in, sin_len);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ip, size, struct sockaddr_in6, sin6_len);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv4, size, struct sockaddr_in, sin_len);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv6, size, struct sockaddr_in6, sin6_len);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_any_t, size, struct sockaddr, sa_len);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, size, struct sockaddr_in, sin_len);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, size, struct sockaddr_in6, sin6_len);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv4_t, size, struct sockaddr_in, sin_len);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, size, struct sockaddr_in6, sin6_len);
 #    endif
 
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_any, family, struct sockaddr, sa_family);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ip, family, struct sockaddr_in, sin_family);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ip, family, struct sockaddr_in6, sin6_family);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv4, family, struct sockaddr_in, sin_family);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv6, family, struct sockaddr_in6, sin6_family);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_any_t, family, struct sockaddr, sa_family);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, family, struct sockaddr_in, sin_family);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, family, struct sockaddr_in6, sin6_family);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv4_t, family, struct sockaddr_in, sin_family);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, family, struct sockaddr_in6, sin6_family);
 
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ip, port, struct sockaddr_in, sin_port);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ip, port, struct sockaddr_in6, sin6_port);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv4, port, struct sockaddr_in, sin_port);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv6, port, struct sockaddr_in6, sin6_port);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, port, struct sockaddr_in, sin_port);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, port, struct sockaddr_in6, sin6_port);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv4_t, port, struct sockaddr_in, sin_port);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, port, struct sockaddr_in6, sin6_port);
 
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv4, ipaddr, struct sockaddr_in, sin_addr);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv6, ipaddr, struct sockaddr_in6, sin6_addr);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv4_t, ipaddr, struct sockaddr_in, sin_addr);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, ipaddr, struct sockaddr_in6, sin6_addr);
 
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_sockaddr_ipv6, zone_id, struct sockaddr_in6, sin6_scope_id);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, zone_id, struct sockaddr_in6, sin6_scope_id);
 
 #    undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
 }

@@ -33,6 +33,8 @@
 #define AH_I_UNIT_WRAP(UNIT)                                                                                           \
     ((struct ah_i_unit) { .external = (UNIT), .file = __FILE__, .line = __LINE__, .func = __func__ })
 
+typedef struct ah_unit ah_unit_t;
+
 struct ah_unit {
     int assertion_count;
     int fail_count;
@@ -46,7 +48,7 @@ struct ah_i_unit {
     const char* func;
 };
 
-void ah_unit_print_results(const struct ah_unit* unit);
+void ah_unit_print_results(const ah_unit_t* unit);
 
 bool ah_i_unit_assert(struct ah_i_unit unit, bool is_success, const char* message);
 bool ah_i_unit_assertf(struct ah_i_unit unit, bool is_success, const char* format, ...);

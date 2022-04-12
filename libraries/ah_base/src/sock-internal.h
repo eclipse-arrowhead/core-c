@@ -27,12 +27,11 @@ typedef int ah_i_sockfd_t;
 #endif
 
 #if AH_USE_BSD_SOCKETS
-ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const union ah_sockaddr* local_addr,
-    ah_i_sockfd_t* fd);
-ah_extern ah_err_t ah_i_sock_close(struct ah_loop* loop, ah_i_sockfd_t fd);
+ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, int type, const ah_sockaddr_t* local_addr, ah_i_sockfd_t* fd);
+ah_extern ah_err_t ah_i_sock_close(ah_loop_t* loop, ah_i_sockfd_t fd);
 
-ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, union ah_sockaddr* local_addr);
-ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, union ah_sockaddr* remote_addr);
+ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* local_addr);
+ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* remote_addr);
 #endif
 
 #endif

@@ -8,7 +8,6 @@
 #define AH_BUF_H_
 
 #include "defs.h"
-#include "err.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -23,13 +22,13 @@ struct ah_buf {
 };
 
 struct ah_bufvec {
-    struct ah_buf* items;
+    ah_buf_t* items;
     size_t length;
 };
 
 #if AH_USE_IOVEC
-ah_extern ah_err_t ah_bufvec_from_iovec(struct ah_bufvec* bufvec, struct iovec* iov, int iovcnt);
-ah_extern ah_err_t ah_bufvec_into_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt);
+ah_extern ah_err_t ah_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt);
+ah_extern ah_err_t ah_bufvec_into_iovec(ah_bufvec_t* bufvec, struct iovec** iov, int* iovcnt);
 #endif
 
 #endif

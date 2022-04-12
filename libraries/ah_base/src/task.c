@@ -7,6 +7,7 @@
 #include "ah/task.h"
 
 #include "ah/assert.h"
+#include "ah/err.h"
 #include "ah/loop-internal.h"
 
 #if AH_USE_KQUEUE
@@ -17,16 +18,16 @@
 
 #define S_STATE_MASK (AH_TASK_STATE_INITIAL | AH_TASK_STATE_SCHEDULED | AH_TASK_STATE_EXECUTED | AH_TASK_STATE_CANCELED)
 
-static void s_cancel(struct ah_task* task);
-static void s_on_execution(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res);
+static void s_cancel(ah_task_t* task);
+static void s_on_execution(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
 
-ah_extern ah_err_t ah_task_init(struct ah_task* task, const struct ah_task_opts* opts)
+ah_extern ah_err_t ah_task_init(ah_task_t* task, const ah_task_opts_t* opts)
 {
     if (task == NULL || opts == NULL || opts->loop == NULL || opts->cb == NULL) {
         return AH_EINVAL;
     }
 
-    *task = (struct ah_task) {
+    *task = (ah_task_t) {
         ._loop = opts->loop,
         ._cb = opts->cb,
         ._data = opts->data,
@@ -36,7 +37,7 @@ ah_extern ah_err_t ah_task_init(struct ah_task* task, const struct ah_task_opts*
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_task_cancel(struct ah_task* task)
+ah_extern ah_err_t ah_task_cancel(ah_task_t* task)
 {
     if (task == NULL) {
         return AH_EINVAL;
@@ -52,7 +53,7 @@ ah_extern ah_err_t ah_task_cancel(struct ah_task* task)
     return AH_ENONE;
 }
 
-static void s_cancel(struct ah_task* task)
+static void s_cancel(ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
 
@@ -98,7 +99,7 @@ static void s_cancel(struct ah_task* task)
     task->_state = AH_TASK_STATE_CANCELED;
 }
 
-ah_extern ah_err_t ah_task_schedule_at(struct ah_task* task, struct ah_time baseline)
+ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline)
 {
     if (task == NULL) {
         return AH_EINVAL;
@@ -109,7 +110,7 @@ ah_extern ah_err_t ah_task_schedule_at(struct ah_task* task, struct ah_time base
 
     ah_err_t err;
 
-    struct ah_i_loop_evt* evt;
+    ah_i_loop_evt_t* evt;
     ah_i_loop_req_t* req;
 
     err = ah_i_loop_alloc_evt_and_req(task->_loop, &evt, &req);
@@ -157,12 +158,12 @@ ah_extern ah_err_t ah_task_schedule_at(struct ah_task* task, struct ah_time base
     return AH_ENONE;
 }
 
-static void s_on_execution(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
+static void s_on_execution(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(res != NULL);
 
-    struct ah_task* task = evt->_body._task_schedule_at._task;
+    ah_task_t* task = evt->_body._task_schedule_at._task;
     ah_assert_if_debug(task != NULL);
 
     if (task->_state == AH_TASK_STATE_CANCELED) {
@@ -189,7 +190,7 @@ static void s_on_execution(struct ah_i_loop_evt* evt, ah_i_loop_res_t* res)
     task->_cb(task, err);
 }
 
-ah_extern ah_err_t ah_task_term(struct ah_task* task)
+ah_extern ah_err_t ah_task_term(ah_task_t* task)
 {
     if (task == NULL) {
         return AH_EINVAL;
@@ -198,7 +199,7 @@ ah_extern ah_err_t ah_task_term(struct ah_task* task)
         s_cancel(task);
     }
 #ifndef NDEBUG
-    *task = (struct ah_task) { 0 };
+    *task = (ah_task_t) { 0 };
 #endif
     return AH_ENONE;
 }

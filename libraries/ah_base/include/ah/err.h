@@ -84,8 +84,6 @@
     E(TXTBSY, ETXTBSY, 6066, "text file busy")                                                                         \
     E(XDEV, EXDEV, 6067, "cross-device link")
 
-typedef int ah_err_t;
-
 enum {
     AH_ENONE = 0,
 

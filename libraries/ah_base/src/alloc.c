@@ -6,6 +6,7 @@
 
 #include "ah/alloc.h"
 
+#include "ah/err.h"
 #include "ah/math.h"
 
 #include <string.h>

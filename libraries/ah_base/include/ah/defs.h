@@ -100,28 +100,32 @@
 #    define ah_unreachable() __assume(0)
 #endif
 
-struct ah_buf;
-struct ah_bufvec;
-struct ah_ipaddr_v4;
-struct ah_ipaddr_v6;
-struct ah_loop;
-struct ah_loop_opts;
-struct ah_sockaddr_any;
-struct ah_sockaddr_ip;
-struct ah_sockaddr_ipv4;
-struct ah_sockaddr_ipv6;
-struct ah_task;
-struct ah_tcp_read_ctx;
-struct ah_tcp_sock;
-struct ah_tcp_write_ctx;
-struct ah_time;
-struct ah_udp_group_ipv4;
-struct ah_udp_group_ipv6;
-struct ah_udp_recv_ctx;
-struct ah_udp_send_ctx;
-struct ah_udp_sock;
+typedef int ah_err_t;
 
-union ah_sockaddr;
-union ah_udp_group;
+typedef struct ah_buf ah_buf_t;
+typedef struct ah_bufvec ah_bufvec_t;
+typedef struct ah_ipaddr_v4 ah_ipaddr_v4_t;
+typedef struct ah_ipaddr_v6 ah_ipaddr_v6_t;
+typedef struct ah_loop ah_loop_t;
+typedef struct ah_loop_opts ah_loop_opts_t;
+typedef struct ah_sockaddr_any ah_sockaddr_any_t;
+typedef struct ah_sockaddr_ip ah_sockaddr_ip_t;
+typedef struct ah_sockaddr_ipv4 ah_sockaddr_ipv4_t;
+typedef struct ah_sockaddr_ipv6 ah_sockaddr_ipv6_t;
+typedef struct ah_task ah_task_t;
+typedef struct ah_task_opts ah_task_opts_t;
+typedef struct ah_tcp_listen_ctx ah_tcp_listen_ctx_t;
+typedef struct ah_tcp_read_ctx ah_tcp_read_ctx_t;
+typedef struct ah_tcp_sock ah_tcp_sock_t;
+typedef struct ah_tcp_write_ctx ah_tcp_write_ctx_t;
+typedef struct ah_time ah_time_t;
+typedef struct ah_udp_group_ipv4 ah_udp_group_ipv4_t;
+typedef struct ah_udp_group_ipv6 ah_udp_group_ipv6_t;
+typedef struct ah_udp_recv_ctx ah_udp_recv_ctx_t;
+typedef struct ah_udp_send_ctx ah_udp_send_ctx_t;
+typedef struct ah_udp_sock ah_udp_sock_t;
+
+typedef union ah_sockaddr ah_sockaddr_t;
+typedef union ah_udp_group ah_udp_group_t;
 
 #endif

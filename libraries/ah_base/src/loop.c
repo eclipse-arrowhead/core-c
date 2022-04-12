@@ -7,6 +7,7 @@
 #include "ah/loop.h"
 
 #include "ah/assert.h"
+#include "ah/err.h"
 #include "ah/loop-internal.h"
 #include "ah/math.h"
 
@@ -28,31 +29,31 @@
 #define S_STATE_TERMINATED  0x10
 
 #define S_EVT_PAGE_SIZE     8192
-#define S_EVT_PAGE_CAPACITY ((S_EVT_PAGE_SIZE / sizeof(struct ah_i_loop_evt)) - 1)
-
-struct ah_i_loop_evt_page {
-    struct ah_i_loop_evt _evt_array[S_EVT_PAGE_CAPACITY];
-    void* _pad[3];
-    struct ah_i_loop_evt_page* _next_page;
-};
+#define S_EVT_PAGE_CAPACITY ((S_EVT_PAGE_SIZE / sizeof(ah_i_loop_evt_t)) - 1)
 
 typedef struct ah_i_loop_evt_page s_evt_page_t;
-typedef struct ah_i_loop_evt s_evt_t;
+typedef ah_i_loop_evt_t s_evt_t;
+
+struct ah_i_loop_evt_page {
+    s_evt_t _evt_array[S_EVT_PAGE_CAPACITY];
+    void* _pad[3];
+    s_evt_page_t* _next_page;
+};
 
 static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, s_evt_page_t** evt_page, s_evt_t** free_list);
 static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, s_evt_page_t** page_list, s_evt_t** free_list);
 static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, s_evt_page_t* evt_page_list);
-static ah_err_t s_get_pending_err(struct ah_loop* loop);
-static ah_err_t s_poll_no_longer_than_until(struct ah_loop* loop, struct ah_time* time);
-static void s_term(struct ah_loop* loop);
+static ah_err_t s_get_pending_err(ah_loop_t* loop);
+static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time);
+static void s_term(ah_loop_t* loop);
 
-ah_err_t ah_loop_init(struct ah_loop* loop, const struct ah_loop_opts* opts)
+ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
 {
     if (loop == NULL) {
         return AH_EINVAL;
     }
 
-    *loop = (struct ah_loop) { 0 };
+    *loop = (ah_loop_t) { 0 };
 
     size_t capacity = (opts != NULL && opts->capacity != 0u) ? opts->capacity : 1024;
     ah_alloc_cb alloc_cb = (opts != NULL && opts->alloc_cb != NULL) ? opts->alloc_cb : realloc;
@@ -227,26 +228,26 @@ static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, s_evt_page_t* evt_page
     }
 }
 
-ah_extern bool ah_loop_is_term(const struct ah_loop* loop)
+ah_extern bool ah_loop_is_term(const ah_loop_t* loop)
 {
     ah_assert(loop != NULL);
 
     return (loop->_state & (S_STATE_TERMINATING | S_STATE_TERMINATED)) != 0;
 }
 
-ah_extern struct ah_time ah_loop_now(const struct ah_loop* loop)
+ah_extern struct ah_time ah_loop_now(const ah_loop_t* loop)
 {
     ah_assert(loop != NULL);
 
     return loop->_now;
 }
 
-ah_extern ah_err_t ah_loop_run(struct ah_loop* loop)
+ah_extern ah_err_t ah_loop_run(ah_loop_t* loop)
 {
     return ah_loop_run_until(loop, NULL);
 }
 
-ah_extern ah_err_t ah_loop_run_until(struct ah_loop* loop, struct ah_time* time)
+ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, struct ah_time* time)
 {
     if (loop == NULL) {
         return AH_EINVAL;
@@ -275,7 +276,7 @@ ah_extern ah_err_t ah_loop_run_until(struct ah_loop* loop, struct ah_time* time)
     return err;
 }
 
-static void s_term(struct ah_loop* loop)
+static void s_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
@@ -295,13 +296,13 @@ static void s_term(struct ah_loop* loop)
 #endif
 
 #ifndef NDEBUG
-    *loop = (struct ah_loop) { 0 };
+    *loop = (ah_loop_t) { 0 };
 #endif
 
     loop->_state = S_STATE_TERMINATED;
 }
 
-static ah_err_t s_poll_no_longer_than_until(struct ah_loop* loop, struct ah_time* time)
+static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time)
 {
     ah_assert_if_debug(loop != NULL);
 
@@ -443,7 +444,7 @@ static ah_err_t s_poll_no_longer_than_until(struct ah_loop* loop, struct ah_time
 #endif
 }
 
-static ah_err_t s_get_pending_err(struct ah_loop* loop)
+static ah_err_t s_get_pending_err(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
@@ -456,7 +457,7 @@ static ah_err_t s_get_pending_err(struct ah_loop* loop)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_loop_stop(struct ah_loop* loop)
+ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop)
 {
     if (loop == NULL) {
         return AH_EINVAL;
@@ -468,7 +469,7 @@ ah_extern ah_err_t ah_loop_stop(struct ah_loop* loop)
     return AH_ENONE;
 }
 
-ah_err_t ah_loop_term(struct ah_loop* loop)
+ah_err_t ah_loop_term(ah_loop_t* loop)
 {
     if (loop == NULL) {
         return AH_EINVAL;
@@ -479,7 +480,7 @@ ah_err_t ah_loop_term(struct ah_loop* loop)
     switch (loop->_state) {
     case S_STATE_INITIAL:
 #ifndef NDEBUG
-        *loop = (struct ah_loop) { 0 };
+        *loop = (ah_loop_t) { 0 };
 #endif
         loop->_state = S_STATE_TERMINATED;
         err = AH_ENONE;
@@ -503,7 +504,7 @@ ah_err_t ah_loop_term(struct ah_loop* loop)
     return err;
 }
 
-ah_err_t ah_i_loop_alloc_evt(struct ah_loop* loop, s_evt_t** evt)
+ah_err_t ah_i_loop_alloc_evt(ah_loop_t* loop, s_evt_t** evt)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
@@ -534,7 +535,7 @@ ah_err_t ah_i_loop_alloc_evt(struct ah_loop* loop, s_evt_t** evt)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_loop_alloc_evt_and_req(struct ah_loop* loop, s_evt_t** evt, ah_i_loop_req_t** req)
+ah_err_t ah_i_loop_alloc_evt_and_req(ah_loop_t* loop, s_evt_t** evt, ah_i_loop_req_t** req)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
@@ -562,7 +563,7 @@ ah_err_t ah_i_loop_alloc_evt_and_req(struct ah_loop* loop, s_evt_t** evt, ah_i_l
     return AH_ENONE;
 }
 
-ah_err_t ah_i_loop_alloc_req(struct ah_loop* loop, ah_i_loop_req_t** req)
+ah_err_t ah_i_loop_alloc_req(ah_loop_t* loop, ah_i_loop_req_t** req)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(req != NULL);
@@ -631,7 +632,7 @@ ah_err_t ah_i_loop_alloc_req(struct ah_loop* loop, ah_i_loop_req_t** req)
 #endif
 }
 
-void ah_i_loop_dealloc_evt(struct ah_loop* loop, s_evt_t* evt)
+void ah_i_loop_dealloc_evt(ah_loop_t* loop, s_evt_t* evt)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
@@ -641,7 +642,7 @@ void ah_i_loop_dealloc_evt(struct ah_loop* loop, s_evt_t* evt)
     loop->_evt_free_list = evt;
 }
 
-bool ah_i_loop_try_set_pending_err(struct ah_loop* loop, ah_err_t err)
+bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err)
 {
     if (ah_loop_is_term(loop)) {
         return false;

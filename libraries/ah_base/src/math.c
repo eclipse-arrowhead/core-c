@@ -6,6 +6,8 @@
 
 #include "ah/math.h"
 
+#include "ah/err.h"
+
 ah_extern ah_err_t ah_add_int64(const int64_t a, const int64_t b, int64_t* result)
 {
     if (result == NULL) {

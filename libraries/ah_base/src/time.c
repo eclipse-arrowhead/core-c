@@ -7,6 +7,7 @@
 #include "ah/time.h"
 
 #include "ah/abort.h"
+#include "ah/err.h"
 #include "ah/math.h"
 
 #include <string.h>
@@ -20,11 +21,11 @@
 #    include <time.h>
 #endif
 
-ah_extern struct ah_time ah_time_now()
+ah_extern ah_time_t ah_time_now()
 {
 #if AH_USE_KQUEUE
 
-    return (struct ah_time) {
+    return (ah_time_t) {
         ._mach_absolute_time = mach_absolute_time(),
     };
 
@@ -37,7 +38,7 @@ ah_extern struct ah_time ah_time_now()
 
     ah_assert_if_debug(sizeof(__kernel_time64_t) >= sizeof(timespec.tv_sec));
 
-    return (struct ah_time) {
+    return (ah_time_t) {
         ._timespec.tv_sec = (__kernel_time64_t) timespec.tv_sec,
         ._timespec.tv_nsec = (long long) timespec.tv_nsec,
     };
@@ -45,7 +46,7 @@ ah_extern struct ah_time ah_time_now()
 #endif
 }
 
-ah_extern ah_err_t ah_time_diff(const struct ah_time a, const struct ah_time b, ah_timediff_t* diff)
+ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timediff_t* diff)
 {
     if (diff == NULL) {
         return AH_EINVAL;
@@ -102,7 +103,7 @@ ah_extern ah_err_t ah_time_diff(const struct ah_time a, const struct ah_time b, 
 #endif
 }
 
-ah_extern bool ah_time_eq(const struct ah_time a, const struct ah_time b)
+ah_extern bool ah_time_eq(const ah_time_t a, const ah_time_t b)
 {
 #if AH_USE_KQUEUE
 
@@ -115,7 +116,7 @@ ah_extern bool ah_time_eq(const struct ah_time a, const struct ah_time b)
 #endif
 }
 
-ah_extern int ah_time_cmp(const struct ah_time a, const struct ah_time b)
+ah_extern int ah_time_cmp(const ah_time_t a, const ah_time_t b)
 {
 #if AH_USE_KQUEUE
 
@@ -152,7 +153,7 @@ ah_extern int ah_time_cmp(const struct ah_time a, const struct ah_time b)
 #endif
 }
 
-ah_extern ah_err_t ah_time_add(const struct ah_time time, const ah_timediff_t diff, struct ah_time* result)
+ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, ah_time_t* result)
 {
     if (result == NULL) {
         return AH_EINVAL;
@@ -173,7 +174,7 @@ ah_extern ah_err_t ah_time_add(const struct ah_time time, const ah_timediff_t di
         return AH_ERANGE;
     }
 
-    *result = (struct ah_time) { ._mach_absolute_time = tmp };
+    *result = (ah_time_t) { ._mach_absolute_time = tmp };
 
     return AH_ENONE;
 
@@ -197,14 +198,14 @@ ah_extern ah_err_t ah_time_add(const struct ah_time time, const ah_timediff_t di
         }
     }
 
-    *result = (struct ah_time) { ._timespec = tmp };
+    *result = (ah_time_t) { ._timespec = tmp };
 
     return AH_ENONE;
 
 #endif
 }
 
-ah_extern ah_err_t ah_time_sub(const struct ah_time time, const ah_timediff_t diff, struct ah_time* result)
+ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, ah_time_t* result)
 {
     if (result == NULL) {
         return AH_EINVAL;
@@ -225,7 +226,7 @@ ah_extern ah_err_t ah_time_sub(const struct ah_time time, const ah_timediff_t di
         return AH_ERANGE;
     }
 
-    *result = (struct ah_time) { ._mach_absolute_time = tmp };
+    *result = (ah_time_t) { ._mach_absolute_time = tmp };
 
     return AH_ENONE;
 
@@ -249,14 +250,14 @@ ah_extern ah_err_t ah_time_sub(const struct ah_time time, const ah_timediff_t di
         }
     }
 
-    *result = (struct ah_time) { ._timespec = tmp };
+    *result = (ah_time_t) { ._timespec = tmp };
 
     return AH_ENONE;
 
 #endif
 }
 
-ah_extern bool ah_time_is_after(const struct ah_time a, const struct ah_time b)
+ah_extern bool ah_time_is_after(const ah_time_t a, const ah_time_t b)
 {
 #if AH_USE_KQUEUE
 
@@ -270,7 +271,7 @@ ah_extern bool ah_time_is_after(const struct ah_time a, const struct ah_time b)
 #endif
 }
 
-ah_extern bool ah_time_is_before(const struct ah_time a, const struct ah_time b)
+ah_extern bool ah_time_is_before(const ah_time_t a, const ah_time_t b)
 {
 #if AH_USE_KQUEUE
 
@@ -284,7 +285,7 @@ ah_extern bool ah_time_is_before(const struct ah_time a, const struct ah_time b)
 #endif
 }
 
-ah_extern bool ah_time_is_zero(const struct ah_time time)
+ah_extern bool ah_time_is_zero(const ah_time_t time)
 {
 #if AH_USE_KQUEUE
 

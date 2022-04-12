@@ -9,14 +9,14 @@
 #include "ah/err.h"
 #include "ah/unit.h"
 
-static void s_should_avoid_add_overflows(struct ah_unit* unit);
-static void s_should_avoid_mul_overflows(struct ah_unit* unit);
-static void s_should_avoid_sub_overflows(struct ah_unit* unit);
-static void s_should_detect_add_overflows(struct ah_unit* unit);
-static void s_should_detect_mul_overflows(struct ah_unit* unit);
-static void s_should_detect_sub_overflows(struct ah_unit* unit);
+static void s_should_avoid_add_overflows(ah_unit_t* unit);
+static void s_should_avoid_mul_overflows(ah_unit_t* unit);
+static void s_should_avoid_sub_overflows(ah_unit_t* unit);
+static void s_should_detect_add_overflows(ah_unit_t* unit);
+static void s_should_detect_mul_overflows(ah_unit_t* unit);
+static void s_should_detect_sub_overflows(ah_unit_t* unit);
 
-void test_math(struct ah_unit* unit)
+void test_math(ah_unit_t* unit)
 {
     s_should_avoid_add_overflows(unit);
     s_should_avoid_mul_overflows(unit);
@@ -26,7 +26,7 @@ void test_math(struct ah_unit* unit)
     s_should_detect_sub_overflows(unit);
 }
 
-static void s_should_avoid_add_overflows(struct ah_unit* unit)
+static void s_should_avoid_add_overflows(ah_unit_t* unit)
 {
     ah_err_t err;
     {
@@ -45,21 +45,21 @@ static void s_should_avoid_add_overflows(struct ah_unit* unit)
     }
     {
         size_t result = 2u;
-        err = ah_add_size(SIZE_MAX / 2, SIZE_MAX / 2 + 1, &result);
+        err = ah_add_size(SIZE_MAX / 2u, SIZE_MAX / 2u + 1u, &result);
         if (ah_unit_assert_enum_eq(unit, err, AH_ENONE, ah_strerror)) {
             (void) ah_unit_assert_unsigned_eq(unit, result, SIZE_MAX);
         }
     }
     {
         uint64_t result = 3u;
-        err = ah_add_uint64(UINT64_MAX - 1, 1, &result);
+        err = ah_add_uint64(UINT64_MAX - 1u, 1u, &result);
         if (ah_unit_assert_enum_eq(unit, err, AH_ENONE, ah_strerror)) {
             (void) ah_unit_assert_unsigned_eq(unit, result, UINT64_MAX);
         }
     }
 }
 
-static void s_should_avoid_mul_overflows(struct ah_unit* unit)
+static void s_should_avoid_mul_overflows(ah_unit_t* unit)
 {
     ah_err_t err;
     {
@@ -82,21 +82,21 @@ static void s_should_avoid_mul_overflows(struct ah_unit* unit)
     }
     {
         size_t result = 2u;
-        err = ah_mul_size(SIZE_MAX / 2, 2, &result);
+        err = ah_mul_size(SIZE_MAX / 2u, 2u, &result);
         if (ah_unit_assert_enum_eq(unit, err, AH_ENONE, ah_strerror)) {
             (void) ah_unit_assert_unsigned_eq(unit, result, SIZE_MAX - 1);
         }
     }
     {
         uint64_t result = 3u;
-        err = ah_mul_uint64(UINT64_MAX / 2, 2, &result);
+        err = ah_mul_uint64(UINT64_MAX / 2u, 2u, &result);
         if (ah_unit_assert_enum_eq(unit, err, AH_ENONE, ah_strerror)) {
             (void) ah_unit_assert_unsigned_eq(unit, result, UINT64_MAX - 1);
         }
     }
 }
 
-static void s_should_avoid_sub_overflows(struct ah_unit* unit)
+static void s_should_avoid_sub_overflows(ah_unit_t* unit)
 {
     ah_err_t err;
     {
@@ -129,7 +129,7 @@ static void s_should_avoid_sub_overflows(struct ah_unit* unit)
     }
 }
 
-static void s_should_detect_add_overflows(struct ah_unit* unit)
+static void s_should_detect_add_overflows(ah_unit_t* unit)
 {
     ah_err_t err;
     {
@@ -144,17 +144,17 @@ static void s_should_detect_add_overflows(struct ah_unit* unit)
     }
     {
         size_t result;
-        err = ah_add_size(SIZE_MAX - 2, 3, &result);
+        err = ah_add_size(SIZE_MAX - 2u, 3u, &result);
         (void) ah_unit_assert_enum_eq(unit, err, AH_ERANGE, ah_strerror);
     }
     {
         uint64_t result;
-        err = ah_add_uint64(UINT64_MAX - 6, 7, &result);
+        err = ah_add_uint64(UINT64_MAX - 6u, 7u, &result);
         (void) ah_unit_assert_enum_eq(unit, err, AH_ERANGE, ah_strerror);
     }
 }
 
-static void s_should_detect_mul_overflows(struct ah_unit* unit)
+static void s_should_detect_mul_overflows(ah_unit_t* unit)
 {
     ah_err_t err;
     {
@@ -169,17 +169,17 @@ static void s_should_detect_mul_overflows(struct ah_unit* unit)
     }
     {
         size_t result;
-        err = ah_mul_size(SIZE_MAX / 5, 6, &result);
+        err = ah_mul_size(SIZE_MAX / 5u, 6u, &result);
         (void) ah_unit_assert_enum_eq(unit, err, AH_ERANGE, ah_strerror);
     }
     {
         uint64_t result;
-        err = ah_mul_uint64(UINT64_MAX / 19, 20, &result);
+        err = ah_mul_uint64(UINT64_MAX / 19u, 20u, &result);
         (void) ah_unit_assert_enum_eq(unit, err, AH_ERANGE, ah_strerror);
     }
 }
 
-static void s_should_detect_sub_overflows(struct ah_unit* unit)
+static void s_should_detect_sub_overflows(ah_unit_t* unit)
 {
     ah_err_t err;
     {
@@ -194,12 +194,12 @@ static void s_should_detect_sub_overflows(struct ah_unit* unit)
     }
     {
         size_t result;
-        err = ah_sub_size(SIZE_MAX - 2, SIZE_MAX - 1, &result);
+        err = ah_sub_size(SIZE_MAX - 2u, SIZE_MAX - 1u, &result);
         (void) ah_unit_assert_enum_eq(unit, err, AH_ERANGE, ah_strerror);
     }
     {
         uint64_t result;
-        err = ah_sub_uint64(UINT64_MAX - 6, UINT64_MAX - 5, &result);
+        err = ah_sub_uint64(UINT64_MAX - 6u, UINT64_MAX - 5u, &result);
         (void) ah_unit_assert_enum_eq(unit, err, AH_ERANGE, ah_strerror);
     }
 }

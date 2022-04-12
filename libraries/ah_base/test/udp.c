@@ -13,21 +13,21 @@
 #include "ah/unit.h"
 
 struct s_udp_user_data {
-    struct ah_buf* free_buf;
+    ah_buf_t* free_buf;
 
     bool _did_alloc;
     bool _did_receive;
     bool _did_send;
 
-    struct ah_unit* unit;
+    ah_unit_t* unit;
 };
 
-static void s_should_send_and_receive_data(struct ah_unit* unit);
+static void s_should_send_and_receive_data(ah_unit_t* unit);
 #if AH_USE_BSD_SOCKETS
-static void s_should_use_same_data_layout_as_platform_mreq(struct ah_unit* unit);
+static void s_should_use_same_data_layout_as_platform_mreq(ah_unit_t* unit);
 #endif
 
-void test_udp(struct ah_unit* unit)
+void test_udp(ah_unit_t* unit)
 {
     s_should_send_and_receive_data(unit);
 #if AH_USE_BSD_SOCKETS
@@ -35,7 +35,7 @@ void test_udp(struct ah_unit* unit)
 #endif
 }
 
-static void s_on_alloc(struct ah_udp_sock* sock, struct ah_bufvec* bufvec, size_t size)
+static void s_on_alloc(ah_udp_sock_t* sock, ah_bufvec_t* bufvec, size_t size)
 {
     (void) size;
 
@@ -44,7 +44,7 @@ static void s_on_alloc(struct ah_udp_sock* sock, struct ah_bufvec* bufvec, size_
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -66,15 +66,14 @@ static void s_on_alloc(struct ah_udp_sock* sock, struct ah_bufvec* bufvec, size_
     user_data->_did_alloc = true;
 }
 
-static void s_on_recv(struct ah_udp_sock* sock, union ah_sockaddr* remote_addr, struct ah_bufvec* bufvec, size_t size,
-    ah_err_t err)
+static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufvec_t* bufvec, size_t size, ah_err_t err)
 {
     struct s_udp_user_data* user_data = ah_udp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -107,14 +106,14 @@ static void s_on_recv(struct ah_udp_sock* sock, union ah_sockaddr* remote_addr, 
     user_data->_did_receive = true;
 }
 
-static void s_on_send(struct ah_udp_sock* sock, ah_err_t err)
+static void s_on_send(ah_udp_sock_t* sock, ah_err_t err)
 {
     struct s_udp_user_data* user_data = ah_udp_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
 
-    struct ah_unit* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
     if (unit == NULL) {
         return;
     }
@@ -126,7 +125,7 @@ static void s_on_send(struct ah_udp_sock* sock, ah_err_t err)
     user_data->_did_send = true;
 }
 
-static void s_should_send_and_receive_data(struct ah_unit* unit)
+static void s_should_send_and_receive_data(ah_unit_t* unit)
 {
     ah_err_t err;
 
@@ -135,7 +134,7 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
     uint8_t recv_buf_octets[24] = { 0u };
 
     struct s_udp_user_data user_data = {
-        .free_buf = &(struct ah_buf) {
+        .free_buf = &(ah_buf_t) {
             .octets = recv_buf_octets,
             .size = sizeof(recv_buf_octets),
         },
@@ -144,11 +143,11 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
 
     // Setup receiver.
 
-    struct ah_loop recv_loop;
-    struct ah_udp_sock recv_sock;
-    union ah_sockaddr recv_addr;
+    ah_loop_t recv_loop;
+    ah_udp_sock_t recv_sock;
+    ah_sockaddr_t recv_addr;
 
-    err = ah_loop_init(&recv_loop, &(struct ah_loop_opts) { .capacity = 4 });
+    err = ah_loop_init(&recv_loop, &(ah_loop_opts_t) { .capacity = 4 });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -169,7 +168,7 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
     // Receive data.
 
     err = ah_udp_recv_start(&recv_sock,
-        &(struct ah_udp_recv_ctx) {
+        &(ah_udp_recv_ctx_t) {
             .alloc_cb = s_on_alloc,
             .recv_cb = s_on_recv,
         });
@@ -179,11 +178,11 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
 
     // Setup sender.
 
-    struct ah_loop send_loop;
-    struct ah_udp_sock send_sock;
-    union ah_sockaddr send_addr;
+    ah_loop_t send_loop;
+    ah_udp_sock_t send_sock;
+    ah_sockaddr_t send_addr;
 
-    err = ah_loop_init(&send_loop, &(struct ah_loop_opts) { .capacity = 4 });
+    err = ah_loop_init(&send_loop, &(ah_loop_opts_t) { .capacity = 4 });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -199,10 +198,10 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
     // Send data.
 
     err = ah_udp_send(&send_sock,
-        &(struct ah_udp_send_ctx) {
+        &(ah_udp_send_ctx_t) {
             .remote_addr = recv_addr,
-            .bufvec = (struct ah_bufvec) {
-                .items = &(struct ah_buf) {
+            .bufvec = (ah_bufvec_t) {
+                .items = &(ah_buf_t) {
                     .octets = (uint8_t*) "Hello, Arrowhead!",
                     .size = 18u,
                 },
@@ -253,23 +252,23 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
 }
 
 #if AH_USE_BSD_SOCKETS
-static void s_should_use_same_data_layout_as_platform_mreq(struct ah_unit* unit)
+static void s_should_use_same_data_layout_as_platform_mreq(ah_unit_t* unit)
 {
 #    define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)                                          \
         ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2));                            \
         ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
 
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_udp_group_ipv4, group_addr, struct ip_mreq, imr_multiaddr);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_udp_group_ipv4, interface_addr, struct ip_mreq, imr_interface);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_udp_group_ipv4_t, group_addr, struct ip_mreq, imr_multiaddr);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_udp_group_ipv4_t, interface_addr, struct ip_mreq, imr_interface);
 
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_udp_group_ipv6, group_addr, struct ipv6_mreq, ipv6mr_multiaddr);
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, struct ah_udp_group_ipv6, zone_id, struct ipv6_mreq, ipv6mr_interface);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_udp_group_ipv6_t, group_addr, struct ipv6_mreq, ipv6mr_multiaddr);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_udp_group_ipv6_t, zone_id, struct ipv6_mreq, ipv6mr_interface);
 
-    ah_unit_assert(unit, sizeof(struct ah_udp_group_ipv4) >= sizeof(struct ip_mreq),
-        "struct ah_udp_group_ipv4 seems to be missing fields");
+    ah_unit_assert(unit, sizeof(ah_udp_group_ipv4_t) >= sizeof(struct ip_mreq),
+        "ah_udp_group_ipv4_t seems to be missing fields");
 
-    ah_unit_assert(unit, sizeof(struct ah_udp_group_ipv6) >= sizeof(struct ipv6_mreq),
-        "struct ah_udp_group_ipv4 seems to be missing fields");
+    ah_unit_assert(unit, sizeof(ah_udp_group_ipv6_t) >= sizeof(struct ipv6_mreq),
+        "ah_udp_group_ipv4_t seems to be missing fields");
 
 #    undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
 }
