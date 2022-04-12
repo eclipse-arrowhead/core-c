@@ -104,9 +104,9 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
     };
     ah_udp_set_user_data(&recv_sock, &recv_sock_data);
 
-    union ah_sockaddr recv_addr = (union ah_sockaddr) {
-        .as_ipv4 = {.family = AH_SOCKFAMILY_IPV4, .port = 0u, .ipaddr = ah_ipaddr_v4_loopback}
-    };
+    union ah_sockaddr recv_addr;
+    ah_sockaddr_init_ipv4(&recv_addr, 0u, &ah_ipaddr_v4_loopback);
+
     err = ah_udp_open(&recv_sock, &recv_addr, NULL);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
@@ -133,9 +133,9 @@ static void s_should_send_and_receive_data(struct ah_unit* unit)
         return;
     }
 
-    union ah_sockaddr send_addr = (union ah_sockaddr) {
-        .as_ipv4 = {.family = AH_SOCKFAMILY_IPV4, .port = 0u, .ipaddr = ah_ipaddr_v4_loopback}
-    };
+    union ah_sockaddr send_addr;
+    ah_sockaddr_init_ipv4(&send_addr, 0u, &ah_ipaddr_v4_loopback);
+
     err = ah_udp_open(&send_sock, &send_addr, NULL);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;

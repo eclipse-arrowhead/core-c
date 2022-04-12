@@ -82,6 +82,9 @@ union ah_sockaddr {
     struct ah_sockaddr_ipv6 as_ipv6;
 };
 
+ah_extern void ah_sockaddr_init_ipv4(union ah_sockaddr* sockaddr, uint16_t port, const struct ah_ipaddr_v4* ipaddr);
+ah_extern void ah_sockaddr_init_ipv6(union ah_sockaddr* sockaddr, uint16_t port, const struct ah_ipaddr_v6* ipaddr);
+
 ah_extern bool ah_sockaddr_is_ip(const union ah_sockaddr* sockaddr);
 ah_extern bool ah_sockaddr_is_ip_wildcard(const union ah_sockaddr* sockaddr);
 ah_extern bool ah_sockaddr_is_ip_with_port_zero(const union ah_sockaddr* sockaddr);
