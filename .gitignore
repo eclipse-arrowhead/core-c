@@ -1,4 +1,7 @@
 .idea/
+.vs/
+/out/
 *-build/
 *-build-*/
 .DS_Store
+CMakeSettings.json

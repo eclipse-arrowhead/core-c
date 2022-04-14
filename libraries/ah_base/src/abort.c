@@ -12,6 +12,8 @@
 
 #if AH_USE_POSIX
 #    include <unistd.h>
+#else
+#    include <signal.h>
 #endif
 
 ah_extern void ah_abort()
@@ -24,6 +26,10 @@ ah_extern void ah_abort()
     (void) sigprocmask(SIG_UNBLOCK, &act.sa_mask, NULL);
 
     (void) kill(getpid(), SIGABRT);
+
+#else
+
+    raise(SIGABRT);
 
 #endif
 

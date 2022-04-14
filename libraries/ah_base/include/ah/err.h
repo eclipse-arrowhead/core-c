@@ -9,88 +9,170 @@
 
 #include "defs.h"
 
-#include <errno.h>
+#if AH_IS_WIN32
+#    include <winerror.h>
+#else
+#    include <errno.h>
+#endif
+
+#if AH_IS_WIN32
+#    define AH_I_ERR_MAP_EXTRAS
+
+#else
+#    define AH_I_ERR_MAP_EXTRAS                                                                                        \
+        E(2BIG, E2BIG, 6000, "argument list too long")                                                                 \
+        E(AGAIN, EAGAIN, 6005, "try again")                                                                            \
+        E(BADMSG, EBADMSG, 6008, "bad message")                                                                        \
+        E(BUSY, EBUSY, WSAEBUSY, "busy")                                                                               \
+        E(CANCELED, ECANCELED, WSAECANCELED, "canceled")                                                               \
+        E(CHILD, ECHILD, WSAECHILD, "no child processes")                                                              \
+        E(DEADLK, EDEADLK, WSAEDEADLK, "deadlock would occur")                                                         \
+        E(DOM, EDOM, WSAEDOM, "arithmetic argument outside accepted domain")                                           \
+        E(EXIST, EEXIST, WSAEEXIST, "already exists")                                                                  \
+        E(FBIG, EFBIG, WSAEFBIG, "file too large")                                                                     \
+        E(IDRM, EIDRM, WSAEIDRM, "identifier removed")                                                                 \
+        E(ILSEQ, EILSEQ, WSAEILSEQ, "illegal byte sequence")                                                           \
+        E(IO, EIO, WSAEIO, "I/O error")                                                                                \
+        E(ISDIR, EISDIR, WSAEISDIR, "is directory")                                                                    \
+        E(MLINK, EMLINK, WSAEMLINK, "too many links")                                                                  \
+        E(NFILE, ENFILE, WSAENFILE, "platform file table full")                                                        \
+        E(NODATA, ENODATA, WSAENODATA, "no data available")                                                            \
+        E(NODEV, ENODEV, WSAENODEV, "no such device")                                                                  \
+        E(NOENT, ENOENT, WSAENOENT, "no such entry")                                                                   \
+        E(NOEXEC, ENOEXEC, WSAENOEXEC, "not a valid executable")                                                       \
+        E(NOLCK, ENOLCK, WSAENOLCK, "no locks available")                                                              \
+        E(NOMSG, ENOMSG, WSAENOMSG, "no message of the desired type")                           \
+
+#endif
 
 #define AH_I_ERR_MAP(E)                                                                                                \
     E(EOF, 5000, 5000, "unexpected end of stream")                                                                     \
     E(STATE, 5001, 5001, "state invalid")                                                                              \
                                                                                                                        \
-    E(2BIG, E2BIG, 6000, "argument list too long")                                                                     \
-    E(ACCES, EACCES, 6001, "permission denied")                                                                        \
-    E(ADDRINUSE, EADDRINUSE, 6002, "address in use")                                                                   \
-    E(ADDRNOTAVAIL, EADDRNOTAVAIL, 6003, "address not available")                                                      \
-    E(AFNOSUPPORT, EAFNOSUPPORT, 6004, "address family not supported")                                                 \
-    E(AGAIN, EAGAIN, 6005, "try again")                                                                                \
-    E(ALREADY, EALREADY, 6006, "already in progress")                                                                  \
-    E(BADF, EBADF, 6007, "bad file descriptor")                                                                        \
-    E(BADMSG, EBADMSG, 6008, "bad message")                                                                            \
-    E(BUSY, EBUSY, 6009, "busy")                                                                                       \
-    E(CANCELED, ECANCELED, 6010, "canceled")                                                                           \
-    E(CHILD, ECHILD, 6011, "no child processes")                                                                       \
-    E(CONNABORTED, ECONNABORTED, 6012, "connection aborted")                                                           \
-    E(CONNREFUSED, ECONNREFUSED, 6013, "connection refused")                                                           \
-    E(CONNRESET, ECONNRESET, 6014, "connection reset")                                                                 \
-    E(DEADLK, EDEADLK, 6015, "deadlock would occur")                                                                   \
-    E(DESTADDRREQ, EDESTADDRREQ, 6016, "destination address required")                                                 \
-    E(DOM, EDOM, 6017, "arithmetic argument outside accepted domain")                                                  \
-    E(EXIST, EEXIST, 6018, "already exists")                                                                           \
-    E(FAULT, EFAULT, 6019, "bad address")                                                                              \
-    E(FBIG, EFBIG, 6020, "file too large")                                                                             \
-    E(HOSTUNREACH, EHOSTUNREACH, 6021, "host unreachable")                                                             \
-    E(IDRM, EIDRM, 6022, "identifier removed")                                                                         \
-    E(ILSEQ, EILSEQ, 6023, "illegal byte sequence")                                                                    \
-    E(INPROGRESS, EINPROGRESS, 6024, "already in progress")                                                            \
-    E(INTR, EINTR, 6025, "interrupted")                                                                                \
-    E(INVAL, EINVAL, 6026, "invalid argument")                                                                         \
-    E(IO, EIO, 6027, "I/O error")                                                                                      \
-    E(ISCONN, EISCONN, 6028, "is connected")                                                                           \
-    E(ISDIR, EISDIR, 6029, "is directory")                                                                             \
-    E(LOOP, ELOOP, 6030, "symbolic links loop")                                                                        \
-    E(MFILE, EMFILE, 6031, "process file table full")                                                                  \
-    E(MLINK, EMLINK, 6032, "too many links")                                                                           \
-    E(MSGSIZE, EMSGSIZE, 6033, "message too large")                                                                    \
-    E(NAMETOOLONG, ENAMETOOLONG, 6034, "filename too long")                                                            \
-    E(NETDOWN, ENETDOWN, 6035, "network down")                                                                         \
-    E(NETRESET, ENETRESET, 6036, "connection reset by network")                                                        \
-    E(NETUNREACH, ENETUNREACH, 6037, "network unreachable")                                                            \
-    E(NFILE, ENFILE, 6038, "platform file table full")                                                                 \
-    E(NOBUFS, ENOBUFS, 6039, "no buffer space available")                                                              \
-    E(NODATA, ENODATA, 6040, "no data available")                                                                      \
-    E(NODEV, ENODEV, 6041, "no such device")                                                                           \
-    E(NOENT, ENOENT, 6042, "no such entry")                                                                            \
-    E(NOEXEC, ENOEXEC, 6043, "not a valid executable")                                                                 \
-    E(NOLCK, ENOLCK, 6044, "no locks available")                                                                       \
-    E(NOMEM, ENOMEM, 6045, "not enough memory")                                                                        \
-    E(NOMSG, ENOMSG, 6046, "no message of the desired type")                                                           \
-    E(NOPROTOOPT, ENOPROTOOPT, 6047, "protocol not available")                                                         \
-    E(NOSPC, ENOSPC, 6048, "not enough space")                                                                         \
-    E(NOTCONN, ENOTCONN, 6049, "not connected")                                                                        \
-    E(NOTDIR, ENOTDIR, 6050, "not a directory")                                                                        \
-    E(NOTEMPTY, ENOTEMPTY, 6051, "not empty")                                                                          \
-    E(NOTSOCK, ENOTSOCK, 6052, "not a socket")                                                                         \
-    E(NOTSUP, ENOTSUP, 6053, "not supported")                                                                          \
-    E(NXIO, ENXIO, 6054, "no such device or address")                                                                  \
-    E(OVERFLOW, EOVERFLOW, 6055, "value too large to fit in target")                                                   \
-    E(PERM, EPERM, 6056, "not permitted")                                                                              \
-    E(PROTO, EPROTO, 6057, "protocol error")                                                                           \
-    E(PROTONOSUPPORT, EPROTONOSUPPORT, 6058, "protocol not supported")                                                 \
-    E(PROTOTYPE, EPROTOTYPE, 6059, "wrong protocol type")                                                              \
-    E(RANGE, ERANGE, 6060, "arithmetic result outside accepted range")                                                 \
-    E(ROFS, EROFS, 6061, "read-only file system")                                                                      \
-    E(SPIPE, ESPIPE, 6062, "invalid seek")                                                                             \
-    E(SRCH, ESRCH, 6063, "not found")                                                                                  \
-    E(TIME, ETIME, 6064, "expired")                                                                                    \
-    E(TIMEDOUT, ETIMEDOUT, 6065, "timed out")                                                                          \
-    E(TXTBSY, ETXTBSY, 6066, "text file busy")                                                                         \
-    E(XDEV, EXDEV, 6067, "cross-device link")
+    E(ACCES, EACCES, WSAEACCES, "permission denied")                                                                   \
+    E(ADDRINUSE, EADDRINUSE, WSAEADDRINUSE, "address in use")                                                          \
+    E(ADDRNOTAVAIL, EADDRNOTAVAIL, WSAEADDRNOTAVAIL, "address not available")                                          \
+    E(AFNOSUPPORT, EAFNOSUPPORT, WSAEAFNOSUPPORT, "address family not supported")                                      \
+    E(ALREADY, EALREADY, WSAEALREADY, "already in progress")                                                           \
+    E(BADF, EBADF, WSAEBADF, "bad file descriptor")                                                                    \
+    E(CONNABORTED, ECONNABORTED, WSAECONNABORTED, "connection aborted")                                                \
+    E(CONNREFUSED, ECONNREFUSED, WSAECONNREFUSED, "connection refused")                                                \
+    E(CONNRESET, ECONNRESET, WSAECONNRESET, "connection reset")                                                        \
+    E(DESTADDRREQ, EDESTADDRREQ, WSAEDESTADDRREQ, "destination address required")                                      \
+    E(FAULT, EFAULT, WSAEFAULT, "bad address")                                                                         \
+    E(HOSTUNREACH, EHOSTUNREACH, WSAEHOSTUNREACH, "host unreachable")                                                  \
+    E(INPROGRESS, EINPROGRESS, WSAEINPROGRESS, "already in progress")                                                  \
+    E(INTR, EINTR, WSAEINTR, "interrupted")                                                                            \
+    E(INVAL, EINVAL, WSAEINVAL, "invalid argument")                                                                    \
+    E(ISCONN, EISCONN, WSAEISCONN, "is connected")                                                                     \
+    E(LOOP, ELOOP, WSAELOOP, "symbolic links loop")                                                                    \
+    E(MFILE, EMFILE, WSAEMFILE, "process file table full")                                                             \
+    E(MSGSIZE, EMSGSIZE, WSAEMSGSIZE, "message too large")                                                             \
+    E(NAMETOOLONG, ENAMETOOLONG, WSAENAMETOOLONG, "filename too long")                                                 \
+    E(NETDOWN, ENETDOWN, WSAENETDOWN, "network down")                                                                  \
+    E(NETRESET, ENETRESET, WSAENETRESET, "connection reset by network")                                                \
+    E(NETUNREACH, ENETUNREACH, WSAENETUNREACH, "network unreachable")                                                  \
+    E(NOBUFS, ENOBUFS, WSAENOBUFS, "no buffer space available")                                                        \
+    E(NOMEM, ENOMEM, WSA_NOT_ENOUGH_MEMORY, "not enough memory")                                                       \
+    E(NOPROTOOPT, ENOPROTOOPT, WSAENOPROTOOPT, "protocol not available")                                               \
+    E(NOSPC, ENOSPC, WSAENOSPC, "not enough space")                                                                    \
+    E(NOTCONN, ENOTCONN, WSAENOTCONN, "not connected")                                                                 \
+    E(NOTDIR, ENOTDIR, WSAENOTDIR, "not a directory")                                                                  \
+    E(NOTEMPTY, ENOTEMPTY, WSAENOTEMPTY, "not empty")                                                                  \
+    E(NOTSOCK, ENOTSOCK, WSAENOTSOCK, "not a socket")                                                                  \
+    E(NOTSUP, ENOTSUP, WSAENOTSUP, "not supported")                                                                    \
+    E(NXIO, ENXIO, WSAENXIO, "no such device or address")                                                              \
+    E(OVERFLOW, EOVERFLOW, WSAEOVERFLOW, "value too large to fit in target")                                           \
+    E(PERM, EPERM, WSAEPERM, "not permitted")                                                                          \
+    E(PROTO, EPROTO, WSAEPROTO, "protocol error")                                                                      \
+    E(PROTONOSUPPORT, EPROTONOSUPPORT, WSAEPROTONOSUPPORT, "protocol not supported")                                   \
+    E(PROTOTYPE, EPROTOTYPE, WSAEPROTOTYPE, "wrong protocol type")                                                     \
+    E(RANGE, ERANGE, WSAERANGE, "arithmetic result outside accepted range")                                            \
+    E(ROFS, EROFS, WSAEROFS, "read-only file system")                                                                  \
+    E(SPIPE, ESPIPE, WSAESPIPE, "invalid seek")                                                                        \
+    E(SRCH, ESRCH, WSAESRCH, "not found")                                                                              \
+    E(TIME, ETIME, WSAETIME, "expired")                                                                                \
+    E(TIMEDOUT, ETIMEDOUT, WSAETIMEDOUT, "timed out")                                                                  \
+    E(TXTBSY, ETXTBSY, WSAETXTBSY, "text file busy")                                                                   \
+    E(XDEV, EXDEV, WSAEXDEV, "cross-device link")
+
+// WSA_INVALID_HANDLE
+// WSA_NOT_ENOUGH_MEMORY
+// WSA_INVALID_PARAMETER
+// WSA_OPERATION_ABORTED
+// WSA_IO_INCOMPLETE
+// WSA_IO_PENDING
+// WSAEINTR
+// WSAEBADF
+// WSAEACCES
+// WSAEFAULT
+// WSAEINVAL
+// WSAEMFILE
+// WSAEWOULDBLOCK
+// WSAEINPROGRESS
+// WSAEALREADY
+// WSAENOTSOCK
+// WSAEDESTADDRREQ
+// WSAEMSGSIZE
+// WSAEPROTOTYPE
+// WSAENOPROTOOPT
+// WSAEPROTONOSUPPORT
+// WSAESOCKTNOSUPPORT
+// WSAEOPNOTSUPP
+// WSAEPFNOSUPPORT
+// WSAEAFNOSUPPORT
+// WSAEADDRINUSE
+// WSAEADDRNOTAVAIL
+// WSAENETDOWN
+// WSAENETUNREACH
+// WSAENETRESET
+// WSAECONNABORTED
+// WSAECONNRESET
+// WSAENOBUFS
+// WSAEISCONN
+// WSAENOTCONN
+// WSAESHUTDOWN
+// WSAETOOMANYREFS
+// WSAETIMEDOUT
+// WSAECONNREFUSED
+// WSAELOOP
+// WSAENAMETOOLONG
+// WSAEHOSTDOWN
+// WSAEHOSTUNREACH
+// WSAENOTEMPTY
+// WSAEPROCLIM
+// WSAEUSERS
+// WSAEDQUOT
+// WSAESTALE
+// WSAEREMOTE
+// WSASYSNOTREADY
+// WSAVERNOTSUPPORTED
+// WSANOTINITIALISED
+// WSAEDISCON
+// WSAENOMORE
+// WSAECANCELLED
+// WSAEINVALIDPROCTABLE
+// WSAEINVALIDPROVIDER
+// WSAEPROVIDERFAILEDINIT
+// WSASYSCALLFAILURE
+// WSASERVICE_NOT_FOUND
+// WSATYPE_NOT_FOUND
+// WSA_E_NO_MORE
+// WSA_E_CANCELLED
+// WSAEREFUSED
+// WSAHOST_NOT_FOUND
+// WSATRY_AGAIN
+// WSANO_RECOVERY
+// WSANO_DATA
+
 
 enum {
     AH_ENONE = 0,
 
 #if AH_USE_POSIX
-#    define AH_I_ERR_E(NAME, POSIX_CODE, FALLBACK_CODE, STRING) AH_E##NAME = (POSIX_CODE),
-#else
-#    define AH_I_ERR_E(NAME, POSIX_CODE, FALLBACK_CODE, STRING) AH_E##NAME = (FALLBACK_CODE),
+#    define AH_I_ERR_E(NAME, POSIX_CODE, WIN32_CODE, STRING) AH_E##NAME = (POSIX_CODE),
+#elif AH_USE_WIN32
+#    define AH_I_ERR_E(NAME, POSIX_CODE, WIN32_CODE, STRING) AH_E##NAME = (WIN32_CODE),
 #endif
 
     AH_I_ERR_MAP(AH_I_ERR_E)

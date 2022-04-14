@@ -89,9 +89,9 @@
 #elif AH_VIA_MSVC
 #    include <intrin.h>
 
-#    define ah_extern
+#    define ah_extern        __declspec(dllexport)
 #    define ah_extern_inline static inline
-#    define ah_noreturn      __declspec__((noreturn))
+#    define ah_noreturn      __declspec(noreturn)
 #    define ah_unused
 
 #    define ah_likely(expr)
