@@ -27,6 +27,7 @@ ah_extern const char* ah_strerror(ah_err_t err)
 
         AH_I_ERR_MAP(AH_I_ERR_E, AH_I_ERR_P)
 
+#undef AH_I_ERR_P
 #undef AH_I_ERR_E
 
     default:
