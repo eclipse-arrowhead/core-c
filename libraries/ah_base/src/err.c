@@ -20,7 +20,12 @@ ah_extern const char* ah_strerror(ah_err_t err)
         string = (STRING);                                                                                             \
         break;
 
-        AH_I_ERR_MAP(AH_I_ERR_E)
+#define AH_I_ERR_P(NAME, CODE, STRING)                                                                                 \
+    case AH_E##NAME:                                                                                                   \
+        string = (STRING);                                                                                             \
+        break;
+
+        AH_I_ERR_MAP(AH_I_ERR_E, AH_I_ERR_P)
 
 #undef AH_I_ERR_E
 
