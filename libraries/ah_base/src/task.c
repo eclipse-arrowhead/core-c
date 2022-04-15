@@ -180,10 +180,6 @@ static void s_on_execution(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     err = (res->res != 0 && res->res != -ETIME) ? -res->res : AH_ENONE;
 
-#else
-
-    err = AH_ENOIMPL;
-
 #endif
 
     task->_state = AH_TASK_STATE_EXECUTED;

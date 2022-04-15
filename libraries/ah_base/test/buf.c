@@ -20,6 +20,8 @@ void test_buf(ah_unit_t* unit)
 {
 #if AH_USE_IOVEC
     s_should_use_same_data_layout_as_platform_iovec(unit);
+#else
+    (void) unit;
 #endif
 }
 

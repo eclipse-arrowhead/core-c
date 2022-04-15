@@ -10,9 +10,15 @@
 #include "ah/defs.h"
 #include "ah/err.h"
 
+#include <stdint.h>
+
 #if AH_USE_BSD_SOCKETS
-#    if AH_USE_IOCP
-#        include <winsock2.h>
+#    if AH_IS_WIN32
+#        if !defined(_WINSOCKAPI_)
+#            define _WINSOCKAPI_
+#            include <Windows.h>
+#            include <Winsock2.h>
+#        endif
 #    else
 #        include <netinet/in.h>
 #    endif
@@ -20,7 +26,7 @@
 #    define AH_I_SOCK_DGRAM  SOCK_DGRAM
 #endif
 
-#if AH_USE_BSD_SOCKETS && AH_USE_IOCP
+#if AH_USE_BSD_SOCKETS && AH_IS_WIN32
 typedef SOCKET ah_i_sockfd_t;
 #elif AH_USE_BSD_SOCKETS
 typedef int ah_i_sockfd_t;

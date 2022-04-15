@@ -10,26 +10,31 @@
 #include "ah/err.h"
 #include "ah/math.h"
 
-#include <string.h>
-
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 #    include <mach/mach_time.h>
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 #    include "ah/assert.h"
 
-#    include <string.h>
 #    include <time.h>
+#elif AH_IS_WIN32
+#    include <profileapi.h>
+#endif
+
+#include <string.h>
+
+#if AH_IS_DARWIN
+mach_timebase_info_data_t s_get_mach_timebase_info_data(void);
+#elif AH_IS_WIN32
+int64_t s_get_ns_per_performance_count(void);
 #endif
 
 ah_extern ah_time_t ah_time_now()
 {
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
-    return (ah_time_t) {
-        ._mach_absolute_time = mach_absolute_time(),
-    };
+    return (ah_time_t) { ._mach_absolute_time = mach_absolute_time() };
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
     struct timespec timespec;
     if (clock_gettime(CLOCK_MONOTONIC, &timespec) != 0) {
@@ -43,6 +48,15 @@ ah_extern ah_time_t ah_time_now()
         ._timespec.tv_nsec = (long long) timespec.tv_nsec,
     };
 
+#elif AH_IS_WIN32
+
+    LARGE_INTEGER time_lt = { 0 };
+    if (!QueryPerformanceCounter(&time_lt)) {
+        ah_abort_with_last_win32_error("failed to query WIN32 performance counter");
+    }
+
+    return (ah_time_t) { ._performance_count = time_lt.QuadPart };
+
 #endif
 }
 
@@ -52,17 +66,14 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
         return AH_EINVAL;
     }
 
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
     ah_timediff_t tmp_td;
     if (ah_i_sub_overflow(a._mach_absolute_time, b._mach_absolute_time, &tmp_td)) {
         return AH_ERANGE;
     }
 
-    mach_timebase_info_data_t info;
-    if (mach_timebase_info(&info) != 0) {
-        ah_abortf("failed to get Mach time-base information; %s", strerror(errno));
-    }
+    mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
     if (ah_i_mul_overflow(tmp_td, info.numer, &tmp_td)) {
         return AH_ERANGE;
@@ -73,7 +84,7 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
 
     return AH_ENONE;
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
     struct __kernel_timespec tmp_ts;
     if (ah_i_sub_overflow(a._timespec.tv_sec, b._timespec.tv_sec, &tmp_ts.tv_sec)) {
@@ -100,25 +111,76 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
 
     return AH_ENONE;
 
+#elif AH_IS_WIN32
+
+    ah_timediff_t tmp_td;
+    if (!ah_sub_int64(a._performance_count, b._performance_count, &tmp_td)) {
+        return AH_ERANGE;
+    }
+
+    if (!ah_mul_int64(tmp_td, s_get_ns_per_performance_count(), diff)) {
+        return AH_ERANGE;
+    }
+
+    return AH_ENONE;
+
 #endif
 }
 
+#if AH_IS_DARWIN
+
+mach_timebase_info_data_t s_get_mach_timebase_info_data(void)
+{
+    mach_timebase_info_data_t info;
+
+    if (mach_timebase_info(&info) != 0) {
+        ah_abortf("failed to get Mach time-base information; %s", strerror(errno));
+    }
+
+    return info;
+}
+
+#elif AH_IS_WIN32
+
+int64_t s_get_ns_per_performance_count(void)
+{
+    static volatile int64_t s_ns_per_performance_count = INT64_C(0);
+
+    if (InterlockedOr64NoFence(&s_ns_per_performance_count, INT64_C(0)) == INT64_C(0)) {
+        LARGE_INTEGER freq = { .QuadPart = INT64_C(0) };
+
+        if (!QueryPerformanceFrequency(&freq)) {
+            ah_abort_with_last_win32_error("failed to query WIN32 performance frequency");
+        }
+
+        (void) InterlockedExchangeNoFence64(&s_ns_per_performance_count, INT64_C(1000000000) / freq.QuadPart);
+    }
+
+    return s_ns_per_performance_count;
+}
+
+#endif
+
 ah_extern bool ah_time_eq(const ah_time_t a, const ah_time_t b)
 {
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
     return a._mach_absolute_time == b._mach_absolute_time;
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
     return a._timespec.tv_sec == b._timespec.tv_sec && a._timespec.tv_nsec == b._timespec.tv_nsec;
+
+#elif AH_IS_WIN32
+
+    return a._performance_count == b._performance_count;
 
 #endif
 }
 
 ah_extern int ah_time_cmp(const ah_time_t a, const ah_time_t b)
 {
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
     if (a._mach_absolute_time < b._mach_absolute_time) {
         return -1;
@@ -130,7 +192,7 @@ ah_extern int ah_time_cmp(const ah_time_t a, const ah_time_t b)
         return 1;
     }
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
     if (a._timespec.tv_sec < b._timespec.tv_sec) {
         return -1;
@@ -150,6 +212,18 @@ ah_extern int ah_time_cmp(const ah_time_t a, const ah_time_t b)
         return 1;
     }
 
+#elif AH_IS_WIN32
+
+    if (a._performance_count < b._performance_count) {
+        return -1;
+    }
+    else if (a._performance_count == b._performance_count) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
+
 #endif
 }
 
@@ -159,12 +233,9 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
         return AH_EINVAL;
     }
 
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
-    mach_timebase_info_data_t info;
-    if (mach_timebase_info(&info) != 0) {
-        ah_abortf("failed to get Mach time-base information; %s", strerror(errno));
-    }
+    mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
     uint64_t tmp = diff / info.numer;
     if (ah_i_mul_overflow(tmp, info.denom, &tmp)) {
@@ -178,7 +249,7 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
 
     return AH_ENONE;
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
     struct __kernel_timespec tmp;
     if (ah_i_add_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
@@ -202,6 +273,16 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
 
     return AH_ENONE;
 
+#elif AH_IS_WIN32
+
+    int64_t tmp = diff / s_get_ns_per_performance_count();
+
+    if (!ah_add_int64(time._performance_count, tmp, &result->_performance_count)) {
+        return AH_ERANGE;
+    }
+
+    return AH_ENONE;
+
 #endif
 }
 
@@ -211,12 +292,9 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
         return AH_EINVAL;
     }
 
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
-    mach_timebase_info_data_t info;
-    if (mach_timebase_info(&info) != 0) {
-        ah_abortf("failed to get Mach time-base information; %s", strerror(errno));
-    }
+    mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
     uint64_t tmp = diff / info.numer;
     if (ah_i_mul_overflow(tmp, info.denom, &tmp)) {
@@ -230,7 +308,7 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
 
     return AH_ENONE;
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
     struct __kernel_timespec tmp;
     if (ah_i_sub_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
@@ -254,46 +332,68 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
 
     return AH_ENONE;
 
+#elif AH_IS_WIN32
+
+    int64_t tmp = diff / s_get_ns_per_performance_count();
+
+    if (!ah_sub_int64(time._performance_count, tmp, &result->_performance_count)) {
+        return AH_ERANGE;
+    }
+
+    return AH_ENONE;
+
 #endif
 }
 
 ah_extern bool ah_time_is_after(const ah_time_t a, const ah_time_t b)
 {
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
     return a._mach_absolute_time > b._mach_absolute_time;
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
     return (a._timespec.tv_sec > b._timespec.tv_sec)
         || (a._timespec.tv_sec == b._timespec.tv_sec && a._timespec.tv_nsec > b._timespec.tv_nsec);
+
+#elif AH_IS_WIN32
+
+    return a._performance_count > b._performance_count;
 
 #endif
 }
 
 ah_extern bool ah_time_is_before(const ah_time_t a, const ah_time_t b)
 {
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
     return a._mach_absolute_time < b._mach_absolute_time;
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
     return (a._timespec.tv_sec < b._timespec.tv_sec)
         || (a._timespec.tv_sec == b._timespec.tv_sec && a._timespec.tv_nsec < b._timespec.tv_nsec);
+
+#elif AH_IS_WIN32
+
+    return a._performance_count < b._performance_count;
 
 #endif
 }
 
 ah_extern bool ah_time_is_zero(const ah_time_t time)
 {
-#if AH_USE_KQUEUE
+#if AH_IS_DARWIN
 
-    return time._mach_absolute_time == 0;
+    return time._mach_absolute_time == UINT64_C(0);
 
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
 
-    return time._timespec.tv_sec == 0 && time._timespec.tv_nsec == 0;
+    return time._timespec.tv_sec == INT64_C(0) && time._timespec.tv_nsec == INT64_C(0);
+
+#elif AH_IS_WIN32
+
+    return time._performance_count == INT64_C(0);
 
 #endif
 }

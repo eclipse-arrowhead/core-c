@@ -20,17 +20,17 @@ struct ah_ipaddr_v6 {
 };
 
 static const ah_ipaddr_v4_t ah_ipaddr_v4_loopback = {
-    .octets = {127u, 0u, 0u, 1u},
+    {127u, 0u, 0u, 1u}
 };
 static const ah_ipaddr_v4_t ah_ipaddr_v4_wildcard = {
-    .octets = {0u, 0u, 0u, 0u},
+    {0u, 0u, 0u, 0u},
 };
 
 static const ah_ipaddr_v6_t ah_ipaddr_v6_loopback = {
-    .octets = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u},
+    {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u},
 };
 static const ah_ipaddr_v6_t ah_ipaddr_v6_wildcard = {
-    .octets = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u},
+    {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u},
 };
 
 ah_extern_inline bool ah_ipaddr_v4_is_loopback(const ah_ipaddr_v4_t addr)

@@ -10,9 +10,18 @@
 #include "ah/loop.h"
 #include "sock-internal.h"
 
-#if AH_USE_BSD_SOCKETS
+#if AH_USE_BSD_SOCKETS && AH_IS_DARWIN
 #    include <fcntl.h>
+#elif AH_USE_BSD_SOCKETS && AH_IS_WIN32
+#    include <ws2ipdef.h>
+#endif
+
+#if AH_USE_BSD_SOCKETS && !AH_IS_WIN32
 #    include <unistd.h>
+#endif
+
+#if AH_IS_WIN32
+#    define close closesocket
 #endif
 
 ah_extern void ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v4* ipaddr)
@@ -81,7 +90,7 @@ ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr)
 
 #if AH_USE_BSD_SOCKETS
 
-ah_extern socklen_t ah_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
+ah_extern ah_socklen_t ah_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
 {
     ah_assert_if_debug(sockaddr != NULL);
 
@@ -136,12 +145,12 @@ ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const ah_socka
         return AH_EINVAL;
     }
 
-    int fd0 = socket(domain, type, 0);
+    ah_sockfd_t fd0 = socket(domain, type, 0);
     if (fd0 == -1) {
         return errno;
     }
 
-#    if !AH_USE_URING
+#    if AH_IS_DARWIN
     if (fcntl(fd0, F_SETFL, O_NONBLOCK, 0) == -1) {
         err = errno;
         goto close_fd_and_return;
@@ -160,7 +169,8 @@ ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const ah_socka
     return err;
 
 close_fd_and_return:
-    close(fd0);
+    (void) close(fd0);
+
     return err;
 }
 
@@ -181,7 +191,7 @@ ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* local_
 {
     ah_assert_if_debug(local_addr != NULL);
 
-    socklen_t socklen = sizeof(ah_sockaddr_t);
+    ah_socklen_t socklen = sizeof(ah_sockaddr_t);
     if (getsockname(fd, ah_sockaddr_cast(local_addr), &socklen) != 0) {
         return errno;
     }
@@ -198,7 +208,7 @@ ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* remote
 {
     ah_assert_if_debug(remote_addr != NULL);
 
-    socklen_t socklen = sizeof(ah_sockaddr_t);
+    ah_socklen_t socklen = sizeof(ah_sockaddr_t);
     if (getpeername(fd, ah_sockaddr_cast(remote_addr), &socklen) != 0) {
         return errno;
     }

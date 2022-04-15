@@ -10,7 +10,7 @@
 #include "defs.h"
 
 #if AH_IS_WIN32
-#    include <Winsock2.h>
+#    include <winerror.h>
 #else
 #    include <errno.h>
 #endif
@@ -102,7 +102,7 @@
     E(NOEXEC, ENOEXEC, 5519, "executable file format error")                                                           \
     E(NOLCK, ENOLCK, 5520, "no locks available")                                                                       \
     E(NOLINK, ENOLINK, 5521, "link severed")                                                                           \
-    E(NOMEM, ENOMEM, WSA_NOT_ENOUGH_MEMORY, "not enough memory")                                                       \
+    E(NOMEM, ENOMEM, ERROR_NOT_ENOUGH_MEMORY, "not enough memory")                                                       \
     E(NOMSG, ENOMSG, 5522, "no message of the desired type")                                                           \
     E(NOPROTOOPT, ENOPROTOOPT, WSAENOPROTOOPT, "protocol not available")                                               \
     E(NOSPC, ENOSPC, 5523, "no space left on device")                                                                  \
@@ -127,7 +127,7 @@
     E(PROTOTYPE, EPROTOTYPE, WSAEPROTOTYPE, "protocol type wrong")                                                     \
     E(RANGE, ERANGE, 5536, "arithmetic result outside accepted range")                                                 \
     E(ROFS, EROFS, 5537, "read-only file system")                                                                      \
-    E(SHUTDOWN, ESHUTDOWN, ESAESHUTDOWN, "has shut down")                                                              \
+    E(SHUTDOWN, ESHUTDOWN, WSAESHUTDOWN, "has shut down")                                                              \
     E(SOCKTNOSUPPORT, ESOCKTNOSUPPORT, WSAESOCKTNOSUPPORT, "socket type not supported")                                \
     E(SPIPE, ESPIPE, 5538, "broken pipe")                                                                              \
     E(SRCH, ESRCH, 5539, "no such process")                                                                            \

@@ -9,17 +9,10 @@
 
 #include "assert.h"
 #include "buf.h"
+#include "sock.h"
 
 #include <stdbool.h>
 
-#if AH_USE_BSD_SOCKETS
-#    include "sock.h"
-#    if AH_USE_IOCP
-#        include <winsock2.h>
-#    else
-#        include <netinet/in.h>
-#    endif
-#endif
 
 #define AH_TCP_SHUTDOWN_RD   1u
 #define AH_TCP_SHUTDOWN_WR   2u

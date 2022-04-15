@@ -8,24 +8,37 @@
 
 #include "ah/err.h"
 
+#if AH_IS_WIN32 && defined(_M_AMD64)
+#    pragma intrinsic(_mul128, _umul128)
+#    define s_x64_mul128  _mul128
+#    define s_x64_umul128 _umul128
+#elif AH_IS_WIN32 && defined(_M_ARM64)
+#    pragma intrinsic(_mulh, _umulh)
+#    define s_arm64_mulh  _mulh
+#    define s_arm64_umulh _umulh
+#endif
+
 ah_extern ah_err_t ah_add_int64(const int64_t a, const int64_t b, int64_t* result)
 {
     if (result == NULL) {
         return AH_EINVAL;
     }
 
-#ifdef ah_i_add_overflow
-
     int64_t tmp;
+
+#if defined(ah_i_add_overflow)
     if (ah_i_add_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#else
+    tmp = a + b;
+    if (((a < 0) == (b < 0)) && ((a < 0) != (tmp < 0))) {
+        return AH_ERANGE;
     }
-
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_div_int64(const int64_t a, const int64_t b, int64_t* result)
@@ -49,18 +62,32 @@ ah_extern ah_err_t ah_mul_int64(const int64_t a, const int64_t b, int64_t* resul
         return AH_EINVAL;
     }
 
-#ifdef ah_i_mul_overflow
-
     int64_t tmp;
+
+#if defined(ah_i_mul_overflow)
     if (ah_i_mul_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#elif defined(s_x64_mul128)
+    int64_t overflow;
+    tmp = s_x64_mul128(a, b, &overflow);
+    if (overflow != 0) {
+        return AH_ERANGE;
     }
-
+#elif defined(s_arm64_mulh)
+    if (s_arm64_mulh(a, b) != 0) {
+        return AH_ERANGE;
+    }
+    tmp = a * b;
+#else
+    tmp = a * b;
+    if (a != 0 && (tmp / a) != b) {
+        return AH_ERANGE;
+    }
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_sub_int64(const int64_t a, const int64_t b, int64_t* result)
@@ -69,18 +96,21 @@ ah_extern ah_err_t ah_sub_int64(const int64_t a, const int64_t b, int64_t* resul
         return AH_EINVAL;
     }
 
-#ifdef ah_i_sub_overflow
-
     int64_t tmp;
+
+#if defined(ah_i_sub_overflow)
     if (ah_i_sub_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#else
+    tmp = a - b;
+    if (((a < 0) != (b < 0)) && ((a < 0) != (tmp < 0))) {
+        return AH_ERANGE;
     }
-
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_add_size(const size_t a, const size_t b, size_t* result)
@@ -89,18 +119,21 @@ ah_extern ah_err_t ah_add_size(const size_t a, const size_t b, size_t* result)
         return AH_EINVAL;
     }
 
-#ifdef ah_i_add_overflow
-
     size_t tmp;
+
+#if defined(ah_i_add_overflow)
     if (ah_i_add_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#else
+    tmp = a + b;
+    if (tmp < a) {
+        return AH_ERANGE;
     }
-
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_div_size(const size_t a, const size_t b, size_t* result)
@@ -121,18 +154,32 @@ ah_extern ah_err_t ah_mul_size(const size_t a, const size_t b, size_t* result)
         return AH_EINVAL;
     }
 
-#ifdef ah_i_mul_overflow
-
     size_t tmp;
+
+#if defined(ah_i_mul_overflow)
     if (ah_i_mul_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#elif defined(s_x64_umul128)
+    uint64_t overflow;
+    tmp = s_x64_umul128(a, b, &overflow);
+    if (overflow != 0) {
+        return AH_ERANGE;
     }
-
+#elif defined(s_arm64_umulh)
+    if (s_arm64_umulh(a, b) != 0) {
+        return AH_ERANGE;
+    }
+    tmp = a * b;
+#else
+    tmp = a * b;
+    if (a != 0 && (tmp / a) != b) {
+        return AH_ERANGE;
+    }
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_sub_size(const size_t a, const size_t b, size_t* result)
@@ -141,18 +188,21 @@ ah_extern ah_err_t ah_sub_size(const size_t a, const size_t b, size_t* result)
         return AH_EINVAL;
     }
 
-#ifdef ah_i_sub_overflow
-
     size_t tmp;
-    if (ah_i_sub_overflow(a, b, &tmp)) {
+
+#if defined(ah_i_mul_overflow)
+    if (ah_i_mul_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#else
+    if (a < b) {
+        return AH_ERANGE;
     }
-
+    tmp = a - b;
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_add_uint64(const uint64_t a, const uint64_t b, uint64_t* result)
@@ -161,18 +211,21 @@ ah_extern ah_err_t ah_add_uint64(const uint64_t a, const uint64_t b, uint64_t* r
         return AH_EINVAL;
     }
 
-#ifdef ah_i_add_overflow
-
     uint64_t tmp;
+
+#if defined(ah_i_add_overflow)
     if (ah_i_add_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#else
+    tmp = a + b;
+    if (tmp < a) {
+        return AH_ERANGE;
     }
-
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_div_uint64(const uint64_t a, const uint64_t b, uint64_t* result)
@@ -193,18 +246,32 @@ ah_extern ah_err_t ah_mul_uint64(const uint64_t a, const uint64_t b, uint64_t* r
         return AH_EINVAL;
     }
 
-#ifdef ah_i_mul_overflow
-
     uint64_t tmp;
+
+#if defined(ah_i_mul_overflow)
     if (ah_i_mul_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#elif defined(s_x64_umul128)
+    uint64_t overflow;
+    tmp = s_x64_umul128(a, b, &overflow);
+    if (overflow != 0) {
+        return AH_ERANGE;
     }
-
+#elif defined(s_arm64_umulh)
+    if (s_arm64_umulh(a, b) != 0) {
+        return AH_ERANGE;
+    }
+    tmp = a * b;
+#else
+    tmp = a * b;
+    if (a != 0 && (tmp / a) != b) {
+        return AH_ERANGE;
+    }
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_sub_uint64(const uint64_t a, const uint64_t b, uint64_t* result)
@@ -213,16 +280,19 @@ ah_extern ah_err_t ah_sub_uint64(const uint64_t a, const uint64_t b, uint64_t* r
         return AH_EINVAL;
     }
 
-#ifdef ah_i_sub_overflow
-
     uint64_t tmp;
+
+#if defined(ah_i_sub_overflow)
     if (ah_i_sub_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-    else {
-        *result = tmp;
-        return AH_ENONE;
+#else
+    if (a < b) {
+        return AH_ERANGE;
     }
-
+    tmp = a - b;
 #endif
+
+    *result = tmp;
+    return AH_ENONE;
 }

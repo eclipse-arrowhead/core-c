@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#if AH_USE_URING
+#if AH_IS_LINUX && AH_USE_URING
 #    include <linux/time_types.h>
 #endif
 
@@ -30,10 +30,12 @@
 #define AH_TIMEDIFF_MAX INT64_MAX
 
 struct ah_time {
-#if AH_USE_KQUEUE && AH_IS_DARWIN
+#if AH_IS_DARWIN
     uint64_t _mach_absolute_time;
-#elif AH_USE_URING
+#elif AH_IS_LINUX && AH_USE_URING
     struct __kernel_timespec _timespec;
+#elif AH_IS_WIN32
+    int64_t _performance_count;
 #endif
 };
 

@@ -14,6 +14,7 @@ if (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     endif ()
 elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(/W4 /WX)
+    add_compile_options(/DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00) # Only support Windows 10 and up.
 endif()
 
 add_subdirectory(libraries)

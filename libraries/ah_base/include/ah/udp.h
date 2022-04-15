@@ -12,10 +12,6 @@
 
 #include <stdbool.h>
 
-#if AH_USE_IOCP
-#    include <winsock2.h>
-#endif
-
 typedef void (*ah_udp_open_cb)(ah_udp_sock_t* sock, ah_err_t err);
 typedef void (*ah_udp_close_cb)(ah_udp_sock_t* sock, ah_err_t err);
 

@@ -4,11 +4,17 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include <ah/abort.h>
-#include <ah/defs.h>
+#include "ah/abort.h"
+
+#include "ah/defs.h"
+
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
+
+#if AH_IS_WIN32
+#    include <Windows.h>
+#endif
 
 #if AH_USE_POSIX
 #    include <unistd.h>
@@ -49,3 +55,16 @@ ah_extern ah_noreturn void ah_abortf(const char* format, ...)
 
     ah_abort();
 }
+
+#if AH_IS_WIN32
+ah_extern ah_noreturn void ah_abort_with_last_win32_error(const char* message)
+{
+    DWORD err = GetLastError();
+    char buf[256];
+
+    WORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+    size_t size = FormatMessageA(flags, NULL, err, 0, (LPSTR) &buf, sizeof(buf), NULL);
+
+    ah_abortf("%s; %*.s", message, size, buf);
+}
+#endif
