@@ -26,14 +26,14 @@ set(
     src/buf.c
     src/err.c
     src/lib.c
-    src/loop.c
+    #src/loop.c
     src/math.c
     src/sock-internal.h
     src/sock.c
-    src/task.c
-    src/tcp.c
+    #src/task.c
+    #src/tcp.c
     src/time.c
-    src/udp.c
+   # src/udp.c
 )
 set(
     TEST_FILES
@@ -42,10 +42,10 @@ set(
     test/main.c
     test/math.c
     test/sock.c
-    test/task.c
-    test/tcp.c
+    #test/task.c
+    #test/tcp.c
     test/time.c
-    test/udp.c
+    #test/udp.c
 )
 
 add_library(ah_base STATIC ${SOURCE_FILES})

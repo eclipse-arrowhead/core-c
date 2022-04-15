@@ -17,6 +17,7 @@
 
 #    include <time.h>
 #elif AH_IS_WIN32
+#    include <windows.h>
 #    include <profileapi.h>
 #endif
 

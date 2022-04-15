@@ -69,16 +69,17 @@ ah_extern ah_err_t ah_mul_int64(const int64_t a, const int64_t b, int64_t* resul
         return AH_ERANGE;
     }
 #elif defined(s_x64_mul128)
-    int64_t overflow;
+    int64_t overflow = INT64_C(0);
     tmp = s_x64_mul128(a, b, &overflow);
-    if (overflow != 0) {
+    if (!(overflow == 0 && tmp >= 0 && tmp <= INT64_MAX) && !(overflow == -1 && tmp < 0 && tmp >= INT64_MIN)) {
         return AH_ERANGE;
     }
 #elif defined(s_arm64_mulh)
-    if (s_arm64_mulh(a, b) != 0) {
+    int64_t overflow = s_arm64_mulh(a, b);
+    tmp = a * b;
+    if (!(overflow == 0 && tmp >= 0 && tmp <= INT64_MAX) && !(overflow == -1 && tmp < 0 && tmp >= INT64_MIN)) {
         return AH_ERANGE;
     }
-    tmp = a * b;
 #else
     tmp = a * b;
     if (a != 0 && (tmp / a) != b) {
@@ -161,7 +162,7 @@ ah_extern ah_err_t ah_mul_size(const size_t a, const size_t b, size_t* result)
         return AH_ERANGE;
     }
 #elif defined(s_x64_umul128)
-    uint64_t overflow;
+    uint64_t overflow = UINT64_C(0);
     tmp = s_x64_umul128(a, b, &overflow);
     if (overflow != 0) {
         return AH_ERANGE;
@@ -253,7 +254,7 @@ ah_extern ah_err_t ah_mul_uint64(const uint64_t a, const uint64_t b, uint64_t* r
         return AH_ERANGE;
     }
 #elif defined(s_x64_umul128)
-    uint64_t overflow;
+    uint64_t overflow = UINT64_C(0);
     tmp = s_x64_umul128(a, b, &overflow);
     if (overflow != 0) {
         return AH_ERANGE;
