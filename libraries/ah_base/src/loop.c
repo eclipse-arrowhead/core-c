@@ -86,6 +86,8 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
         goto free_evt_page_list_and_return_err;
     }
 
+    // TODO: Anything else to setup?
+
     loop->_iocp_handle = iocp_handle;
 
 #elif AH_USE_KQUEUE
@@ -185,7 +187,7 @@ static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, s_evt_pa
     ah_assert_if_debug(free_list != NULL);
 
     s_evt_page_t* page_list_new = NULL;
-    s_evt_t* free_list_new;
+    s_evt_t* free_list_new = NULL;
 
     for (size_t evt_cap_remaining = cap; evt_cap_remaining != 0;) {
         ah_err_t err = s_alloc_evt_page(alloc_cb, &page_list_new, &free_list_new);
@@ -299,6 +301,8 @@ static void s_term(ah_loop_t* loop)
 
 #if AH_USE_IOCP && AH_IS_WIN32
 
+    // TODO: Anything more to cleanup?
+
     (void) CloseHandle(loop->_iocp_handle);
     (void) WSACleanup();
 
@@ -333,7 +337,12 @@ static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* tim
 
     loop->_now = ah_time_now();
 
-#if AH_USE_KQUEUE
+#if AH_USE_IOCP && AH_IS_WIN32
+
+    (void) time; // TODO: We need a priority queue (heap) to handle tasks on windows.
+    return AH_EOPNOTSUPP;
+
+#elif AH_USE_KQUEUE
 
     struct timespec timeout;
     if (time != NULL) {
@@ -592,7 +601,12 @@ ah_err_t ah_i_loop_alloc_req(ah_loop_t* loop, ah_i_loop_req_t** req)
         return AH_ESTATE;
     }
 
-#if AH_USE_KQUEUE
+#if AH_USE_IOCP && AH_IS_WIN32
+
+    (void) req; // TODO
+    return AH_EOPNOTSUPP;
+
+#elif AH_USE_KQUEUE
 
     if (ah_unlikely(loop->_kqueue_nchanges == loop->_kqueue_capacity)) {
         int res = kevent(loop->_kqueue_fd, loop->_kqueue_changelist, loop->_kqueue_nchanges, NULL, 0,

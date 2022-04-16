@@ -26,7 +26,7 @@ set(
     src/buf.c
     src/err.c
     src/lib.c
-    #src/loop.c
+    src/loop.c
     src/math.c
     src/sock-internal.h
     src/sock.c
