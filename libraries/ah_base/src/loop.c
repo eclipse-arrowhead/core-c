@@ -22,6 +22,10 @@
 #    include <unistd.h>
 #endif
 
+#if AH_IS_WIN32 && AH_USE_IOCP
+#    include <windows.h>
+#endif
+
 #define S_STATE_INITIAL     0x01
 #define S_STATE_RUNNING     0x02
 #define S_STATE_STOPPED     0x04
@@ -67,7 +71,24 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
         return err;
     }
 
-#if AH_USE_KQUEUE
+#if AH_USE_IOCP && AH_IS_WIN32
+
+    WSADATA wsa_data;
+    int res = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+    if (res != 0) {
+        err = res;
+        goto free_evt_page_list_and_return_err;
+    }
+
+    HANDLE iocp_handle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 1);
+    if (iocp_handle == NULL) {
+        err = GetLastError();
+        goto free_evt_page_list_and_return_err;
+    }
+
+    loop->_iocp_handle = iocp_handle;
+
+#elif AH_USE_KQUEUE
 
     if (capacity > INT_MAX) {
         err = errno;
@@ -125,12 +146,6 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
         err = errno;
         goto free_evt_page_list_exit_uring_and_return_err;
     }
-
-#else
-
-    (void) capacity;
-    err = AH_ENOIMPL;
-    goto free_evt_page_list_and_return_err;
 
 #endif
 
@@ -282,7 +297,12 @@ static void s_term(ah_loop_t* loop)
 
     s_dealloc_evt_page_list(loop->_alloc_cb, loop->_evt_page_list);
 
-#if AH_USE_KQUEUE
+#if AH_USE_IOCP && AH_IS_WIN32
+
+    (void) CloseHandle(loop->_iocp_handle);
+    (void) WSACleanup();
+
+#elif AH_USE_KQUEUE
 
     ah_dealloc(loop->_alloc_cb, loop->_kqueue_changelist);
     ah_dealloc(loop->_alloc_cb, loop->_kqueue_eventlist);

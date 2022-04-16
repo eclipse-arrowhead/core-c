@@ -29,7 +29,11 @@ struct ah_loop {
     ah_err_t _pending_err;
     int _state;
 
-#if AH_USE_KQUEUE
+#if AH_USE_IOCP && AH_IS_WIN32
+
+    void* _iocp_handle;
+
+#elif AH_USE_KQUEUE
 
     int _kqueue_fd;
     int _kqueue_capacity;
