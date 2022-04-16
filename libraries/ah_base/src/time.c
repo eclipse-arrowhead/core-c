@@ -24,9 +24,9 @@
 #include <string.h>
 
 #if AH_IS_DARWIN
-mach_timebase_info_data_t s_get_mach_timebase_info_data(void);
+static mach_timebase_info_data_t s_get_mach_timebase_info_data(void);
 #elif AH_IS_WIN32
-int64_t s_get_ns_per_performance_count(void);
+static int64_t s_get_performance_frequency(void);
 #endif
 
 ah_extern ah_time_t ah_time_now()
@@ -119,9 +119,11 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
         return AH_ERANGE;
     }
 
-    if (!ah_mul_int64(tmp_td, s_get_ns_per_performance_count(), diff)) {
+    if (!ah_mul_int64(tmp_td, 1000000000, &tmp_td)) {
         return AH_ERANGE;
     }
+
+    *diff = tmp_td / s_get_performance_frequency();
 
     return AH_ENONE;
 
@@ -130,7 +132,7 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
 
 #if AH_IS_DARWIN
 
-mach_timebase_info_data_t s_get_mach_timebase_info_data(void)
+static mach_timebase_info_data_t s_get_mach_timebase_info_data(void)
 {
     mach_timebase_info_data_t info;
 
@@ -143,21 +145,21 @@ mach_timebase_info_data_t s_get_mach_timebase_info_data(void)
 
 #elif AH_IS_WIN32
 
-int64_t s_get_ns_per_performance_count(void)
+static int64_t s_get_performance_frequency(void)
 {
-    static volatile int64_t s_ns_per_performance_count = INT64_C(0);
+    static volatile int64_t s_performance_frequency = INT64_C(0);
+    
+    LARGE_INTEGER performance_frequency = { .QuadPart = InterlockedOr64NoFence(&s_performance_frequency, INT64_C(0)) };
 
-    if (InterlockedOr64NoFence(&s_ns_per_performance_count, INT64_C(0)) == INT64_C(0)) {
-        LARGE_INTEGER freq = { .QuadPart = INT64_C(0) };
-
-        if (!QueryPerformanceFrequency(&freq)) {
+    if (ah_unlikely(performance_frequency.QuadPart == INT64_C(0))) {
+        if (!QueryPerformanceFrequency(&performance_frequency)) {
             ah_abort_with_last_win32_error("failed to query WIN32 performance frequency");
         }
 
-        (void) InterlockedExchangeNoFence64(&s_ns_per_performance_count, INT64_C(1000000000) / freq.QuadPart);
+        (void) InterlockedExchangeNoFence64(&s_performance_frequency, performance_frequency.QuadPart);
     }
 
-    return s_ns_per_performance_count;
+    return performance_frequency.QuadPart;
 }
 
 #endif
@@ -276,7 +278,13 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
 
 #elif AH_IS_WIN32
 
-    int64_t tmp = diff / s_get_ns_per_performance_count();
+    int64_t tmp;
+
+    if (!ah_mul_int64(diff, s_get_performance_frequency(), &tmp)) {
+        return AH_ERANGE;
+    }
+
+    tmp /= 1000000000;
 
     if (!ah_add_int64(time._performance_count, tmp, &result->_performance_count)) {
         return AH_ERANGE;
@@ -335,7 +343,13 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
 
 #elif AH_IS_WIN32
 
-    int64_t tmp = diff / s_get_ns_per_performance_count();
+    int64_t tmp;
+
+    if (!ah_mul_int64(diff, s_get_performance_frequency(), &tmp)) {
+        return AH_ERANGE;
+    }
+
+    tmp /= 1000000000;
 
     if (!ah_sub_int64(time._performance_count, tmp, &result->_performance_count)) {
         return AH_ERANGE;

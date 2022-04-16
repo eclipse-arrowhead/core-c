@@ -47,7 +47,7 @@ static ah_err_t s_get_pending_err(ah_loop_t* loop);
 static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time);
 static void s_term(ah_loop_t* loop);
 
-ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
+ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
 {
     if (loop == NULL) {
         return AH_EINVAL;

@@ -16,7 +16,7 @@
 #    include <ws2ipdef.h>
 #endif
 
-#if AH_USE_BSD_SOCKETS && !AH_IS_WIN32
+#if AH_USE_BSD_SOCKETS && AH_USE_POSIX
 #    include <unistd.h>
 #endif
 
