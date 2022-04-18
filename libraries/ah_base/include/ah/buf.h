@@ -13,6 +13,11 @@
 #include <stdint.h>
 
 #if AH_IS_WIN32
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+#endif
+
+#if AH_IS_WIN32
 typedef struct _WSABUF WSABUF;
 #elif AH_HAS_POSIX
 struct iovec;
@@ -20,7 +25,7 @@ struct iovec;
 
 struct ah_buf {
 #if AH_IS_WIN32
-    size_t size;
+    ULONG size;
     uint8_t* octets;
 #else
     uint8_t* octets;
@@ -32,6 +37,8 @@ struct ah_bufvec {
     ah_buf_t* items;
     size_t length;
 };
+
+ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, void* data, const size_t size);
 
 #if AH_IS_WIN32
 ah_extern ah_err_t ah_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, ULONG buffer_count);

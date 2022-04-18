@@ -339,12 +339,13 @@ static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* tim
 
 #if AH_USE_IOCP
 
-    DWORD timeout_in_ms = 0u;
+    DWORD timeout_in_ms = 0u; // TODO: time?
+    (void) time;
 
     OVERLAPPED_ENTRY entries[32u];
 
     ULONG num_entries_removed;
-    if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, &entries, 32u, &num_entries_removed, timeout_in_ms, false)) {
+    if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries, 32u, &num_entries_removed, timeout_in_ms, false)) {
         return GetLastError();
     }
 
@@ -355,7 +356,7 @@ static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* tim
         ah_i_loop_evt_t* evt = CONTAINING_RECORD(overlapped_entry->lpOverlapped, ah_i_loop_evt_t, _overlapped);
 
         if (ah_likely(evt->_cb != NULL)) {
-            evt->_cb(evt, overlapped_entry);
+            evt->_cb(evt, 0); // TODO: overlapped_entry as second arg?
         }
 
         ah_i_loop_dealloc_evt(loop, evt);

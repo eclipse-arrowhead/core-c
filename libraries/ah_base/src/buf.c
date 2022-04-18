@@ -17,12 +17,38 @@
 #    include <sys/uio.h>
 #endif
 
+ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, void* data, const size_t size)
+{
+    if (buf == NULL || (data == NULL && size != 0)) {
+        return AH_EINVAL;
+    }
+
+    #if AH_IS_WIN32
+
+    if (((uintmax_t) size) > ((uintmax_t) ULONG_MAX)) {
+        return AH_EDOM;
+    }
+
+    buf->size = (ULONG) size;
+    buf->octets = data;
+
+    #elif AH_HAS_POSIX
+
+    buf->octets = data;
+    buf->size = size;
+
+    #endif
+
+    return AH_ENONE;
+}
+
 #if AH_IS_WIN32
 
 ah_extern ah_err_t ah_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, ULONG buffer_count)
 {
-    ah_assert_if_debug(bufvec != NULL);
-    ah_assert_if_debug(buffers != NULL);
+    if (bufvec == NULL || buffers == NULL) {
+        return AH_EINVAL;
+    }
 
     if (((uintmax_t) buffer_count) > ((uintmax_t) SIZE_MAX)) {
         return AH_EOVERFLOW;
@@ -36,9 +62,9 @@ ah_extern ah_err_t ah_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, 
 
 ah_extern ah_err_t ah_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffers, ULONG* buffer_count)
 {
-    ah_assert_if_debug(bufvec != NULL);
-    ah_assert_if_debug(buffers != NULL);
-    ah_assert_if_debug(buffer_count != NULL);
+    if (bufvec == NULL || buffers == NULL || buffer_count == NULL) {
+        return AH_EINVAL;
+    }
 
     if (bufvec->length > ULONG_MAX) {
         return AH_EOVERFLOW;
@@ -54,8 +80,9 @@ ah_extern ah_err_t ah_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffers,
 
 ah_extern ah_err_t ah_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt)
 {
-    ah_assert_if_debug(bufvec != NULL);
-    ah_assert_if_debug(iov != NULL);
+    if (bufvec == NULL || iov == NULL) {
+        return AH_EINVAL;
+    }
 
     if (iovcnt < 0 || ((uintmax_t) iovcnt) > ((uintmax_t) SIZE_MAX)) {
         return AH_EOVERFLOW;
@@ -69,9 +96,9 @@ ah_extern ah_err_t ah_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, 
 
 ah_extern ah_err_t ah_bufvec_into_iovec(ah_bufvec_t* bufvec, struct iovec** iov, int* iovcnt)
 {
-    ah_assert_if_debug(bufvec != NULL);
-    ah_assert_if_debug(iov != NULL);
-    ah_assert_if_debug(iovcnt != NULL);
+    if (bufvec == NULL || iov == NULL || iovcnt == NULL) {
+        return AH_EINVAL;
+    }
 
     if (bufvec->length > INT_MAX) {
         return AH_EOVERFLOW;
