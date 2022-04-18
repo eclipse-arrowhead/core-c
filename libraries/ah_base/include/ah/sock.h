@@ -13,12 +13,10 @@
 
 #include <stdbool.h>
 
-#if AH_USE_BSD_SOCKETS && AH_IS_WIN32
-#    if !defined(_WINSOCKAPI_)
-#        define _WINSOCKAPI_
-#        include <Windows.h>
-#        include <Winsock2.h>
-#    endif
+#if AH_HAS_BSD_SOCKETS && AH_IS_WIN32
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+#    include <winsock2.h>
 #elif AH_USE_BSD_SOCKETS
 #    include <netinet/in.h>
 #endif

@@ -17,6 +17,9 @@
 #    include <sys/event.h>
 #elif AH_USE_URING
 #    include <liburing.h>
+#elif AH_USE_IOCP
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
 #endif
 
 struct ah_loop {

@@ -22,8 +22,8 @@
 #    include <unistd.h>
 #endif
 
-#if AH_IS_WIN32 && AH_USE_IOCP
-#    include <windows.h>
+#if AH_USE_IOCP
+#    include <winsock2.h>
 #endif
 
 #define S_STATE_INITIAL     0x01
@@ -337,7 +337,7 @@ static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* tim
 
     loop->_now = ah_time_now();
 
-#if AH_USE_IOCP && AH_IS_WIN32
+#if AH_USE_IOCP
 
     (void) time; // TODO: We need a priority queue (heap) to handle tasks on windows.
     return AH_EOPNOTSUPP;

@@ -15,6 +15,11 @@
 #include "defs.h"
 #include "time.h"
 
+#if AH_USE_IOCP
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+#endif
+
 #include <stddef.h>
 
 #if AH_USE_KQUEUE

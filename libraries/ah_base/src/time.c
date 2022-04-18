@@ -17,8 +17,8 @@
 
 #    include <time.h>
 #elif AH_IS_WIN32
+#    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
-#    include <profileapi.h>
 #endif
 
 #include <string.h>
