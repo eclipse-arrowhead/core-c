@@ -27,7 +27,7 @@ ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_so
         return AH_EINVAL;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     ah_i_sockfd_t fd;
 
@@ -60,7 +60,7 @@ ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     return ah_i_sock_getsockname(sock->_fd, local_addr);
 #endif
 }
@@ -74,7 +74,7 @@ ah_extern ah_err_t ah_udp_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t h
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     int level;
     int name;
@@ -107,7 +107,7 @@ ah_extern ah_err_t ah_udp_set_multicast_loopback(ah_udp_sock_t* sock, bool loopb
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     int level;
     int name;
@@ -140,7 +140,7 @@ ah_extern ah_err_t ah_udp_set_reuse_addr(ah_udp_sock_t* sock, bool reuse_addr)
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     int value = reuse_addr ? 1 : 0;
     if (setsockopt(sock->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
         return errno;
@@ -158,7 +158,7 @@ ah_extern ah_err_t ah_udp_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     int level;
     int name;
@@ -191,7 +191,7 @@ ah_extern ah_err_t ah_udp_join(ah_udp_sock_t* sock, const ah_udp_group_t* group)
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     int level;
     int name;
@@ -223,7 +223,7 @@ ah_extern ah_err_t ah_udp_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     int level;
     int name;
@@ -608,7 +608,7 @@ ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
 
 #endif
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     err = ah_i_sock_close(sock->_loop, sock->_fd);
 

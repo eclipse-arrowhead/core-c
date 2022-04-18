@@ -35,8 +35,8 @@
 #    define AH_USE_URING AH_IS_LINUX
 #endif
 
-#define AH_USE_BSD_SOCKETS (AH_USE_IOCP || AH_USE_KQUEUE || AH_USE_URING)
-#define AH_USE_POSIX       (AH_USE_KQUEUE || AH_USE_URING)
+#define AH_HAS_BSD_SOCKETS (AH_USE_IOCP || AH_USE_KQUEUE || AH_USE_URING)
+#define AH_HAS_POSIX       (AH_USE_KQUEUE || AH_USE_URING)
 
 #if defined(__clang__)
 #    if __clang_major__ < 13
@@ -93,10 +93,10 @@
 #    define ah_noreturn      __declspec(noreturn)
 #    define ah_unused
 
-#    define ah_likely(expr) expr
-#    define ah_trap() __debugbreak()
+#    define ah_likely(expr)   expr
+#    define ah_trap()         __debugbreak()
 #    define ah_unlikely(expr) expr
-#    define ah_unreachable() __assume(0)
+#    define ah_unreachable()  __assume(0)
 #endif
 
 typedef int ah_err_t;

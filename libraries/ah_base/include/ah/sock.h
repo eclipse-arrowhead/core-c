@@ -17,11 +17,11 @@
 #    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
 #    include <winsock2.h>
-#elif AH_USE_BSD_SOCKETS
+#elif AH_HAS_BSD_SOCKETS
 #    include <netinet/in.h>
 #endif
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 #    ifdef SIN6_LEN
 #        define AH_I_SOCKADDR_HAS_SIZE 1
 #    endif
@@ -46,10 +46,10 @@
 #    define AH_I_SOCKADDR_COMMON uint16_t family;
 #endif
 
-#if AH_USE_BSD_SOCKETS && AH_IS_WIN32
+#if AH_HAS_BSD_SOCKETS && AH_IS_WIN32
 typedef SOCKET ah_sockfd_t;
 typedef int ah_socklen_t;
-#elif AH_USE_BSD_SOCKETS
+#elif AH_HAS_BSD_SOCKETS
 typedef int ah_sockfd_t;
 typedef socklen_t ah_socklen_t;
 #endif
@@ -72,7 +72,7 @@ struct ah_sockaddr_ipv4 {
 struct ah_sockaddr_ipv6 {
     AH_I_SOCKADDR_COMMON
     uint16_t port;
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     uint32_t : 32; // flowinfo
 #endif
     struct ah_ipaddr_v6 ipaddr;
@@ -93,7 +93,7 @@ ah_extern bool ah_sockaddr_is_ip(const ah_sockaddr_t* sockaddr);
 ah_extern bool ah_sockaddr_is_ip_wildcard(const ah_sockaddr_t* sockaddr);
 ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr);
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 ah_extern ah_socklen_t ah_sockaddr_get_size(const ah_sockaddr_t* sockaddr);
 ah_extern struct sockaddr* ah_sockaddr_cast(ah_sockaddr_t* sockaddr);
 ah_extern const struct sockaddr* ah_sockaddr_cast_const(const ah_sockaddr_t* sockaddr);

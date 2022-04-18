@@ -10,13 +10,13 @@
 #include "ah/loop.h"
 #include "sock-internal.h"
 
-#if AH_USE_BSD_SOCKETS && AH_IS_DARWIN
+#if AH_HAS_BSD_SOCKETS && AH_IS_DARWIN
 #    include <fcntl.h>
-#elif AH_USE_BSD_SOCKETS && AH_IS_WIN32
+#elif AH_HAS_BSD_SOCKETS && AH_IS_WIN32
 #    include <ws2ipdef.h>
 #endif
 
-#if AH_USE_BSD_SOCKETS && AH_USE_POSIX
+#if AH_HAS_BSD_SOCKETS && AH_HAS_POSIX
 #    include <unistd.h>
 #endif
 
@@ -88,7 +88,7 @@ ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr)
     }
 }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
 ah_extern ah_socklen_t ah_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
 {

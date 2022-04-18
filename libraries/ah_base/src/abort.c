@@ -17,7 +17,7 @@
 #    include <windows.h>
 #endif
 
-#if AH_USE_POSIX
+#if AH_HAS_POSIX
 #    include <unistd.h>
 #else
 #    include <signal.h>
@@ -25,7 +25,7 @@
 
 ah_extern void ah_abort()
 {
-#if AH_USE_POSIX
+#if AH_HAS_POSIX
 
     struct sigaction act;
     (void) sigemptyset(&act.sa_mask);

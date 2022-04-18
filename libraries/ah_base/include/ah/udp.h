@@ -55,7 +55,7 @@ struct ah_udp_sock {
     ah_loop_t* _loop;
     void* _user_data;
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     ah_sockfd_t _fd;
 #endif
 
@@ -69,7 +69,7 @@ ah_udp_open_cb cb);
 
 ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr);
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 ah_extern_inline ah_sockfd_t ah_udp_get_fd(const ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);

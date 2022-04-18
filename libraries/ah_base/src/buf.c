@@ -13,7 +13,7 @@
 
 #if AH_IS_WIN32
 #    include <winsock2.h>
-#elif AH_USE_POSIX
+#elif AH_HAS_POSIX
 #    include <sys/uio.h>
 #endif
 
@@ -50,7 +50,7 @@ ah_extern ah_err_t ah_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffers,
     return AH_ENONE;
 }
 
-#elif AH_USE_POSIX
+#elif AH_HAS_POSIX
 
 ah_extern ah_err_t ah_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt)
 {

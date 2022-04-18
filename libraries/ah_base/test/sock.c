@@ -8,24 +8,24 @@
 
 #include "ah/unit.h"
 
-#if AH_USE_BSD_SOCKETS && AH_IS_WIN32
+#if AH_HAS_BSD_SOCKETS && AH_IS_WIN32
 #    include <ws2ipdef.h>
 #endif
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 static void s_should_use_same_data_layout_as_platform_sockaddr(ah_unit_t* unit);
 #endif
 
 void test_sock(ah_unit_t* unit)
 {
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     s_should_use_same_data_layout_as_platform_sockaddr(unit);
 #else
     (void) unit;
 #endif
 }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 static void s_should_use_same_data_layout_as_platform_sockaddr(ah_unit_t* unit)
 {
 #    define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)                                          \

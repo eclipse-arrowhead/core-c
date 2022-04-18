@@ -14,7 +14,7 @@
 
 #include <stddef.h>
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 #    include <netinet/tcp.h>
 #    include <sys/socket.h>
 #endif
@@ -55,7 +55,7 @@ ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_so
         return AH_EINVAL;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     ah_i_sockfd_t fd;
 
@@ -87,7 +87,7 @@ ah_extern ah_err_t ah_tcp_get_local_addr(const ah_tcp_sock_t* sock, ah_sockaddr_
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     return ah_i_sock_getsockname(sock->_fd, local_addr);
 #endif
 }
@@ -101,7 +101,7 @@ ah_extern ah_err_t ah_tcp_get_remote_addr(const ah_tcp_sock_t* sock, ah_sockaddr
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     return ah_i_sock_getpeername(sock->_fd, remote_addr);
 #endif
 }
@@ -115,7 +115,7 @@ ah_extern ah_err_t ah_tcp_set_keepalive(ah_tcp_sock_t* sock, bool keepalive)
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     int value = keepalive ? 1 : 0;
     if (setsockopt(sock->_fd, SOL_SOCKET, SO_KEEPALIVE, (void*) &value, sizeof(value)) != 0) {
         return errno;
@@ -133,7 +133,7 @@ ah_extern ah_err_t ah_tcp_set_no_delay(ah_tcp_sock_t* sock, bool no_delay)
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     int value = no_delay ? 1 : 0;
     if (setsockopt(sock->_fd, IPPROTO_TCP, TCP_NODELAY, (void*) &value, sizeof(value)) != 0) {
         return errno;
@@ -151,7 +151,7 @@ ah_extern ah_err_t ah_tcp_set_reuse_addr(ah_tcp_sock_t* sock, bool reuse_addr)
         return AH_ESTATE;
     }
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     int value = reuse_addr ? 1 : 0;
     if (setsockopt(sock->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
         return errno;
@@ -758,7 +758,7 @@ ah_extern ah_err_t ah_tcp_shutdown(ah_tcp_sock_t* sock, ah_tcp_shutdown_t flags)
         return AH_ESTATE;
     }
 
-#if AH_USE_POSIX
+#if AH_HAS_POSIX
 
     ah_err_t err;
 
@@ -846,7 +846,7 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
 
 #endif
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 
     err = ah_i_sock_close(sock->_loop, sock->_fd);
 

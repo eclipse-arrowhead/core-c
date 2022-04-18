@@ -14,7 +14,7 @@
 
 #if AH_IS_WIN32
 typedef struct _WSABUF WSABUF;
-#elif AH_USE_POSIX
+#elif AH_HAS_POSIX
 struct iovec;
 #endif
 
@@ -36,7 +36,7 @@ struct ah_bufvec {
 #if AH_IS_WIN32
 ah_extern ah_err_t ah_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, ULONG buffer_count);
 ah_extern ah_err_t ah_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffers, ULONG* buffer_count);
-#elif AH_USE_POSIX
+#elif AH_HAS_POSIX
 ah_extern ah_err_t ah_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt);
 ah_extern ah_err_t ah_bufvec_into_iovec(ah_bufvec_t* bufvec, struct iovec** iov, int* iovcnt);
 #endif

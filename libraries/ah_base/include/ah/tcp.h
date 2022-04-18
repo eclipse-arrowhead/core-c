@@ -57,7 +57,7 @@ struct ah_tcp_sock {
     struct ah_i_loop_evt* _read_or_listen_evt;
 #endif
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
     ah_sockfd_t _fd;
 #endif
 
@@ -72,7 +72,7 @@ ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_so
 ah_extern ah_err_t ah_tcp_get_local_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* local_addr);
 ah_extern ah_err_t ah_tcp_get_remote_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* remote_addr);
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 ah_extern_inline ah_sockfd_t ah_tcp_get_fd(const ah_tcp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);

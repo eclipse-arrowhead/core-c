@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 #    if AH_IS_WIN32
 #        define WIN32_LEAN_AND_MEAN
 #        include <windows.h>
@@ -24,13 +24,13 @@
 #    define AH_I_SOCK_DGRAM  SOCK_DGRAM
 #endif
 
-#if AH_USE_BSD_SOCKETS && AH_IS_WIN32
+#if AH_HAS_BSD_SOCKETS && AH_IS_WIN32
 typedef SOCKET ah_i_sockfd_t;
-#elif AH_USE_BSD_SOCKETS
+#elif AH_HAS_BSD_SOCKETS
 typedef int ah_i_sockfd_t;
 #endif
 
-#if AH_USE_BSD_SOCKETS
+#if AH_HAS_BSD_SOCKETS
 ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, int type, const ah_sockaddr_t* local_addr, ah_i_sockfd_t* fd);
 ah_extern ah_err_t ah_i_sock_close(ah_loop_t* loop, ah_i_sockfd_t fd);
 
