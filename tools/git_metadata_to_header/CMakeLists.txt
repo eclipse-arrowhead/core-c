@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
 project(git_describe_header C)
 
 set(CMAKE_C_STANDARD 99)
