@@ -12,13 +12,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if AH_USE_IOVEC
+#if AH_IS_WIN32
+typedef struct _WSABUF WSABUF;
+#elif AH_USE_POSIX
 struct iovec;
 #endif
 
 struct ah_buf {
+#if AH_IS_WIN32
+    size_t size;
+    uint8_t* octets;
+#else
     uint8_t* octets;
     size_t size;
+#endif
 };
 
 struct ah_bufvec {
@@ -26,7 +33,10 @@ struct ah_bufvec {
     size_t length;
 };
 
-#if AH_USE_IOVEC
+#if AH_IS_WIN32
+ah_extern ah_err_t ah_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, ULONG buffer_count);
+ah_extern ah_err_t ah_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffers, ULONG* buffer_count);
+#elif AH_USE_POSIX
 ah_extern ah_err_t ah_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt);
 ah_extern ah_err_t ah_bufvec_into_iovec(ah_bufvec_t* bufvec, struct iovec** iov, int* iovcnt);
 #endif
