@@ -25,7 +25,11 @@ struct ah_task {
     ah_task_state_t _state;
     ah_task_cb _cb;
     ah_loop_t* _loop;
+
+#if AH_HAS_TASK_QUEUE
     struct ah_i_loop_evt* _evt;
+#endif
+
     void* _data;
 };
 

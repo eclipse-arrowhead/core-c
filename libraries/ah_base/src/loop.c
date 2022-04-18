@@ -47,6 +47,7 @@ struct ah_i_loop_evt_page {
 static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, s_evt_page_t** evt_page, s_evt_t** free_list);
 static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, s_evt_page_t** page_list, s_evt_t** free_list);
 static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, s_evt_page_t* evt_page_list);
+
 static ah_err_t s_get_pending_err(ah_loop_t* loop);
 static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time);
 static void s_term(ah_loop_t* loop);
@@ -57,9 +58,9 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
         return AH_EINVAL;
     }
 
-    *loop = (ah_loop_t) { 0 };
+    *loop = (ah_loop_t) { 0u };
 
-    size_t capacity = (opts != NULL && opts->capacity != 0u) ? opts->capacity : 1024;
+    size_t capacity = (opts != NULL && opts->capacity != 0u) ? opts->capacity : 1024u;
     ah_alloc_cb alloc_cb = (opts != NULL && opts->alloc_cb != NULL) ? opts->alloc_cb : realloc;
 
     ah_err_t err;
@@ -71,7 +72,7 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
         return err;
     }
 
-#if AH_USE_IOCP && AH_IS_WIN32
+#if AH_USE_IOCP
 
     WSADATA wsa_data;
     int res = WSAStartup(MAKEWORD(2, 2), &wsa_data);
@@ -299,9 +300,8 @@ static void s_term(ah_loop_t* loop)
 
     s_dealloc_evt_page_list(loop->_alloc_cb, loop->_evt_page_list);
 
-#if AH_USE_IOCP && AH_IS_WIN32
 
-    // TODO: Anything more to cleanup?
+#if AH_USE_IOCP
 
     (void) CloseHandle(loop->_iocp_handle);
     (void) WSACleanup();
@@ -339,7 +339,28 @@ static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* tim
 
 #if AH_USE_IOCP
 
-    (void) time; // TODO: We need a priority queue (heap) to handle tasks on windows.
+    DWORD timeout_in_ms = 0u;
+
+    OVERLAPPED_ENTRY entries[32u];
+
+    ULONG num_entries_removed;
+    if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, &entries, 32u, &num_entries_removed, timeout_in_ms, false)) {
+        return GetLastError();
+    }
+
+    loop->_now = ah_time_now();
+
+    for (ULONG i = 0u; i < num_entries_removed; i += 1u) {
+        OVERLAPPED_ENTRY* overlapped_entry = &entries[i];
+        ah_i_loop_evt_t* evt = CONTAINING_RECORD(overlapped_entry->lpOverlapped, ah_i_loop_evt_t, _overlapped);
+
+        if (ah_likely(evt->_cb != NULL)) {
+            evt->_cb(evt, overlapped_entry);
+        }
+
+        ah_i_loop_dealloc_evt(loop, evt);
+    }
+
     return AH_EOPNOTSUPP;
 
 #elif AH_USE_KQUEUE
@@ -564,6 +585,8 @@ ah_err_t ah_i_loop_alloc_evt(ah_loop_t* loop, s_evt_t** evt)
     return AH_ENONE;
 }
 
+#if !AH_USE_IOCP
+
 ah_err_t ah_i_loop_alloc_evt_and_req(ah_loop_t* loop, s_evt_t** evt, ah_i_loop_req_t** req)
 {
     ah_assert_if_debug(loop != NULL);
@@ -601,12 +624,7 @@ ah_err_t ah_i_loop_alloc_req(ah_loop_t* loop, ah_i_loop_req_t** req)
         return AH_ESTATE;
     }
 
-#if AH_USE_IOCP && AH_IS_WIN32
-
-    (void) req; // TODO
-    return AH_EOPNOTSUPP;
-
-#elif AH_USE_KQUEUE
+#    if AH_USE_KQUEUE
 
     if (ah_unlikely(loop->_kqueue_nchanges == loop->_kqueue_capacity)) {
         int res = kevent(loop->_kqueue_fd, loop->_kqueue_changelist, loop->_kqueue_nchanges, NULL, 0,
@@ -637,7 +655,7 @@ ah_err_t ah_i_loop_alloc_req(ah_loop_t* loop, ah_i_loop_req_t** req)
 
     return AH_ENONE;
 
-#elif AH_USE_URING
+#    elif AH_USE_URING
 
     struct io_uring_sqe* sqe = io_uring_get_sqe(&loop->_uring);
     if (ah_unlikely(sqe == NULL)) {
@@ -663,8 +681,10 @@ ah_err_t ah_i_loop_alloc_req(ah_loop_t* loop, ah_i_loop_req_t** req)
 
     return AH_ENONE;
 
-#endif
+#    endif
 }
+
+#endif
 
 void ah_i_loop_dealloc_evt(ah_loop_t* loop, s_evt_t* evt)
 {

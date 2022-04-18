@@ -36,6 +36,7 @@
 #endif
 
 #define AH_HAS_BSD_SOCKETS (AH_USE_IOCP || AH_USE_KQUEUE || AH_USE_URING)
+#define AH_HAS_TASK_QUEUE  (AH_USE_KQUEUE || AH_USE_URING)
 #define AH_HAS_POSIX       (AH_USE_KQUEUE || AH_USE_URING)
 
 #if defined(__clang__)

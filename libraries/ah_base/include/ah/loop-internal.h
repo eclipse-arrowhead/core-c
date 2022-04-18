@@ -125,12 +125,19 @@ union ah_i_loop_evt_body {
 struct ah_i_loop_evt {
     void (*_cb)(ah_i_loop_evt_t*, ah_i_loop_res_t*);
     union ah_i_loop_evt_body _body;
+
+#if AH_USE_IOCP
+    OVERLAPPED _overlapped;
+#endif
+
     ah_i_loop_evt_t* _next_free; // Used by loop allocator. Do not use directly.
 };
 
 ah_err_t ah_i_loop_alloc_evt(ah_loop_t* loop, ah_i_loop_evt_t** evt);
+#if !AH_USE_IOCP
 ah_err_t ah_i_loop_alloc_evt_and_req(ah_loop_t* loop, ah_i_loop_evt_t** evt, ah_i_loop_req_t** req);
 ah_err_t ah_i_loop_alloc_req(ah_loop_t* loop, ah_i_loop_req_t** req);
+#endif
 void ah_i_loop_dealloc_evt(ah_loop_t* loop, ah_i_loop_evt_t* evt);
 
 bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err);
