@@ -4,6 +4,7 @@ project(ah_unit C)
 set(CMAKE_C_STANDARD 99)
 set(
     SOURCE_FILES
+    include/ah/internal/unit.h
     include/ah/unit.h
     src/unit.c
 )

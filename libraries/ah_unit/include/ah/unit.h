@@ -7,9 +7,7 @@
 #ifndef AH_UNIT_H_
 #define AH_UNIT_H_
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "internal/unit.h"
 
 #define ah_unit_assert(unit, is_success, message) ah_i_unit_assert(AH_I_UNIT_WRAP(unit), (is_success), (message))
 
@@ -40,22 +38,6 @@ struct ah_unit {
     int fail_count;
 };
 
-struct ah_i_unit {
-    struct ah_unit* external;
-
-    const char* file;
-    int line;
-    const char* func;
-};
-
 void ah_unit_print_results(const ah_unit_t* unit);
-
-bool ah_i_unit_assert(struct ah_i_unit unit, bool is_success, const char* message);
-bool ah_i_unit_assertf(struct ah_i_unit unit, bool is_success, const char* format, ...);
-bool ah_i_unit_assert_enum_eq(struct ah_i_unit unit, int a, int b, const char* (*tostr_cb)(int) );
-bool ah_i_unit_assert_mem_eq(struct ah_i_unit unit, const void* a, const void* b, size_t size, const char* message);
-bool ah_i_unit_assert_signed_eq(struct ah_i_unit unit, intmax_t a, intmax_t b, const char* message);
-bool ah_i_unit_assert_str_eq(struct ah_i_unit unit, const char* a, const char* b, const char* message);
-bool ah_i_unit_assert_unsigned_eq(struct ah_i_unit unit, uintmax_t a, uintmax_t b, const char* message);
 
 #endif
