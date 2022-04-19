@@ -9,6 +9,7 @@
 
 #include "assert.h"
 #include "buf.h"
+#include "internal/udp.h"
 #include "sock.h"
 
 #include <stdbool.h>
@@ -36,10 +37,7 @@ struct ah_udp_recv_ctx {
         ah_err_t err);
     void (*alloc_cb)(ah_udp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_expected);
 
-#if AH_USE_URING
-    union ah_sockaddr _remote_addr;
-    struct msghdr _msghdr;
-#endif
+    AH_I_UDP_RECV_CTX_FIELDS
 };
 
 struct ah_udp_send_ctx {
@@ -47,36 +45,17 @@ struct ah_udp_send_ctx {
     ah_sockaddr_t remote_addr;
     ah_bufvec_t bufvec;
 
-#if AH_USE_URING
-    struct msghdr _msghdr;
-#endif
+    AH_I_UDP_SEND_CTX_FIELDS
 };
 
 struct ah_udp_sock {
-    ah_loop_t* _loop;
-    void* _user_data;
-
-#if AH_HAS_BSD_SOCKETS
-    ah_i_sockfd_t _fd;
-#endif
-
-    bool _is_ipv6;
-    bool _is_open;
-    bool _is_receiving;
+    AH_I_UDP_SOCK_FIELDS
 };
 
 ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr,
-ah_udp_open_cb cb);
+    ah_udp_open_cb cb);
 
 ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr);
-
-#if AH_HAS_BSD_SOCKETS
-ah_extern_inline ah_i_sockfd_t ah_udp_get_fd(const ah_udp_sock_t* sock)
-{
-    ah_assert_if_debug(sock != NULL);
-    return sock->_fd;
-}
-#endif
 
 ah_extern_inline ah_loop_t* ah_udp_get_loop(const ah_udp_sock_t* sock)
 {
