@@ -15,19 +15,13 @@ ah_extern const char* ah_strerror(ah_err_t err)
         string = "no error";
         break;
 
-#define AH_I_ERR_E(NAME, POSIX_CODE, WIN32_CODE, STRING)                                                               \
+#define AH_I_ERR_E(NAME, CODE, STRING)                                                                                 \
     case AH_E##NAME:                                                                                                   \
         string = (STRING);                                                                                             \
         break;
 
-#define AH_I_ERR_P(NAME, CODE, STRING)                                                                                 \
-    case AH_E##NAME:                                                                                                   \
-        string = (STRING);                                                                                             \
-        break;
+        AH_I_ERR_MAP(AH_I_ERR_E)
 
-        AH_I_ERR_MAP(AH_I_ERR_E, AH_I_ERR_P)
-
-#undef AH_I_ERR_P
 #undef AH_I_ERR_E
 
     default:

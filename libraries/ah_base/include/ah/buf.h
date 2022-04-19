@@ -38,7 +38,7 @@ struct ah_bufvec {
     size_t length;
 };
 
-ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, void* data, const size_t size);
+ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, void* data, size_t size);
 
 #if AH_IS_WIN32
 ah_extern ah_err_t ah_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, ULONG buffer_count);
