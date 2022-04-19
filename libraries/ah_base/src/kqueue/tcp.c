@@ -20,8 +20,6 @@ static void s_on_connect(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
 static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
 static void s_on_write(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
 
-static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx);
-
 ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb)
 {
     if (sock == NULL || loop == NULL || local_addr == NULL) {
@@ -126,7 +124,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
 
     ah_err_t err;
 
-    if (connect(sock->_fd, ah_sockaddr_cast_const(remote_addr), ah_sockaddr_get_size(remote_addr)) != 0) {
+    if (connect(sock->_fd, ah_i_sockaddr_cast_const(remote_addr), ah_i_sockaddr_get_size(remote_addr)) != 0) {
         if (errno == EINPROGRESS) {
             ah_i_loop_evt_t* evt;
             struct kevent* kev;
@@ -268,7 +266,7 @@ static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
         ah_sockaddr_t sockaddr;
         socklen_t socklen = sizeof(ah_sockaddr_t);
 
-        const int fd = accept(listener->_fd, ah_sockaddr_cast(&sockaddr), &socklen);
+        const int fd = accept(listener->_fd, ah_i_sockaddr_cast(&sockaddr), &socklen);
         if (fd == -1) {
             ctx->accept_cb(listener, NULL, NULL, errno);
             continue;
@@ -304,21 +302,6 @@ ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx
         return AH_ESTATE;
     }
 
-    ah_err_t err = s_prep_read(sock, ctx);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    sock->_state_read = AH_I_TCP_STATE_READ_STARTED;
-
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_i_tcp_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
-{
-    ah_assert_if_debug(sock != NULL);
-    ah_assert_if_debug(ctx != NULL);
-
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
@@ -333,6 +316,8 @@ ah_extern ah_err_t ah_i_tcp_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ct
 
     EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
     sock->_read_or_listen_evt = evt;
+
+    sock->_state_read = AH_I_TCP_STATE_READ_STARTED;
 
     return AH_ENONE;
 }

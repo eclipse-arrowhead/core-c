@@ -376,7 +376,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     socklen_t socklen = sizeof(remote_addr);
 
     struct msghdr msghdr = {
-        .msg_name = ah_sockaddr_cast(&remote_addr),
+        .msg_name = ah_i_sockaddr_cast(&remote_addr),
         .msg_namelen = socklen,
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
@@ -561,8 +561,8 @@ static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     }
 
     struct msghdr msghdr = {
-        .msg_name = ah_sockaddr_cast(&ctx->remote_addr),
-        .msg_namelen = ah_sockaddr_get_size(&ctx->remote_addr),
+        .msg_name = ah_i_sockaddr_cast(&ctx->remote_addr),
+        .msg_namelen = ah_i_sockaddr_get_size(&ctx->remote_addr),
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
     };
