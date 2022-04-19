@@ -10,6 +10,7 @@
 #include "ah/err.h"
 
 #include <stdlib.h>
+#include <winsock2.h>
 
 ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
 {

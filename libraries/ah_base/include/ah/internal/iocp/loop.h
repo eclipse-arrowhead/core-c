@@ -27,6 +27,6 @@
 #define AH_I_LOOP_EVT_BODY_TASK_SCHEDULE_AT_PLATFORM_FIELDS
 #define AH_I_LOOP_EVT_PLATFORM_FIELDS OVERLAPPED _overlapped;
 
-typedef OVERLAPPED_ENTRY* ah_i_loop_res_t;
+typedef OVERLAPPED_ENTRY ah_i_loop_res_t;
 
 #endif
