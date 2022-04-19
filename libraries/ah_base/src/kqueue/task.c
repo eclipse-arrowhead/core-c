@@ -40,7 +40,7 @@ ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baselin
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_kev(task->_loop, &evt, &kev);
+    ah_err_t err = ah_i_loop_evt_alloc_with_kev(task->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }

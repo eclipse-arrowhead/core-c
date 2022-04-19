@@ -137,7 +137,7 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct a
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_loop_alloc_evt_and_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev)
+ah_extern ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);

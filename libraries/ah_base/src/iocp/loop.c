@@ -73,7 +73,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* ti
             evt->_cb(evt, overlapped_entry);
         }
 
-        ah_i_loop_dealloc_evt(loop, evt);
+        ah_i_loop_evt_dealloc(loop, evt);
     }
 
     return AH_EOPNOTSUPP; // TODO: Complete.

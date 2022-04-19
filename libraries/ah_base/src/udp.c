@@ -273,7 +273,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
+    ah_err_t err = ah_i_loop_evt_alloc_with_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -289,7 +289,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+    ah_err_t err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
     if (err != AH_ENONE) {
         return err;
     }
@@ -306,7 +306,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_into_iovec(&bufvec, &iov, &iovcnt);
+    err = ah_i_bufvec_into_iovec(&bufvec, &iov, &iovcnt);
     if (ah_unlikely(err != AH_ENONE)) {
         return err;
     }
@@ -411,7 +411,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     }
 
     struct ah_bufvec bufvec;
-    err = ah_bufvec_from_iovec(&bufvec, ctx->_msghdr.msg_iov, 0);
+    err = ah_i_bufvec_from_iovec(&bufvec, ctx->_msghdr.msg_iov, 0);
     if (err != AH_ENONE) {
         goto call_recv_cb_with_err_and_return;
     }
@@ -479,7 +479,7 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
+    ah_err_t err = ah_i_loop_evt_alloc_with_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -495,7 +495,7 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &sqe);
+    ah_err_t err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
     if (err != AH_ENONE) {
         return err;
     }
@@ -506,7 +506,7 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
+    err = ah_i_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
     if (err != AH_ENONE) {
         return err;
     }
@@ -615,7 +615,7 @@ ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
         ah_i_loop_evt_t* evt;
         struct io_uring_sqe* sqe;
 
-        err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+        err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
         if (err == AH_ENONE) {
             evt->_cb = s_on_close;
             evt->_body._udp_close._sock = sock;

@@ -106,18 +106,18 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* ti
     loop->_now = ah_time_now();
 
     for (;;) {
-        s_evt_t* evt = io_uring_cqe_get_data(cqe);
+    ah_i_loop_evt_t* evt = io_uring_cqe_get_data(cqe);
 
         if (evt != NULL && cqe->res != -ECANCELED) {
             if (evt->_cb != NULL) {
                 evt->_cb(evt, cqe);
             }
-            ah_i_loop_dealloc_evt(loop, evt);
+            ah_i_loop_evt_dealloc(loop, evt);
         }
 
         io_uring_cqe_seen(&loop->_uring, cqe);
 
-        err = s_get_pending_err(loop);
+        err = ah_i_loop_get_pending_err(loop);
         if (err != AH_ENONE) {
             return err;
         }
@@ -138,7 +138,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* ti
     return AH_ENONE;
 }
 
-ah_err_t ah_i_loop_alloc_evt_and_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe)
+ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
@@ -147,16 +147,16 @@ ah_err_t ah_i_loop_alloc_evt_and_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, str
     ah_err_t err;
 
     ah_i_loop_evt_t* evt0;
-    struct kevent* sqe0;
+    struct io_uring_sqe* sqe0;
 
-    err = ah_i_loop_alloc_evt(loop, &evt0);
+    err = ah_i_loop_evt_alloc(loop, &evt0);
     if (err != AH_ENONE) {
         return err;
     }
 
     err = ah_i_loop_alloc_sqe(loop, &sqe0);
     if (err != AH_ENONE) {
-        ah_i_loop_dealloc_evt(loop, evt0);
+        ah_i_loop_evt_dealloc(loop, evt0);
         return err;
     }
 

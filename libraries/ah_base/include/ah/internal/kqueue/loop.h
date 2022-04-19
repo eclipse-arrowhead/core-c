@@ -35,7 +35,7 @@
 
 typedef struct kevent ah_i_loop_res_t;
 
-ah_err_t ah_i_loop_alloc_evt_and_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev);
+ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev);
 ah_err_t ah_i_loop_alloc_kev(ah_loop_t* loop, struct kevent** kev);
 
 #endif

@@ -30,7 +30,7 @@
 
 typedef struct io_uring_cqe ah_i_loop_res_t;
 
-ah_err_t ah_i_loop_alloc_evt_and_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe);
+ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe);
 ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sqe);
 
 #endif

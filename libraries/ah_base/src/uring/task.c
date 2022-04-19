@@ -8,6 +8,7 @@
 
 #include "ah/abort.h"
 #include "ah/err.h"
+#include "ah/loop.h"
 #include "ah/time.h"
 
 #include <stddef.h>
@@ -38,7 +39,7 @@ ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baselin
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_sqe(task->_loop, &evt, &sqe);
+    ah_err_t err = ah_i_loop_evt_alloc_with_sqe(task->_loop, &evt, &sqe);
     if (err != AH_ENONE) {
         return err;
     }

@@ -175,7 +175,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
             ah_i_loop_evt_t* evt;
             struct kevent* kev;
 
-            err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
+            err = ah_i_loop_evt_alloc_with_kev(sock->_loop, &evt, &kev);
             if (err != AH_ENONE) {
                 return err;
             }
@@ -214,7 +214,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
-    err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+    err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
     if (err != AH_ENONE) {
         return err;
     }
@@ -300,7 +300,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
-    err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
+    err = ah_i_loop_evt_alloc_with_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -317,7 +317,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
-    err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &sqe);
+    err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
     if (err != AH_ENONE) {
         return err;
     }
@@ -430,7 +430,7 @@ static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
 prep_another_accept:
 
-    err = ah_i_loop_alloc_evt_and_sqe(listener->_loop, &evt0, &sqe);
+    err = ah_i_loop_evt_alloc_with_sqe(listener->_loop, &evt0, &sqe);
     if (err != AH_ENONE) {
         ctx->listen_cb(listener, err);
         return;
@@ -476,7 +476,7 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
+    ah_err_t err = ah_i_loop_evt_alloc_with_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -495,7 +495,7 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+    ah_err_t err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
     if (err != AH_ENONE) {
         return err;
     }
@@ -513,7 +513,7 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_into_iovec(&ctx->_bufvec, &iov, &iovcnt);
+    err = ah_i_bufvec_into_iovec(&ctx->_bufvec, &iov, &iovcnt);
     if (err != AH_ENONE) {
         return err;
     }
@@ -667,7 +667,7 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
+    ah_err_t err = ah_i_loop_evt_alloc_with_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -683,7 +683,7 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+    ah_err_t err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
     if (err != AH_ENONE) {
         return err;
     }
@@ -694,7 +694,7 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
+    err = ah_i_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
     if (err != AH_ENONE) {
         return err;
     }
@@ -864,7 +864,7 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
         ah_i_loop_evt_t* evt;
         struct io_uring_sqe* sqe;
 
-        err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+        err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
         if (err == AH_ENONE) {
             evt->_cb = s_on_close;
             evt->_body._tcp_close._sock = sock;
