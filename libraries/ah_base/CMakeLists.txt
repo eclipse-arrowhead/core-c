@@ -63,6 +63,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         src/kqueue/loop.c
         src/kqueue/task.c
         src/kqueue/tcp.c
+        src/posix/abort.c
         src/posix/buf.c
     )
 endif ()
@@ -82,6 +83,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         src/uring/task.c
         src/uring/tcp.c
         src/uring/time.c
+        src/posix/abort.c
         src/posix/buf.c
     )
 endif ()
@@ -99,6 +101,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         src/bsd/sock.c
         src/iocp/loop.c
         src/iocp/task.c
+        src/win32/abort.c
         src/win32/buf.c
         src/win32/time.c
     )
