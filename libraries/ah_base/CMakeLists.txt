@@ -14,6 +14,7 @@ set(
     include/ah/internal/loop.h
     include/ah/internal/sock.h
     include/ah/internal/task.h
+    include/ah/internal/tcp.h
     include/ah/internal/time.h
     include/ah/ip.h
     include/ah/lib.h
@@ -56,6 +57,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         include/ah/internal/darwin/time.h
         include/ah/internal/kqueue/loop.h
         include/ah/internal/kqueue/task.h
+        include/ah/internal/kqueue/tcp.h
         include/ah/internal/posix/buf.h
         src/bsd/sock.c
         src/darwin/time.c
@@ -72,6 +74,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         include/ah/internal/bsd/sock.h
         include/ah/internal/uring/loop.h
         include/ah/internal/uring/task.h
+        include/ah/internal/uring/tcp.h
         include/ah/internal/uring/time.h
         include/ah/internal/posix/buf.h
         src/bsd/sock.c
@@ -89,6 +92,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         include/ah/internal/bsd/sock.h
         include/ah/internal/iocp/loop.h
         include/ah/internal/iocp/task.h
+        include/ah/internal/iocp/tcp.h
         include/ah/internal/win32/buf.h
         include/ah/internal/win32/time.h
         src/bsd/sock.c

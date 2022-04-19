@@ -9,10 +9,10 @@
 
 #include "assert.h"
 #include "buf.h"
+#include "internal/tcp.h"
 #include "sock.h"
 
 #include <stdbool.h>
-
 
 #define AH_TCP_SHUTDOWN_RD   1u
 #define AH_TCP_SHUTDOWN_WR   2u
@@ -29,41 +29,25 @@ struct ah_tcp_listen_ctx {
     void (*accept_cb)(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, ah_sockaddr_t* remote_addr, ah_err_t err);
     void (*alloc_cb)(ah_tcp_sock_t* sock, ah_tcp_sock_t** conn);
 
-#if AH_USE_URING
-    ah_sockaddr_t _remote_addr;
-    socklen_t _remote_addr_len;
-#endif
+    AH_I_TCP_LISTEN_CTX_FIELDS
 };
 
 struct ah_tcp_read_ctx {
     void (*read_cb)(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_read, ah_err_t err);
     void (*alloc_cb)(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_expected);
 
-#if AH_USE_URING
-    ah_bufvec_t _bufvec;
-#endif
+    AH_I_TCP_READ_CTX_FIELDS
 };
 
 struct ah_tcp_write_ctx {
     void (*write_cb)(ah_tcp_sock_t* conn, ah_err_t err);
     ah_bufvec_t bufvec;
+
+    AH_I_TCP_WRITE_CTX_FIELDS
 };
 
 struct ah_tcp_sock {
-    ah_loop_t* _loop;
-    void* _user_data;
-
-#if AH_USE_KQUEUE
-    struct ah_i_loop_evt* _read_or_listen_evt;
-#endif
-
-#if AH_HAS_BSD_SOCKETS
-    ah_i_sockfd_t _fd;
-#endif
-
-    uint8_t _state;
-    uint8_t _state_read;
-    uint8_t _state_write;
+    AH_I_TCP_SOCK_FIELDS
 };
 
 ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr,
@@ -71,14 +55,6 @@ ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_so
 
 ah_extern ah_err_t ah_tcp_get_local_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* local_addr);
 ah_extern ah_err_t ah_tcp_get_remote_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* remote_addr);
-
-#if AH_HAS_BSD_SOCKETS
-ah_extern_inline ah_i_sockfd_t ah_tcp_get_fd(const ah_tcp_sock_t* sock)
-{
-    ah_assert_if_debug(sock != NULL);
-    return sock->_fd;
-}
-#endif
 
 ah_extern_inline ah_loop_t* ah_tcp_get_loop(const ah_tcp_sock_t* sock)
 {
