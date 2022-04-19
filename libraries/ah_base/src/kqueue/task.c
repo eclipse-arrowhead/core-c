@@ -13,7 +13,7 @@
 
 #include <stddef.h>
 
-static void s_on_execution(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
+static void s_on_execution(ah_i_loop_evt_t* evt, struct kevent* kev);
 
 ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
 {
@@ -77,10 +77,10 @@ ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baselin
     return AH_ENONE;
 }
 
-static void s_on_execution(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_execution(ah_i_loop_evt_t* evt, struct kevent* kev)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(kev != NULL);
 
     ah_task_t* task = evt->_body._task_schedule_at._task;
     ah_assert_if_debug(task != NULL);
@@ -89,7 +89,7 @@ static void s_on_execution(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
         return;
     }
 
-    ah_err_t err = (res->flags & EV_ERROR) != 0 ? (res->flags & EV_ERROR) : AH_ENONE;
+    ah_err_t err = (kev->flags & EV_ERROR) != 0 ? (kev->flags & EV_ERROR) : AH_ENONE;
 
     task->_state = AH_TASK_STATE_EXECUTED;
     task->_cb(task, err);

@@ -10,8 +10,8 @@
 #include "ah/err.h"
 #include "ah/loop.h"
 
-static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
+static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev);
+static void s_on_send(ah_i_loop_evt_t* evt, struct kevent* kev);
 
 ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr, ah_udp_open_cb cb)
 {
@@ -236,10 +236,10 @@ ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx
     return AH_ENONE;
 }
 
-static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(kev != NULL);
 
     ah_udp_sock_t* sock = evt->_body._udp_recv._sock;
     ah_assert_if_debug(sock != NULL);
@@ -255,14 +255,14 @@ static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     ah_err_t err;
 
-    if (ah_unlikely((res->flags & EV_ERROR) != 0)) {
-        err = (ah_err_t) res->data;
+    if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
+        err = (ah_err_t) kev->data;
         goto call_recv_cb_with_err_and_return;
     }
 
     size_t dgram_size;
 
-    if (ah_p_add_overflow(res->data, 0, &dgram_size)) {
+    if (ah_p_add_overflow(kev->data, 0, &dgram_size)) {
         err = AH_ERANGE;
         goto call_recv_cb_with_err_and_return;
     }
@@ -303,7 +303,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
         return;
     }
 
-    if (ah_unlikely((res->flags & EV_EOF) != 0)) {
+    if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
         goto call_recv_cb_with_err_and_return;
     }
@@ -365,10 +365,10 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_send(ah_i_loop_evt_t* evt, struct kevent* kev)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(kev != NULL);
 
     ah_udp_sock_t* sock = evt->_body._udp_send._sock;
     ah_assert_if_debug(sock != NULL);
@@ -380,12 +380,12 @@ static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     ah_err_t err;
 
-    if (ah_unlikely((res->flags & EV_ERROR) != 0)) {
-        err = (ah_err_t) res->data;
+    if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
+        err = (ah_err_t) kev->data;
         goto call_send_cb_with_sock_and_err;
     }
 
-    if (ah_unlikely((res->flags & EV_EOF) != 0)) {
+    if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
         goto call_send_cb_with_sock_and_err;
     }
@@ -405,8 +405,8 @@ static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
         .msg_iovlen = iovcnt,
     };
 
-    ssize_t send_res = sendmsg(sock->_fd, &msghdr, 0);
-    if (ah_unlikely(send_res < 0)) {
+    ssize_t res = sendmsg(sock->_fd, &msghdr, 0);
+    if (ah_unlikely(res < 0)) {
         err = errno;
         goto call_send_cb_with_sock_and_err;
     }

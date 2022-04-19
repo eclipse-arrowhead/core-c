@@ -164,10 +164,10 @@ union ah_i_loop_evt_body {
 };
 
 struct ah_i_loop_evt {
-    void (*_cb)(ah_i_loop_evt_t*, ah_i_loop_res_t*);
+    AH_I_LOOP_EVT_PLATFORM_FIELDS
+
     union ah_i_loop_evt_body _body;
     ah_i_loop_evt_t* _next_free; // Used by loop allocator. Do not use directly.
-    AH_I_LOOP_EVT_PLATFORM_FIELDS
 };
 
 struct ah_i_loop_evt_page {

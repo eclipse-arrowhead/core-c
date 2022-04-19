@@ -10,11 +10,9 @@
 #include "ah/err.h"
 #include "ah/loop.h"
 
-#if AH_USE_URING
-static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-#endif
-static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
+static void s_on_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx);
 
@@ -275,10 +273,10 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(cqe != NULL);
 
     ah_udp_sock_t* sock = evt->_body._udp_recv._sock;
     ah_assert_if_debug(sock != NULL);
@@ -291,9 +289,6 @@ static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     if (!sock->_is_open || !sock->_is_receiving) {
         return;
     }
-
-    struct io_uring_cqe* cqe = res;
-    ah_assert_if_debug(cqe != NULL);
 
     ah_err_t err;
 
@@ -383,10 +378,10 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(cqe != NULL);
 
     ah_udp_sock_t* sock = evt->_body._udp_send._sock;
     ah_assert_if_debug(sock != NULL);
@@ -397,9 +392,6 @@ static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);
 
     ah_err_t err;
-
-    struct io_uring_cqe* cqe = res;
-    ah_assert_if_debug(cqe != NULL);
 
     if (ah_unlikely(cqe->res < 0)) {
         err = -(cqe->res);
@@ -461,10 +453,10 @@ ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
     return err;
 }
 
-static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(cqe != NULL);
 
     ah_udp_sock_t* sock = evt->_body._udp_close._sock;
     ah_assert_if_debug(sock != NULL);
@@ -476,5 +468,5 @@ static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     ah_udp_close_cb cb = evt->_body._udp_close._cb;
     ah_assert_if_debug(cb != NULL);
 
-    cb(sock, -(res->res));
+    cb(sock, -(cqe->res));
 }

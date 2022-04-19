@@ -25,8 +25,9 @@
 #define AH_I_LOOP_EVT_BODY_HAS_UDP_SEND         1
 
 #define AH_I_LOOP_EVT_BODY_TASK_SCHEDULE_AT_PLATFORM_FIELDS
-#define AH_I_LOOP_EVT_PLATFORM_FIELDS OVERLAPPED _overlapped;
 
-typedef OVERLAPPED_ENTRY ah_i_loop_res_t;
+#define AH_I_LOOP_EVT_PLATFORM_FIELDS                                                                                  \
+    void (*_cb)(ah_i_loop_evt_t*, OVERLAPPED_ENTRY*);                                                                  \
+    OVERLAPPED _overlapped;
 
 #endif

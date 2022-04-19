@@ -31,9 +31,7 @@
 #define AH_I_LOOP_EVT_BODY_HAS_UDP_SEND         1
 
 #define AH_I_LOOP_EVT_BODY_TASK_SCHEDULE_AT_PLATFORM_FIELDS
-#define AH_I_LOOP_EVT_PLATFORM_FIELDS
-
-typedef struct kevent ah_i_loop_res_t;
+#define AH_I_LOOP_EVT_PLATFORM_FIELDS void (*_cb)(ah_i_loop_evt_t*, struct kevent*);
 
 ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev);
 ah_err_t ah_i_loop_alloc_kev(ah_loop_t* loop, struct kevent** kev);

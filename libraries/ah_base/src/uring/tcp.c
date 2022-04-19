@@ -14,11 +14,11 @@
 #include <stddef.h>
 #include <sys/socket.h>
 
-static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_connect(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_write(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
+static void s_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_connect(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx);
 
@@ -143,10 +143,10 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     return AH_ENONE;
 }
 
-static void s_on_connect(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_connect(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(cqe != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_connect._sock;
     ah_assert_if_debug(sock != NULL);
@@ -154,8 +154,8 @@ static void s_on_connect(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     ah_tcp_connect_cb cb = evt->_body._tcp_connect._cb;
 
     ah_err_t err;
-    if (ah_unlikely(res->res != 0)) {
-        err = -(res->res);
+    if (ah_unlikely(cqe->res != 0)) {
+        err = -(cqe->res);
     }
     else {
         err = AH_ENONE;
@@ -209,10 +209,10 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     return AH_ENONE;
 }
 
-static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(cqe != NULL);
 
     ah_tcp_sock_t* listener = evt->_body._tcp_listen._sock;
     ah_assert_if_debug(listener != NULL);
@@ -222,9 +222,6 @@ static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     ah_assert_if_debug(ctx->listen_cb != NULL);
     ah_assert_if_debug(ctx->accept_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
-
-    struct io_uring_cqe* cqe = res;
-    ah_assert_if_debug(cqe != NULL);
 
     if (ah_unlikely(cqe->res < 0)) {
         ctx->accept_cb(listener, NULL, NULL, (ah_err_t) - (cqe->res));
@@ -324,10 +321,10 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(cqe != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_read._sock;
     ah_assert_if_debug(sock != NULL);
@@ -342,9 +339,6 @@ static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     }
 
     ah_err_t err;
-
-    struct io_uring_cqe* cqe = res;
-    ah_assert_if_debug(cqe != NULL);
 
     if (ah_unlikely(cqe->res < 0)) {
         err = -(cqe->res);
@@ -420,10 +414,10 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_write(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(cqe != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_write._sock;
     ah_assert_if_debug(sock != NULL);
@@ -436,9 +430,6 @@ static void s_on_write(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_write != AH_I_TCP_STATE_WRITE_STARTED) {
         return;
     }
-
-    struct io_uring_cqe* cqe = res;
-    ah_assert_if_debug(cqe != NULL);
 
     ah_err_t err;
 
@@ -551,10 +542,10 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
     return err;
 }
 
-static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(cqe != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_close._sock;
     ah_assert_if_debug(sock != NULL);
@@ -566,5 +557,5 @@ static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     ah_tcp_close_cb cb = evt->_body._tcp_close._cb;
     ah_assert_if_debug(cb != NULL);
 
-    cb(sock, -(res->res));
+    cb(sock, -(cqe->res));
 }

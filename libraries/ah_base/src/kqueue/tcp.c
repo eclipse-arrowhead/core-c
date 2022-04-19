@@ -15,10 +15,10 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_connect(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
-static void s_on_write(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
+static void s_on_accept(ah_i_loop_evt_t* evt, struct kevent* kev);
+static void s_on_connect(ah_i_loop_evt_t* evt, struct kevent* kev);
+static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev);
+static void s_on_write(ah_i_loop_evt_t* evt, struct kevent* kev);
 
 ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb)
 {
@@ -164,10 +164,10 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     return AH_ENONE;
 }
 
-static void s_on_connect(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_connect(ah_i_loop_evt_t* evt, struct kevent* kev)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(kev != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_connect._sock;
     ah_assert_if_debug(sock != NULL);
@@ -176,10 +176,10 @@ static void s_on_connect(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     ah_err_t err;
 
-    if (ah_unlikely((res->flags & EV_ERROR) != 0)) {
-        err = (ah_err_t) res->data;
+    if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
+        err = (ah_err_t) kev->data;
     }
-    else if (ah_unlikely((res->flags & EV_EOF) != 0)) {
+    else if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
     }
     else {
@@ -233,10 +233,10 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     return AH_ENONE;
 }
 
-static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(kev != NULL);
 
     ah_tcp_sock_t* listener = evt->_body._tcp_listen._sock;
     ah_assert_if_debug(listener != NULL);
@@ -246,9 +246,6 @@ static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
     ah_assert_if_debug(ctx->listen_cb != NULL);
     ah_assert_if_debug(ctx->accept_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
-
-    struct kevent* kev = res;
-    ah_assert_if_debug(kev != NULL);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         ctx->listen_cb(listener, (ah_err_t) kev->data);
@@ -322,10 +319,10 @@ ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx
     return AH_ENONE;
 }
 
-static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(kev != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_read._sock;
     ah_assert_if_debug(sock != NULL);
@@ -341,12 +338,12 @@ static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     ah_err_t err;
 
-    if (ah_unlikely((res->flags & EV_ERROR) != 0)) {
-        err = (ah_err_t) res->data;
+    if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
+        err = (ah_err_t) kev->data;
         goto call_read_cb_with_err_and_return;
     }
 
-    size_t n_bytes_left = res->data;
+    size_t n_bytes_left = kev->data;
 
     ah_bufvec_t bufvec;
 
@@ -383,7 +380,7 @@ static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
         }
     }
 
-    if (ah_unlikely((res->flags & EV_EOF) != 0)) {
+    if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
         sock->_state_read = AH_I_TCP_STATE_READ_OFF;
         goto call_read_cb_with_err_and_return;
@@ -448,10 +445,10 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_write(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
+static void s_on_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(res != NULL);
+    ah_assert_if_debug(kev != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_write._sock;
     ah_assert_if_debug(sock != NULL);
@@ -467,12 +464,12 @@ static void s_on_write(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     ah_err_t err;
 
-    if (ah_unlikely((res->flags & EV_ERROR) != 0)) {
-        err = (ah_err_t) res->data;
+    if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
+        err = (ah_err_t) kev->data;
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
     }
 
-    if (ah_unlikely((res->flags & EV_EOF) != 0)) {
+    if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = AH_EEOF;
         sock->_state_write = AH_I_TCP_STATE_WRITE_OFF;
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
@@ -486,8 +483,8 @@ static void s_on_write(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
     }
 
-    ssize_t write_res = writev(sock->_fd, iov, iovcnt);
-    if (ah_unlikely(write_res < 0)) {
+    ssize_t res = writev(sock->_fd, iov, iovcnt);
+    if (ah_unlikely(res < 0)) {
         err = errno;
         goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
     }
