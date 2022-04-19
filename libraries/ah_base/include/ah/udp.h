@@ -7,6 +7,7 @@
 #ifndef AH_UDP_H_
 #define AH_UDP_H_
 
+#include "assert.h"
 #include "buf.h"
 #include "sock.h"
 
@@ -56,7 +57,7 @@ struct ah_udp_sock {
     void* _user_data;
 
 #if AH_HAS_BSD_SOCKETS
-    ah_sockfd_t _fd;
+    ah_i_sockfd_t _fd;
 #endif
 
     bool _is_ipv6;
@@ -70,7 +71,7 @@ ah_udp_open_cb cb);
 ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr);
 
 #if AH_HAS_BSD_SOCKETS
-ah_extern_inline ah_sockfd_t ah_udp_get_fd(const ah_udp_sock_t* sock)
+ah_extern_inline ah_i_sockfd_t ah_udp_get_fd(const ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
     return sock->_fd;

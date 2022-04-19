@@ -58,7 +58,7 @@ struct ah_tcp_sock {
 #endif
 
 #if AH_HAS_BSD_SOCKETS
-    ah_sockfd_t _fd;
+    ah_i_sockfd_t _fd;
 #endif
 
     uint8_t _state;
@@ -73,7 +73,7 @@ ah_extern ah_err_t ah_tcp_get_local_addr(const ah_tcp_sock_t* sock, ah_sockaddr_
 ah_extern ah_err_t ah_tcp_get_remote_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* remote_addr);
 
 #if AH_HAS_BSD_SOCKETS
-ah_extern_inline ah_sockfd_t ah_tcp_get_fd(const ah_tcp_sock_t* sock)
+ah_extern_inline ah_i_sockfd_t ah_tcp_get_fd(const ah_tcp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
     return sock->_fd;

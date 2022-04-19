@@ -9,7 +9,6 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
-#include "sock-internal.h"
 
 #if AH_USE_URING
 static void s_on_close(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res);
@@ -312,7 +311,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     }
 
     ctx->_msghdr = (struct msghdr) {
-        .msg_name = ah_sockaddr_cast(&ctx->_remote_addr),
+        .msg_name = ah_i_sockaddr_cast(&ctx->_remote_addr),
         .msg_namelen = sizeof(ah_sockaddr_t),
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
@@ -512,8 +511,8 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     }
 
     ctx->_msghdr = (struct msghdr) {
-        .msg_name = ah_sockaddr_cast(&ctx->remote_addr),
-        .msg_namelen = ah_sockaddr_get_size(&ctx->remote_addr),
+        .msg_name = ah_i_sockaddr_cast(&ctx->remote_addr),
+        .msg_namelen = ah_i_sockaddr_get_size(&ctx->remote_addr),
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
     };

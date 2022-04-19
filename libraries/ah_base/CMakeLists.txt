@@ -12,6 +12,7 @@ set(
     include/ah/defs.h
     include/ah/err.h
     include/ah/internal/loop.h
+    include/ah/internal/sock.h
     include/ah/internal/task.h
     include/ah/internal/time.h
     include/ah/ip.h
@@ -29,8 +30,6 @@ set(
     src/lib.c
     src/loop.c
     src/math.c
-    src/posix/buf.c
-    src/sock-internal.h
     src/sock.c
     #src/task.c
     #src/tcp.c
@@ -53,10 +52,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     list(
         APPEND
         SOURCE_FILES
+        include/ah/internal/bsd/sock.h
         include/ah/internal/darwin/time.h
         include/ah/internal/kqueue/loop.h
         include/ah/internal/kqueue/task.h
         include/ah/internal/posix/buf.h
+        src/bsd/sock.c
         src/darwin/time.c
         src/kqueue/loop.c
         src/kqueue/task.c
@@ -68,10 +69,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     list(
         APPEND
         SOURCE_FILES
+        include/ah/internal/bsd/sock.h
         include/ah/internal/uring/loop.h
         include/ah/internal/uring/task.h
         include/ah/internal/uring/time.h
         include/ah/internal/posix/buf.h
+        src/bsd/sock.c
         src/uring/loop.c
         src/uring/task.c
         src/uring/time.c
@@ -83,10 +86,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(
         APPEND
         SOURCE_FILES
+        include/ah/internal/bsd/sock.h
         include/ah/internal/iocp/loop.h
         include/ah/internal/iocp/task.h
         include/ah/internal/win32/buf.h
         include/ah/internal/win32/time.h
+        src/bsd/sock.c
         src/iocp/loop.c
         src/iocp/task.c
         src/win32/buf.c

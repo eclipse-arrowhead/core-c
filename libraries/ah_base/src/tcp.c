@@ -9,7 +9,6 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
-#include "sock-internal.h"
 
 #include <stddef.h>
 
@@ -223,7 +222,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     evt->_body._tcp_connect._sock = sock;
     evt->_body._tcp_connect._cb = cb;
 
-    io_uring_prep_connect(sqe, sock->_fd, ah_sockaddr_cast_const(remote_addr), ah_sockaddr_get_size(remote_addr));
+    io_uring_prep_connect(sqe, sock->_fd, ah_i_sockaddr_cast_const(remote_addr), ah_i_sockaddr_get_size(remote_addr));
     io_uring_sqe_set_data(sqe, evt);
 
     sock->_state = S_STATE_CONNECTING;
@@ -327,7 +326,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     evt->_body._tcp_listen._ctx = ctx;
 
     ctx->_remote_addr_len = sizeof(ah_sockaddr_t);
-    io_uring_prep_accept(sqe, sock->_fd, ah_sockaddr_cast(&ctx->_remote_addr), &ctx->_remote_addr_len, 0);
+    io_uring_prep_accept(sqe, sock->_fd, ah_i_sockaddr_cast(&ctx->_remote_addr), &ctx->_remote_addr_len, 0);
     io_uring_sqe_set_data(sqe, evt);
 
 #endif
@@ -441,7 +440,7 @@ prep_another_accept:
     evt0->_body._tcp_listen._ctx = ctx;
 
     ctx->_remote_addr_len = sizeof(ah_sockaddr_t);
-    io_uring_prep_accept(sqe, listener->_fd, ah_sockaddr_cast(&ctx->_remote_addr), &ctx->_remote_addr_len, 0);
+    io_uring_prep_accept(sqe, listener->_fd, ah_i_sockaddr_cast(&ctx->_remote_addr), &ctx->_remote_addr_len, 0);
     io_uring_sqe_set_data(sqe, evt0);
 
 #endif
