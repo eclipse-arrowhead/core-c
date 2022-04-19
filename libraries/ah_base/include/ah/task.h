@@ -8,7 +8,7 @@
 #define AH_TASK_H_
 
 #include "assert.h"
-#include "defs.h"
+#include "internal/task.h"
 
 #include <stddef.h>
 
@@ -22,15 +22,7 @@ typedef unsigned ah_task_state_t;
 typedef void (*ah_task_cb)(ah_task_t* task, ah_err_t err);
 
 struct ah_task {
-    ah_task_state_t _state;
-    ah_task_cb _cb;
-    ah_loop_t* _loop;
-
-#if AH_HAS_TASK_QUEUE
-    struct ah_i_loop_evt* _evt;
-#endif
-
-    void* _data;
+    AH_I_TASK_FIELDS
 };
 
 struct ah_task_opts {

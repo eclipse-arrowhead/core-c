@@ -12,6 +12,7 @@ set(
     include/ah/defs.h
     include/ah/err.h
     include/ah/internal/loop.h
+    include/ah/internal/task.h
     include/ah/ip.h
     include/ah/lib.h
     include/ah/loop.h
@@ -53,7 +54,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         APPEND
         SOURCE_FILES
         include/ah/internal/kqueue/loop.h
+        include/ah/internal/kqueue/task.h
         src/kqueue/loop.c
+        src/kqueue/task.c
     )
 endif ()
 
@@ -62,7 +65,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         APPEND
         SOURCE_FILES
         include/ah/internal/uring/loop.h
+        include/ah/internal/uring/task.h
         src/uring/loop.c
+        src/uring/task.c
     )
 endif ()
 
@@ -71,7 +76,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         APPEND
         SOURCE_FILES
         include/ah/internal/iocp/loop.h
-        src/iocp/loop.c
+        include/ah/internal/iocp/task.h
+        src/iocp/task.c
     )
 endif ()
 
