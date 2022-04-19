@@ -13,16 +13,28 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+ah_noreturn void s_abort_with_last_win32_error(const char* message);
 static double s_get_ns_per_performance_tick(void);
 
 ah_extern ah_time_t ah_time_now()
 {
     LARGE_INTEGER time_lt = { 0 };
     if (!QueryPerformanceCounter(&time_lt)) {
-        ah_abort_with_last_win32_error("failed to query WIN32 performance counter");
+        s_abort_with_last_win32_error("failed to query WIN32 performance counter");
     }
 
     return (ah_time_t) { ._performance_count = time_lt.QuadPart };
+}
+
+ah_noreturn void s_abort_with_last_win32_error(const char* message)
+{
+    DWORD err = GetLastError();
+    char buf[256];
+
+    WORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+    size_t size = FormatMessageA(flags, NULL, err, 0, (LPSTR) &buf, sizeof(buf), NULL);
+
+    ah_abortf("%s; %*.s", message, size, buf);
 }
 
 ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timediff_t* diff)
@@ -49,7 +61,7 @@ static double s_get_ns_per_performance_tick(void)
     if (ah_unlikely(InterlockedCompareExchangeNoFence(&s_is_set, 1u, 0u) == 0u)) {
         LARGE_INTEGER performance_frequency = { .QuadPart = INT64_C(0) };
         if (!QueryPerformanceFrequency(&performance_frequency)) {
-            ah_abort_with_last_win32_error("failed to query WIN32 performance frequency");
+            s_abort_with_last_win32_error("failed to query WIN32 performance frequency");
         }
         s_ns_per_performance_tick = 1e9 / ((double) performance_frequency.QuadPart);
     }

@@ -11,8 +11,5 @@
 
 ah_extern ah_noreturn void ah_abort(void);
 ah_extern ah_noreturn void ah_abortf(const char* format, ...);
-#if AH_IS_WIN32
-ah_extern ah_noreturn void ah_abort_with_last_win32_error(const char* message);
-#endif
 
 #endif
