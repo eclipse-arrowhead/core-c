@@ -25,11 +25,11 @@ set(
     include/ah/udp.h
     src/abort.c
     src/alloc.c
-    src/buf.c
     src/err.c
     src/lib.c
     src/loop.c
     src/math.c
+    src/posix/buf.c
     src/sock-internal.h
     src/sock.c
     #src/task.c
@@ -53,12 +53,14 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     list(
         APPEND
         SOURCE_FILES
+        include/ah/internal/darwin/time.h
         include/ah/internal/kqueue/loop.h
         include/ah/internal/kqueue/task.h
-        include/ah/internal/kqueue/time.h
+        include/ah/internal/posix/buf.h
+        src/darwin/time.c
         src/kqueue/loop.c
         src/kqueue/task.c
-        src/kqueue/time.c
+        src/posix/buf.c
     )
 endif ()
 
@@ -69,9 +71,11 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         include/ah/internal/uring/loop.h
         include/ah/internal/uring/task.h
         include/ah/internal/uring/time.h
+        include/ah/internal/posix/buf.h
         src/uring/loop.c
         src/uring/task.c
         src/uring/time.c
+        src/posix/buf.c
     )
 endif ()
 
@@ -81,10 +85,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         SOURCE_FILES
         include/ah/internal/iocp/loop.h
         include/ah/internal/iocp/task.h
-        include/ah/internal/iocp/time.h
+        include/ah/internal/win32/buf.h
+        include/ah/internal/win32/time.h
         src/iocp/loop.c
         src/iocp/task.c
-        src/iocp/time.c
+        src/win32/buf.c
+        src/win32/time.c
     )
 endif ()
 

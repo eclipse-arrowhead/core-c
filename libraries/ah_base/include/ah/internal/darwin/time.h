@@ -4,8 +4,8 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_KQUEUE_TIME_H_
-#define AH_INTERNAL_KQUEUE_TIME_H_
+#ifndef AH_INTERNAL_DARWIN_TIME_H_
+#define AH_INTERNAL_DARWIN_TIME_H_
 
 #define AH_I_TIME_PLATFORM_FIELDS uint64_t _mach_absolute_time;
 

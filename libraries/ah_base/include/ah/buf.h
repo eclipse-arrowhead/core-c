@@ -7,30 +7,18 @@
 #ifndef AH_BUF_H_
 #define AH_BUF_H_
 
-#include "defs.h"
+#include "internal/buf.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
-#if AH_IS_WIN32
-#    define WIN32_LEAN_AND_MEAN
-#    include <windows.h>
-#endif
-
-#if AH_IS_WIN32
-typedef struct _WSABUF WSABUF;
-#elif AH_HAS_POSIX
-struct iovec;
-#endif
-
 struct ah_buf {
-#if AH_IS_WIN32
-    ULONG size;
-    uint8_t* octets;
-#else
-    uint8_t* octets;
-    size_t size;
-#endif
+
+    // Will always have two fields: `_octets` and `_size`. Their order and types
+    // will vary, however. Use ah_buf_set() to update and ah_buf_get_octets()
+    // and ah_buf_get_size() to query.
+
+    AH_I_BUF_FIELDS
 };
 
 struct ah_bufvec {
@@ -38,14 +26,16 @@ struct ah_bufvec {
     size_t length;
 };
 
-ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, void* data, size_t size);
+ah_extern_inline uint8_t* ah_buf_get_octets(const ah_buf_t* buf)
+{
+    return (uint8_t*) buf->_octets;
+}
 
-#if AH_IS_WIN32
-ah_extern ah_err_t ah_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, ULONG buffer_count);
-ah_extern ah_err_t ah_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffers, ULONG* buffer_count);
-#elif AH_HAS_POSIX
-ah_extern ah_err_t ah_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt);
-ah_extern ah_err_t ah_bufvec_into_iovec(ah_bufvec_t* bufvec, struct iovec** iov, int* iovcnt);
-#endif
+ah_extern_inline size_t ah_buf_get_size(const ah_buf_t* buf)
+{
+    return (size_t) buf->_size;
+}
+
+ah_extern ah_err_t ah_buf_set(ah_buf_t* buf, uint8_t* octets, size_t size);
 
 #endif

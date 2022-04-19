@@ -166,8 +166,8 @@ static void s_on_connect(ah_tcp_sock_t* conn, ah_err_t err)
     user_data->free_write_buf = NULL;
 
     *write_buf = (ah_buf_t) {
-        .octets = (uint8_t*) "Hello, Arrowhead!",
-        .size = 18u,
+        ._octets = (uint8_t*) "Hello, Arrowhead!",
+        ._size = 18u,
     };
 
     if (!ah_unit_assert(unit, user_data->free_write_ctx != NULL, "user_data->free_write_ctx == NULL")) {
@@ -238,7 +238,7 @@ static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_
     if (!ah_unit_assert(unit, bufvec->items != NULL, "bufvec->items == NULL")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0].octets)) {
+    if (!ah_unit_assert_str_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0]._octets)) {
         return;
     }
 
@@ -284,8 +284,8 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     struct s_tcp_user_data user_data = {
         .free_read_buf = &(ah_buf_t) {
-            .octets = read_buf_octets,
-            .size = sizeof(read_buf_octets),
+            ._octets = read_buf_octets,
+            ._size = sizeof(read_buf_octets),
         },
         .free_read_conn = &(ah_tcp_sock_t) { 0 },
         .free_read_ctx = &(ah_tcp_read_ctx_t) { 0 },

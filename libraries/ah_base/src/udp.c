@@ -368,7 +368,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_into_iovec(&bufvec, &iov, &iovcnt);
+    err = ah_i_bufvec_into_iovec(&bufvec, &iov, &iovcnt);
     if (ah_unlikely(err != AH_ENONE)) {
         goto call_recv_cb_with_err_and_return;
     }
@@ -555,7 +555,7 @@ static void s_on_send(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
+    err = ah_i_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
     if (ah_unlikely(err != AH_ENONE)) {
         err = AH_EDOM;
         goto call_send_cb_with_sock_and_err;

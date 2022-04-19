@@ -94,7 +94,7 @@ static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufvec
     if (!ah_unit_assert(unit, bufvec->items != NULL, "bufvec->items == NULL")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0].octets)) {
+    if (!ah_unit_assert_str_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0]._octets)) {
         return;
     }
 
@@ -135,8 +135,8 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     struct s_udp_user_data user_data = {
         .free_buf = &(ah_buf_t) {
-            .octets = recv_buf_octets,
-            .size = sizeof(recv_buf_octets),
+            ._octets = recv_buf_octets,
+            ._size = sizeof(recv_buf_octets),
         },
         .unit = unit,
     };
@@ -202,8 +202,8 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
             .remote_addr = recv_addr,
             .bufvec = (ah_bufvec_t) {
                 .items = &(ah_buf_t) {
-                    .octets = (uint8_t*) "Hello, Arrowhead!",
-                    .size = 18u,
+                    ._octets = (uint8_t*) "Hello, Arrowhead!",
+                    ._size = 18u,
                 },
                 .length = 1u,
             },
