@@ -7,14 +7,11 @@
 #ifndef AH_TIME_H_
 #define AH_TIME_H_
 
-#include "defs.h"
+#include "internal/time.h"
+#include "math.h"
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#if AH_IS_LINUX && AH_USE_URING
-#    include <linux/time_types.h>
-#endif
 
 #define AH_TIMEDIFF_C(V) INT64_C(V)
 
@@ -30,13 +27,7 @@
 #define AH_TIMEDIFF_MAX INT64_MAX
 
 struct ah_time {
-#if AH_IS_DARWIN
-    uint64_t _mach_absolute_time;
-#elif AH_IS_LINUX && AH_USE_URING
-    struct __kernel_timespec _timespec;
-#elif AH_IS_WIN32
-    int64_t _performance_count;
-#endif
+    AH_I_TIME_FIELDS
 };
 
 typedef int64_t ah_timediff_t; // Nanoseconds.
@@ -51,9 +42,24 @@ ah_extern bool ah_time_is_after(ah_time_t a, ah_time_t b);
 ah_extern bool ah_time_is_before(ah_time_t a, ah_time_t b);
 ah_extern bool ah_time_is_zero(ah_time_t time);
 
-ah_extern ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);
-ah_extern ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);
-ah_extern ah_err_t ah_timediff_mul(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);
-ah_extern ah_err_t ah_timediff_sub(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);
+ah_extern_inline ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
+{
+    return ah_add_int64(a, b, result);
+}
+
+ah_extern_inline ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
+{
+    return ah_div_int64(a, b, result);
+}
+
+ah_extern_inline ah_err_t ah_timediff_mul(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
+{
+    return ah_mul_int64(a, b, result);
+}
+
+ah_extern_inline ah_err_t ah_timediff_sub(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
+{
+    return ah_sub_int64(a, b, result);
+}
 
 #endif
