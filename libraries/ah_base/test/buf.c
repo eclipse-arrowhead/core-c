@@ -10,7 +10,7 @@
 
 #if AH_IS_WIN32
 #    include <winsock2.h>
-#elif AH_USE_POSIX
+#elif AH_HAS_POSIX
 #    include <sys/uio.h>
 #endif
 
@@ -35,7 +35,7 @@ static void s_should_use_same_data_layout_as_platform_variant(ah_unit_t* unit)
 
     ah_unit_assert(unit, sizeof(ah_buf_t) >= sizeof(WSABUF), "ah_buf_t seems to be missing fields");
 
-#elif AH_USE_POSIX
+#elif AH_HAS_POSIX
 
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_buf_t, octets, struct iovec, iov_base);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_buf_t, size, struct iovec, iov_len);

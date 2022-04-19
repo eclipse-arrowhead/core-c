@@ -17,15 +17,15 @@
 
 #if AH_IS_DARWIN
 #    define AH_I_ERR_MAP_PLATFORM(P)                                                                                   \
-        P(BADARCH, EBADARCH "bad CPU type in executable")                                                              \
-        P(BADEXEC, EBADEXEC "bad executable")                                                                          \
-        P(BADMACHO, EBADMACHO "malformed Macho file")                                                                  \
-        P(FTYPE, EFTYPE "inappropriate file type or format")                                                           \
-        P(NEEDAUTH, ENEEDAUTH "need authenticator")                                                                    \
-        P(PROCLIM, EPROCLIM "process limit reached")                                                                   \
-        P(PROCUNAVAIL, EPROCUNAVAIL "bad procedure for program")                                                       \
-        P(PROGMISMATCH, EPROGMISMATCH "program version wrong")                                                         \
-        P(SHLIBVERS, ESHLIBVERS "shared library version mismatch")
+        P(BADARCH, EBADARCH, "bad CPU type in executable")                                                             \
+        P(BADEXEC, EBADEXEC, "bad executable")                                                                         \
+        P(BADMACHO, EBADMACHO, "malformed Macho file")                                                                 \
+        P(FTYPE, EFTYPE, "inappropriate file type or format")                                                          \
+        P(NEEDAUTH, ENEEDAUTH, "need authenticator")                                                                   \
+        P(PROCLIM, EPROCLIM, "process limit reached")                                                                  \
+        P(PROCUNAVAIL, EPROCUNAVAIL, "bad procedure for program")                                                      \
+        P(PROGMISMATCH, EPROGMISMATCH, "program version wrong")                                                        \
+        P(SHLIBVERS, ESHLIBVERS, "shared library version mismatch")
 
 #elif AH_IS_LINUX
 #    define AH_I_ERR_MAP_PLATFORM(P)                                                                                   \
@@ -102,7 +102,7 @@
     E(NOEXEC, ENOEXEC, 5519, "executable file format error")                                                           \
     E(NOLCK, ENOLCK, 5520, "no locks available")                                                                       \
     E(NOLINK, ENOLINK, 5521, "link severed")                                                                           \
-    E(NOMEM, ENOMEM, ERROR_NOT_ENOUGH_MEMORY, "not enough memory")                                                       \
+    E(NOMEM, ENOMEM, ERROR_NOT_ENOUGH_MEMORY, "not enough memory")                                                     \
     E(NOMSG, ENOMSG, 5522, "no message of the desired type")                                                           \
     E(NOPROTOOPT, ENOPROTOOPT, WSAENOPROTOOPT, "protocol not available")                                               \
     E(NOSPC, ENOSPC, 5523, "no space left on device")                                                                  \

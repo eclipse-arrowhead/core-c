@@ -193,8 +193,8 @@ ah_extern ah_err_t ah_sub_size(const size_t a, const size_t b, size_t* result)
 
     size_t tmp;
 
-#if defined(ah_i_mul_overflow)
-    if (ah_i_mul_overflow(a, b, &tmp)) {
+#if defined(ah_i_sub_overflow)
+    if (ah_i_sub_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
 #else
