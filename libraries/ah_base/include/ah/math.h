@@ -12,12 +12,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if AH_VIA_GCC || AH_VIA_CLANG
-#    define ah_i_add_overflow(a, b, result) __builtin_add_overflow((a), (b), (result))
-#    define ah_i_mul_overflow(a, b, result) __builtin_mul_overflow((a), (b), (result))
-#    define ah_i_sub_overflow(a, b, result) __builtin_sub_overflow((a), (b), (result))
-#endif
-
 ah_extern ah_err_t ah_add_int64(int64_t a, int64_t b, int64_t* result);
 ah_extern ah_err_t ah_div_int64(int64_t a, int64_t b, int64_t* result);
 ah_extern ah_err_t ah_mul_int64(int64_t a, int64_t b, int64_t* result);

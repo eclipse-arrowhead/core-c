@@ -70,13 +70,13 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
 #if AH_IS_DARWIN
 
     ah_timediff_t tmp_td;
-    if (ah_i_sub_overflow(a._mach_absolute_time, b._mach_absolute_time, &tmp_td)) {
+    if (ah_p_sub_overflow(a._mach_absolute_time, b._mach_absolute_time, &tmp_td)) {
         return AH_ERANGE;
     }
 
     mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
-    if (ah_i_mul_overflow(tmp_td, info.numer, &tmp_td)) {
+    if (ah_p_mul_overflow(tmp_td, info.numer, &tmp_td)) {
         return AH_ERANGE;
     }
     tmp_td /= info.denom;
@@ -88,23 +88,23 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
 #elif AH_IS_LINUX && AH_USE_URING
 
     struct __kernel_timespec tmp_ts;
-    if (ah_i_sub_overflow(a._timespec.tv_sec, b._timespec.tv_sec, &tmp_ts.tv_sec)) {
+    if (ah_p_sub_overflow(a._timespec.tv_sec, b._timespec.tv_sec, &tmp_ts.tv_sec)) {
         return AH_ERANGE;
     }
 
     tmp_ts.tv_nsec = a._timespec.tv_nsec - b._timespec.tv_nsec;
     if (tmp_ts.tv_nsec < 0) {
-        if (ah_i_sub_overflow(tmp_ts.tv_sec, 1, &tmp_ts.tv_sec)) {
+        if (ah_p_sub_overflow(tmp_ts.tv_sec, 1, &tmp_ts.tv_sec)) {
             return AH_ERANGE;
         }
         tmp_ts.tv_nsec += 1000000000;
     }
 
     ah_timediff_t tmp_td;
-    if (ah_i_mul_overflow(tmp_ts.tv_sec, 1000000000, &tmp_td)) {
+    if (ah_p_mul_overflow(tmp_ts.tv_sec, 1000000000, &tmp_td)) {
         return AH_ERANGE;
     }
-    if (ah_i_add_overflow(tmp_ts.tv_nsec, tmp_td, &tmp_td)) {
+    if (ah_p_add_overflow(tmp_ts.tv_nsec, tmp_td, &tmp_td)) {
         return AH_ERANGE;
     }
 
@@ -236,10 +236,10 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
     mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
     uint64_t tmp = diff / info.numer;
-    if (ah_i_mul_overflow(tmp, info.denom, &tmp)) {
+    if (ah_p_mul_overflow(tmp, info.denom, &tmp)) {
         return AH_ERANGE;
     }
-    if (ah_i_add_overflow(time._mach_absolute_time, tmp, &tmp)) {
+    if (ah_p_add_overflow(time._mach_absolute_time, tmp, &tmp)) {
         return AH_ERANGE;
     }
 
@@ -250,19 +250,19 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
 #elif AH_IS_LINUX && AH_USE_URING
 
     struct __kernel_timespec tmp;
-    if (ah_i_add_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
+    if (ah_p_add_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
         return AH_ERANGE;
     }
     tmp.tv_nsec = time._timespec.tv_nsec + (diff % 1000000000);
     if (tmp.tv_nsec < 0) {
         tmp.tv_nsec += 1000000000;
-        if (ah_i_sub_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
+        if (ah_p_sub_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
             return AH_ERANGE;
         }
     }
     else if (tmp.tv_nsec >= 1000000000) {
         tmp.tv_nsec -= 1000000000;
-        if (ah_i_add_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
+        if (ah_p_add_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
             return AH_ERANGE;
         }
     }
@@ -295,10 +295,10 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
     mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
     uint64_t tmp = diff / info.numer;
-    if (ah_i_mul_overflow(tmp, info.denom, &tmp)) {
+    if (ah_p_mul_overflow(tmp, info.denom, &tmp)) {
         return AH_ERANGE;
     }
-    if (ah_i_sub_overflow(time._mach_absolute_time, tmp, &tmp)) {
+    if (ah_p_sub_overflow(time._mach_absolute_time, tmp, &tmp)) {
         return AH_ERANGE;
     }
 
@@ -309,19 +309,19 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
 #elif AH_IS_LINUX && AH_USE_URING
 
     struct __kernel_timespec tmp;
-    if (ah_i_sub_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
+    if (ah_p_sub_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
         return AH_ERANGE;
     }
     tmp.tv_nsec = time._timespec.tv_nsec - (diff % 1000000000);
     if (tmp.tv_nsec < 0) {
         tmp.tv_nsec += 1000000000;
-        if (ah_i_sub_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
+        if (ah_p_sub_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
             return AH_ERANGE;
         }
     }
     else if (tmp.tv_nsec >= 1000000000) {
         tmp.tv_nsec -= 1000000000;
-        if (ah_i_add_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
+        if (ah_p_add_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
             return AH_ERANGE;
         }
     }

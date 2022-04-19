@@ -562,7 +562,7 @@ static void s_on_read(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
             return;
         }
 
-        if (ah_i_sub_overflow(n_bytes_left, n_bytes_read, &n_bytes_left)) {
+        if (ah_p_sub_overflow(n_bytes_left, n_bytes_read, &n_bytes_left)) {
             err = AH_ERANGE;
             goto call_read_cb_with_err_and_return;
         }

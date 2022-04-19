@@ -136,7 +136,7 @@ ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline)
     if (a < b) {
         data = 0;
     }
-    else if (ah_i_sub_overflow(a, b, &data)) {
+    else if (ah_sub_overflow(a, b, &data)) {
         return AH_ERANGE;
     }
 #    endif

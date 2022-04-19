@@ -10,7 +10,6 @@
 #include "ah/err.h"
 #include "ah/loop-internal.h"
 #include "ah/loop.h"
-#include "ah/math.h"
 #include "sock-internal.h"
 
 #if AH_USE_URING
@@ -344,7 +343,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     size_t dgram_size;
 
-    if (ah_i_add_overflow(res->data, 0, &dgram_size)) {
+    if (ah_p_add_overflow(res->data, 0, &dgram_size)) {
         err = AH_ERANGE;
         goto call_recv_cb_with_err_and_return;
     }

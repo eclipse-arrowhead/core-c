@@ -86,6 +86,10 @@
 #    define ah_trap()         __builtin_trap()
 #    define ah_unlikely(expr) __builtin_expect(!!(expr), 0)
 #    define ah_unreachable()  __builtin_unreachable()
+
+#    define ah_p_add_overflow(a, b, result) __builtin_add_overflow((a), (b), (result))
+#    define ah_p_mul_overflow(a, b, result) __builtin_mul_overflow((a), (b), (result))
+#    define ah_p_sub_overflow(a, b, result) __builtin_sub_overflow((a), (b), (result))
 #elif AH_VIA_MSVC
 #    pragma intrinsic(__debugbreak)
 
@@ -98,6 +102,18 @@
 #    define ah_trap()         __debugbreak()
 #    define ah_unlikely(expr) expr
 #    define ah_unreachable()  __assume(0)
+
+#    if defined(_M_AMD64)
+#        pragma intrinsic(_mul128, _umul128)
+#        define ah_p_mul128(a_int64, b_int64, result_hi_int64)     _mul128((a_int64), (b_int64), (result_hi_int64))
+#        define ah_p_umul128(a_uint64, b_uint64, result_hi_uint64) _umul128((a_uint64), (b_uint64), (result_hi_uint64))
+#    endif
+
+#    if defined(_M_AMD64) || defined(_M_ARM64)
+#        pragma intrinsic(_mulh, _umulh)
+#        define ah_p_mulh(a_int64, b_int64)  _mulh((a_int64), (b_int64))
+#        define ah_p_umulh(a_int64, b_int64) _umulh((a_int64), (b_int64))
+#    endif
 #endif
 
 typedef int ah_err_t;
