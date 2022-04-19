@@ -33,7 +33,6 @@ set(
     src/math.c
     src/sock.c
     #src/task.c
-    #src/tcp.c
    # src/udp.c
 )
 set(
@@ -63,6 +62,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         src/darwin/time.c
         src/kqueue/loop.c
         src/kqueue/task.c
+        src/kqueue/tcp.c
         src/posix/buf.c
     )
 endif ()
@@ -80,6 +80,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         src/bsd/sock.c
         src/uring/loop.c
         src/uring/task.c
+        src/uring/tcp.c
         src/uring/time.c
         src/posix/buf.c
     )
