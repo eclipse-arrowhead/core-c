@@ -535,7 +535,7 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
             return AH_ENONE;
         }
 
-        ah_i_loop_try_set_pending_err(sock->_loop, err);
+        (void) ah_i_loop_try_set_pending_err(sock->_loop, err);
     }
 
     err = ah_i_sock_close(sock->_loop, sock->_fd);
