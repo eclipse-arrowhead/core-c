@@ -8,187 +8,57 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/loop-internal.h"
 #include "ah/math.h"
 
-#include <stdlib.h>
+static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list);
+static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, ah_i_loop_evt_page_t** page_list,
+    ah_i_loop_evt_t** free_list);
+static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t* evt_page_list);
 
-#if AH_USE_KQUEUE || AH_USE_URING
-#    include <fcntl.h>
-#    include <limits.h>
-#endif
-
-#if AH_USE_KQUEUE
-#    include <unistd.h>
-#endif
-
-#if AH_USE_IOCP
-#    include <winsock2.h>
-#endif
-
-#define S_STATE_INITIAL     0x01
-#define S_STATE_RUNNING     0x02
-#define S_STATE_STOPPED     0x04
-#define S_STATE_TERMINATING 0x08
-#define S_STATE_TERMINATED  0x10
-
-#define S_EVT_PAGE_SIZE     8192
-#define S_EVT_PAGE_CAPACITY ((S_EVT_PAGE_SIZE / sizeof(ah_i_loop_evt_t)) - 1)
-
-typedef struct ah_i_loop_evt_page s_evt_page_t;
-typedef ah_i_loop_evt_t s_evt_t;
-
-struct ah_i_loop_evt_page {
-    s_evt_t _evt_array[S_EVT_PAGE_CAPACITY];
-    void* _pad[3];
-    s_evt_page_t* _next_page;
-};
-
-static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, s_evt_page_t** evt_page, s_evt_t** free_list);
-static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, s_evt_page_t** page_list, s_evt_t** free_list);
-static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, s_evt_page_t* evt_page_list);
-
-static ah_err_t s_get_pending_err(ah_loop_t* loop);
-static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time);
 static void s_term(ah_loop_t* loop);
 
-ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, const ah_loop_opts_t* opts)
+ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
 {
-    if (loop == NULL) {
+    if (loop == NULL || opts == NULL) {
         return AH_EINVAL;
     }
 
     *loop = (ah_loop_t) { 0u };
 
-    size_t capacity = (opts != NULL && opts->capacity != 0u) ? opts->capacity : 1024u;
-    ah_alloc_cb alloc_cb = (opts != NULL && opts->alloc_cb != NULL) ? opts->alloc_cb : realloc;
-
-    ah_err_t err;
-
-    s_evt_page_t* evt_page_list;
-    s_evt_t* evt_free_list;
-    err = s_alloc_evt_page_list(alloc_cb, capacity, &evt_page_list, &evt_free_list);
+    ah_err_t err = ah_i_loop_init(loop, opts);
     if (err != AH_ENONE) {
         return err;
     }
 
-#if AH_USE_IOCP
+    ah_assert_if_debug(opts->alloc_cb != NULL);
+    ah_assert_if_debug(opts->capacity != 0u);
 
-    WSADATA wsa_data;
-    int res = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-    if (res != 0) {
-        err = res;
-        goto free_evt_page_list_and_return_err;
+    ah_i_loop_evt_page_t* evt_page_list;
+    ah_i_loop_evt_t* evt_free_list;
+    err = s_alloc_evt_page_list(opts->alloc_cb, opts->capacity, &evt_page_list, &evt_free_list);
+    if (err != AH_ENONE) {
+        ah_i_loop_term(loop);
+        return err;
     }
 
-    HANDLE iocp_handle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 1);
-    if (iocp_handle == NULL) {
-        err = GetLastError();
-        goto free_evt_page_list_and_return_err;
-    }
-
-    // TODO: Anything else to setup?
-
-    loop->_iocp_handle = iocp_handle;
-
-#elif AH_USE_KQUEUE
-
-    if (capacity > INT_MAX) {
-        err = errno;
-        goto free_evt_page_list_and_return_err;
-    }
-
-    int kqueue_fd = kqueue();
-    if (kqueue_fd == -1) {
-        err = errno;
-        goto free_evt_page_list_and_return_err;
-    }
-
-    if (fcntl(kqueue_fd, F_SETFD, FD_CLOEXEC) != 0) {
-        err = errno;
-        goto free_evt_page_list_close_fd_and_return_err;
-    }
-
-    struct kevent* kqueue_changelist = ah_malloc_array(alloc_cb, capacity, sizeof(struct kevent));
-    if (kqueue_changelist == NULL) {
-        err = errno;
-        goto free_evt_page_list_close_fd_and_return_err;
-    }
-
-    struct kevent* kqueue_eventlist = ah_malloc_array(alloc_cb, capacity, sizeof(struct kevent));
-    if (kqueue_eventlist == NULL) {
-        err = AH_ENOMEM;
-        goto free_evt_page_list_close_fd_free_changelist_and_return_err;
-    }
-
-    loop->_kqueue_capacity = (int) capacity;
-    loop->_kqueue_fd = kqueue_fd;
-    loop->_kqueue_changelist = kqueue_changelist;
-    loop->_kqueue_eventlist = kqueue_eventlist;
-
-#elif AH_USE_URING
-
-    if (capacity > UINT_MAX) {
-        err = errno;
-        goto free_evt_page_list_and_return_err;
-    }
-
-    err = io_uring_queue_init((unsigned) capacity, &loop->_uring, 0u);
-    if (err != 0) {
-        err = -err;
-        goto free_evt_page_list_and_return_err;
-    }
-
-    err = io_uring_ring_dontfork(&loop->_uring);
-    if (err != 0) {
-        err = -err;
-        goto free_evt_page_list_exit_uring_and_return_err;
-    }
-
-    if (fcntl(loop->_uring.ring_fd, F_SETFD, FD_CLOEXEC) != 0) {
-        err = errno;
-        goto free_evt_page_list_exit_uring_and_return_err;
-    }
-
-#endif
-
-    loop->_alloc_cb = alloc_cb;
+    loop->_alloc_cb = opts->alloc_cb;
     loop->_evt_page_list = evt_page_list;
     loop->_evt_free_list = evt_free_list;
     loop->_now = ah_time_now();
-    loop->_state = S_STATE_INITIAL;
+    loop->_state = AH_I_LOOP_STATE_INITIAL;
 
     return AH_ENONE;
-
-#if AH_USE_KQUEUE
-
-free_evt_page_list_close_fd_free_changelist_and_return_err:
-    ah_dealloc(alloc_cb, kqueue_changelist);
-
-free_evt_page_list_close_fd_and_return_err:
-    (void) close(kqueue_fd);
-
-#elif AH_USE_URING
-
-free_evt_page_list_exit_uring_and_return_err:
-    io_uring_queue_exit(&loop->_uring);
-
-#endif
-
-free_evt_page_list_and_return_err:
-    s_dealloc_evt_page_list(alloc_cb, evt_page_list);
-
-    return err;
 }
 
-static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, s_evt_page_t** page_list, s_evt_t** free_list)
+static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, ah_i_loop_evt_page_t** page_list,
+    ah_i_loop_evt_t** free_list)
 {
     ah_assert_if_debug(alloc_cb != NULL);
     ah_assert_if_debug(page_list != NULL);
     ah_assert_if_debug(free_list != NULL);
 
-    s_evt_page_t* page_list_new = NULL;
-    s_evt_t* free_list_new = NULL;
+    ah_i_loop_evt_page_t* page_list_new = NULL;
+    ah_i_loop_evt_t* free_list_new = NULL;
 
     for (size_t evt_cap_remaining = cap; evt_cap_remaining != 0;) {
         ah_err_t err = s_alloc_evt_page(alloc_cb, &page_list_new, &free_list_new);
@@ -196,7 +66,7 @@ static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, s_evt_pa
             s_dealloc_evt_page_list(alloc_cb, page_list_new);
             return err;
         }
-        if (ah_sub_size(evt_cap_remaining, S_EVT_PAGE_CAPACITY, &evt_cap_remaining) != AH_ENONE) {
+        if (ah_sub_size(evt_cap_remaining, AH_I_LOOP_EVT_PAGE_CAPACITY, &evt_cap_remaining) != AH_ENONE) {
             break;
         }
     }
@@ -207,24 +77,24 @@ static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, s_evt_pa
     return AH_ENONE;
 }
 
-static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, s_evt_page_t** evt_page, s_evt_t** free_list)
+static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list)
 {
     ah_assert_if_debug(alloc_cb != NULL);
     ah_assert_if_debug(evt_page != NULL);
     ah_assert_if_debug(free_list != NULL);
 
-    s_evt_page_t* evt_page_next = *evt_page;
-    s_evt_page_t* evt_page_first = ah_malloc(alloc_cb, sizeof(s_evt_page_t));
+    ah_i_loop_evt_page_t* evt_page_next = *evt_page;
+    ah_i_loop_evt_page_t* evt_page_first = ah_malloc(alloc_cb, sizeof(ah_i_loop_evt_page_t));
     if (evt_page_first == NULL) {
         return AH_ENOMEM;
     }
 
-    s_evt_t* array = evt_page_first->_evt_array;
-    for (size_t i = 1; i < S_EVT_PAGE_CAPACITY; i += 1) {
+    ah_i_loop_evt_t* array = evt_page_first->_evt_array;
+    for (size_t i = 1; i < AH_I_LOOP_EVT_PAGE_CAPACITY; i += 1) {
         array[i - 1]._next_free = &array[i];
     }
 
-    array[S_EVT_PAGE_CAPACITY - 1]._next_free = (evt_page_next != NULL) ? &evt_page_next->_evt_array[0] : NULL;
+    array[AH_I_LOOP_EVT_PAGE_CAPACITY - 1]._next_free = (evt_page_next != NULL) ? &evt_page_next->_evt_array[0] : NULL;
 
     evt_page_first->_next_page = evt_page_next;
 
@@ -234,23 +104,30 @@ static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, s_evt_page_t** evt_page, 
     return AH_ENONE;
 }
 
-static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, s_evt_page_t* evt_page_list)
+static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t* evt_page_list)
 {
     ah_assert_if_debug(alloc_cb != NULL);
 
-    s_evt_page_t* page = evt_page_list;
+    ah_i_loop_evt_page_t* page = evt_page_list;
     while (page != NULL) {
-        s_evt_page_t* next_page = page->_next_page;
+        ah_i_loop_evt_page_t* next_page = page->_next_page;
         ah_dealloc(alloc_cb, page);
         page = next_page;
     }
+}
+
+ah_extern bool ah_loop_is_running(const ah_loop_t* loop)
+{
+    ah_assert(loop != NULL);
+
+    return loop->_state == AH_I_LOOP_STATE_RUNNING;
 }
 
 ah_extern bool ah_loop_is_term(const ah_loop_t* loop)
 {
     ah_assert(loop != NULL);
 
-    return (loop->_state & (S_STATE_TERMINATING | S_STATE_TERMINATED)) != 0;
+    return (loop->_state & (AH_I_LOOP_STATE_TERMINATING | AH_I_LOOP_STATE_TERMINATED)) != 0;
 }
 
 ah_extern struct ah_time ah_loop_now(const ah_loop_t* loop)
@@ -270,25 +147,25 @@ ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, struct ah_time* time)
     if (loop == NULL) {
         return AH_EINVAL;
     }
-    if ((loop->_state & (S_STATE_RUNNING | S_STATE_TERMINATING | S_STATE_TERMINATED)) != 0) {
+    if ((loop->_state & (AH_I_LOOP_STATE_RUNNING | AH_I_LOOP_STATE_TERMINATING | AH_I_LOOP_STATE_TERMINATED)) != 0) {
         return AH_ESTATE;
     }
-    loop->_state = S_STATE_RUNNING;
+    loop->_state = AH_I_LOOP_STATE_RUNNING;
 
     ah_err_t err;
 
     do {
-        err = s_poll_no_longer_than_until(loop, time);
+        err = ah_i_loop_poll_no_longer_than_until(loop, time);
         if (err != AH_ENONE) {
             break;
         }
-    } while (loop->_state == S_STATE_RUNNING && (time == NULL || ah_time_is_before(loop->_now, *time)));
+    } while (loop->_state == AH_I_LOOP_STATE_RUNNING && (time == NULL || ah_time_is_before(loop->_now, *time)));
 
-    if (loop->_state == S_STATE_TERMINATING) {
+    if (loop->_state == AH_I_LOOP_STATE_TERMINATING) {
         s_term(loop);
     }
     else {
-        loop->_state = S_STATE_STOPPED;
+        loop->_state = AH_I_LOOP_STATE_STOPPED;
     }
 
     return err;
@@ -300,212 +177,13 @@ static void s_term(ah_loop_t* loop)
 
     s_dealloc_evt_page_list(loop->_alloc_cb, loop->_evt_page_list);
 
-
-#if AH_USE_IOCP
-
-    (void) CloseHandle(loop->_iocp_handle);
-    (void) WSACleanup();
-
-#elif AH_USE_KQUEUE
-
-    ah_dealloc(loop->_alloc_cb, loop->_kqueue_changelist);
-    ah_dealloc(loop->_alloc_cb, loop->_kqueue_eventlist);
-
-    (void) close(loop->_kqueue_fd);
-
-#elif AH_USE_URING
-
-    io_uring_queue_exit(&loop->_uring);
-
-#endif
+    ah_i_loop_term(loop);
 
 #ifndef NDEBUG
     *loop = (ah_loop_t) { 0 };
 #endif
 
-    loop->_state = S_STATE_TERMINATED;
-}
-
-static ah_err_t s_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time)
-{
-    ah_assert_if_debug(loop != NULL);
-
-    ah_err_t err = s_get_pending_err(loop);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    loop->_now = ah_time_now();
-
-#if AH_USE_IOCP
-
-    DWORD timeout_in_ms = 0u; // TODO: time?
-    (void) time;
-
-    OVERLAPPED_ENTRY entries[32u];
-
-    ULONG num_entries_removed;
-    if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries, 32u, &num_entries_removed, timeout_in_ms, false)) {
-        return GetLastError();
-    }
-
-    loop->_now = ah_time_now();
-
-    for (ULONG i = 0u; i < num_entries_removed; i += 1u) {
-        OVERLAPPED_ENTRY* overlapped_entry = &entries[i];
-        ah_i_loop_evt_t* evt = CONTAINING_RECORD(overlapped_entry->lpOverlapped, ah_i_loop_evt_t, _overlapped);
-
-        if (ah_likely(evt->_cb != NULL)) {
-            evt->_cb(evt, 0); // TODO: overlapped_entry as second arg?
-        }
-
-        ah_i_loop_dealloc_evt(loop, evt);
-    }
-
-    return AH_EOPNOTSUPP;
-
-#elif AH_USE_KQUEUE
-
-    struct timespec timeout;
-    if (time != NULL) {
-        ah_timediff_t diff;
-        err = ah_time_diff(*time, loop->_now, &diff);
-        if (err != AH_ENONE) {
-            return err;
-        }
-        if (diff < 0) {
-            diff = 0;
-        }
-        timeout.tv_sec = diff / 1000000000;
-        timeout.tv_nsec = diff % 1000000000;
-    }
-    else {
-        timeout.tv_sec = 0;
-        timeout.tv_nsec = 0;
-    }
-
-    const int nevents = kevent(loop->_kqueue_fd, loop->_kqueue_changelist, loop->_kqueue_nchanges,
-        loop->_kqueue_eventlist, loop->_kqueue_capacity, time != NULL ? &timeout : NULL);
-
-    if (ah_unlikely(nevents < 0)) {
-        return errno;
-    }
-
-    loop->_kqueue_nchanges = 0;
-    loop->_now = ah_time_now();
-
-    for (int i = 0; i < nevents; i += 1) {
-        struct kevent* kev = &loop->_kqueue_eventlist[i];
-        s_evt_t* evt = kev->udata;
-
-        if (ah_likely(evt != NULL)) {
-            if (ah_likely(evt->_cb != NULL)) {
-                evt->_cb(evt, kev);
-            }
-            if ((kev->flags & (EV_DELETE | EV_ONESHOT | EV_ERROR)) != 0) {
-                ah_i_loop_dealloc_evt(loop, evt);
-            }
-        }
-
-        err = s_get_pending_err(loop);
-        if (ah_unlikely(err != AH_ENONE)) {
-            return err;
-        }
-
-        if (ah_unlikely(loop->_state != S_STATE_RUNNING)) {
-            break;
-        }
-    }
-
-    return AH_ENONE;
-
-#elif AH_USE_URING
-
-    struct io_uring_cqe* cqe;
-
-    int res;
-
-    if (time != NULL) {
-        struct __kernel_timespec timeout;
-
-        ah_timediff_t diff;
-        err = ah_time_diff(*time, loop->_now, &diff);
-        if (err != AH_ENONE) {
-            return err;
-        }
-        if (diff < 0) {
-            diff = 0;
-        }
-        timeout.tv_sec = diff / 1000000000;
-        timeout.tv_nsec = diff % 1000000000;
-
-        // TODO: Replace these two calls with io_uring_submit_and_wait_timeout() when liburing-2.2 comes out.
-        res = io_uring_submit(&loop->_uring);
-        if (res < 0) {
-            return -res;
-        }
-
-        res = io_uring_wait_cqes(&loop->_uring, &cqe, 1, &timeout, NULL);
-        if (res == -ETIME) {
-            return AH_ENONE;
-        }
-    }
-    else {
-        res = io_uring_submit_and_wait(&loop->_uring, 1);
-    }
-
-    if (ah_unlikely(res < 0)) {
-        return -res;
-    }
-
-    loop->_now = ah_time_now();
-
-    for (;;) {
-        s_evt_t* evt = io_uring_cqe_get_data(cqe);
-
-        if (evt != NULL && cqe->res != -ECANCELED) {
-            if (evt->_cb != NULL) {
-                evt->_cb(evt, cqe);
-            }
-            ah_i_loop_dealloc_evt(loop, evt);
-        }
-
-        io_uring_cqe_seen(&loop->_uring, cqe);
-
-        err = s_get_pending_err(loop);
-        if (err != AH_ENONE) {
-            return err;
-        }
-
-        if (ah_unlikely(loop->_state != S_STATE_RUNNING)) {
-            break;
-        }
-
-        res = io_uring_peek_cqe(&loop->_uring, &cqe);
-        if (res != 0) {
-            if (ah_likely(res == -EAGAIN)) {
-                break;
-            }
-            return -res;
-        }
-    }
-
-    return AH_ENONE;
-
-#endif
-}
-
-static ah_err_t s_get_pending_err(ah_loop_t* loop)
-{
-    ah_assert_if_debug(loop != NULL);
-
-    if (loop->_pending_err != AH_ENONE) {
-        ah_err_t err = loop->_pending_err;
-        loop->_pending_err = AH_ENONE;
-        return err;
-    }
-
-    return AH_ENONE;
+    loop->_state = AH_I_LOOP_STATE_TERMINATED;
 }
 
 ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop)
@@ -513,10 +191,10 @@ ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop)
     if (loop == NULL) {
         return AH_EINVAL;
     }
-    if (loop->_state != S_STATE_RUNNING) {
+    if (loop->_state != AH_I_LOOP_STATE_RUNNING) {
         return AH_ESTATE;
     }
-    loop->_state = S_STATE_STOPPED;
+    loop->_state = AH_I_LOOP_STATE_STOPPED;
     return AH_ENONE;
 }
 
@@ -529,21 +207,21 @@ ah_err_t ah_loop_term(ah_loop_t* loop)
     ah_err_t err;
 
     switch (loop->_state) {
-    case S_STATE_INITIAL:
+    case AH_I_LOOP_STATE_INITIAL:
 #ifndef NDEBUG
         *loop = (ah_loop_t) { 0 };
 #endif
-        loop->_state = S_STATE_TERMINATED;
+        loop->_state = AH_I_LOOP_STATE_TERMINATED;
         err = AH_ENONE;
         break;
 
-    case S_STATE_STOPPED:
+    case AH_I_LOOP_STATE_STOPPED:
         s_term(loop);
         err = AH_ENONE;
         break;
 
-    case S_STATE_RUNNING:
-        loop->_state = S_STATE_TERMINATING;
+    case AH_I_LOOP_STATE_RUNNING:
+        loop->_state = AH_I_LOOP_STATE_TERMINATING;
         err = AH_ENONE;
         break;
 
@@ -555,12 +233,34 @@ ah_err_t ah_loop_term(ah_loop_t* loop)
     return err;
 }
 
-ah_err_t ah_i_loop_alloc_evt(ah_loop_t* loop, s_evt_t** evt)
+bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err)
+{
+    if (ah_loop_is_term(loop)) {
+        return false;
+    }
+    loop->_pending_err = err;
+    return true;
+}
+
+ah_err_t ah_i_loop_get_pending_err(ah_loop_t* loop)
+{
+    ah_assert_if_debug(loop != NULL);
+
+    if (loop->_pending_err != AH_ENONE) {
+        ah_err_t err = loop->_pending_err;
+        loop->_pending_err = AH_ENONE;
+        return err;
+    }
+
+    return AH_ENONE;
+}
+
+ah_err_t ah_i_loop_evt_alloc(ah_loop_t* loop, ah_i_loop_evt_t** evt)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
 
-    if ((loop->_state & (S_STATE_TERMINATING | S_STATE_TERMINATED)) != 0) {
+    if (ah_loop_is_term(loop)) {
         return AH_ESTATE;
     }
 
@@ -571,8 +271,8 @@ ah_err_t ah_i_loop_alloc_evt(ah_loop_t* loop, s_evt_t** evt)
         }
     }
 
-    s_evt_t* free_evt = loop->_evt_free_list;
-    s_evt_t* next_free = free_evt->_next_free;
+    ah_i_loop_evt_t* free_evt = loop->_evt_free_list;
+    ah_i_loop_evt_t* next_free = free_evt->_next_free;
 
     loop->_evt_free_list = next_free;
 
@@ -586,108 +286,7 @@ ah_err_t ah_i_loop_alloc_evt(ah_loop_t* loop, s_evt_t** evt)
     return AH_ENONE;
 }
 
-#if !AH_USE_IOCP
-
-ah_err_t ah_i_loop_alloc_evt_and_req(ah_loop_t* loop, s_evt_t** evt, ah_i_loop_req_t** req)
-{
-    ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(req != NULL);
-
-    ah_err_t err;
-
-    s_evt_t* evt0;
-    ah_i_loop_req_t* req0;
-
-    err = ah_i_loop_alloc_evt(loop, &evt0);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    err = ah_i_loop_alloc_req(loop, &req0);
-    if (err != AH_ENONE) {
-        ah_i_loop_dealloc_evt(loop, evt0);
-        return err;
-    }
-
-    *evt = evt0;
-    *req = req0;
-
-    return AH_ENONE;
-}
-
-ah_err_t ah_i_loop_alloc_req(ah_loop_t* loop, ah_i_loop_req_t** req)
-{
-    ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(req != NULL);
-
-    if ((loop->_state & (S_STATE_TERMINATING | S_STATE_TERMINATED)) != 0) {
-        return AH_ESTATE;
-    }
-
-#    if AH_USE_KQUEUE
-
-    if (ah_unlikely(loop->_kqueue_nchanges == loop->_kqueue_capacity)) {
-        int res = kevent(loop->_kqueue_fd, loop->_kqueue_changelist, loop->_kqueue_nchanges, NULL, 0,
-            &(struct timespec) { 0 });
-
-        if (ah_unlikely(res < 0)) {
-            if (res != ENOMEM) {
-                loop->_pending_err = errno;
-                return AH_ENOMEM;
-            }
-            ah_err_t err = s_poll_no_longer_than_until(loop, NULL);
-            if (err != AH_ENONE) {
-                loop->_pending_err = err;
-                return AH_ENOMEM;
-            }
-            if (ah_unlikely(loop->_kqueue_nchanges == loop->_kqueue_capacity)) {
-                return AH_ENOMEM;
-            }
-        }
-        else {
-            loop->_kqueue_nchanges = 0;
-        }
-    }
-
-    *req = &loop->_kqueue_changelist[loop->_kqueue_nchanges];
-
-    loop->_kqueue_nchanges += 1;
-
-    return AH_ENONE;
-
-#    elif AH_USE_URING
-
-    struct io_uring_sqe* sqe = io_uring_get_sqe(&loop->_uring);
-    if (ah_unlikely(sqe == NULL)) {
-        int res = io_uring_submit(&loop->_uring);
-        if (ah_unlikely(res < 0)) {
-            if (res != -EAGAIN && res != -EBUSY) {
-                loop->_pending_err = -res;
-                return AH_ENOMEM;
-            }
-            ah_err_t err = s_poll_no_longer_than_until(loop, NULL);
-            if (err != AH_ENONE) {
-                loop->_pending_err = err;
-                return AH_ENOMEM;
-            }
-        }
-        sqe = io_uring_get_sqe(&loop->_uring);
-        if (ah_unlikely(sqe == NULL)) {
-            return AH_ENOMEM;
-        }
-    }
-
-    *req = sqe;
-
-    return AH_ENONE;
-
-#    endif
-}
-
-#endif
-
-void ah_i_loop_dealloc_evt(ah_loop_t* loop, s_evt_t* evt)
+void ah_i_loop_evt_dealloc(ah_loop_t* loop, ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
@@ -695,13 +294,4 @@ void ah_i_loop_dealloc_evt(ah_loop_t* loop, s_evt_t* evt)
 
     evt->_next_free = loop->_evt_free_list;
     loop->_evt_free_list = evt;
-}
-
-bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err)
-{
-    if (ah_loop_is_term(loop)) {
-        return false;
-    }
-    loop->_pending_err = err;
-    return true;
 }

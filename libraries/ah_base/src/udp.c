@@ -8,7 +8,6 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/loop-internal.h"
 #include "ah/loop.h"
 #include "sock-internal.h"
 
@@ -269,10 +268,12 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     ah_assert_if_debug(sock != NULL);
     ah_assert_if_debug(ctx != NULL);
 
-    ah_i_loop_evt_t* evt;
-    ah_i_loop_req_t* req;
+#if AH_USE_KQUEUE
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+    ah_i_loop_evt_t* evt;
+    struct kevent* kev;
+
+    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -281,11 +282,21 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     evt->_body._udp_recv._sock = sock;
     evt->_body._udp_recv._ctx = ctx;
 
-#if AH_USE_KQUEUE
-
-    EV_SET(req, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
+    EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
 
 #elif AH_USE_URING
+
+    ah_i_loop_evt_t* evt;
+    struct io_uring_sqe* sqe;
+
+    ah_err_t err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    evt->_cb = s_on_recv;
+    evt->_body._udp_recv._sock = sock;
+    evt->_body._udp_recv._ctx = ctx;
 
     struct ah_bufvec bufvec = { .items = NULL, .length = 0u };
     ctx->alloc_cb(sock, &bufvec, 0u);
@@ -307,8 +318,8 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
         .msg_iovlen = iovcnt,
     };
 
-    io_uring_prep_recvmsg(req, sock->_fd, &ctx->_msghdr, 0);
-    io_uring_sqe_set_data(req, evt);
+    io_uring_prep_recvmsg(sqe, sock->_fd, &ctx->_msghdr, 0);
+    io_uring_sqe_set_data(sqe, evt);
 
 #endif
 
@@ -437,10 +448,10 @@ ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock)
 
 #if AH_USE_KQUEUE
 
-    ah_i_loop_req_t* req;
-    ah_err_t err = ah_i_loop_alloc_req(sock->_loop, &req);
+    struct kevent* kev;
+    ah_err_t err = ah_i_loop_alloc_kev(sock->_loop, &kev);
     if (err == AH_ENONE) {
-        EV_SET(req, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
+        EV_SET(kev, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
     }
     else if (err == AH_ENOMEM) {
         return err;
@@ -463,10 +474,12 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
         return AH_ESTATE;
     }
 
-    ah_i_loop_evt_t* evt;
-    ah_i_loop_req_t* req;
+#if AH_USE_KQUEUE
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+    ah_i_loop_evt_t* evt;
+    struct kevent* kev;
+
+    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -475,11 +488,21 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     evt->_body._udp_send._sock = sock;
     evt->_body._udp_send._ctx = ctx;
 
-#if AH_USE_KQUEUE
-
-    EV_SET(req, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0, evt);
+    EV_SET(kev, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0, evt);
 
 #elif AH_USE_URING
+
+    ah_i_loop_evt_t* evt;
+    struct io_uring_sqe* sqe;
+
+    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &sqe);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    evt->_cb = s_on_send;
+    evt->_body._udp_send._sock = sock;
+    evt->_body._udp_send._ctx = ctx;
 
     struct iovec* iov;
     int iovcnt;
@@ -495,8 +518,8 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
         .msg_iovlen = iovcnt,
     };
 
-    io_uring_prep_sendmsg(req, sock->_fd, &ctx->_msghdr, 0u);
-    io_uring_sqe_set_data(req, evt);
+    io_uring_prep_sendmsg(sqe, sock->_fd, &ctx->_msghdr, 0u);
+    io_uring_sqe_set_data(sqe, evt);
 
 #endif
 
@@ -590,16 +613,16 @@ ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
 
     if (cb != NULL) {
         ah_i_loop_evt_t* evt;
-        ah_i_loop_req_t* req;
+        struct io_uring_sqe* sqe;
 
-        err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+        err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
         if (err == AH_ENONE) {
             evt->_cb = s_on_close;
             evt->_body._udp_close._sock = sock;
             evt->_body._udp_close._cb = cb;
 
-            io_uring_prep_close(req, sock->_fd);
-            io_uring_sqe_set_data(req, evt);
+            io_uring_prep_close(sqe, sock->_fd);
+            io_uring_sqe_set_data(sqe, evt);
 
             return AH_ENONE;
         }

@@ -8,7 +8,6 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/loop-internal.h"
 #include "ah/loop.h"
 #include "sock-internal.h"
 
@@ -20,8 +19,6 @@
 #endif
 
 #if AH_USE_KQUEUE
-#    include "ah/math.h"
-
 #    include <sys/uio.h>
 #endif
 
@@ -176,9 +173,9 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     if (connect(sock->_fd, ah_sockaddr_cast_const(remote_addr), ah_sockaddr_get_size(remote_addr)) != 0) {
         if (errno == EINPROGRESS) {
             ah_i_loop_evt_t* evt;
-            struct kevent* req;
+            struct kevent* kev;
 
-            err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+            err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
             if (err != AH_ENONE) {
                 return err;
             }
@@ -187,7 +184,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
             evt->_body._tcp_connect._sock = sock;
             evt->_body._tcp_connect._cb = cb;
 
-            EV_SET(req, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0u, evt);
+            EV_SET(kev, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0u, evt);
 
             sock->_state = S_STATE_CONNECTING;
 
@@ -215,9 +212,9 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
 #elif AH_USE_URING
 
     ah_i_loop_evt_t* evt;
-    ah_i_loop_req_t* req;
+    struct io_uring_sqe* sqe;
 
-    err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+    err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
     if (err != AH_ENONE) {
         return err;
     }
@@ -226,8 +223,8 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     evt->_body._tcp_connect._sock = sock;
     evt->_body._tcp_connect._cb = cb;
 
-    io_uring_prep_connect(req, sock->_fd, ah_sockaddr_cast_const(remote_addr), ah_sockaddr_get_size(remote_addr));
-    io_uring_sqe_set_data(req, evt);
+    io_uring_prep_connect(sqe, sock->_fd, ah_sockaddr_cast_const(remote_addr), ah_sockaddr_get_size(remote_addr));
+    io_uring_sqe_set_data(sqe, evt);
 
     sock->_state = S_STATE_CONNECTING;
 
@@ -298,10 +295,12 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
         return AH_ENONE;
     }
 
-    ah_i_loop_evt_t* evt;
-    ah_i_loop_req_t* req;
+#if AH_USE_KQUEUE
 
-    err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+    ah_i_loop_evt_t* evt;
+    struct kevent* kev;
+
+    err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -310,16 +309,26 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     evt->_body._tcp_listen._sock = sock;
     evt->_body._tcp_listen._ctx = ctx;
 
-#if AH_USE_KQUEUE
-
-    EV_SET(req, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
+    EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
     sock->_read_or_listen_evt = evt;
 
 #elif AH_USE_URING
 
+    ah_i_loop_evt_t* evt;
+    struct io_uring_sqe* sqe;
+
+    err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &sqe);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    evt->_cb = s_on_accept;
+    evt->_body._tcp_listen._sock = sock;
+    evt->_body._tcp_listen._ctx = ctx;
+
     ctx->_remote_addr_len = sizeof(ah_sockaddr_t);
-    io_uring_prep_accept(req, sock->_fd, ah_sockaddr_cast(&ctx->_remote_addr), &ctx->_remote_addr_len, 0);
-    io_uring_sqe_set_data(req, evt);
+    io_uring_prep_accept(sqe, sock->_fd, ah_sockaddr_cast(&ctx->_remote_addr), &ctx->_remote_addr_len, 0);
+    io_uring_sqe_set_data(sqe, evt);
 
 #endif
 
@@ -417,11 +426,11 @@ static void s_on_accept(ah_i_loop_evt_t* evt, ah_i_loop_res_t* res)
 
     ah_err_t err;
     ah_i_loop_evt_t* evt0;
-    ah_i_loop_req_t* req0;
+    struct io_uring_sqe* sqe;
 
 prep_another_accept:
 
-    err = ah_i_loop_alloc_evt_and_req(listener->_loop, &evt0, &req0);
+    err = ah_i_loop_alloc_evt_and_sqe(listener->_loop, &evt0, &sqe);
     if (err != AH_ENONE) {
         ctx->listen_cb(listener, err);
         return;
@@ -432,8 +441,8 @@ prep_another_accept:
     evt0->_body._tcp_listen._ctx = ctx;
 
     ctx->_remote_addr_len = sizeof(ah_sockaddr_t);
-    io_uring_prep_accept(req0, listener->_fd, ah_sockaddr_cast(&ctx->_remote_addr), &ctx->_remote_addr_len, 0);
-    io_uring_sqe_set_data(req0, evt0);
+    io_uring_prep_accept(sqe, listener->_fd, ah_sockaddr_cast(&ctx->_remote_addr), &ctx->_remote_addr_len, 0);
+    io_uring_sqe_set_data(sqe, evt0);
 
 #endif
 }
@@ -462,10 +471,12 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
     ah_assert_if_debug(sock != NULL);
     ah_assert_if_debug(ctx != NULL);
 
-    ah_i_loop_evt_t* evt;
-    ah_i_loop_req_t* req;
+#if AH_USE_KQUEUE
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+    ah_i_loop_evt_t* evt;
+    struct kevent* kev;
+
+    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -474,14 +485,24 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
     evt->_body._tcp_read._sock = sock;
     evt->_body._tcp_read._ctx = ctx;
 
-#if AH_USE_KQUEUE
-
-    EV_SET(req, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
+    EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
     sock->_read_or_listen_evt = evt;
 
     return AH_ENONE;
 
 #elif AH_USE_URING
+
+    ah_i_loop_evt_t* evt;
+    struct io_uring_sqe* sqe;
+
+    ah_err_t err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    evt->_cb = s_on_read;
+    evt->_body._tcp_read._sock = sock;
+    evt->_body._tcp_read._ctx = ctx;
 
     ctx->_bufvec.items = NULL;
     ctx->_bufvec.length = 0u;
@@ -497,8 +518,8 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
         return err;
     }
 
-    io_uring_prep_readv(req, sock->_fd, iov, iovcnt, 0);
-    io_uring_sqe_set_data(req, evt);
+    io_uring_prep_readv(sqe, sock->_fd, iov, iovcnt, 0);
+    io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
 
@@ -615,10 +636,10 @@ ah_extern ah_err_t ah_tcp_read_stop(ah_tcp_sock_t* sock)
 
 #if AH_USE_KQUEUE
 
-    ah_i_loop_req_t* req;
-    ah_err_t err = ah_i_loop_alloc_req(sock->_loop, &req);
+    struct kevent* kev;
+    ah_err_t err = ah_i_loop_alloc_kev(sock->_loop, &kev);
     if (err == AH_ENONE) {
-        EV_SET(req, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
+        EV_SET(kev, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
     }
     else if (err == AH_ENOMEM) {
         return err;
@@ -641,10 +662,12 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
         return AH_ESTATE;
     }
 
-    ah_i_loop_evt_t* evt;
-    ah_i_loop_req_t* req;
+#if AH_USE_KQUEUE
 
-    ah_err_t err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+    ah_i_loop_evt_t* evt;
+    struct kevent* kev;
+
+    ah_err_t err = ah_i_loop_alloc_evt_and_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
@@ -653,11 +676,21 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     evt->_body._tcp_write._sock = sock;
     evt->_body._tcp_write._ctx = ctx;
 
-#if AH_USE_KQUEUE
-
-    EV_SET(req, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0, evt);
+    EV_SET(kev, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0, evt);
 
 #elif AH_USE_URING
+
+    ah_i_loop_evt_t* evt;
+    struct io_uring_sqe* sqe;
+
+    ah_err_t err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    evt->_cb = s_on_write;
+    evt->_body._tcp_write._sock = sock;
+    evt->_body._tcp_write._ctx = ctx;
 
     struct iovec* iov;
     int iovcnt;
@@ -666,8 +699,8 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
         return err;
     }
 
-    io_uring_prep_writev(req, sock->_fd, iov, iovcnt, 0u);
-    io_uring_sqe_set_data(req, evt);
+    io_uring_prep_writev(sqe, sock->_fd, iov, iovcnt, 0u);
+    io_uring_sqe_set_data(sqe, evt);
 
 #endif
 
@@ -829,16 +862,16 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
 
     if (cb != NULL) {
         ah_i_loop_evt_t* evt;
-        ah_i_loop_req_t* req;
+        struct io_uring_sqe* sqe;
 
-        err = ah_i_loop_alloc_evt_and_req(sock->_loop, &evt, &req);
+        err = ah_i_loop_alloc_evt_and_sqe(sock->_loop, &evt, &sqe);
         if (err == AH_ENONE) {
             evt->_cb = s_on_close;
             evt->_body._tcp_close._sock = sock;
             evt->_body._tcp_close._cb = cb;
 
-            io_uring_prep_close(req, sock->_fd);
-            io_uring_sqe_set_data(req, evt);
+            io_uring_prep_close(sqe, sock->_fd);
+            io_uring_sqe_set_data(sqe, evt);
 
             return AH_ENONE;
         }
@@ -852,7 +885,7 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
 
 #    if AH_USE_KQUEUE
     if (sock->_read_or_listen_evt != NULL) {
-        ah_i_loop_dealloc_evt(sock->_loop, sock->_read_or_listen_evt);
+        ah_i_loop_evt_dealloc(sock->_loop, sock->_read_or_listen_evt);
     }
 #    endif
 

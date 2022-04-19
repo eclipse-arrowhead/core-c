@@ -8,7 +8,7 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/loop-internal.h"
+#include "ah/loop.h"
 
 #if AH_USE_KQUEUE
 #    include <sys/event.h>
@@ -58,14 +58,26 @@ static void s_cancel(ah_task_t* task)
     ah_assert_if_debug(task != NULL);
 
     ah_err_t err;
-    ah_i_loop_req_t* req;
+
+#if AH_USE_KQUEUE
+
+    struct kevent* kev;
+
+#elif AH_USE_URING
+
+    struct io_uring_sqe* sqe;
+
+#endif
 
     switch (task->_state) {
     case AH_TASK_STATE_INITIAL:
         break;
 
     case AH_TASK_STATE_SCHEDULED:
-        err = ah_i_loop_alloc_req(task->_loop, &req);
+
+#if AH_USE_KQUEUE
+
+        err = ah_i_loop_alloc_kev(task->_loop, &kev);
         if (ah_unlikely(err != AH_ENONE)) {
             ah_assert_if_debug(task->_evt != NULL);
             task->_evt->_cb = NULL;
@@ -76,14 +88,23 @@ static void s_cancel(ah_task_t* task)
             return;
         }
 
-#if AH_USE_KQUEUE
-
-        EV_SET(req, (uintptr_t) task, EVFILT_TIMER, EV_DELETE, 0u, 0, 0u);
+        EV_SET(kev, (uintptr_t) task, EVFILT_TIMER, EV_DELETE, 0u, 0, 0u);
 
 #elif AH_USE_URING
 
-        io_uring_prep_timeout_remove(req, (uint64_t) task->_evt, 0u);
-        io_uring_sqe_set_data(req, NULL);
+        err = ah_i_loop_alloc_sqe(task->_loop, &sqe);
+        if (ah_unlikely(err != AH_ENONE)) {
+            ah_assert_if_debug(task->_evt != NULL);
+            task->_evt->_cb = NULL;
+            break;
+        }
+
+        if (ah_unlikely(task->_state == AH_TASK_STATE_CANCELED)) {
+            return;
+        }
+
+        io_uring_prep_timeout_remove(sqe, (uint64_t) task->_evt, 0u);
+        io_uring_sqe_set_data(sqe, NULL);
 
 #endif
         break;
@@ -110,18 +131,18 @@ ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline)
 
     ah_err_t err;
 
-    ah_i_loop_evt_t* evt;
-    ah_i_loop_req_t* req;
+#if AH_USE_KQUEUE
 
-    err = ah_i_loop_alloc_evt_and_req(task->_loop, &evt, &req);
+    ah_i_loop_evt_t* evt;
+    struct kevent* kev;
+
+    err = ah_i_loop_alloc_evt_and_kev(task->_loop, &evt, &kev);
     if (err != AH_ENONE) {
         return err;
     }
 
     evt->_cb = s_on_execution;
     evt->_body._task_schedule_at._task = task;
-
-#if AH_USE_KQUEUE
 
     uint32_t fflags;
     intptr_t data;
@@ -141,14 +162,25 @@ ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline)
     }
 #    endif
 
-    EV_SET(req, (uintptr_t) task, EVFILT_TIMER, EV_ADD | EV_ONESHOT, fflags, data, evt);
+    EV_SET(kev, (uintptr_t) task, EVFILT_TIMER, EV_ADD | EV_ONESHOT, fflags, data, evt);
 
 #elif AH_USE_URING
 
+    ah_i_loop_evt_t* evt;
+    struct io_uring_sqe* sqe;
+
+    err = ah_i_loop_alloc_evt_and_sqe(task->_loop, &evt, &sqe);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    evt->_cb = s_on_execution;
+    evt->_body._task_schedule_at._task = task;
+
     evt->_body._task_schedule_at._baseline = baseline;
 
-    io_uring_prep_timeout(req, &evt->_body._task_schedule_at._baseline._timespec, 0u, IORING_TIMEOUT_ABS);
-    io_uring_sqe_set_data(req, evt);
+    io_uring_prep_timeout(sqe, &evt->_body._task_schedule_at._baseline._timespec, 0u, IORING_TIMEOUT_ABS);
+    io_uring_sqe_set_data(sqe, evt);
 
 #endif
 

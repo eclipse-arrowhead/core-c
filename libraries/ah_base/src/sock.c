@@ -6,7 +6,6 @@
 
 #include "ah/sock.h"
 
-#include "ah/loop-internal.h"
 #include "ah/loop.h"
 #include "sock-internal.h"
 

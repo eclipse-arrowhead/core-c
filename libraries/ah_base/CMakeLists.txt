@@ -11,9 +11,9 @@ set(
     include/ah/buf.h
     include/ah/defs.h
     include/ah/err.h
+    include/ah/internal/loop.h
     include/ah/ip.h
     include/ah/lib.h
-    include/ah/loop-internal.h
     include/ah/loop.h
     include/ah/math.h
     include/ah/sock.h
@@ -47,6 +47,33 @@ set(
     test/time.c
     #test/udp.c
 )
+
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    list(
+        APPEND
+        SOURCE_FILES
+        include/ah/internal/kqueue/loop.h
+        src/kqueue/loop.c
+    )
+endif ()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    list(
+        APPEND
+        SOURCE_FILES
+        include/ah/internal/uring/loop.h
+        src/uring/loop.c
+    )
+endif ()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    list(
+        APPEND
+        SOURCE_FILES
+        include/ah/internal/iocp/loop.h
+        src/iocp/loop.c
+    )
+endif ()
 
 add_library(ah_base STATIC ${SOURCE_FILES})
 
