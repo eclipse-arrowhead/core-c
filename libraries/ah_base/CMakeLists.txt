@@ -60,6 +60,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         include/ah/internal/kqueue/udp.h
         include/ah/internal/posix/buf.h
         src/bsd/sock.c
+        src/bsd/tcp.c
         src/bsd/udp.c
         src/darwin/time.c
         src/kqueue/loop.c
@@ -83,6 +84,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         include/ah/internal/uring/udp.h
         include/ah/internal/posix/buf.h
         src/bsd/sock.c
+        src/bsd/tcp.c
         src/bsd/udp.c
         src/uring/loop.c
         src/uring/task.c
@@ -106,6 +108,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         include/ah/internal/win32/buf.h
         include/ah/internal/win32/time.h
         src/bsd/sock.c
+        src/bsd/tcp.c
         src/bsd/udp.c
         src/iocp/loop.c
         src/iocp/task.c
