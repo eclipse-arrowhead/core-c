@@ -18,6 +18,7 @@ static void s_on_execution(ah_i_loop_evt_t* evt, struct kevent* kev);
 ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
+    ah_assert_if_debug(task->_state == AH_TASK_STATE_SCHEDULED);
 
     struct kevent* kev;
 

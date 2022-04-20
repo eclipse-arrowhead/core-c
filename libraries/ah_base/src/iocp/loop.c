@@ -13,6 +13,10 @@
 #include <stdlib.h>
 #include <winsock2.h>
 
+#pragma comment(lib, "ws2_32")
+
+#define S_COMPLETION_ENTRY_STACK_HEIGHT 32u
+
 static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb, size_t initial_capacity);
 static ah_task_t* s_task_queue_dequeue_if_at_or_after(struct ah_i_loop_task_queue* queue, ah_time_t baseline);
 static ah_time_t* s_task_queue_peek_at_baseline(struct ah_i_loop_task_queue* queue);
@@ -62,7 +66,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
         return err;
     }
 
-    OVERLAPPED_ENTRY entries[32u];
+    OVERLAPPED_ENTRY entries[S_COMPLETION_ENTRY_STACK_HEIGHT];
     ULONG num_entries_removed;
 
     do {
@@ -114,7 +118,8 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
             }
         }
 
-        if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries, 32u, &num_entries_removed, timeout_in_ms, false))
+        if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries, S_COMPLETION_ENTRY_STACK_HEIGHT,
+                &num_entries_removed, timeout_in_ms, false))
         {
             return GetLastError();
         }
@@ -137,9 +142,9 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
             if (task == NULL) {
                 break;
             }
-            task->_cb(task, AH_ENONE);
+            ah_i_task_execute_scheduled(task);
         }
-    } while (num_entries_removed == 32u);
+    } while (num_entries_removed == S_COMPLETION_ENTRY_STACK_HEIGHT);
 
     return AH_ENONE;
 }
@@ -252,18 +257,18 @@ static void s_task_queue_term(struct ah_i_loop_task_queue* queue, ah_alloc_cb al
 #endif
 }
 
-ah_extern ah_err_t ah_i_loop_task_queue_enqueue(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb,
-    ah_time_t baseline, ah_task_t* task)
+ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task)
 {
-    ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(alloc_cb != NULL);
+    ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(task != NULL);
+
+    struct ah_i_loop_task_queue* queue = &loop->_task_queue;
 
     if (queue->_length == queue->_capacity) {
         const size_t entry_size = sizeof(struct ah_i_loop_task_entry);
         struct ah_i_loop_task_entry* entries;
 
-        entries = ah_realloc_array_larger(alloc_cb, queue->_entries, &queue->_capacity, entry_size);
+        entries = ah_realloc_array_larger(loop->_alloc_cb, queue->_entries, &queue->_capacity, entry_size);
         if (entries == NULL) {
             return AH_ENOMEM;
         }
@@ -292,10 +297,12 @@ ah_extern ah_err_t ah_i_loop_task_queue_enqueue(struct ah_i_loop_task_queue* que
     return AH_ENONE;
 }
 
-ah_extern void ah_i_loop_task_queue_delete_if_equals(struct ah_i_loop_task_queue* queue, ah_task_t* task)
+ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task)
 {
-    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(task != NULL);
+
+    struct ah_i_loop_task_queue* queue = &loop->_task_queue;
 
     for (size_t index = 0u; index < queue->_length; index += 1u) {
         if (queue->_entries[index]._task != task) {
@@ -303,11 +310,12 @@ ah_extern void ah_i_loop_task_queue_delete_if_equals(struct ah_i_loop_task_queue
         }
 
         queue->_entries[index] = queue->_entries[queue->_length];
-
         queue->_length -= 1u;
 
         s_task_queue_heapify_down_from(queue, index);
 
-        break;
+        return true;
     }
+
+    return false;
 }

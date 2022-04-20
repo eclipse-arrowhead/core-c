@@ -9,6 +9,8 @@
 
 #include "../../time.h"
 
+#include <stdbool.h>
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
@@ -45,8 +47,7 @@ struct ah_i_loop_task_queue {
     struct ah_i_loop_task_entry* _entries;
 };
 
-ah_extern ah_err_t ah_i_loop_task_queue_enqueue(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb,
-    ah_time_t baseline, ah_task_t* task);
-ah_extern void ah_i_loop_task_queue_delete_if_equals(struct ah_i_loop_task_queue* queue, ah_task_t* task);
+ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task);
+ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task);
 
 #endif

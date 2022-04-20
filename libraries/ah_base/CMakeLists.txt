@@ -33,7 +33,7 @@ set(
     src/loop.c
     src/math.c
     src/sock.c
-    #src/task.c
+    src/task.c
 )
 set(
     TEST_FILES
@@ -42,7 +42,7 @@ set(
     test/main.c
     test/math.c
     test/sock.c
-    #test/task.c
+    test/task.c
     #test/tcp.c
     test/time.c
     #test/udp.c

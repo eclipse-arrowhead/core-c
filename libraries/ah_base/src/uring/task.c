@@ -6,7 +6,7 @@
 
 #include "ah/task.h"
 
-#include "ah/abort.h"
+#include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
 #include "ah/time.h"
@@ -17,6 +17,9 @@ static void s_on_execution(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
 {
+    ah_assert_if_debug(task != NULL);
+    ah_assert_if_debug(task->_state == AH_TASK_STATE_SCHEDULED);
+
     struct io_uring_sqe* sqe;
 
     ah_err_t err = ah_i_loop_alloc_sqe(task->_loop, &sqe);
