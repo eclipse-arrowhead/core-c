@@ -45,7 +45,7 @@ set(
     test/task.c
     #test/tcp.c
     test/time.c
-    #test/udp.c
+    test/udp.c
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -60,6 +60,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         include/ah/internal/kqueue/udp.h
         include/ah/internal/posix/buf.h
         src/bsd/sock.c
+        src/bsd/udp.c
         src/darwin/time.c
         src/kqueue/loop.c
         src/kqueue/task.c
@@ -82,6 +83,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         include/ah/internal/uring/udp.h
         include/ah/internal/posix/buf.h
         src/bsd/sock.c
+        src/bsd/udp.c
         src/uring/loop.c
         src/uring/task.c
         src/uring/tcp.c
@@ -104,11 +106,15 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         include/ah/internal/win32/buf.h
         include/ah/internal/win32/time.h
         src/bsd/sock.c
+        src/bsd/udp.c
         src/iocp/loop.c
         src/iocp/task.c
+        src/iocp/udp.c
         src/win32/abort.c
         src/win32/buf.c
         src/win32/time.c
+        src/win32/winapi.c
+        src/win32/winapi.h
     )
 endif ()
 

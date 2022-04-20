@@ -9,32 +9,21 @@
 #include "ah/abort.h"
 #include "ah/err.h"
 #include "ah/math.h"
+#include "winapi.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-ah_noreturn void s_abort_with_last_win32_error(const char* message);
 static double s_get_ns_per_performance_tick(void);
 
 ah_extern ah_time_t ah_time_now()
 {
     LARGE_INTEGER time_lt = { 0 };
     if (!QueryPerformanceCounter(&time_lt)) {
-        s_abort_with_last_win32_error("failed to query WIN32 performance counter");
+        ah_abortf("failed to query WIN32 performance counter; %s", ah_i_winapi_strerror(GetLastError()));
     }
 
     return (ah_time_t) { ._performance_count = time_lt.QuadPart };
-}
-
-ah_noreturn void s_abort_with_last_win32_error(const char* message)
-{
-    DWORD err = GetLastError();
-    char buf[256];
-
-    WORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
-    size_t size = FormatMessageA(flags, NULL, err, 0, (LPSTR) &buf, sizeof(buf), NULL);
-
-    ah_abortf("%s; %*.s", message, size, buf);
 }
 
 ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timediff_t* diff)
@@ -44,7 +33,7 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
     }
 
     ah_timediff_t tmp_td;
-    if (!ah_sub_int64(a._performance_count, b._performance_count, &tmp_td)) {
+    if (ah_sub_int64(a._performance_count, b._performance_count, &tmp_td) != AH_ENONE) {
         return AH_ERANGE;
     }
 
@@ -61,7 +50,7 @@ static double s_get_ns_per_performance_tick(void)
     if (ah_unlikely(InterlockedCompareExchangeNoFence(&s_is_set, 1u, 0u) == 0u)) {
         LARGE_INTEGER performance_frequency = { .QuadPart = INT64_C(0) };
         if (!QueryPerformanceFrequency(&performance_frequency)) {
-            s_abort_with_last_win32_error("failed to query WIN32 performance frequency");
+            ah_abortf("failed to query WIN32 performance frequency; %s", ah_i_winapi_strerror(GetLastError()));
         }
         s_ns_per_performance_tick = 1e9 / ((double) performance_frequency.QuadPart);
     }
@@ -95,11 +84,7 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
 
     const int64_t tmp = (int64_t) (((double) diff) / s_get_ns_per_performance_tick());
 
-    if (!ah_add_int64(time._performance_count, tmp, &result->_performance_count)) {
-        return AH_ERANGE;
-    }
-
-    return AH_ENONE;
+    return ah_add_int64(time._performance_count, tmp, &result->_performance_count);
 }
 
 ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, ah_time_t* result)
@@ -110,11 +95,7 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
 
     const int64_t tmp = (int64_t) (((double) diff) / s_get_ns_per_performance_tick());
 
-    if (!ah_sub_int64(time._performance_count, tmp, &result->_performance_count)) {
-        return AH_ERANGE;
-    }
-
-    return AH_ENONE;
+    return ah_sub_int64(time._performance_count, tmp, &result->_performance_count);
 }
 
 ah_extern bool ah_time_is_after(const ah_time_t a, const ah_time_t b)

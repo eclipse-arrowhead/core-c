@@ -8,6 +8,11 @@
 
 #include "ah/err.h"
 
+#if AH_IS_WIN32
+#    define ENABLE_INTSAFE_SIGNED_FUNCTIONS
+#    include <intsafe.h>
+#endif
+
 ah_extern ah_err_t ah_add_int64(const int64_t a, const int64_t b, int64_t* result)
 {
     if (result == NULL) {
@@ -20,9 +25,8 @@ ah_extern ah_err_t ah_add_int64(const int64_t a, const int64_t b, int64_t* resul
     if (ah_p_add_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#else
-    tmp = a + b;
-    if (((a < 0) == (b < 0)) && ((a < 0) != (tmp < 0))) {
+#elif AH_IS_WIN32
+    if (FAILED(Int64Add(a, b, &tmp))) {
         return AH_ERANGE;
     }
 #endif
@@ -58,21 +62,8 @@ ah_extern ah_err_t ah_mul_int64(const int64_t a, const int64_t b, int64_t* resul
     if (ah_p_mul_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#elif defined(ah_p_mul128)
-    int64_t overflow = INT64_C(0);
-    tmp = ah_p_mul128(a, b, &overflow);
-    if (!(overflow == 0 && tmp >= 0 && tmp <= INT64_MAX) && !(overflow == -1 && tmp < 0 && tmp >= INT64_MIN)) {
-        return AH_ERANGE;
-    }
-#elif defined(ah_p_mulh)
-    int64_t overflow = ah_p_mulh(a, b);
-    tmp = a * b;
-    if (!(overflow == 0 && tmp >= 0 && tmp <= INT64_MAX) && !(overflow == -1 && tmp < 0 && tmp >= INT64_MIN)) {
-        return AH_ERANGE;
-    }
-#else
-    tmp = a * b;
-    if (a != 0 && (tmp / a) != b) {
+#elif AH_IS_WIN32
+    if (FAILED(Int64Mult(a, b, &tmp))) {
         return AH_ERANGE;
     }
 #endif
@@ -93,9 +84,8 @@ ah_extern ah_err_t ah_sub_int64(const int64_t a, const int64_t b, int64_t* resul
     if (ah_p_sub_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#else
-    tmp = a - b;
-    if (((a < 0) != (b < 0)) && ((a < 0) != (tmp < 0))) {
+#elif AH_IS_WIN32
+    if (FAILED(Int64Sub(a, b, &tmp))) {
         return AH_ERANGE;
     }
 #endif
@@ -116,9 +106,8 @@ ah_extern ah_err_t ah_add_size(const size_t a, const size_t b, size_t* result)
     if (ah_p_add_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#else
-    tmp = a + b;
-    if (tmp < a) {
+#elif AH_IS_WIN32
+    if (FAILED(SizeTAdd(a, b, &tmp))) {
         return AH_ERANGE;
     }
 #endif
@@ -151,20 +140,8 @@ ah_extern ah_err_t ah_mul_size(const size_t a, const size_t b, size_t* result)
     if (ah_p_mul_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#elif defined(ah_p_umul128)
-    uint64_t overflow = UINT64_C(0);
-    tmp = ah_p_umul128(a, b, &overflow);
-    if (overflow != 0) {
-        return AH_ERANGE;
-    }
-#elif defined(ah_p_umulh)
-    if (ah_p_umulh(a, b) != 0) {
-        return AH_ERANGE;
-    }
-    tmp = a * b;
-#else
-    tmp = a * b;
-    if (a != 0 && (tmp / a) != b) {
+#elif AH_IS_WIN32
+    if (FAILED(SizeTMult(a, b, &tmp))) {
         return AH_ERANGE;
     }
 #endif
@@ -185,11 +162,10 @@ ah_extern ah_err_t ah_sub_size(const size_t a, const size_t b, size_t* result)
     if (ah_p_sub_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#else
-    if (a < b) {
+#elif AH_IS_WIN32
+    if (FAILED(SizeTSub(a, b, &tmp))) {
         return AH_ERANGE;
     }
-    tmp = a - b;
 #endif
 
     *result = tmp;
@@ -208,9 +184,8 @@ ah_extern ah_err_t ah_add_uint64(const uint64_t a, const uint64_t b, uint64_t* r
     if (ah_p_add_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#else
-    tmp = a + b;
-    if (tmp < a) {
+#elif AH_IS_WIN32
+    if (FAILED(UInt64Add(a, b, &tmp))) {
         return AH_ERANGE;
     }
 #endif
@@ -243,20 +218,8 @@ ah_extern ah_err_t ah_mul_uint64(const uint64_t a, const uint64_t b, uint64_t* r
     if (ah_p_mul_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#elif defined(ah_p_umul128)
-    uint64_t overflow = UINT64_C(0);
-    tmp = ah_p_umul128(a, b, &overflow);
-    if (overflow != 0) {
-        return AH_ERANGE;
-    }
-#elif defined(ah_p_umulh)
-    if (ah_p_umulh(a, b) != 0) {
-        return AH_ERANGE;
-    }
-    tmp = a * b;
-#else
-    tmp = a * b;
-    if (a != 0 && (tmp / a) != b) {
+#elif AH_IS_WIN32
+    if (FAILED(UInt64Mult(a, b, &tmp))) {
         return AH_ERANGE;
     }
 #endif
@@ -277,11 +240,10 @@ ah_extern ah_err_t ah_sub_uint64(const uint64_t a, const uint64_t b, uint64_t* r
     if (ah_p_sub_overflow(a, b, &tmp)) {
         return AH_ERANGE;
     }
-#else
-    if (a < b) {
+#elif AH_IS_WIN32
+    if (FAILED(UInt64Sub(a, b, &tmp))) {
         return AH_ERANGE;
     }
-    tmp = a - b;
 #endif
 
     *result = tmp;

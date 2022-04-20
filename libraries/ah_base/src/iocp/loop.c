@@ -10,12 +10,12 @@
 #include "ah/err.h"
 #include "ah/task.h"
 
+#include "../win32/winapi.h"
+
 #include <stdlib.h>
 #include <winsock2.h>
 
-#pragma comment(lib, "ws2_32")
-
-#define S_COMPLETION_ENTRY_STACK_HEIGHT 32u
+#define S_COMPLETION_ENTRY_BUFFER_SIZE 32u
 
 static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb, size_t initial_capacity);
 static ah_task_t* s_task_queue_dequeue_if_at_or_after(struct ah_i_loop_task_queue* queue, ah_time_t baseline);
@@ -36,15 +36,11 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
         opts->capacity = 1024u;
     }
 
+    ah_i_winapi_init();
+
     ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->alloc_cb, opts->capacity / 4u);
     if (err != AH_ENONE) {
         return err;
-    }
-
-    WSADATA wsa_data;
-    int res = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-    if (res != 0) {
-        return res;
     }
 
     HANDLE iocp_handle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0u, 1u);
@@ -66,7 +62,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
         return err;
     }
 
-    OVERLAPPED_ENTRY entries[S_COMPLETION_ENTRY_STACK_HEIGHT];
+    OVERLAPPED_ENTRY entries[S_COMPLETION_ENTRY_BUFFER_SIZE];
     ULONG num_entries_removed;
 
     do {
@@ -118,10 +114,14 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
             }
         }
 
-        if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries, S_COMPLETION_ENTRY_STACK_HEIGHT,
+        if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries, S_COMPLETION_ENTRY_BUFFER_SIZE,
                 &num_entries_removed, timeout_in_ms, false))
         {
-            return GetLastError();
+            err = GetLastError();
+            if (err != WAIT_TIMEOUT) {
+                return err;
+            }
+            num_entries_removed = 0u;
         }
 
         loop->_now = ah_time_now();
@@ -144,7 +144,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
             }
             ah_i_task_execute_scheduled(task);
         }
-    } while (num_entries_removed == S_COMPLETION_ENTRY_STACK_HEIGHT);
+    } while (num_entries_removed == S_COMPLETION_ENTRY_BUFFER_SIZE);
 
     return AH_ENONE;
 }
@@ -153,10 +153,11 @@ ah_extern void ah_i_loop_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
+    (void) CloseHandle(loop->_iocp_handle);
+    
     s_task_queue_term(&loop->_task_queue, loop->_alloc_cb);
 
-    (void) CloseHandle(loop->_iocp_handle);
-    (void) WSACleanup();
+    ah_i_winapi_term();
 }
 
 static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb, size_t initial_capacity)
@@ -212,7 +213,6 @@ static ah_time_t* s_task_queue_peek_at_baseline(struct ah_i_loop_task_queue* que
 static void s_task_queue_heapify_down_from(struct ah_i_loop_task_queue* queue, const size_t index)
 {
     ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(((index * 2u) + 2u) <= queue->_capacity);
 
     struct ah_i_loop_task_entry* entries = queue->_entries;
     size_t length = queue->_length;
@@ -224,11 +224,17 @@ static void s_task_queue_heapify_down_from(struct ah_i_loop_task_queue* queue, c
         ah_time_t baseline = entries[index_current]._baseline;
 
         size_t index_left_child = (index_current * 2u) + 1u;
+        if (index_left_child < index_current) {
+            break;
+        }
         if (index_left_child < length && ah_time_is_before(entries[index_left_child]._baseline, baseline)) {
             index_min_child = index_left_child;
         }
 
         size_t index_right_child = index_left_child + 1u;
+        if (index_right_child < index_current) {
+            break;
+        }
         if (index_right_child < length && ah_time_is_before(entries[index_right_child]._baseline, baseline)) {
             index_min_child = index_right_child;
         }
@@ -261,6 +267,11 @@ ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, 
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(task != NULL);
+
+
+    if (ah_time_is_before(baseline, loop->_now)) {
+        baseline._performance_count = INT64_MAX;
+    }
 
     struct ah_i_loop_task_queue* queue = &loop->_task_queue;
 

@@ -281,6 +281,10 @@ ah_err_t ah_i_loop_evt_alloc(ah_loop_t* loop, ah_i_loop_evt_t** evt)
     free_evt->_next_free = NULL;
 #endif
 
+#if AH_USE_IOCP
+    free_evt->_overlapped = (OVERLAPPED) { 0u };
+#endif
+
     *evt = free_evt;
 
     return AH_ENONE;

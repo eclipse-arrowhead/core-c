@@ -80,21 +80,52 @@ ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const ah_socka
     }
 
     ah_i_sockfd_t fd0 = socket(domain, type, 0);
+
+#if AH_IS_WIN32
+
+    if (fd0 == INVALID_SOCKET) {
+        return WSAGetLastError();
+    }
+
+#else
+
     if (fd0 == -1) {
         return errno;
     }
 
+#endif
+
 #if AH_IS_DARWIN
+
     if (fcntl(fd0, F_SETFL, O_NONBLOCK, 0) == -1) {
         err = errno;
-        goto close_fd_and_return;
+        goto close_fd0_and_return;
     }
+
+#elif AH_USE_IOCP
+
+    u_long value = 1;
+    if (ioctlsocket(fd0, FIONBIO, &value) == SOCKET_ERROR) {
+        err = WSAGetLastError();
+        goto close_fd0_and_return;
+    }
+
+    if (!SetHandleInformation((HANDLE) fd0, HANDLE_FLAG_INHERIT, 0)) {
+        err = GetLastError();
+        goto close_fd0_and_return;
+    }
+
+    if (CreateIoCompletionPort((HANDLE) fd0, loop->_iocp_handle, 0u, 1u) == NULL) {
+        err = GetLastError();
+        goto close_fd0_and_return;
+    }
+
 #endif
 
     if (local_addr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(local_addr)) {
         if (bind(fd0, ah_i_sockaddr_cast_const(local_addr), ah_i_sockaddr_get_size(local_addr)) != 0) {
             err = errno;
-            goto close_fd_and_return;
+            goto close_fd0_and_return;
         }
     }
 
@@ -102,7 +133,7 @@ ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const ah_socka
 
     return err;
 
-close_fd_and_return:
+close_fd0_and_return:
     (void) close(fd0);
 
     return err;

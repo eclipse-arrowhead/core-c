@@ -12,6 +12,10 @@
 #include "ah/sock.h"
 #include "ah/unit.h"
 
+#if AH_IS_WIN32
+#    include <ws2ipdef.h>
+#endif
+
 struct s_udp_user_data {
     ah_buf_t* free_buf;
 
@@ -82,8 +86,12 @@ static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufvec
         return;
     }
 
-    ah_unit_assert(unit, remote_addr != NULL, "remote_addr == NULL");
-    ah_unit_assert(unit, bufvec != NULL, "bufvec == NULL");
+    if (!ah_unit_assert(unit, remote_addr != NULL, "remote_addr == NULL")) {
+        return;
+    }
+    if (!ah_unit_assert(unit, bufvec != NULL, "bufvec == NULL")) {
+        return;
+    }
 
     if (!ah_unit_assert_unsigned_eq(unit, 18, size)) {
         return;
