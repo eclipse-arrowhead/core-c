@@ -10,16 +10,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void test_buf(struct ah_unit* unit);
-void test_err(struct ah_unit* unit);
-void test_math(struct ah_unit* unit);
-void test_sock(struct ah_unit* unit);
-void test_task(struct ah_unit* unit);
-void test_tcp(struct ah_unit* unit);
-void test_time(struct ah_unit* unit);
-void test_udp(struct ah_unit* unit);
+void test_buf(ah_unit_t* unit);
+void test_err(ah_unit_t* unit);
+void test_math(ah_unit_t* unit);
+void test_sock(ah_unit_t* unit);
+void test_task(ah_unit_t* unit);
+void test_tcp(ah_unit_t* unit);
+void test_time(ah_unit_t* unit);
+void test_udp(ah_unit_t* unit);
 
-int main()
+int main(void)
 {
     (void) printf("Arrowhead Base C Library Unit Tests\n"
                   "- Source Commit: %s\n"

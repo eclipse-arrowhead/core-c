@@ -7,16 +7,15 @@
 #ifndef AH_ASSERT_H_
 #define AH_ASSERT_H_
 
-#include <ah/abort.h>
-#include <ah/defs.h>
+#include "abort.h"
+#include "defs.h"
 
-#define ah_assert(expression)                                                                                          \
-    (ah_likely((expression)) ? ((void) 0) : ah_abortf("%s:%d " #expression "\n", __FILE__, __LINE__))
+#define ah_assert(expr) (ah_likely((expr)) ? ((void) 0) : ah_abortf("%s:%d " #expr "\n", __FILE__, __LINE__))
 
 #ifndef NDEBUG
-#    define ah_assert_if_debug(expression) ah_assert(expression)
+#    define ah_assert_if_debug(expr) ah_assert(expr)
 #else
-#    define ah_assert_if_debug(expression) ((void) 0)
+#    define ah_assert_if_debug(expr) ((void) 0)
 #endif
 
 #endif

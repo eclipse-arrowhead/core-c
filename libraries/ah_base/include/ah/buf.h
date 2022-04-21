@@ -7,29 +7,35 @@
 #ifndef AH_BUF_H_
 #define AH_BUF_H_
 
-#include "defs.h"
-#include "err.h"
+#include "internal/buf.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
-#if AH_USE_IOVEC
-struct iovec;
-#endif
-
 struct ah_buf {
-    uint8_t* octets;
-    size_t size;
+
+    // Will always have two fields: `_octets` and `_size`. Their order and types
+    // will vary, however. Use ah_buf_set() to update and ah_buf_get_octets()
+    // and ah_buf_get_size() to query.
+
+    AH_I_BUF_FIELDS
 };
 
 struct ah_bufvec {
-    struct ah_buf* items;
+    ah_buf_t* items;
     size_t length;
 };
 
-#if AH_USE_IOVEC
-ah_extern ah_err_t ah_bufvec_from_iovec(struct ah_bufvec* bufvec, struct iovec* iov, int iovcnt);
-ah_extern ah_err_t ah_bufvec_into_iovec(struct ah_bufvec* bufvec, struct iovec** iov, int* iovcnt);
-#endif
+ah_extern_inline uint8_t* ah_buf_get_octets(const ah_buf_t* buf)
+{
+    return (uint8_t*) buf->_octets;
+}
+
+ah_extern_inline size_t ah_buf_get_size(const ah_buf_t* buf)
+{
+    return (size_t) buf->_size;
+}
+
+ah_extern ah_err_t ah_buf_set(ah_buf_t* buf, uint8_t* octets, size_t size);
 
 #endif

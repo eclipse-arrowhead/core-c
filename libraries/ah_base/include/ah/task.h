@@ -8,8 +8,7 @@
 #define AH_TASK_H_
 
 #include "assert.h"
-#include "defs.h"
-#include "err.h"
+#include "internal/task.h"
 
 #include <stddef.h>
 
@@ -20,51 +19,47 @@
 
 typedef unsigned ah_task_state_t;
 
-typedef void (*ah_task_cb)(struct ah_task* task, ah_err_t err);
+typedef void (*ah_task_cb)(ah_task_t* task, ah_err_t err);
 
 struct ah_task {
-    ah_task_state_t _state;
-    ah_task_cb _cb;
-    struct ah_loop* _loop;
-    struct ah_i_loop_evt* _evt;
-    void* _data;
+    AH_I_TASK_FIELDS
 };
 
 struct ah_task_opts {
-    struct ah_loop* loop;
+    ah_loop_t* loop;
     ah_task_cb cb;
     void* data;
 };
 
-ah_extern ah_err_t ah_task_init(struct ah_task* task, const struct ah_task_opts* opts);
+ah_extern ah_err_t ah_task_init(ah_task_t* task, const ah_task_opts_t* opts);
 
-ah_extern_inline void* ah_task_get_user_data(const struct ah_task* task)
+ah_extern_inline void* ah_task_get_user_data(const ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
-    return task->_data;
+    return task->_user_data;
 }
 
-ah_extern_inline struct ah_loop* ah_task_get_loop(const struct ah_task* task)
+ah_extern_inline ah_loop_t* ah_task_get_loop(const ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
     return task->_loop;
 }
 
-ah_extern_inline ah_task_state_t ah_task_get_state(const struct ah_task* task)
+ah_extern_inline ah_task_state_t ah_task_get_state(const ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
     return task->_state;
 }
 
-ah_extern_inline void ah_task_set_user_data(struct ah_task* task, void* data)
+ah_extern_inline void ah_task_set_user_data(ah_task_t* task, void* user_data)
 {
     ah_assert_if_debug(task != NULL);
-    task->_data = data;
+    task->_user_data = user_data;
 }
 
-ah_extern ah_err_t ah_task_cancel(struct ah_task* task);
-ah_extern ah_err_t ah_task_schedule_at(struct ah_task* task, struct ah_time baseline);
+ah_extern ah_err_t ah_task_cancel(ah_task_t* task);
+ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline);
 
-ah_extern ah_err_t ah_task_term(struct ah_task* task);
+ah_extern ah_err_t ah_task_term(ah_task_t* task);
 
 #endif

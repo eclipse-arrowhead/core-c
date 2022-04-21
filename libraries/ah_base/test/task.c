@@ -6,6 +6,7 @@
 
 #include "ah/task.h"
 
+#include "ah/err.h"
 #include "ah/loop.h"
 #include "ah/unit.h"
 
@@ -14,13 +15,13 @@ struct s_task_data {
     size_t call_count;
     ah_err_t call_err;
 
-    struct ah_unit* unit;
+    ah_unit_t* unit;
 };
 
-static void s_should_execute_task_with_no_err(struct ah_unit* unit);
-static void s_should_execute_cancelled_task_with_correct_err(struct ah_unit* unit);
+static void s_should_execute_task_with_no_err(ah_unit_t* unit);
+static void s_should_execute_cancelled_task_with_correct_err(ah_unit_t* unit);
 
-void test_task(struct ah_unit* unit)
+void test_task(ah_unit_t* unit)
 {
     s_should_execute_task_with_no_err(unit);
     s_should_execute_cancelled_task_with_correct_err(unit);
@@ -34,13 +35,13 @@ static void s_on_execution(struct ah_task* task, ah_err_t err)
 
     struct s_task_data* task_data = ah_task_get_user_data(task);
 
-    task_data->call_count += 1;
+    task_data->call_count += 1u;
     task_data->call_err = err;
 
-    *task_data->call_counter += 1;
+    *task_data->call_counter += 1u;
 }
 
-static void s_should_execute_task_with_no_err(struct ah_unit* unit)
+static void s_should_execute_task_with_no_err(ah_unit_t* unit)
 {
     ah_err_t err;
 
@@ -50,7 +51,7 @@ static void s_should_execute_task_with_no_err(struct ah_unit* unit)
         return;
     }
 
-    size_t call_counter = 0;
+    size_t call_counter = 0u;
 
     struct ah_task task;
     struct s_task_data task_data = {
@@ -63,12 +64,12 @@ static void s_should_execute_task_with_no_err(struct ah_unit* unit)
         return;
     }
 
-    err = ah_task_schedule_at(&task, (struct ah_time) { 0 });
+    err = ah_task_schedule_at(&task, (struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
 
-    err = ah_loop_run_until(&loop, &(struct ah_time) { 0 });
+    err = ah_loop_run_until(&loop, &(struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -80,7 +81,7 @@ static void s_should_execute_task_with_no_err(struct ah_unit* unit)
     (void) ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
 }
 
-static void s_should_execute_cancelled_task_with_correct_err(struct ah_unit* unit)
+static void s_should_execute_cancelled_task_with_correct_err(ah_unit_t* unit)
 {
     ah_err_t err;
 
@@ -90,7 +91,7 @@ static void s_should_execute_cancelled_task_with_correct_err(struct ah_unit* uni
         return;
     }
 
-    size_t call_counter = 0;
+    size_t call_counter = 0u;
 
     struct ah_task task;
     struct s_task_data task_data = {
@@ -103,7 +104,7 @@ static void s_should_execute_cancelled_task_with_correct_err(struct ah_unit* uni
         return;
     }
 
-    err = ah_task_schedule_at(&task, (struct ah_time) { 0 });
+    err = ah_task_schedule_at(&task, (struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -113,7 +114,7 @@ static void s_should_execute_cancelled_task_with_correct_err(struct ah_unit* uni
         return;
     }
 
-    err = ah_loop_run_until(&loop, &(struct ah_time) { 0 });
+    err = ah_loop_run_until(&loop, &(struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }

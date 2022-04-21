@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
 project(ah_base C)
 
 set(CMAKE_C_STANDARD 99)
@@ -11,9 +11,14 @@ set(
     include/ah/buf.h
     include/ah/defs.h
     include/ah/err.h
+    include/ah/internal/loop.h
+    include/ah/internal/sock.h
+    include/ah/internal/task.h
+    include/ah/internal/tcp.h
+    include/ah/internal/time.h
+    include/ah/internal/udp.h
     include/ah/ip.h
     include/ah/lib.h
-    include/ah/loop-internal.h
     include/ah/loop.h
     include/ah/math.h
     include/ah/sock.h
@@ -23,17 +28,12 @@ set(
     include/ah/udp.h
     src/abort.c
     src/alloc.c
-    src/buf.c
     src/err.c
     src/lib.c
     src/loop.c
     src/math.c
-    src/sock-internal.h
     src/sock.c
     src/task.c
-    src/tcp.c
-    src/time.c
-    src/udp.c
 )
 set(
     TEST_FILES
@@ -47,6 +47,80 @@ set(
     test/time.c
     test/udp.c
 )
+
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    list(
+        APPEND
+        SOURCE_FILES
+        include/ah/internal/bsd/sock.h
+        include/ah/internal/darwin/time.h
+        include/ah/internal/kqueue/loop.h
+        include/ah/internal/kqueue/task.h
+        include/ah/internal/kqueue/tcp.h
+        include/ah/internal/kqueue/udp.h
+        include/ah/internal/posix/buf.h
+        src/bsd/sock.c
+        src/bsd/tcp.c
+        src/bsd/udp.c
+        src/darwin/time.c
+        src/kqueue/loop.c
+        src/kqueue/task.c
+        src/kqueue/tcp.c
+        src/kqueue/udp.c
+        src/posix/abort.c
+        src/posix/buf.c
+    )
+endif ()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    list(
+        APPEND
+        SOURCE_FILES
+        include/ah/internal/bsd/sock.h
+        include/ah/internal/uring/loop.h
+        include/ah/internal/uring/task.h
+        include/ah/internal/uring/tcp.h
+        include/ah/internal/uring/time.h
+        include/ah/internal/uring/udp.h
+        include/ah/internal/posix/buf.h
+        src/bsd/sock.c
+        src/bsd/tcp.c
+        src/bsd/udp.c
+        src/uring/loop.c
+        src/uring/task.c
+        src/uring/tcp.c
+        src/uring/udp.c
+        src/uring/time.c
+        src/posix/abort.c
+        src/posix/buf.c
+    )
+endif ()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    list(
+        APPEND
+        SOURCE_FILES
+        include/ah/internal/bsd/sock.h
+        include/ah/internal/iocp/loop.h
+        include/ah/internal/iocp/task.h
+        include/ah/internal/iocp/tcp.h
+        include/ah/internal/iocp/udp.h
+        include/ah/internal/win32/buf.h
+        include/ah/internal/win32/time.h
+        src/bsd/sock.c
+        src/bsd/tcp.c
+        src/bsd/udp.c
+        src/iocp/loop.c
+        src/iocp/task.c
+        src/iocp/tcp.c
+        src/iocp/udp.c
+        src/win32/abort.c
+        src/win32/buf.c
+        src/win32/time.c
+        src/win32/winapi.c
+        src/win32/winapi.h
+    )
+endif ()
 
 add_library(ah_base STATIC ${SOURCE_FILES})
 

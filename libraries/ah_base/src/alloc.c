@@ -6,6 +6,7 @@
 
 #include "ah/alloc.h"
 
+#include "ah/err.h"
 #include "ah/math.h"
 
 #include <string.h>
@@ -70,7 +71,7 @@ ah_extern void* ah_calloc(ah_alloc_cb alloc_cb, size_t array_length, size_t item
     return ah_malloc_zeroed(alloc_cb, total_size);
 }
 
-ah_extern void* ah_realloc(ah_alloc_cb alloc_cb, void* ptr, size_t new_array_length, size_t item_size)
+ah_extern void* ah_realloc_array(ah_alloc_cb alloc_cb, void* ptr, size_t new_array_length, size_t item_size)
 {
     if (alloc_cb == NULL || ptr == NULL) {
         return NULL;
@@ -84,10 +85,10 @@ ah_extern void* ah_realloc(ah_alloc_cb alloc_cb, void* ptr, size_t new_array_len
     return alloc_cb(ptr, total_size);
 }
 
-ah_extern void* ah_realloc_zero_expansion(ah_alloc_cb alloc_cb, void* ptr, size_t old_array_length,
+ah_extern void* ah_realloc_array_zero_expansion(ah_alloc_cb alloc_cb, void* ptr, size_t old_array_length,
     size_t new_array_length, size_t item_size)
 {
-    void* new_ptr = ah_realloc(alloc_cb, ptr, new_array_length, item_size);
+    void* new_ptr = ah_realloc_array(alloc_cb, ptr, new_array_length, item_size);
 
     if (new_ptr != NULL && old_array_length < new_array_length) {
         char* ptr_to_zero_region = &((char*) ptr)[old_array_length * item_size];
@@ -97,7 +98,7 @@ ah_extern void* ah_realloc_zero_expansion(ah_alloc_cb alloc_cb, void* ptr, size_
     return new_ptr;
 }
 
-ah_extern void* ah_realloc_larger(ah_alloc_cb alloc_cb, void* ptr, size_t* array_length, size_t item_size)
+ah_extern void* ah_realloc_array_larger(ah_alloc_cb alloc_cb, void* ptr, size_t* array_length, size_t item_size)
 {
     if (alloc_cb == NULL || ptr == NULL || array_length == NULL || item_size == 0u) {
         return NULL;
@@ -107,10 +108,8 @@ ah_extern void* ah_realloc_larger(ah_alloc_cb alloc_cb, void* ptr, size_t* array
     if (*array_length == 0u) {
         new_array_length = 8u;
     }
-    else if (ah_mul_size(*array_length, 2u, &new_array_length) != AH_ENONE) {
+    else if (ah_add_size(*array_length, *array_length / 2u, &new_array_length) != AH_ENONE) {
         return NULL;
-    }
-    else {
     }
 
     size_t total_size;

@@ -15,7 +15,7 @@ ah_extern const char* ah_strerror(ah_err_t err)
         string = "no error";
         break;
 
-#define AH_I_ERR_E(NAME, POSIX_CODE, WIN32_CODE, STRING)                                                               \
+#define AH_I_ERR_E(NAME, CODE, STRING)                                                                                 \
     case AH_E##NAME:                                                                                                   \
         string = (STRING);                                                                                             \
         break;

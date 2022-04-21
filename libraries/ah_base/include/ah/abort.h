@@ -9,7 +9,7 @@
 
 #include "defs.h"
 
-ah_extern ah_noreturn void ah_abort();
+ah_extern ah_noreturn void ah_abort(void);
 ah_extern ah_noreturn void ah_abortf(const char* format, ...);
 
 #endif
