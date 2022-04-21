@@ -22,7 +22,7 @@ ah_extern ah_err_t ah_task_init(ah_task_t* task, const ah_task_opts_t* opts)
     *task = (ah_task_t) {
         ._loop = opts->loop,
         ._cb = opts->cb,
-        ._data = opts->data,
+        ._user_data = opts->data,
         ._state = AH_TASK_STATE_INITIAL,
     };
 

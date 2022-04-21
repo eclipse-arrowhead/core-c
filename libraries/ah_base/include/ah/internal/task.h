@@ -21,7 +21,7 @@
     ah_task_state_t _state;                                                                                            \
     ah_task_cb _cb;                                                                                                    \
     ah_loop_t* _loop;                                                                                                  \
-    void* _data;                                                                                                       \
+    void* _user_data;                                                                                                  \
     AH_I_TASK_PLATFORM_FIELDS
 
 ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task);
