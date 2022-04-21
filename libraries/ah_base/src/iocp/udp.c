@@ -75,7 +75,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
         .dwBufferCount = buffer_count,
     };
 
-    int res = ah_i_winapi_WSARecvMsg(sock->_fd, &ctx->_wsa_msg, NULL, &evt->_overlapped, NULL);
+    int res = win_WSARecvMsg(sock->_fd, &ctx->_wsa_msg, NULL, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {

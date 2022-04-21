@@ -32,7 +32,7 @@ ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_so
     }
 
     ah_i_sockfd_t fd;
-    ah_err_t err = ah_i_sock_open(loop, AH_I_SOCK_STREAM, local_addr, &fd);
+    ah_err_t err = ah_i_sock_open_bind(loop, AH_I_SOCK_STREAM, local_addr, &fd);
 
     if (err == AH_ENONE) {
         *sock = (ah_tcp_sock_t) {
@@ -40,6 +40,9 @@ ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_so
             ._fd = fd,
             ._state = AH_I_TCP_STATE_OPEN,
         };
+#if AH_USE_IOCP
+        sock->_sockfamily = local_addr->as_ip.family;
+#endif
     }
 
     if (cb != NULL) {
@@ -159,7 +162,11 @@ ah_extern ah_err_t ah_tcp_shutdown(ah_tcp_sock_t* sock, ah_tcp_shutdown_t flags)
     ah_err_t err;
 
     if (shutdown(sock->_fd, how) != 0) {
+#if AH_IS_WIN32
+        err = WSAGetLastError();
+#else
         err = errno;
+#endif
     }
     else {
         err = AH_ENONE;

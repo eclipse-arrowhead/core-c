@@ -7,9 +7,19 @@
 #ifndef AH_INTERNAL_IOCP_TCP_H_
 #define AH_INTERNAL_IOCP_TCP_H_
 
-#define AH_I_TCP_LISTEN_CTX_PLATFORM_FIELDS
-#define AH_I_TCP_READ_CTX_PLATFORM_FIELDS
-#define AH_I_TCP_SOCK_PLATFORM_FIELDS ah_i_sockfd_t _fd;
+#define AH_I_TCP_LISTEN_CTX_PLATFORM_FIELDS                                                                            \
+    char _accept_buffer[sizeof(struct sockaddr_storage) * 2u + 32u];                                                   \
+    ah_i_sockfd_t _accept_fd;
+
+#define AH_I_TCP_READ_CTX_PLATFORM_FIELDS                                                                              \
+    ah_bufvec_t _bufvec;                                                                                               \
+    DWORD _recv_flags;
+
+#define AH_I_TCP_SOCK_PLATFORM_FIELDS                                                                                  \
+    bool _is_listening;                                                                                                \
+    ah_i_sockfd_t _fd;                                                                                                 \
+    int _sockfamily;
+
 #define AH_I_TCP_WRITE_CTX_PLATFORM_FIELDS
 
 #endif

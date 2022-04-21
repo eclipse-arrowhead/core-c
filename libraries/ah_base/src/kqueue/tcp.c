@@ -417,6 +417,8 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
     }
 #endif
     sock->_state = AH_I_TCP_STATE_CLOSED;
+    sock->_state_read = AH_I_TCP_STATE_READ_OFF;
+    sock->_state_write = AH_I_TCP_STATE_WRITE_OFF;
 
     ah_err_t err = ah_i_sock_close(sock->_loop, sock->_fd);
 

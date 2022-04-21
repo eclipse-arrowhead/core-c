@@ -56,30 +56,16 @@ ah_extern const struct sockaddr* ah_i_sockaddr_cast_const(const ah_sockaddr_t* s
     return (const struct sockaddr*) sockaddr;
 }
 
-ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const ah_sockaddr_t* local_addr, ah_i_sockfd_t* fd)
+ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, int sockfamily, int type, ah_i_sockfd_t* fd)
 {
     ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(local_addr != NULL);
     ah_assert_if_debug(fd != NULL);
 
     if (ah_loop_is_term(loop)) {
         return AH_ESTATE;
     }
 
-    ah_err_t err = AH_ENONE;
-
-    int domain;
-    if (local_addr->as_any.family == AH_I_SOCKFAMILY_IPV4) {
-        domain = PF_INET;
-    }
-    else if (local_addr->as_any.family == AH_I_SOCKFAMILY_IPV6) {
-        domain = PF_INET6;
-    }
-    else {
-        return AH_EINVAL;
-    }
-
-    ah_i_sockfd_t fd0 = socket(domain, type, 0);
+    ah_i_sockfd_t fd0 = socket(sockfamily, type, 0);
 
 #if AH_IS_WIN32
 
@@ -94,6 +80,8 @@ ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const ah_socka
     }
 
 #endif
+
+    ah_err_t err;
 
 #if AH_IS_DARWIN
 
@@ -122,16 +110,43 @@ ah_extern ah_err_t ah_i_sock_open(struct ah_loop* loop, int type, const ah_socka
 
 #endif
 
+    *fd = fd0;
+
+    return AH_ENONE;
+
+close_fd0_and_return:
+    (void) close(fd0);
+
+    return err;
+}
+
+ah_extern ah_err_t ah_i_sock_open_bind(struct ah_loop* loop, int type, const ah_sockaddr_t* local_addr,
+    ah_i_sockfd_t* fd)
+{
+    ah_assert_if_debug(loop != NULL);
+    ah_assert_if_debug(local_addr != NULL);
+    ah_assert_if_debug(fd != NULL);
+
+    ah_i_sockfd_t fd0;
+    ah_err_t err = ah_i_sock_open(loop, local_addr->as_any.family, type, &fd0);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
     if (local_addr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(local_addr)) {
         if (bind(fd0, ah_i_sockaddr_cast_const(local_addr), ah_i_sockaddr_get_size(local_addr)) != 0) {
+#if AH_IS_WIN32
+            err = WSAGetLastError();
+#else
             err = errno;
+#endif
             goto close_fd0_and_return;
         }
     }
 
     *fd = fd0;
 
-    return err;
+    return AH_ENONE;
 
 close_fd0_and_return:
     (void) close(fd0);
@@ -144,9 +159,13 @@ ah_extern ah_err_t ah_i_sock_close(struct ah_loop* loop, ah_i_sockfd_t fd)
     ah_assert_if_debug(loop != NULL);
 
     if (close(fd) != 0) {
+#if AH_IS_WIN32
+        return WSAGetLastError();
+#else
         if (!(errno == AH_EINTR && ah_i_loop_try_set_pending_err(loop, AH_EINTR))) {
             return errno;
         }
+#endif
     }
 
     return AH_ENONE;

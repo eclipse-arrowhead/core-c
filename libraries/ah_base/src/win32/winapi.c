@@ -10,8 +10,10 @@ static void s_load_wsa_fn(SOCKET fd, GUID* guid, const char* name, void** fn);
 
 INIT_ONCE s_once = INIT_ONCE_STATIC_INIT;
 
-LPFN_ACCEPTEX ah_i_winapi_AcceptEx;
-LPFN_WSARECVMSG ah_i_winapi_WSARecvMsg;
+LPFN_ACCEPTEX win_AcceptEx;
+LPFN_CONNECTEX win_ConnectEx;
+LPFN_GETACCEPTEXSOCKADDRS win_GetAcceptExSockaddrs;
+LPFN_WSARECVMSG win_WSARecvMsg;
 
 void ah_i_winapi_init(void)
 {
@@ -37,8 +39,10 @@ static BOOL CALLBACK s_init(PINIT_ONCE init_once, PVOID param, PVOID* ctx)
         ah_abortf("failed to create bootstrap socket; %*.s", ah_i_winapi_strerror(WSAGetLastError()));
     }
 
-    s_load_wsa_fn(fd, &(GUID) WSAID_ACCEPTEX, "AcceptEx", (void**) &ah_i_winapi_AcceptEx);
-    s_load_wsa_fn(fd, &(GUID) WSAID_WSARECVMSG, "WSARecvMsg", (void**) &ah_i_winapi_WSARecvMsg);
+    s_load_wsa_fn(fd, &(GUID) WSAID_ACCEPTEX, "AcceptEx", (void**) &win_AcceptEx);
+    s_load_wsa_fn(fd, &(GUID) WSAID_CONNECTEX, "ConnectEx", (void**) &win_ConnectEx);
+    s_load_wsa_fn(fd, &(GUID) WSAID_GETACCEPTEXSOCKADDRS, "GetAcceptExSockaddrs", (void**) &win_GetAcceptExSockaddrs);
+    s_load_wsa_fn(fd, &(GUID) WSAID_WSARECVMSG, "WSARecvMsg", (void**) &win_WSARecvMsg);
 
     closesocket(fd);
 

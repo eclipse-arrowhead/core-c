@@ -82,7 +82,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
 ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_listen_ctx_t* ctx);
 
 ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx);
-ah_extern ah_err_t ah_tcp_read_stop(ah_tcp_sock_t* sock);
+ah_extern ah_err_t ah_tcp_read_stop(ah_tcp_sock_t* sock); // Caller is responsible for freeing any memory allocated by ah_tcp_read_start().
 ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx);
 ah_extern ah_err_t ah_tcp_shutdown(ah_tcp_sock_t* sock, ah_tcp_shutdown_t flags);
 

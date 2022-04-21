@@ -46,7 +46,7 @@ ah_extern ah_err_t ah_i_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffer
 {
     ah_assert_if_debug(bufvec != NULL && buffers != NULL && buffer_count != NULL);
 
-    if (bufvec->length > ULONG_MAX) {
+    if (bufvec->length > MAXDWORD) {
         return AH_EOVERFLOW;
     }
 

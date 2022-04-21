@@ -43,7 +43,7 @@ set(
     test/math.c
     test/sock.c
     test/task.c
-    #test/tcp.c
+    test/tcp.c
     test/time.c
     test/udp.c
 )
@@ -112,6 +112,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         src/bsd/udp.c
         src/iocp/loop.c
         src/iocp/task.c
+        src/iocp/tcp.c
         src/iocp/udp.c
         src/win32/abort.c
         src/win32/buf.c

@@ -85,7 +85,7 @@ ah_extern ah_err_t ah_udp_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group
 
 ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx);
 ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx);
-ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock);
+ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock);  // Caller is responsible for freeing any memory allocated by ah_udp_recv_start().
 
 ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb);
 

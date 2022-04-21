@@ -45,7 +45,8 @@ ah_extern ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr);
 ah_extern struct sockaddr* ah_i_sockaddr_cast(ah_sockaddr_t* sockaddr);
 ah_extern const struct sockaddr* ah_i_sockaddr_cast_const(const ah_sockaddr_t* sockaddr);
 
-ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, int type, const ah_sockaddr_t* local_addr, ah_i_sockfd_t* fd);
+ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, int sockfamily, int type, ah_i_sockfd_t* fd);
+ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, int type, const ah_sockaddr_t* local_addr, ah_i_sockfd_t* fd);
 ah_extern ah_err_t ah_i_sock_close(ah_loop_t* loop, ah_i_sockfd_t fd);
 
 ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* local_addr);

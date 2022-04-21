@@ -21,7 +21,7 @@ ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_so
     }
 
     ah_i_sockfd_t fd;
-    ah_err_t err = ah_i_sock_open(loop, AH_I_SOCK_DGRAM, local_addr, &fd);
+    ah_err_t err = ah_i_sock_open_bind(loop, AH_I_SOCK_DGRAM, local_addr, &fd);
 
     if (err == AH_ENONE) {
         *sock = (ah_udp_sock_t) {
