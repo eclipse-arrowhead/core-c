@@ -69,7 +69,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     }
 
     ctx->_wsa_msg = (WSAMSG) {
-        .name = ah_i_sockaddr_cast(&ctx->_remote_addr),
+        .name = ah_i_sockaddr_into_bsd(&ctx->_remote_addr),
         .namelen = sizeof(ah_sockaddr_t),
         .lpBuffers = buffers,
         .dwBufferCount = buffer_count,
@@ -181,7 +181,7 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     }
 
     ctx->_wsa_msg = (WSAMSG) {
-        .name = ah_i_sockaddr_cast(&ctx->remote_addr),
+        .name = ah_i_sockaddr_into_bsd(&ctx->remote_addr),
         .namelen = ah_i_sockaddr_get_size(&ctx->remote_addr),
         .lpBuffers = buffers,
         .dwBufferCount = buffer_count,

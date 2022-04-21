@@ -90,7 +90,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     socklen_t socklen = sizeof(remote_addr);
 
     struct msghdr msghdr = {
-        .msg_name = ah_i_sockaddr_cast(&remote_addr),
+        .msg_name = ah_i_sockaddr_into_bsd(&remote_addr),
         .msg_namelen = socklen,
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
@@ -204,7 +204,7 @@ static void s_on_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     struct msghdr msghdr = {
-        .msg_name = ah_i_sockaddr_cast(&ctx->remote_addr),
+        .msg_name = ah_i_sockaddr_into_bsd(&ctx->remote_addr),
         .msg_namelen = ah_i_sockaddr_get_size(&ctx->remote_addr),
         .msg_iov = iov,
         .msg_iovlen = iovcnt,

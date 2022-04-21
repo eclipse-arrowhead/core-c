@@ -32,7 +32,7 @@ ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_so
     }
 
     ah_i_sockfd_t fd;
-    ah_err_t err = ah_i_sock_open_bind(loop, AH_I_SOCK_STREAM, local_addr, &fd);
+    ah_err_t err = ah_i_sock_open_bind(loop, SOCK_STREAM, local_addr, &fd);
 
     if (err == AH_ENONE) {
         *sock = (ah_tcp_sock_t) {

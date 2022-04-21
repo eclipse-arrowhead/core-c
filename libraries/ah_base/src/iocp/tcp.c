@@ -41,7 +41,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     evt->_body._tcp_connect._sock = sock;
     evt->_body._tcp_connect._cb = cb;
 
-    const struct sockaddr* name = ah_i_sockaddr_cast_const(remote_addr);
+    const struct sockaddr* name = ah_i_sockaddr_const_into_bsd(remote_addr);
     const int namelen = ah_i_sockaddr_get_size(remote_addr);
 
     DWORD bytes;
@@ -220,13 +220,13 @@ static void s_on_accept(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
     struct sockaddr* local_addr;
     INT local_addr_size;
 
-    ah_sockaddr_t* remote_addr;
+    struct sockaddr* remote_addr;
     INT remote_addr_size;
 
     win_GetAcceptExSockaddrs(ctx->_accept_buffer, 0u, addr_size, addr_size, &local_addr, &local_addr_size,
-        (struct sockaddr**) &remote_addr, &remote_addr_size);
+        &remote_addr, &remote_addr_size);
 
-    ctx->accept_cb(listener, conn, remote_addr, AH_ENONE);
+    ctx->accept_cb(listener, conn, ah_i_sockaddr_from_bsd(remote_addr), AH_ENONE);
 
 prep_another_accept:
 

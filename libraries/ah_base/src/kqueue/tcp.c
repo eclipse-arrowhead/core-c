@@ -31,7 +31,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
 
     ah_err_t err;
 
-    if (connect(sock->_fd, ah_i_sockaddr_cast_const(remote_addr), ah_i_sockaddr_get_size(remote_addr)) != 0) {
+    if (connect(sock->_fd, ah_i_sockaddr_const_into_bsd(remote_addr), ah_i_sockaddr_get_size(remote_addr)) != 0) {
         if (errno == EINPROGRESS) {
             ah_i_loop_evt_t* evt;
             struct kevent* kev;
@@ -170,7 +170,7 @@ static void s_on_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
         ah_sockaddr_t sockaddr;
         socklen_t socklen = sizeof(ah_sockaddr_t);
 
-        const int fd = accept(listener->_fd, ah_i_sockaddr_cast(&sockaddr), &socklen);
+        const int fd = accept(listener->_fd, ah_i_sockaddr_into_bsd(&sockaddr), &socklen);
         if (fd == -1) {
             ctx->accept_cb(listener, NULL, NULL, errno);
             continue;
