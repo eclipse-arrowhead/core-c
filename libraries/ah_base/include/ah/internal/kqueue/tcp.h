@@ -10,7 +10,7 @@
 #define AH_I_TCP_LISTEN_CTX_PLATFORM_FIELDS
 #define AH_I_TCP_READ_CTX_PLATFORM_FIELDS
 
-#define AH_I_TCP_SOCK_PLATFORM_FIELDS                                                                                           \
+#define AH_I_TCP_SOCK_PLATFORM_FIELDS                                                                                  \
     struct ah_i_loop_evt* _read_or_listen_evt;                                                                         \
     ah_i_sockfd_t _fd;
 
