@@ -30,9 +30,17 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
         return AH_ESTATE;
     }
 
-    ah_i_loop_evt_t* evt;
+    ah_err_t err;
 
-    ah_err_t err = ah_i_loop_evt_alloc(sock->_loop, &evt);
+    if (sock->_ConnectEx == NULL) {
+        err = ah_i_winapi_get_wsa_fn(sock->_fd, &(GUID) WSAID_CONNECTEX, (void**) &sock->_ConnectEx);
+        if (err != AH_ENONE) {
+            return err;
+        }
+    }
+
+    ah_i_loop_evt_t* evt;
+    err = ah_i_loop_evt_alloc(sock->_loop, &evt);
     if (err != AH_ENONE) {
         return err;
     }
@@ -45,7 +53,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     const int namelen = ah_i_sockaddr_get_size(remote_addr);
 
     DWORD bytes;
-    if (!win_ConnectEx(sock->_fd, name, namelen, NULL, 0u, &bytes, &evt->_overlapped)) {
+    if (!sock->_ConnectEx(sock->_fd, name, namelen, NULL, 0u, &bytes, &evt->_overlapped)) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {
             return err;
@@ -90,6 +98,21 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     }
 
     ah_err_t err;
+
+    if (sock->_AcceptEx == NULL) {
+        err = ah_i_winapi_get_wsa_fn(sock->_fd, &(GUID) WSAID_ACCEPTEX, (void**) &sock->_AcceptEx);
+        if (err != AH_ENONE) {
+            return err;
+        }
+    }
+
+    if (sock->_GetAcceptExSockaddrs == NULL) {
+        err = ah_i_winapi_get_wsa_fn(sock->_fd, &(GUID) WSAID_GETACCEPTEXSOCKADDRS,
+            (void**) &sock->_GetAcceptExSockaddrs);
+        if (err != AH_ENONE) {
+            return err;
+        }
+    }
 
     if (!sock->_is_listening) {
         int backlog_int = (backlog == 0u) ? 128 : (backlog > SOMAXCONN) ? SOMAXCONN : (int) backlog;
@@ -144,10 +167,11 @@ static ah_err_t s_prep_accept(ah_tcp_sock_t* listener, ah_tcp_listen_ctx_t* ctx)
         goto dealloc_evt_and_report_err;
     }
 
+    const SOCKET fd = listener->_fd;
     const DWORD addr_size = sizeof(struct sockaddr_storage);
     DWORD b; // Unused but required.
 
-    if (!win_AcceptEx(listener->_fd, accept_fd, ctx->_accept_buffer, 0u, addr_size, addr_size, &b, &evt->_overlapped)) {
+    if (!listener->_AcceptEx(fd, accept_fd, ctx->_accept_buffer, 0u, addr_size, addr_size, &b, &evt->_overlapped)) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {
             goto close_accept_fd_dealloc_evt_and_report_err;
@@ -214,10 +238,10 @@ static void s_on_accept(ah_i_loop_evt_t* evt)
     struct sockaddr* local_addr;
     INT local_addr_size;
 
-    struct sockaddr* remote_addr;
+    struct sockaddr* remote_addr = NULL;
     INT remote_addr_size;
 
-    win_GetAcceptExSockaddrs(ctx->_accept_buffer, 0u, addr_size, addr_size, &local_addr, &local_addr_size,
+    listener->_GetAcceptExSockaddrs(ctx->_accept_buffer, 0u, addr_size, addr_size, &local_addr, &local_addr_size,
         &remote_addr, &remote_addr_size);
 
     ctx->accept_cb(listener, conn, ah_i_sockaddr_from_bsd(remote_addr), AH_ENONE);

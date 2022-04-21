@@ -7,11 +7,16 @@
 #ifndef AH_INTERNAL_IOCP_UDP_H_
 #define AH_INTERNAL_IOCP_UDP_H_
 
+#include <winsock2.h>
+#include <mswsock.h>
+
 #define AH_I_UDP_RECV_CTX_PLATFORM_FIELDS                                                                              \
     union ah_sockaddr _remote_addr;                                                                                    \
     WSAMSG _wsa_msg;
 
 #define AH_I_UDP_SEND_CTX_PLATFORM_FIELDS WSAMSG _wsa_msg;
-#define AH_I_UDP_SOCK_PLATFORM_FIELDS     ah_i_sockfd_t _fd;
+#define AH_I_UDP_SOCK_PLATFORM_FIELDS                                                                                  \
+    ah_i_sockfd_t _fd;                                                                                                 \
+    LPFN_WSARECVMSG _WSARecvMsg;
 
 #endif

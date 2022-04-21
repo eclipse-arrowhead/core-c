@@ -6,11 +6,10 @@
 
 #include "ah/udp.h"
 
+#include "../win32/winapi.h"
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
-
-#include "../win32/winapi.h"
 
 #include <ws2ipdef.h>
 #include <mswsock.h>
@@ -29,7 +28,16 @@ ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx
         return AH_ESTATE;
     }
 
-    ah_err_t err = s_prep_recv(sock, ctx);
+    ah_err_t err;
+
+    if (sock->_WSARecvMsg == NULL) {
+        err = ah_i_winapi_get_wsa_fn(sock->_fd, &(GUID) WSAID_WSARECVMSG, (void**) &sock->_WSARecvMsg);
+        if (err != AH_ENONE) {
+            return err;
+        }
+    }
+
+    err = s_prep_recv(sock, ctx);
     if (err != AH_ENONE) {
         return err;
     }
@@ -75,7 +83,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
         .dwBufferCount = buffer_count,
     };
 
-    int res = win_WSARecvMsg(sock->_fd, &ctx->_wsa_msg, NULL, &evt->_overlapped, NULL);
+    int res = sock->_WSARecvMsg(sock->_fd, &ctx->_wsa_msg, NULL, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {

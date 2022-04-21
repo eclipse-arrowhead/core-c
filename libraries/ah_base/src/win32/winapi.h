@@ -9,23 +9,13 @@
 
 #include "ah/defs.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <winsock2.h>
-#include <mswsock.h>
 
-// The below function pointers are set at the first call to ah_i_winapi_init().
+ah_err_t ah_i_winapi_get_wsa_fn(SOCKET fd, GUID* guid, void** fn);
 
-extern LPFN_ACCEPTEX win_AcceptEx;
-extern LPFN_CONNECTEX win_ConnectEx;
-extern LPFN_GETACCEPTEXSOCKADDRS win_GetAcceptExSockaddrs;
-extern LPFN_WSARECVMSG win_WSARecvMsg;
-
-// Can safely be called multiple times.
-void ah_i_winapi_init(void);
-
-// Free return value with LocalFree().
+// Free returned string with LocalFree().
 LPTSTR ah_i_winapi_strerror(DWORD err);
-
-// Must be called at most the number of times that ah_i_winapi_init() was called.
-void ah_i_winapi_term(void);
 
 #endif

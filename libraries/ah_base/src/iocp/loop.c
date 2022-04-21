@@ -10,8 +10,6 @@
 #include "ah/err.h"
 #include "ah/task.h"
 
-#include "../win32/winapi.h"
-
 #include <stdlib.h>
 #include <winsock2.h>
 
@@ -36,11 +34,15 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
         opts->capacity = 1024u;
     }
 
-    ah_i_winapi_init();
-
     ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->alloc_cb, opts->capacity / 4u);
     if (err != AH_ENONE) {
         return err;
+    }
+
+    WSADATA wsa_data;
+    int res = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+    if (res != 0) {
+        return res;
     }
 
     HANDLE iocp_handle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0u, 1u);
@@ -153,11 +155,10 @@ ah_extern void ah_i_loop_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
-    (void) CloseHandle(loop->_iocp_handle);
-    
     s_task_queue_term(&loop->_task_queue, loop->_alloc_cb);
 
-    ah_i_winapi_term();
+    (void) CloseHandle(loop->_iocp_handle);
+    (void) WSACleanup();
 }
 
 static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb, size_t initial_capacity)

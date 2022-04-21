@@ -7,6 +7,9 @@
 #ifndef AH_INTERNAL_IOCP_TCP_H_
 #define AH_INTERNAL_IOCP_TCP_H_
 
+#include <winsock2.h>
+#include <mswsock.h>
+
 #define AH_I_TCP_LISTEN_CTX_PLATFORM_FIELDS                                                                            \
     char _accept_buffer[sizeof(struct sockaddr_storage) * 2u + 32u];                                                   \
     ah_i_sockfd_t _accept_fd;
@@ -16,9 +19,12 @@
     DWORD _recv_flags;
 
 #define AH_I_TCP_SOCK_PLATFORM_FIELDS                                                                                  \
+    int _sockfamily;                                                                                                   \
     bool _is_listening;                                                                                                \
     ah_i_sockfd_t _fd;                                                                                                 \
-    int _sockfamily;
+    LPFN_ACCEPTEX _AcceptEx;                                                                                           \
+    LPFN_CONNECTEX _ConnectEx;                                                                                         \
+    LPFN_GETACCEPTEXSOCKADDRS _GetAcceptExSockaddrs;
 
 #define AH_I_TCP_WRITE_CTX_PLATFORM_FIELDS
 
