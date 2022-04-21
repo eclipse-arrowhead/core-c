@@ -15,8 +15,8 @@
 #include <ws2ipdef.h>
 #include <mswsock.h>
 
-static void s_on_recv(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove);
-static void s_on_send(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove);
+static void s_on_recv(ah_i_loop_evt_t* evt);
+static void s_on_send(ah_i_loop_evt_t* evt);
 
 static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx);
 
@@ -86,10 +86,9 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_recv(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
+static void s_on_recv(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(ove != NULL);
 
     ah_udp_sock_t* sock = evt->_body._udp_recv._sock;
     ah_assert_if_debug(sock != NULL);
@@ -102,8 +101,6 @@ static void s_on_recv(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
     if (!sock->_is_open || !sock->_is_receiving) {
         return;
     }
-
-    (void) ove;
 
     ah_err_t err;
 
@@ -198,10 +195,9 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_send(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
+static void s_on_send(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(ove != NULL);
 
     ah_udp_sock_t* sock = evt->_body._udp_send._sock;
     ah_assert_if_debug(sock != NULL);
@@ -210,8 +206,6 @@ static void s_on_send(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->send_cb != NULL);
     ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);
-
-    (void) ove;
 
     ah_err_t err;
 

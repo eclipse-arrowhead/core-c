@@ -33,7 +33,7 @@
 #define AH_I_LOOP_EVT_BODY_TASK_SCHEDULE_AT_PLATFORM_FIELDS
 
 #define AH_I_LOOP_EVT_PLATFORM_FIELDS                                                                                  \
-    void (*_cb)(ah_i_loop_evt_t*, OVERLAPPED_ENTRY*);                                                                  \
+    void (*_cb)(ah_i_loop_evt_t*);                                                                  \
     OVERLAPPED _overlapped;
 
 struct ah_i_loop_task_entry {

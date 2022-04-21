@@ -131,7 +131,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
             ah_i_loop_evt_t* evt = CONTAINING_RECORD(overlapped_entry->lpOverlapped, ah_i_loop_evt_t, _overlapped);
 
             if (ah_likely(evt->_cb != NULL)) {
-                evt->_cb(evt, overlapped_entry);
+                evt->_cb(evt);
             }
 
             ah_i_loop_evt_dealloc(loop, evt);

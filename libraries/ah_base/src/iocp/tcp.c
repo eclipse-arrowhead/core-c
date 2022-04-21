@@ -13,10 +13,10 @@
 
 #include <stddef.h>
 
-static void s_on_accept(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove);
-static void s_on_connect(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove);
-static void s_on_read(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove);
-static void s_on_write(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove);
+static void s_on_accept(ah_i_loop_evt_t* evt);
+static void s_on_connect(ah_i_loop_evt_t* evt);
+static void s_on_read(ah_i_loop_evt_t* evt);
+static void s_on_write(ah_i_loop_evt_t* evt);
 
 static ah_err_t s_prep_accept(ah_tcp_sock_t* sock, ah_tcp_listen_ctx_t* ctx);
 static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx);
@@ -57,17 +57,14 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     return AH_ENONE;
 }
 
-static void s_on_connect(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
+static void s_on_connect(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(ove != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_connect._sock;
     ah_assert_if_debug(sock != NULL);
 
     ah_tcp_connect_cb cb = evt->_body._tcp_connect._cb;
-
-    (void) ove;
 
     DWORD n_bytes_transferred;
     DWORD flags;
@@ -142,7 +139,7 @@ static ah_err_t s_prep_accept(ah_tcp_sock_t* listener, ah_tcp_listen_ctx_t* ctx)
     evt->_body._tcp_listen._ctx = ctx;
 
     ah_i_sockfd_t accept_fd;
-    err = ah_i_sock_open(listener->_loop, listener->_sockfamily, AH_I_SOCK_STREAM, &accept_fd);
+    err = ah_i_sock_open(listener->_loop, listener->_sockfamily, SOCK_STREAM, &accept_fd);
     if (err != AH_ENONE) {
         goto dealloc_evt_and_report_err;
     }
@@ -172,10 +169,9 @@ dealloc_evt_and_report_err:
     return AH_ENONE;
 }
 
-static void s_on_accept(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
+static void s_on_accept(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(ove != NULL);
 
     ah_tcp_sock_t* listener = evt->_body._tcp_listen._sock;
     ah_assert_if_debug(listener != NULL);
@@ -185,8 +181,6 @@ static void s_on_accept(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
     ah_assert_if_debug(ctx->listen_cb != NULL);
     ah_assert_if_debug(ctx->accept_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
-
-    (void) ove;
 
     ah_err_t err;
 
@@ -303,10 +297,9 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_read(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
+static void s_on_read(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(ove != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_read._sock;
     ah_assert_if_debug(sock != NULL);
@@ -319,8 +312,6 @@ static void s_on_read(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
     if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_read != AH_I_TCP_STATE_READ_STARTED) {
         return;
     }
-
-    (void) ove;
 
     ah_err_t err;
 
@@ -404,10 +395,9 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_write(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
+static void s_on_write(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
-    ah_assert_if_debug(ove != NULL);
 
     ah_tcp_sock_t* sock = evt->_body._tcp_write._sock;
     ah_assert_if_debug(sock != NULL);
@@ -420,8 +410,6 @@ static void s_on_write(ah_i_loop_evt_t* evt, OVERLAPPED_ENTRY* ove)
     if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_write != AH_I_TCP_STATE_WRITE_STARTED) {
         return;
     }
-
-    (void) ove;
 
     ah_err_t err;
 
