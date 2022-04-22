@@ -10,7 +10,6 @@
 #include "ah/err.h"
 #include "ah/loop.h"
 
-#include <netinet/tcp.h>
 #include <stddef.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -19,6 +18,8 @@ static void s_on_accept(ah_i_loop_evt_t* evt, struct kevent* kev);
 static void s_on_connect(ah_i_loop_evt_t* evt, struct kevent* kev);
 static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev);
 static void s_on_write(ah_i_loop_evt_t* evt, struct kevent* kev);
+
+static ah_err_t s_prep_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx);
 
 ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remote_addr, ah_tcp_connect_cb cb)
 {
@@ -87,7 +88,7 @@ static void s_on_connect(ah_i_loop_evt_t* evt, struct kevent* kev)
         err = (ah_err_t) kev->data;
     }
     else if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        err = AH_EEOF;
+        err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
     }
     else {
         err = AH_ENONE;
@@ -193,7 +194,7 @@ static void s_on_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        ctx->listen_cb(listener, AH_EEOF);
+        ctx->listen_cb(listener, kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF);
     }
 }
 
@@ -258,7 +259,7 @@ static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev)
         bufvec = (ah_bufvec_t) { .items = NULL, .length = 0u };
         ctx->alloc_cb(sock, &bufvec, n_bytes_left);
         if (bufvec.items == NULL) {
-            err = AH_ENOMEM;
+            err = AH_ENOBUFS;
             goto call_read_cb_with_err_and_return;
         }
 
@@ -288,7 +289,7 @@ static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        err = AH_EEOF;
+        err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
         sock->_state_read = AH_I_TCP_STATE_READ_OFF;
         goto call_read_cb_with_err_and_return;
     }
@@ -311,12 +312,11 @@ ah_extern ah_err_t ah_tcp_read_stop(ah_tcp_sock_t* sock)
 
     struct kevent* kev;
     ah_err_t err = ah_i_loop_alloc_kev(sock->_loop, &kev);
-    if (err == AH_ENONE) {
-        EV_SET(kev, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
+    if (err != AH_ENONE) {
+        return err == AH_ENOBUFS ? AH_ENONE : err;
     }
-    else if (err == AH_ENOMEM) {
-        return err;
-    }
+
+    EV_SET(kev, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
 
     return AH_ENONE;
 }
@@ -333,6 +333,26 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
         return AH_ESTATE;
     }
 
+    if (ctx->bufvec.length == 0u) {
+        ctx->write_cb(sock, AH_ENONE);
+        return AH_ENONE;
+    }
+
+    ah_err_t err = s_prep_write(sock, ctx);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    sock->_state_write = AH_I_TCP_STATE_WRITE_STARTED;
+
+    return AH_ENONE;
+}
+
+static ah_err_t s_prep_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
+{
+    ah_assert_if_debug(sock != NULL);
+    ah_assert_if_debug(ctx != NULL);
+
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
@@ -346,8 +366,6 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     evt->_body._tcp_write._ctx = ctx;
 
     EV_SET(kev, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0, evt);
-
-    sock->_state_write = AH_I_TCP_STATE_WRITE_STARTED;
 
     return AH_ENONE;
 }
@@ -373,33 +391,57 @@ static void s_on_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
-        goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
+        goto stop_writing_and_report_err;
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        err = AH_EEOF;
+        err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
         sock->_state_write = AH_I_TCP_STATE_WRITE_OFF;
-        goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
+        goto report_err;
     }
 
-    struct iovec* iov;
-    int iovcnt;
-    err = ah_i_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
+    struct iovec* iovecs;
+    int iovecs_length;
+    err = ah_i_bufvec_into_iovec(&ctx->bufvec, &iovecs, &iovecs_length);
     if (ah_unlikely(err != AH_ENONE)) {
         err = AH_EDOM;
-        goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
+        goto stop_writing_and_report_err;
     }
 
-    ssize_t res = writev(sock->_fd, iov, iovcnt);
+    ssize_t res = writev(sock->_fd, iovecs, iovecs_length);
     if (ah_unlikely(res < 0)) {
         err = errno;
-        goto set_is_writing_to_false_and_call_write_cb_with_conn_err;
+        goto stop_writing_and_report_err;
+    }
+
+    // If there is more to write, adjust bufvec and schedule another writing.
+    for (size_t i = 0u; i < ctx->bufvec.length; i += 1u) {
+        ah_buf_t* buf = &ctx->bufvec.items[0u];
+
+        if (((size_t) res) >= buf->_size) {
+            res -= (ssize_t) buf->_size;
+            continue;
+        }
+
+        ctx->bufvec.items = &ctx->bufvec.items[i];
+        ctx->bufvec.length -= i;
+
+        buf->_octets = &buf->_octets[(size_t) res];
+        buf->_size -= (size_t) res;
+
+        err = s_prep_write(sock, ctx);
+        if (err != AH_ENONE) {
+            goto stop_writing_and_report_err;
+        }
+        return;
     }
 
     err = AH_ENONE;
 
-set_is_writing_to_false_and_call_write_cb_with_conn_err:
+stop_writing_and_report_err:
     sock->_state_write = AH_I_TCP_STATE_WRITE_STOPPED;
+
+report_err:
     ctx->write_cb(sock, err);
 }
 

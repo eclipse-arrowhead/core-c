@@ -12,6 +12,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// All `add`, `div`, `mul` and `sub` functions return AH_ENONE if successful,
+// AH_EINVAL if the `result` argument is NULL or AH_ERANGE if the operation
+// overflowed. The `div` functions additionally return AH_EDOM of the `b`
+// argument is zero. Division overflows are only possible with signed integer
+// divisions.
+
 ah_extern ah_err_t ah_add_int64(int64_t a, int64_t b, int64_t* result);
 ah_extern ah_err_t ah_div_int64(int64_t a, int64_t b, int64_t* result);
 ah_extern ah_err_t ah_mul_int64(int64_t a, int64_t b, int64_t* result);

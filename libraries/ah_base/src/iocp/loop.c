@@ -79,7 +79,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
             if (poll_baseline != NULL) {
                 err = ah_time_diff(*poll_baseline, loop->_now, &poll_timeout);
                 if (err != AH_ENONE) {
-                    return err;
+                    return AH_EDOM;
                 }
             }
             else {

@@ -34,7 +34,7 @@ ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx
     evt->_body._udp_recv._sock = sock;
     evt->_body._udp_recv._ctx = ctx;
 
-    EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
+    EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0u, 0, evt);
 
     sock->_is_receiving = true;
 
@@ -75,7 +75,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     struct ah_bufvec bufvec = { .items = NULL, .length = 0u };
     ctx->alloc_cb(sock, &bufvec, dgram_size);
     if (bufvec.items == NULL) {
-        err = AH_ENOMEM;
+        err = AH_ENOBUFS;
         goto call_recv_cb_with_err_and_return;
     }
 
@@ -109,7 +109,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        err = AH_EEOF;
+        err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
         goto call_recv_cb_with_err_and_return;
     }
 
@@ -131,12 +131,11 @@ ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock)
 
     struct kevent* kev;
     ah_err_t err = ah_i_loop_alloc_kev(sock->_loop, &kev);
-    if (err == AH_ENONE) {
-        EV_SET(kev, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
+    if (err != AH_ENONE) {
+        return err == AH_ENOBUFS ? AH_ENONE : err;
     }
-    else if (err == AH_ENOMEM) {
-        return err;
-    }
+
+    EV_SET(kev, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
 
     return AH_ENONE;
 }
@@ -191,7 +190,7 @@ static void s_on_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        err = AH_EEOF;
+        err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
         goto call_send_cb_with_sock_and_err;
     }
 

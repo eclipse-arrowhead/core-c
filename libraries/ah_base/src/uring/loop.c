@@ -76,7 +76,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* ti
         ah_timediff_t diff;
         err = ah_time_diff(*time, loop->_now, &diff);
         if (err != AH_ENONE) {
-            return err;
+            return AH_EDOM;
         }
         if (diff < 0) {
             diff = 0;
@@ -181,17 +181,17 @@ ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sqe)
         if (ah_unlikely(res < 0)) {
             if (res != -EAGAIN && res != -EBUSY) {
                 loop->_pending_err = -res;
-                return AH_ENOMEM;
+                return AH_ENOBUFS;
             }
             ah_err_t err = ah_i_loop_poll_no_longer_than_until(loop, NULL);
             if (err != AH_ENONE) {
                 loop->_pending_err = err;
-                return AH_ENOMEM;
+                return AH_ENOBUFS;
             }
         }
         sqe0 = io_uring_get_sqe(&loop->_uring);
         if (ah_unlikely(sqe0 == NULL)) {
-            return AH_ENOMEM;
+            return AH_ENOBUFS;
         }
     }
 

@@ -33,30 +33,57 @@ struct ah_time {
 typedef int64_t ah_timediff_t; // Nanoseconds.
 
 ah_extern ah_time_t ah_time_now(void);
+
+// Error codes:
+// * AH_EINVAL - `diff` is NULL.
+// * AH_ERANGE - Subtracting `b` from `a` produced an unrepresentable result.
 ah_extern ah_err_t ah_time_diff(ah_time_t a, ah_time_t b, ah_timediff_t* diff);
+
 ah_extern bool ah_time_eq(ah_time_t a, ah_time_t b);
 ah_extern int ah_time_cmp(ah_time_t a, ah_time_t b);
+
+// Error codes:
+// * AH_EINVAL - `result` is NULL.
+// * AH_ERANGE - Adding `diff` to `time` produced an unrepresentable result.
 ah_extern ah_err_t ah_time_add(ah_time_t time, ah_timediff_t diff, ah_time_t* result);
+
+// Error codes:
+// * AH_EINVAL - `result` is NULL.
+// * AH_ERANGE - Subtracting `diff` from `time` produced an unrepresentable result.
 ah_extern ah_err_t ah_time_sub(ah_time_t time, ah_timediff_t diff, ah_time_t* result);
+
 ah_extern bool ah_time_is_after(ah_time_t a, ah_time_t b);
 ah_extern bool ah_time_is_before(ah_time_t a, ah_time_t b);
 ah_extern bool ah_time_is_zero(ah_time_t time);
 
+// Error codes:
+// * AH_EINVAL - `result` is NULL.
+// * AH_ERANGE - Adding `a` and `b` produced an unrepresentable result.
 ah_extern_inline ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
 {
     return ah_add_int64(a, b, result);
 }
 
+// Error codes:
+// * AH_EDOM   - `b` is 0.
+// * AH_EINVAL - `result` is NULL.
+// * AH_ERANGE - Dividing `a` with `b` produced an unrepresentable result.
 ah_extern_inline ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
 {
     return ah_div_int64(a, b, result);
 }
 
+// Error codes:
+// * AH_EINVAL - `result` is NULL.
+// * AH_ERANGE - Multiplying `a` with `b` produced an unrepresentable result.
 ah_extern_inline ah_err_t ah_timediff_mul(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
 {
     return ah_mul_int64(a, b, result);
 }
 
+// Error codes:
+// * AH_EINVAL - `result` is NULL.
+// * AH_ERANGE - Subtracting `a` and `b` produced an unrepresentable result.
 ah_extern_inline ah_err_t ah_timediff_sub(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
 {
     return ah_sub_int64(a, b, result);
