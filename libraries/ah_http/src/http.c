@@ -6,128 +6,107 @@
 
 #include "ah/http.h"
 
-#include <ah/assert.h>
-#include <ah/err.h>
 #include <stdbool.h>
 #include <string.h>
 
 typedef struct s_reader s_reader_t;
 
-#define A 0x01
-#define D 0x02
-#define P 0x04
-#define S 0x08
-#define T 0x10
-
-#define is_alpha(b) (s_chr_classes[(b)] == A)
-#define is_digit(b) (s_chr_classes[(b)] == D)
-#define is_tchar(b) ((s_chr_classes[(b)] & (A | D | T)) != 0u)
-
-static uint8_t s_chr_classes[] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    S, T, P, T, T, T, T, T, P, P, T, T, P, T, T, P,
-    D, D, D, D, D, D, D, D, D, D, P, P, P, P, P, P,
-    P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, P, P, P, T, T,
-    P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    A, A, A, A, A, A, A, A, A, A, A, P, T, P, T, 0,
-};
-
 struct s_reader {
-    size_t off;
-    size_t len;
-    uint8_t* src;
+    uint8_t* off;
+    uint8_t* end;
 };
 
-static ah_err_t s_parse_method(ah_http_method_t* method, s_reader_t* r);
-static ah_err_t s_parse_req_line(ah_http_req_line_t* req_line, s_reader_t* r);
-static ah_err_t s_parse_version(ah_http_version_t* ver, s_reader_t* r);
+static bool s_expect_crlf(s_reader_t* r);
+static bool s_expect_space(s_reader_t* r);
+static bool s_parse_space_terminated_string(char** token, s_reader_t* r);
+static bool s_parse_req_line(ah_http_req_line_t* req_line, s_reader_t* r);
+static bool s_parse_version(ah_http_version_t* ver, s_reader_t* r);
 
-static ah_err_t s_parse_method(ah_http_method_t* method, s_reader_t* r)
+bool s_parse_space_terminated_string(char** token, s_reader_t* r)
 {
-    switch (r->src[0u]) {
-    case 'C':
-        if (memcmp(r->src, "CONNECT ", 8u) == 0) {
-            *method = AH_HTTP_METHOD_CONNECT;
-            r->src = &r->src[7u];
-            return AH_ENONE;
+    uint8_t* off = r->off;
+    while (off != r->end) {
+        char ch = (char) *off;
+        if (ch <= 0) {
+            break;
         }
-
-    case 'D':
-
-    case 'G':
-
-    case 'H':
-
-    case 'O':
-
-    case 'P':
-
-    case 'T':
-
-    default:
-        break;
+        if (ch != ' ') {
+            off = &off[1u];
+            continue;
+        }
+        *off = '\0';
+        *token = (char*) r->off;
+        r->off = &off[1u];
+        return true;
     }
 
-    "CONNECT";
-    "DELETE";
-    "GET";
-    "HEAD";
-    "OPTIONS";
-    "PATCH";
-    "POST";
-    "PUT";
-    "TRACE";
+    return false;
 }
 
-static ah_err_t s_parse_req_line(ah_http_req_line_t* req_line, s_reader_t* r)
+static bool s_expect_space(s_reader_t* r)
 {
-    ah_err_t err;
-
-    while (r->src != r->end && is_tchar(r->src[0u])) {
-        r->src = &r->src[1u];
+    if (r->off == r->end || r->off[0u] != ' ') {
+        return false;
     }
-
-    if (r->src[0u] != ' ') {
-        return AH_EILSEQ;
-    }
-    r->src = &r->src[1u];
-
-    err = s_parse_version(&req_line->version, r);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    if (r->src[0u] != ' ') {
-        return AH_EILSEQ;
-    }
-    r->src = &r->src[1u];
-
-    // TODO
-
-    return AH_ENONE;
+    r->off = &r->off[1u];
+    return true;
 }
 
-static ah_err_t s_parse_version(ah_http_version_t* ver, s_reader_t* r)
+static bool s_parse_req_line(ah_http_req_line_t* req_line, s_reader_t* r)
 {
-    ah_assert_if_debug(ver != NULL);
-    ah_assert_if_debug(r != NULL);
-
-    if (r->end - r->src < 8u) {
-        return AH_EILSEQ;
-    }
-    if (memcmp(r->src, "HTTP", 4u) != 0 || r->src[4u] != '/') {
-        return AH_EILSEQ;
-    }
-    if (!is_digit(r->src[5u]) || r->src[6u] != '.' || !is_digit(r->src[7u])) {
-        return AH_EILSEQ;
+    if (!s_parse_space_terminated_string(&req_line->method, r)) {
+        return false;
     }
 
-    ver->major = '0' - r->src[5u];
-    ver->minor = '0' - r->src[7u];
+    if (!s_expect_space(r)) {
+        return false;
+    }
 
-    r->src = &r->src[8u];
+    if (!s_parse_space_terminated_string(&req_line->target, r)) {
+        return false;
+    }
 
-    return AH_ENONE;
+    if (!s_expect_space(r)) {
+        return false;
+    }
+
+    if (!s_parse_version(&req_line->version, r)) {
+        return false;
+    }
+
+    return s_expect_crlf(r);
+}
+
+static bool s_parse_version(ah_http_version_t* ver, s_reader_t* r)
+{
+    if (r->end - r->off < 8u) {
+        return false;
+    }
+    if (memcmp(r->off, "HTTP/", 5u) != 0) {
+        return false;
+    }
+    if (r->off[5u] < '0' || r->off[5u] > '9' || r->off[6u] != '.' || r->off[7u] < '0' || r->off[7u] > '9') {
+        return false;
+    }
+
+    ver->major = '0' - r->off[5u];
+    ver->minor = '0' - r->off[7u];
+
+    r->off = &r->off[8u];
+
+    return true;
+}
+
+static bool s_expect_crlf(s_reader_t* r)
+{
+    if (r->end - r->off < 2u) {
+        return false;
+    }
+    if (memcmp(r->off, "\r\n", 2u) != 0) {
+        return false;
+    }
+
+    r->off = &r->off[2u];
+
+    return true;
 }
