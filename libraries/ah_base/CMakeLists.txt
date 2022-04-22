@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 project(ah_base C)
-
 set(CMAKE_C_STANDARD 99)
+
 set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
 set(
     SOURCE_FILES
     include/ah/abort.h
@@ -34,18 +35,6 @@ set(
     src/math.c
     src/sock.c
     src/task.c
-)
-set(
-    TEST_FILES
-    test/buf.c
-    test/err.c
-    test/main.c
-    test/math.c
-    test/sock.c
-    test/task.c
-    test/tcp.c
-    test/time.c
-    test/udp.c
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -123,7 +112,6 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif ()
 
 add_library(ah_base STATIC ${SOURCE_FILES})
-
 target_include_directories(
     ah_base
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -134,10 +122,6 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     include(FindLiburing)
     target_link_libraries(ah_base liburing::liburing)
 endif ()
-
-add_executable(ah_base_tests ${TEST_FILES})
-
-target_link_libraries(ah_base_tests PRIVATE ah_base ah_unit)
 
 add_custom_target(mkdir_generated
     COMMAND ${CMAKE_COMMAND} -E make_directory "${GENERATED_DIR}"
@@ -161,3 +145,19 @@ if (GIT_FOUND)
 else ()
     message(FATAL_ERROR "`git` not found. Required.")
 endif ()
+
+set(
+    TEST_FILES
+    test/buf.c
+    test/err.c
+    test/main.c
+    test/math.c
+    test/sock.c
+    test/task.c
+    test/tcp.c
+    test/time.c
+    test/udp.c
+)
+
+add_executable(ah_base_tests ${TEST_FILES})
+target_link_libraries(ah_base_tests PRIVATE ah_base ah_unit)
