@@ -59,7 +59,7 @@ static void s_on_alloc(ah_udp_sock_t* sock, ah_bufvec_t* bufvec, size_t size)
     if (!ah_unit_assert(unit, bufvec->items == NULL, "bufvec->items != NULL")) {
         return;
     }
-    if (!ah_unit_assert(unit, user_data->free_buf != NULL, "user_data->buf == NULL")) {
+    if (!ah_unit_assert(unit, user_data->free_buf != NULL, "data->buf == NULL")) {
         return;
     }
 

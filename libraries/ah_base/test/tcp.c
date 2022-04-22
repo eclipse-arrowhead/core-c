@@ -65,7 +65,7 @@ static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, ah_sockaddr_t*
 
     ah_tcp_set_user_data(conn, user_data);
 
-    if (!ah_unit_assert(unit, user_data->free_read_ctx != NULL, "user_data->free_read_ctx == NULL")) {
+    if (!ah_unit_assert(unit, user_data->free_read_ctx != NULL, "data->free_read_ctx == NULL")) {
         return;
     }
     ah_tcp_read_ctx_t* read_ctx = user_data->free_read_ctx;
@@ -104,7 +104,7 @@ static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size
     if (!ah_unit_assert(unit, bufvec->items == NULL, "bufvec->items != NULL")) {
         return;
     }
-    if (!ah_unit_assert(unit, user_data->free_read_buf != NULL, "user_data->free_read_buf == NULL")) {
+    if (!ah_unit_assert(unit, user_data->free_read_buf != NULL, "data->free_read_buf == NULL")) {
         return;
     }
 
@@ -133,7 +133,7 @@ static void s_on_alloc_sock(ah_tcp_sock_t* sock, ah_tcp_sock_t** conn)
     if (!ah_unit_assert(unit, *conn == NULL, "*conn != NULL")) {
         return;
     }
-    if (!ah_unit_assert(unit, user_data->free_read_conn != NULL, "user_data->free_read_conn == NULL")) {
+    if (!ah_unit_assert(unit, user_data->free_read_conn != NULL, "data->free_read_conn == NULL")) {
         return;
     }
 
@@ -159,7 +159,7 @@ static void s_on_connect(ah_tcp_sock_t* conn, ah_err_t err)
         return;
     }
 
-    if (!ah_unit_assert(unit, user_data->free_write_buf != NULL, "user_data->free_write_buf == NULL")) {
+    if (!ah_unit_assert(unit, user_data->free_write_buf != NULL, "data->free_write_buf == NULL")) {
         return;
     }
     ah_buf_t* write_buf = user_data->free_write_buf;
@@ -170,7 +170,7 @@ static void s_on_connect(ah_tcp_sock_t* conn, ah_err_t err)
         ._size = 18u,
     };
 
-    if (!ah_unit_assert(unit, user_data->free_write_ctx != NULL, "user_data->free_write_ctx == NULL")) {
+    if (!ah_unit_assert(unit, user_data->free_write_ctx != NULL, "data->free_write_ctx == NULL")) {
         return;
     }
     ah_tcp_write_ctx_t* write_ctx = user_data->free_write_ctx;
