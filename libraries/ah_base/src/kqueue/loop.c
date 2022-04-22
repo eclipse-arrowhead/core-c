@@ -88,7 +88,7 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct a
         ah_timediff_t diff;
         err = ah_time_diff(*time, loop->_now, &diff);
         if (err != AH_ENONE) {
-            return err;
+            return AH_EDOM;
         }
         if (diff < 0) {
             diff = 0;
@@ -116,10 +116,14 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct a
         ah_i_loop_evt_t* evt = kev->udata;
 
         if (ah_likely(evt != NULL)) {
-            if (ah_likely(evt->_cb != NULL)) {
+            bool is_callable = ah_likely(evt->_cb != NULL);
+            bool is_complete = !is_callable || (kev->flags & (EV_DELETE | EV_ONESHOT | EV_ERROR)) != 0;
+
+            if (is_callable) {
                 evt->_cb(evt, kev);
             }
-            if ((kev->flags & (EV_DELETE | EV_ONESHOT | EV_ERROR)) != 0) {
+
+            if (is_complete) {
                 ah_i_loop_evt_dealloc(loop, evt);
             }
         }
@@ -181,15 +185,15 @@ ah_extern ah_err_t ah_i_loop_alloc_kev(ah_loop_t* loop, struct kevent** kev)
         if (ah_unlikely(res < 0)) {
             if (res != ENOMEM) {
                 loop->_pending_err = errno;
-                return AH_ENOMEM;
+                return AH_ENOBUFS;
             }
             ah_err_t err = ah_i_loop_poll_no_longer_than_until(loop, NULL);
             if (err != AH_ENONE) {
                 loop->_pending_err = err;
-                return AH_ENOMEM;
+                return AH_ENOBUFS;
             }
             if (ah_unlikely(loop->_kqueue_nchanges == loop->_kqueue_capacity)) {
-                return AH_ENOMEM;
+                return AH_ENOBUFS;
             }
         }
         else {

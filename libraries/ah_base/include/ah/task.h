@@ -12,10 +12,10 @@
 
 #include <stddef.h>
 
-#define AH_TASK_STATE_INITIAL   0x01
-#define AH_TASK_STATE_SCHEDULED 0x02
-#define AH_TASK_STATE_EXECUTED  0x04
-#define AH_TASK_STATE_CANCELED  0x08
+#define AH_TASK_STATE_INITIAL   0u
+#define AH_TASK_STATE_SCHEDULED 1u
+#define AH_TASK_STATE_EXECUTED  2u
+#define AH_TASK_STATE_CANCELED  3u
 
 typedef unsigned ah_task_state_t;
 
@@ -26,12 +26,12 @@ struct ah_task {
 };
 
 struct ah_task_opts {
-    ah_loop_t* loop;
-    ah_task_cb cb;
+    ah_loop_t* loop; // Required.
+    ah_task_cb cb; // Required.
     void* data;
 };
 
-ah_extern ah_err_t ah_task_init(ah_task_t* task, const ah_task_opts_t* opts);
+ah_extern void ah_task_init(ah_task_t* task, const ah_task_opts_t* opts);
 
 ah_extern_inline void* ah_task_get_user_data(const ah_task_t* task)
 {
@@ -57,9 +57,16 @@ ah_extern_inline void ah_task_set_user_data(ah_task_t* task, void* user_data)
     task->_user_data = user_data;
 }
 
-ah_extern ah_err_t ah_task_cancel(ah_task_t* task);
+ah_extern void ah_task_cancel(ah_task_t* task);
+
+// Error codes:
+// * AH_EDOM    - [Darwin] `baseline` is too for into the future to be representable by the underlying event queue.
+// * AH_EINVAL  - `task` is NULL.
+// * AH_ENOBUFS - [Darwin, Linux] `task` event loop has no more slots available in its event queue and could not flush it to make more slots available.
+// * AH_ENOMEM  - [Darwin, Linux, Win32] `task` event loop failed to allocate heap memory via its configured allocator callback.
+// * AH_ESTATE  - `task` is already scheduled and has not yet been cancelled or executed.
 ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline);
 
-ah_extern ah_err_t ah_task_term(ah_task_t* task);
+ah_extern void ah_task_term(ah_task_t* task);
 
 #endif

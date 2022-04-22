@@ -59,10 +59,7 @@ static void s_should_execute_task_with_no_err(ah_unit_t* unit)
         .unit = unit,
     };
     struct ah_task_opts task_options = { .loop = &loop, .cb = s_on_execution, .data = &task_data };
-    err = ah_task_init(&task, &task_options);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
-    }
+    ah_task_init(&task, &task_options);
 
     err = ah_task_schedule_at(&task, (struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
@@ -99,20 +96,14 @@ static void s_should_execute_cancelled_task_with_correct_err(ah_unit_t* unit)
         .unit = unit,
     };
     struct ah_task_opts task_options = { .loop = &loop, .cb = s_on_execution, .data = &task_data };
-    err = ah_task_init(&task, &task_options);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
-    }
+    ah_task_init(&task, &task_options);
 
     err = ah_task_schedule_at(&task, (struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
 
-    err = ah_task_cancel(&task);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
-    }
+    ah_task_cancel(&task);
 
     err = ah_loop_run_until(&loop, &(struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {

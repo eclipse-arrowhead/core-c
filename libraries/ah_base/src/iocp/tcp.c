@@ -218,7 +218,7 @@ static void s_on_accept(ah_i_loop_evt_t* evt)
     ah_tcp_sock_t* conn = NULL;
     ctx->alloc_cb(listener, &conn);
     if (conn == NULL) {
-        err = AH_ENOMEM;
+        err = AH_ENOBUFS;
         goto handle_err;
     }
     *conn = (ah_tcp_sock_t) {
@@ -300,7 +300,7 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
 
     ctx->alloc_cb(sock, &ctx->_bufvec, 0u);
     if (ctx->_bufvec.items == NULL) {
-        return AH_ENOMEM;
+        return AH_ENOBUFS;
     }
 
     WSABUF* buffers;

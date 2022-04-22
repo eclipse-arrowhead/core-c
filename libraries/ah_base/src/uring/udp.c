@@ -55,7 +55,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     struct ah_bufvec bufvec = { .items = NULL, .length = 0u };
     ctx->alloc_cb(sock, &bufvec, 0u);
     if (bufvec.items == NULL) {
-        return AH_ENOMEM;
+        return AH_ENOBUFS;
     }
 
     struct iovec* iov;

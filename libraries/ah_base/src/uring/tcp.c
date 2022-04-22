@@ -214,7 +214,7 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
     ctx->_bufvec.length = 0u;
     ctx->alloc_cb(sock, &ctx->_bufvec, 0u);
     if (ctx->_bufvec.items == NULL) {
-        return AH_ENOMEM;
+        return AH_ENOBUFS;
     }
 
     struct iovec* iov;
