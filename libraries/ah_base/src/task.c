@@ -9,17 +9,15 @@
 #include "ah/err.h"
 #include "ah/loop.h"
 
-ah_extern void ah_task_init(ah_task_t* task, const ah_task_opts_t* opts)
+ah_extern void ah_task_init(ah_task_t* task, ah_loop_t* loop, ah_task_cb cb)
 {
     ah_assert_if_debug(task != NULL);
-    ah_assert_if_debug(opts != NULL);
-    ah_assert_if_debug(opts->loop != NULL);
-    ah_assert_if_debug(opts->cb != NULL);
+    ah_assert_if_debug(loop != NULL);
+    ah_assert_if_debug(cb != NULL);
 
     *task = (ah_task_t) {
-        ._loop = opts->loop,
-        ._cb = opts->cb,
-        ._user_data = opts->data,
+        ._loop = loop,
+        ._cb = cb,
         ._state = AH_TASK_STATE_INITIAL,
     };
 }

@@ -25,13 +25,8 @@ struct ah_task {
     AH_I_TASK_FIELDS
 };
 
-struct ah_task_opts {
-    ah_loop_t* loop; // Required.
-    ah_task_cb cb; // Required.
-    void* data;
-};
-
-ah_extern void ah_task_init(ah_task_t* task, const ah_task_opts_t* opts);
+// All arguments must be non-NULL.
+ah_extern void ah_task_init(ah_task_t* task, ah_loop_t* loop, ah_task_cb cb);
 
 ah_extern_inline void* ah_task_get_user_data(const ah_task_t* task)
 {

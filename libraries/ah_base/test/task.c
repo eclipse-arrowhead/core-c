@@ -58,8 +58,8 @@ static void s_should_execute_task_with_no_err(ah_unit_t* unit)
         .call_counter = &call_counter,
         .unit = unit,
     };
-    struct ah_task_opts task_options = { .loop = &loop, .cb = s_on_execution, .data = &task_data };
-    ah_task_init(&task, &task_options);
+    ah_task_init(&task, &loop, s_on_execution);
+    ah_task_set_user_data(&task, &task_data);
 
     err = ah_task_schedule_at(&task, (struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
@@ -95,8 +95,8 @@ static void s_should_execute_cancelled_task_with_correct_err(ah_unit_t* unit)
         .call_counter = &call_counter,
         .unit = unit,
     };
-    struct ah_task_opts task_options = { .loop = &loop, .cb = s_on_execution, .data = &task_data };
-    ah_task_init(&task, &task_options);
+    ah_task_init(&task, &loop, s_on_execution);
+    ah_task_set_user_data(&task, &task_data);
 
     err = ah_task_schedule_at(&task, (struct ah_time) { 0u });
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {

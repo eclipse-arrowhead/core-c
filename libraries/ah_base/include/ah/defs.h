@@ -116,7 +116,6 @@ typedef struct ah_sockaddr_ip ah_sockaddr_ip_t;
 typedef struct ah_sockaddr_ipv4 ah_sockaddr_ipv4_t;
 typedef struct ah_sockaddr_ipv6 ah_sockaddr_ipv6_t;
 typedef struct ah_task ah_task_t;
-typedef struct ah_task_opts ah_task_opts_t;
 typedef struct ah_tcp_listen_ctx ah_tcp_listen_ctx_t;
 typedef struct ah_tcp_read_ctx ah_tcp_read_ctx_t;
 typedef struct ah_tcp_sock ah_tcp_sock_t;
