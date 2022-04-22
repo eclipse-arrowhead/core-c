@@ -52,8 +52,15 @@ struct ah_udp_sock {
     AH_I_UDP_SOCK_FIELDS
 };
 
-ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr,
-    ah_udp_open_cb cb);
+ah_extern_inline void ah_udp_init(ah_udp_sock_t* sock, ah_loop_t* loop)
+{
+    ah_assert_if_debug(sock != NULL);
+    ah_assert_if_debug(loop != NULL);
+
+    *sock = (ah_udp_sock_t) { ._loop = loop };
+}
+
+ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_udp_open_cb cb);
 
 ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr);
 

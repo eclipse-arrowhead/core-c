@@ -25,21 +25,21 @@
 #    define SHUT_RDWR SD_BOTH
 #endif
 
-ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb)
+ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb)
 {
-    if (sock == NULL || loop == NULL || local_addr == NULL) {
+    if (sock == NULL || sock->_loop == NULL || local_addr == NULL) {
         return AH_EINVAL;
+    }
+    if (sock->_state != AH_I_TCP_STATE_CLOSED) {
+        return AH_ESTATE;
     }
 
     ah_i_sockfd_t fd;
-    ah_err_t err = ah_i_sock_open_bind(loop, SOCK_STREAM, local_addr, &fd);
+    ah_err_t err = ah_i_sock_open_bind(sock->_loop, SOCK_STREAM, local_addr, &fd);
 
     if (err == AH_ENONE) {
-        *sock = (ah_tcp_sock_t) {
-            ._loop = loop,
-            ._fd = fd,
-            ._state = AH_I_TCP_STATE_OPEN,
-        };
+        sock->_fd = fd;
+        sock->_state = AH_I_TCP_STATE_OPEN;
 #if AH_USE_IOCP
         sock->_sockfamily = local_addr->as_ip.family;
 #endif

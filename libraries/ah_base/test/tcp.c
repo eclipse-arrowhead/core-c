@@ -307,7 +307,8 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     ah_sockaddr_init_ipv4(&read_addr, 0u, &ah_ipaddr_v4_loopback);
 
-    err = ah_tcp_open(&read_sock, &read_loop, &read_addr, NULL);
+    ah_tcp_init(&read_sock, &read_loop);
+    err = ah_tcp_open(&read_sock, &read_addr, NULL);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -343,7 +344,8 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     ah_sockaddr_init_ipv4(&write_addr, 0u, &ah_ipaddr_v4_loopback);
 
-    err = ah_tcp_open(&write_sock, &write_loop, &write_addr, NULL);
+    ah_tcp_init(&write_sock, &write_loop);
+    err = ah_tcp_open(&write_sock, &write_addr, NULL);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }

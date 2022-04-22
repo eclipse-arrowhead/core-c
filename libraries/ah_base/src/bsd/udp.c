@@ -14,22 +14,22 @@
 #    include <ws2ipdef.h>
 #endif
 
-ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_sockaddr_t* local_addr, ah_udp_open_cb cb)
+ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_udp_open_cb cb)
 {
-    if (sock == NULL || loop == NULL || local_addr == NULL) {
+    if (sock == NULL || sock->_loop == NULL || local_addr == NULL) {
         return AH_EINVAL;
+    }
+    if (sock->_is_open) {
+        return AH_ESTATE;
     }
 
     ah_i_sockfd_t fd;
-    ah_err_t err = ah_i_sock_open_bind(loop, SOCK_DGRAM, local_addr, &fd);
+    ah_err_t err = ah_i_sock_open_bind(sock->_loop, SOCK_DGRAM, local_addr, &fd);
 
     if (err == AH_ENONE) {
-        *sock = (ah_udp_sock_t) {
-            ._loop = loop,
-            ._fd = fd,
-            ._is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6,
-            ._is_open = true,
-        };
+        sock->_fd = fd;
+        sock->_is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6;
+        sock->_is_open = true;
     }
 
     if (cb != NULL) {
