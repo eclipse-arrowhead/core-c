@@ -119,47 +119,47 @@ struct ah_i_loop_evt_body_udp_send {
 
 union ah_i_loop_evt_body {
 #if AH_I_LOOP_EVT_BODY_HAS_TASK_SCHEDULE_AT
-    struct ah_i_loop_evt_body_task_schedule_at _task_schedule_at;
+    struct ah_i_loop_evt_body_task_schedule_at _as_task_schedule_at;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_TCP_CLOSE
-    struct ah_i_loop_evt_body_tcp_close _tcp_close;
+    struct ah_i_loop_evt_body_tcp_close _as_tcp_close;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_TCP_CONNECT
-    struct ah_i_loop_evt_body_tcp_connect _tcp_connect;
+    struct ah_i_loop_evt_body_tcp_connect _as_tcp_connect;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_TCP_LISTEN
-    struct ah_i_loop_evt_body_tcp_listen _tcp_listen;
+    struct ah_i_loop_evt_body_tcp_listen _as_tcp_listen;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_TCP_OPEN
-    struct ah_i_loop_evt_body_tcp_open _tcp_open;
+    struct ah_i_loop_evt_body_tcp_open _as_tcp_open;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_TCP_READ
-    struct ah_i_loop_evt_body_tcp_read _tcp_read;
+    struct ah_i_loop_evt_body_tcp_read _as_tcp_read;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_TCP_WRITE
-    struct ah_i_loop_evt_body_tcp_write _tcp_write;
+    struct ah_i_loop_evt_body_tcp_write _as_tcp_write;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_UDP_CLOSE
-    struct ah_i_loop_evt_body_udp_close _udp_close;
+    struct ah_i_loop_evt_body_udp_close _as_udp_close;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_UDP_OPEN
-    struct ah_i_loop_evt_body_udp_open _udp_open;
+    struct ah_i_loop_evt_body_udp_open _as_udp_open;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_UDP_RECV
-    struct ah_i_loop_evt_body_udp_recv _udp_recv;
+    struct ah_i_loop_evt_body_udp_recv _as_udp_recv;
 #endif
 
 #if AH_I_LOOP_EVT_BODY_HAS_UDP_SEND
-    struct ah_i_loop_evt_body_udp_send _udp_send;
+    struct ah_i_loop_evt_body_udp_send _as_udp_send;
 #endif
 };
 

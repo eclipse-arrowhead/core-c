@@ -43,8 +43,8 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
             }
 
             evt->_cb = s_on_connect;
-            evt->_body._tcp_connect._sock = sock;
-            evt->_body._tcp_connect._cb = cb;
+            evt->_body._as_tcp_connect._sock = sock;
+            evt->_body._as_tcp_connect._cb = cb;
 
             EV_SET(kev, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0u, evt);
 
@@ -77,10 +77,10 @@ static void s_on_connect(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(kev != NULL);
 
-    ah_tcp_sock_t* sock = evt->_body._tcp_connect._sock;
+    ah_tcp_sock_t* sock = evt->_body._as_tcp_connect._sock;
     ah_assert_if_debug(sock != NULL);
 
-    ah_tcp_connect_cb cb = evt->_body._tcp_connect._cb;
+    ah_tcp_connect_cb cb = evt->_body._as_tcp_connect._cb;
 
     ah_err_t err;
 
@@ -130,8 +130,8 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     }
 
     evt->_cb = s_on_accept;
-    evt->_body._tcp_listen._sock = sock;
-    evt->_body._tcp_listen._ctx = ctx;
+    evt->_body._as_tcp_listen._sock = sock;
+    evt->_body._as_tcp_listen._ctx = ctx;
 
     EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
     sock->_read_or_listen_evt = evt;
@@ -146,10 +146,10 @@ static void s_on_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(kev != NULL);
 
-    ah_tcp_sock_t* listener = evt->_body._tcp_listen._sock;
+    ah_tcp_sock_t* listener = evt->_body._as_tcp_listen._sock;
     ah_assert_if_debug(listener != NULL);
 
-    ah_tcp_listen_ctx_t* ctx = evt->_body._tcp_listen._ctx;
+    ah_tcp_listen_ctx_t* ctx = evt->_body._as_tcp_listen._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->listen_cb != NULL);
     ah_assert_if_debug(ctx->accept_cb != NULL);
@@ -216,8 +216,8 @@ ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx
     }
 
     evt->_cb = s_on_read;
-    evt->_body._tcp_read._sock = sock;
-    evt->_body._tcp_read._ctx = ctx;
+    evt->_body._as_tcp_read._sock = sock;
+    evt->_body._as_tcp_read._ctx = ctx;
 
     EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
     sock->_read_or_listen_evt = evt;
@@ -232,10 +232,10 @@ static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(kev != NULL);
 
-    ah_tcp_sock_t* sock = evt->_body._tcp_read._sock;
+    ah_tcp_sock_t* sock = evt->_body._as_tcp_read._sock;
     ah_assert_if_debug(sock != NULL);
 
-    ah_tcp_read_ctx_t* ctx = evt->_body._tcp_read._ctx;
+    ah_tcp_read_ctx_t* ctx = evt->_body._as_tcp_read._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->read_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
@@ -362,8 +362,8 @@ static ah_err_t s_prep_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     }
 
     evt->_cb = s_on_write;
-    evt->_body._tcp_write._sock = sock;
-    evt->_body._tcp_write._ctx = ctx;
+    evt->_body._as_tcp_write._sock = sock;
+    evt->_body._as_tcp_write._ctx = ctx;
 
     EV_SET(kev, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0, evt);
 
@@ -375,10 +375,10 @@ static void s_on_write(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(kev != NULL);
 
-    ah_tcp_sock_t* sock = evt->_body._tcp_write._sock;
+    ah_tcp_sock_t* sock = evt->_body._as_tcp_write._sock;
     ah_assert_if_debug(sock != NULL);
 
-    ah_tcp_write_ctx_t* ctx = evt->_body._tcp_write._ctx;
+    ah_tcp_write_ctx_t* ctx = evt->_body._as_tcp_write._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->write_cb != NULL);
     ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);

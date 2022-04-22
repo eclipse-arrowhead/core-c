@@ -60,8 +60,8 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     }
 
     evt->_cb = s_on_recv;
-    evt->_body._udp_recv._sock = sock;
-    evt->_body._udp_recv._ctx = ctx;
+    evt->_body._as_udp_recv._sock = sock;
+    evt->_body._as_udp_recv._ctx = ctx;
 
     struct ah_bufvec bufvec = { .items = NULL, .length = 0u };
     ctx->alloc_cb(sock, &bufvec, 0u);
@@ -98,10 +98,10 @@ static void s_on_recv(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
-    ah_udp_sock_t* sock = evt->_body._udp_recv._sock;
+    ah_udp_sock_t* sock = evt->_body._as_udp_recv._sock;
     ah_assert_if_debug(sock != NULL);
 
-    ah_udp_recv_ctx_t* ctx = evt->_body._udp_recv._ctx;
+    ah_udp_recv_ctx_t* ctx = evt->_body._as_udp_recv._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->recv_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
@@ -175,8 +175,8 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     }
 
     evt->_cb = s_on_send;
-    evt->_body._udp_send._sock = sock;
-    evt->_body._udp_send._ctx = ctx;
+    evt->_body._as_udp_send._sock = sock;
+    evt->_body._as_udp_send._ctx = ctx;
 
     WSABUF* buffers;
     ULONG buffer_count;
@@ -207,10 +207,10 @@ static void s_on_send(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
-    ah_udp_sock_t* sock = evt->_body._udp_send._sock;
+    ah_udp_sock_t* sock = evt->_body._as_udp_send._sock;
     ah_assert_if_debug(sock != NULL);
 
-    ah_udp_send_ctx_t* ctx = evt->_body._udp_send._ctx;
+    ah_udp_send_ctx_t* ctx = evt->_body._as_udp_send._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->send_cb != NULL);
     ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);
