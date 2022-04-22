@@ -71,16 +71,9 @@ ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, const int sockfamily, const i
 
 #endif
 
+#if AH_USE_IOCP
+
     ah_err_t err;
-
-#if AH_IS_DARWIN
-
-    if (fcntl(fd0, F_SETFL, O_NONBLOCK, 0) == -1) {
-        err = errno;
-        goto close_fd0_and_return;
-    }
-
-#elif AH_USE_IOCP
 
     u_long value = 1;
     if (ioctlsocket(fd0, FIONBIO, &value) == SOCKET_ERROR) {
@@ -98,16 +91,29 @@ ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, const int sockfamily, const i
         goto close_fd0_and_return;
     }
 
+#elif AH_IS_DARWIN
+
+    ah_err_t err;
+
+    if (fcntl(fd0, F_SETFL, O_NONBLOCK, 0) == -1) {
+        err = errno;
+        goto close_fd0_and_return;
+    }
+
 #endif
 
     *fd = fd0;
 
     return AH_ENONE;
 
+#if AH_USE_IOCP || AH_IS_DARWIN
+
 close_fd0_and_return:
     (void) close(fd0);
 
     return err;
+
+#endif
 }
 
 ah_extern ah_err_t ah_i_sock_open_bind(struct ah_loop* loop, const int type, const ah_sockaddr_t* local_addr,
