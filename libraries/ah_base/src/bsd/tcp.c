@@ -75,23 +75,6 @@ ah_extern ah_err_t ah_tcp_get_remote_addr(const ah_tcp_sock_t* sock, ah_sockaddr
     return ah_i_sock_getpeername(sock->_fd, remote_addr);
 }
 
-ah_extern const ah_tcp_vtab_t* ah_tcp_get_vtab(void)
-{
-    static ah_tcp_vtab_t s_vtab = (ah_tcp_vtab_t) {
-        .open = ah_tcp_open,
-        .get_local_addr = ah_tcp_get_local_addr,
-        .get_remote_addr = ah_tcp_get_remote_addr,
-        .connect = ah_tcp_connect,
-        .listen = ah_tcp_listen,
-        .read_start = ah_tcp_read_start,
-        .read_stop = ah_tcp_read_stop,
-        .write = ah_tcp_write,
-        .shutdown = ah_tcp_shutdown,
-        .close = ah_tcp_close,
-    };
-    return &s_vtab;
-}
-
 ah_extern ah_err_t ah_tcp_set_keepalive(ah_tcp_sock_t* sock, bool keepalive)
 {
     if (sock == NULL) {

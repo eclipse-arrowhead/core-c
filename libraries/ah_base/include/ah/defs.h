@@ -119,7 +119,6 @@ typedef struct ah_task ah_task_t;
 typedef struct ah_tcp_listen_ctx ah_tcp_listen_ctx_t;
 typedef struct ah_tcp_read_ctx ah_tcp_read_ctx_t;
 typedef struct ah_tcp_sock ah_tcp_sock_t;
-typedef struct ah_tcp_vtab ah_tcp_vtab_t;
 typedef struct ah_tcp_write_ctx ah_tcp_write_ctx_t;
 typedef struct ah_time ah_time_t;
 typedef struct ah_udp_group_ipv4 ah_udp_group_ipv4_t;
