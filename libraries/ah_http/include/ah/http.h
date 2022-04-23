@@ -9,23 +9,25 @@
 
 #include <stdint.h>
 
-typedef struct ah_http_req_line ah_http_req_line_t;
-typedef struct ah_http_res_line ah_http_res_line_t;
-typedef struct ah_http_version ah_http_version_t;
+typedef struct ah_http_req ah_http_req_t;
+typedef struct ah_http_res ah_http_res_t;
+typedef struct ah_http_ver ah_http_ver_t;
 
-struct ah_http_version {
+struct ah_http_ver {
     uint8_t major;
     uint8_t minor;
 };
 
-struct ah_http_req_line {
+struct ah_http_req {
     char* method;
-    char* target;
-    ah_http_version_t version;
+    char* scheme;
+    char* authority;
+    char* path;
+    ah_http_ver_t version;
 };
 
-struct ah_http_res_line {
-    ah_http_version_t version;
+struct ah_http_res {
+    ah_http_ver_t version;
     uint16_t code;
     char* reason;
 };
