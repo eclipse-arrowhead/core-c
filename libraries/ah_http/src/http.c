@@ -17,7 +17,9 @@ struct s_reader {
     uint8_t* end;
 };
 
-static bool s_parse_request(s_reader_t* r, ah_http_req_t* request);
+static uint32_t s_hash_header_name(const char* name);
+
+static bool s_parse_request(s_reader_t* r, ah_http_ireq_t* request);
 
 static bool s_is_digit(uint8_t ch);
 static bool s_parse_method(s_reader_t* r, char** token);
@@ -26,8 +28,10 @@ static bool s_parse_version(s_reader_t* r, ah_http_ver_t* version);
 static bool s_skip_ch(s_reader_t* r, char ch);
 static bool s_skip_str(s_reader_t* r, char* str, size_t len);
 
-static bool s_parse_request(s_reader_t* r, ah_http_req_t* request)
+static bool s_parse_request(s_reader_t* r, ah_http_ireq_t* request)
 {
+    (void) s_hash_header_name;
+
     if (!s_parse_method(r, &request->method)) {
         return false;
     }
@@ -109,9 +113,17 @@ static bool s_parse_target(s_reader_t* r, char** scheme, char** authority, char*
         if (ch <= 0) {
             return false;
         }
-        if (ch != ':') {
+        if (ch != ' ' && ch != ':') {
             off = &off[1u];
             continue;
+        }
+
+        // Did we finish without finding "://", which implies authority-form?
+        if (ch == ' ') {
+            off[0u] = '\0';
+            *authority = (char*) r->off;
+            r->off = &off[1u];
+            return true;
         }
 
         if ((size_t) (r->end - off) < 2u) {
@@ -148,8 +160,12 @@ static bool s_parse_target(s_reader_t* r, char** scheme, char** authority, char*
         *authority = (char*) r->off;
         r->off = &off[1u];
 
+        // Did we finish without finding '/'?
         if (ch == ' ') {
-            return true; // authority-form; we are done!
+            if (*scheme != NULL) {
+                *path = (char*) &r->off[-1];
+            }
+            return true; // No path.
         }
     }
 
@@ -221,7 +237,19 @@ static bool s_skip_str(s_reader_t* r, char* str, size_t len)
         return false;
     }
 
+    (void) s_parse_request;
+
     r->off = &r->off[len];
 
     return true;
+}
+
+// FNV-1a, 32-bit.
+static uint32_t s_hash_header_name(const char* name) {
+    uint32_t hash = 2166136261;
+    for (const char *ch = name; *ch != ':'; ch = &ch[1u]) {
+        hash ^= (*ch >= 'A' && *ch <= 'Z') ? (*ch | 0x20) : *ch;
+        hash *= 16777619;
+    }
+    return hash;
 }
