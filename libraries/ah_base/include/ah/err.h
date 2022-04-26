@@ -74,11 +74,11 @@
     E(CONNABORTED, AH_I_ERR_ONE_OF(ECONNABORTED, WSAECONNABORTED), "connection aborted")                               \
     E(CONNREFUSED, AH_I_ERR_ONE_OF(ECONNREFUSED, WSAECONNREFUSED), "connection refused")                               \
     E(CONNRESET, AH_I_ERR_ONE_OF(ECONNRESET, WSAECONNRESET), "connection reset")                                       \
-    E(DEADLK, AH_I_ERR_ONE_OF(EDEADLK, 5505), "resource deadlock would occur")                                         \
+    E(DEADLK, AH_I_ERR_ONE_OF(EDEADLK, 5505), "deadlock would occur")                                                  \
     E(DESTADDRREQ, AH_I_ERR_ONE_OF(EDESTADDRREQ, WSAEDESTADDRREQ), "destination address required")                     \
     E(DOM, AH_I_ERR_ONE_OF(EDOM, 5506), "arithmetic argument outside accepted domain")                                 \
     E(DQUOT, AH_I_ERR_ONE_OF(EDQUOT, WSAEDQUOT), "disc quota exceeded")                                                \
-    E(EXIST, AH_I_ERR_ONE_OF(EEXIST, 5507), "file exists")                                                             \
+    E(EXIST, AH_I_ERR_ONE_OF(EEXIST, 5507), "already exists")                                                          \
     E(FAULT, AH_I_ERR_ONE_OF(EFAULT, WSAEFAULT), "bad address")                                                        \
     E(FBIG, AH_I_ERR_ONE_OF(EFBIG, 5508), "file too large")                                                            \
     E(HOSTDOWN, AH_I_ERR_ONE_OF(EHOSTDOWN, WSAEHOSTDOWN), "host down")                                                 \
@@ -86,7 +86,7 @@
     E(IDRM, AH_I_ERR_ONE_OF(EIDRM, 5509), "identifier removed")                                                        \
     E(ILSEQ, AH_I_ERR_ONE_OF(EILSEQ, 5510), "illegal byte sequence")                                                   \
     E(INPROGRESS, AH_I_ERR_ONE_OF(EINPROGRESS, WSAEINPROGRESS), "operation in progress")                               \
-    E(INTR, AH_I_ERR_ONE_OF(EINTR, WSAEINTR), "interrupted function")                                                  \
+    E(INTR, AH_I_ERR_ONE_OF(EINTR, WSAEINTR), "interrupted")                                                           \
     E(INVAL, AH_I_ERR_ONE_OF(EINVAL, WSAEINVAL), "invalid argument")                                                   \
     E(IO, AH_I_ERR_ONE_OF(EIO, 5511), "I/O error")                                                                     \
     E(ISCONN, AH_I_ERR_ONE_OF(EISCONN, WSAEISCONN), "already connected")                                               \
@@ -96,7 +96,7 @@
     E(MLINK, AH_I_ERR_ONE_OF(EMLINK, 5513), "too many links")                                                          \
     E(MSGSIZE, AH_I_ERR_ONE_OF(EMSGSIZE, WSAEMSGSIZE), "message too large")                                            \
     E(MULTIHOP, AH_I_ERR_ONE_OF(EMULTIHOP, 5514), "incomplete route path")                                             \
-    E(NAMETOOLONG, AH_I_ERR_ONE_OF(ENAMETOOLONG, WSAENAMETOOLONG), "filename too long")                                \
+    E(NAMETOOLONG, AH_I_ERR_ONE_OF(ENAMETOOLONG, WSAENAMETOOLONG), "name too long")                                    \
     E(NETDOWN, AH_I_ERR_ONE_OF(ENETDOWN, WSAENETDOWN), "network is down")                                              \
     E(NETRESET, AH_I_ERR_ONE_OF(ENETRESET, WSAENETRESET), "connection aborted by network")                             \
     E(NETUNREACH, AH_I_ERR_ONE_OF(ENETUNREACH, WSAENETUNREACH), "network unreachable")                                 \
