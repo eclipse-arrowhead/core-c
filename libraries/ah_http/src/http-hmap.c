@@ -20,7 +20,7 @@ ah_extern ah_err_t ah_i_http_hmap_init(ah_http_hmap_t* headers, ah_alloc_cb allo
     ah_assert_if_debug(headers != NULL);
     ah_assert_if_debug(alloc_cb != NULL);
 
-    if (capacity == 1u || capacity > UINT8_MAX + 1u) {
+    if (capacity > UINT8_MAX + 1u) {
         return AH_EDOM;
     }
 
@@ -53,7 +53,6 @@ ah_extern ah_err_t ah_i_http_hmap_init(ah_http_hmap_t* headers, ah_alloc_cb allo
 
 static uint16_t s_to_mask(const uint16_t capacity)
 {
-    ah_assert_if_debug(capacity != 1u);
     ah_assert_if_debug(capacity <= 256);
 
     if (capacity == 0u) {
