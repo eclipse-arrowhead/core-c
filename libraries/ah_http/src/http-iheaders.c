@@ -77,7 +77,7 @@ ah_err_t ah_i_http_iheaders_add(ah_http_iheaders_t* headers, const char* name, c
 
     uint32_t hash = s_hash_header_name(name);
 
-    struct ah_i_http_iheader_value* last_value;
+    struct ah_i_http_iheader_value* last_value = NULL;
 
     for (size_t i = 0u; i <= headers->_mask; i += 1u) {
         size_t index = (hash + i) & headers->_mask;
@@ -90,7 +90,9 @@ ah_err_t ah_i_http_iheaders_add(ah_http_iheaders_t* headers, const char* name, c
                 ._value = value,
                 ._next_value_with_same_name = NULL,
             };
-            last_value->_next_value_with_same_name = &headers->_values[index];
+            if (last_value != NULL) {
+                last_value->_next_value_with_same_name = &headers->_values[index];
+            }
             return AH_ENONE;
         }
 

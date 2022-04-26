@@ -24,7 +24,7 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
     ah_err_t err;
 
     ah_http_iheaders_t headers;
-    err = ah_i_http_iheaders_init(&headers, realloc, 2);
+    err = ah_i_http_iheaders_init(&headers, realloc, 2u);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -82,7 +82,7 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
     ah_err_t err;
 
     ah_http_iheaders_t headers;
-    err = ah_i_http_iheaders_init(&headers, realloc, 2);
+    err = ah_i_http_iheaders_init(&headers, realloc, 4u);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -95,6 +95,16 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
     }
 
     err = ah_i_http_iheaders_add(&headers, "SET-CookIe", "crispy");
+    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+        return;
+    }
+
+    err = ah_i_http_iheaders_add(&headers, "Host", "[::1]:12345");
+    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+        return;
+    }
+
+    err = ah_i_http_iheaders_add(&headers, "Set-Cookie", "sweet");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
@@ -112,6 +122,11 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
 
     value = ah_http_iheaders_next(&iter);
     if (!ah_unit_assert_str_eq(unit, "crispy", value)) {
+        return;
+    }
+
+    value = ah_http_iheaders_next(&iter);
+    if (!ah_unit_assert_str_eq(unit, "sweet", value)) {
         return;
     }
 
