@@ -5,6 +5,8 @@ set(CMAKE_C_STANDARD 99)
 set(
     SOURCE_FILES
     include/ah/http.h
+    include/ah/internal/http.h
+    src/http-iheaders.c
     src/http.c
 )
 

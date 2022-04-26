@@ -17,8 +17,6 @@ struct s_reader {
     uint8_t* end;
 };
 
-static uint32_t s_hash_header_name(const char* name);
-
 static bool s_parse_request(s_reader_t* r, ah_http_ireq_t* request);
 
 static bool s_is_digit(uint8_t ch);
@@ -30,18 +28,16 @@ static bool s_skip_str(s_reader_t* r, char* str, size_t len);
 
 static bool s_parse_request(s_reader_t* r, ah_http_ireq_t* request)
 {
-    (void) s_hash_header_name;
-
-    if (!s_parse_method(r, &request->method)) {
+    if (!s_parse_method(r, &request->req_line.method)) {
         return false;
     }
 
-    if (!s_parse_target(r, &request->scheme, &request->authority, &request->path)) {
+    if (!s_parse_target(r, &request->req_line.scheme, &request->req_line.authority, &request->req_line.path)) {
         return false;
     }
 
     // TODO: Check that the version is supported (i.e. is 1.0 or 1.1).
-    if (!s_parse_version(r, &request->version)) {
+    if (!s_parse_version(r, &request->req_line.version)) {
         return false;
     }
 
@@ -242,14 +238,4 @@ static bool s_skip_str(s_reader_t* r, char* str, size_t len)
     r->off = &r->off[len];
 
     return true;
-}
-
-// FNV-1a, 32-bit.
-static uint32_t s_hash_header_name(const char* name) {
-    uint32_t hash = 2166136261;
-    for (const char *ch = name; *ch != ':'; ch = &ch[1u]) {
-        hash ^= (*ch >= 'A' && *ch <= 'Z') ? (*ch | 0x20) : *ch;
-        hash *= 16777619;
-    }
-    return hash;
 }
