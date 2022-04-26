@@ -33,18 +33,18 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
 
     err = ah_i_http_iheaders_add(&headers, "host", "192.168.40.40:40404");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
+        goto term;
     }
 
     err = ah_i_http_iheaders_add(&headers, "content-type", "application/json");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
+        goto term;
     }
 
     // Capacity is 2; this should fail.
     err = ah_i_http_iheaders_add(&headers, "content-length", "16");
     if (!ah_unit_assert_enum_eq(unit, AH_ENOBUFS, err, ah_strerror)) {
-        return;
+        goto term;
     }
 
     // Get headers.
@@ -54,26 +54,27 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
 
     value = ah_http_iheaders_get_value(&headers, "Host", &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host name/value pair")) {
-        return;
+        goto term;
     }
     if (!ah_unit_assert_str_eq(unit, "192.168.40.40:40404", value)) {
-        return;
+        goto term;
     }
 
     value = ah_http_iheaders_get_value(&headers, "Content-Type", &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host name/value pair")) {
-        return;
+        goto term;
     }
     if (!ah_unit_assert_str_eq(unit, "application/json", value)) {
-        return;
+        goto term;
     }
 
     // This header should not be present.
     value = ah_http_iheaders_get_value(&headers, "Content-Length", &has_next);
     if (!ah_unit_assert_str_eq(unit, NULL, value)) {
-        return;
+        goto term;
     }
 
+term:
     ah_i_http_iheaders_term(&headers, realloc);
 }
 
@@ -91,22 +92,22 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
 
     err = ah_i_http_iheaders_add(&headers, "set-cookie", "munchy");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
+        goto term;
     }
 
     err = ah_i_http_iheaders_add(&headers, "SET-CookIe", "crispy");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
+        goto term;
     }
 
     err = ah_i_http_iheaders_add(&headers, "Host", "[::1]:12345");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
+        goto term;
     }
 
     err = ah_i_http_iheaders_add(&headers, "Set-Cookie", "sweet");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
+        goto term;
     }
 
     // Get headers.
@@ -117,23 +118,24 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
 
     value = ah_http_iheaders_next(&iter);
     if (!ah_unit_assert_str_eq(unit, "munchy", value)) {
-        return;
+        goto term;
     }
 
     value = ah_http_iheaders_next(&iter);
     if (!ah_unit_assert_str_eq(unit, "crispy", value)) {
-        return;
+        goto term;
     }
 
     value = ah_http_iheaders_next(&iter);
     if (!ah_unit_assert_str_eq(unit, "sweet", value)) {
-        return;
+        goto term;
     }
 
     value = ah_http_iheaders_next(&iter);
     if (!ah_unit_assert_str_eq(unit, NULL, value)) {
-        return;
+        goto term;
     }
 
+term:
     ah_i_http_iheaders_term(&headers, realloc);
 }
