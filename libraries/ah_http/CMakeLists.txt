@@ -7,7 +7,8 @@ set(
     include/ah/http.h
     include/ah/internal/http.h
     src/http-iheaders.c
-    src/http.c
+    src/http-iheaders.h
+    src/http-parser.c
 )
 
 add_library(ah_http STATIC ${SOURCE_FILES})
@@ -17,6 +18,7 @@ target_link_libraries(ah_http PRIVATE ah_base)
 
 set(
     TEST_FILES
+    test/http-iheaders.c
     test/main.c
 )
 

@@ -10,14 +10,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void test_http_iheaders(ah_unit_t* unit);
+
 int main(void)
 {
-    (void) printf("Arrowhead Protocol/HTTP C Library Unit Tests\n"
+    (void) printf("Arrowhead HTTP C Library Unit Tests\n"
                   "- Source Commit: %s\n"
                   "- Platform:      %s\n",
         ah_lib_commit_str(), ah_lib_platform_str());
 
     struct ah_unit unit = { 0 };
+
+    test_http_iheaders(&unit);
 
     ah_unit_print_results(&unit);
 

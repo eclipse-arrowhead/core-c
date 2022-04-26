@@ -167,10 +167,17 @@ bool ah_i_unit_assert_str_eq(struct ah_i_unit unit, const char* a, const char* b
 
     unit.external->assertion_count += 1;
 
+    if (a == b) {
+        return true;
+    }
+    if (a == NULL || b == NULL) {
+        goto fail;
+    }
     if (strcmp(a, b) == 0) {
         return true;
     }
 
+fail:
     unit.external->fail_count += 1;
 
     (void) printf("FAIL %s (%s:%d) %s\n\t\"%s\" != \"%s\"\n", unit.func, unit.file, unit.line, message, a, b);

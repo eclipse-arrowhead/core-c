@@ -23,14 +23,9 @@
 
 #define AH_I_HTTP_IHEADERS_VALUES_FIELDS const struct ah_i_http_iheader_value* _value;
 
-struct ah_http_iheaders;
-
 struct ah_i_http_iheader_value {
     const char* _value;
     struct ah_i_http_iheader_value* _next_value_with_same_name;
 };
-
-ah_err_t ah_i_http_iheaders_init(struct ah_http_iheaders* headers, ah_alloc_cb alloc_cb, size_t capacity);
-ah_err_t ah_i_http_iheaders_push(struct ah_http_iheaders* headers, const char* name, const char* value);
 
 #endif
