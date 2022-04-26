@@ -6,8 +6,8 @@ set(
     SOURCE_FILES
     include/ah/http.h
     include/ah/internal/http.h
-    src/http-iheaders.c
-    src/http-iheaders.h
+    src/http-hmap.c
+    src/http-hmap.h
     src/http-parser.c
 )
 
@@ -18,7 +18,7 @@ target_link_libraries(ah_http PRIVATE ah_base)
 
 set(
     TEST_FILES
-    test/http-iheaders.c
+    test/http-hmap.c
     test/main.c
 )
 

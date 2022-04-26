@@ -10,12 +10,12 @@
 #include <ah/err.h>
 #include <string.h>
 
-static struct ah_i_http_iheader_value* s_get_value(const ah_http_iheaders_t* headers, const char* name);
+static struct ah_i_http_hmap_value* s_get_value(const ah_http_hmap_t* headers, const char* name);
 static uint32_t s_hash_header_name(const char* name);
 static uint8_t s_to_lower(uint8_t ch);
 static uint16_t s_to_mask(uint16_t capacity);
 
-ah_extern ah_err_t ah_i_http_iheaders_init(ah_http_iheaders_t* headers, ah_alloc_cb alloc_cb, size_t capacity)
+ah_extern ah_err_t ah_i_http_hmap_init(ah_http_hmap_t* headers, ah_alloc_cb alloc_cb, size_t capacity)
 {
     ah_assert_if_debug(headers != NULL);
     ah_assert_if_debug(alloc_cb != NULL);
@@ -26,7 +26,7 @@ ah_extern ah_err_t ah_i_http_iheaders_init(ah_http_iheaders_t* headers, ah_alloc
 
     uint16_t mask;
     const char** names;
-    struct ah_i_http_iheader_value* values;
+    struct ah_i_http_hmap_value* values;
 
     mask = s_to_mask(capacity);
 
@@ -35,13 +35,13 @@ ah_extern ah_err_t ah_i_http_iheaders_init(ah_http_iheaders_t* headers, ah_alloc
         return AH_ENOMEM;
     }
 
-    values = ah_malloc_array(alloc_cb, mask + 1u, sizeof(struct ah_i_http_iheader_value));
+    values = ah_malloc_array(alloc_cb, mask + 1u, sizeof(struct ah_i_http_hmap_value));
     if (values == NULL) {
         ah_dealloc(alloc_cb, names);
         return AH_ENOMEM;
     }
 
-    *headers = (ah_http_iheaders_t) {
+    *headers = (ah_http_hmap_t) {
         ._mask = mask,
         ._count = 0u,
         ._names = names,
@@ -69,7 +69,7 @@ static uint16_t s_to_mask(const uint16_t capacity)
     return v;
 }
 
-ah_err_t ah_i_http_iheaders_add(ah_http_iheaders_t* headers, const char* name, const char* value)
+ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* headers, const char* name, const char* value)
 {
     ah_assert_if_debug(headers != NULL);
     ah_assert_if_debug(name != NULL);
@@ -77,7 +77,7 @@ ah_err_t ah_i_http_iheaders_add(ah_http_iheaders_t* headers, const char* name, c
 
     uint32_t hash = s_hash_header_name(name);
 
-    struct ah_i_http_iheader_value* last_value = NULL;
+    struct ah_i_http_hmap_value* last_value = NULL;
 
     for (size_t i = 0u; i <= headers->_mask; i += 1u) {
         size_t index = (hash + i) & headers->_mask;
@@ -86,7 +86,7 @@ ah_err_t ah_i_http_iheaders_add(ah_http_iheaders_t* headers, const char* name, c
         if (current_name == NULL) {
             headers->_count += 1u;
             headers->_names[index] = name;
-            headers->_values[index] = (struct ah_i_http_iheader_value) {
+            headers->_values[index] = (struct ah_i_http_hmap_value) {
                 ._value = value,
                 ._next_value_with_same_name = NULL,
             };
@@ -120,7 +120,7 @@ static uint8_t s_to_lower(uint8_t ch)
     return ch >= 'A' && ch <= 'Z' ? (ch | 0x20) : ch;
 }
 
-ah_err_t ah_i_http_iheaders_add_if_not_exists(ah_http_iheaders_t* headers, const char* name, const char* value)
+ah_err_t ah_i_http_hmap_add_if_not_exists(ah_http_hmap_t* headers, const char* name, const char* value)
 {
     ah_assert_if_debug(headers != NULL);
     ah_assert_if_debug(name != NULL);
@@ -135,7 +135,7 @@ ah_err_t ah_i_http_iheaders_add_if_not_exists(ah_http_iheaders_t* headers, const
         if (current_name == NULL) {
             headers->_count += 1u;
             headers->_names[index] = name;
-            headers->_values[index] = (struct ah_i_http_iheader_value) {
+            headers->_values[index] = (struct ah_i_http_hmap_value) {
                 ._value = value,
                 ._next_value_with_same_name = NULL,
             };
@@ -150,7 +150,7 @@ ah_err_t ah_i_http_iheaders_add_if_not_exists(ah_http_iheaders_t* headers, const
     return AH_ENOBUFS;
 }
 
-void ah_i_http_iheaders_term(ah_http_iheaders_t* headers, ah_alloc_cb alloc_cb)
+void ah_i_http_hmap_term(ah_http_hmap_t* headers, ah_alloc_cb alloc_cb)
 {
     ah_assert_if_debug(headers != NULL);
     ah_assert_if_debug(alloc_cb != NULL);
@@ -159,17 +159,17 @@ void ah_i_http_iheaders_term(ah_http_iheaders_t* headers, ah_alloc_cb alloc_cb)
     ah_dealloc(alloc_cb, headers->_values);
 
 #ifndef NDEBUG
-    *headers = (ah_http_iheaders_t) { 0u };
+    *headers = (ah_http_hmap_t) { 0u };
 #endif
 }
 
-ah_extern const char* ah_http_iheaders_get_value(const ah_http_iheaders_t* headers, const char* name, bool* has_next)
+ah_extern const char* ah_http_hmap_get_value(const ah_http_hmap_t* headers, const char* name, bool* has_next)
 {
     ah_assert_if_debug(headers != NULL);
     ah_assert_if_debug(name != NULL);
     ah_assert_if_debug(has_next != NULL);
 
-    struct ah_i_http_iheader_value* value = s_get_value(headers, name);
+    struct ah_i_http_hmap_value* value = s_get_value(headers, name);
     if (value == NULL) {
         *has_next = false;
         return NULL;
@@ -184,14 +184,14 @@ ah_extern const char* ah_http_iheaders_get_value(const ah_http_iheaders_t* heade
     return value->_value;
 }
 
-static struct ah_i_http_iheader_value* s_get_value(const ah_http_iheaders_t* headers, const char* name)
+static struct ah_i_http_hmap_value* s_get_value(const ah_http_hmap_t* headers, const char* name)
 {
     ah_assert_if_debug(headers != NULL);
     ah_assert_if_debug(name != NULL);
 
     uint32_t hash = s_hash_header_name(name);
 
-    for (size_t i = 0u; i <= headers->_mask; i += 1u) {
+    for (size_t i = 0u; i <= headers->_count; i += 1u) {
         size_t index = (hash + i) & headers->_mask;
         const char* current_name = headers->_names[index];
 
@@ -203,17 +203,17 @@ static struct ah_i_http_iheader_value* s_get_value(const ah_http_iheaders_t* hea
     return NULL;
 }
 
-ah_extern ah_http_iheader_value_iter_t ah_http_iheaders_get_values(const ah_http_iheaders_t* headers, const char* name)
+ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, const char* name)
 {
     ah_assert_if_debug(headers != NULL);
     ah_assert_if_debug(name != NULL);
 
-    ah_http_iheader_value_iter_t iter;
+    ah_http_hmap_value_iter_t iter;
     iter._value = s_get_value(headers, name);
     return iter;
 }
 
-ah_extern const char* ah_http_iheaders_next(ah_http_iheader_value_iter_t* iter)
+ah_extern const char* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter)
 {
     ah_assert_if_debug(iter != NULL);
 

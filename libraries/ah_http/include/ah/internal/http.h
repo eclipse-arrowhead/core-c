@@ -15,17 +15,17 @@
 
 #define AH_I_HTTP_SERVER_FIELDS int _todo;
 
-#define AH_I_HTTP_IHEADERS_FIELDS                                                                                      \
+#define AH_I_HTTP_HMAP_FIELDS                                                                                          \
     uint16_t _mask;                                                                                                    \
     uint16_t _count;                                                                                                   \
     const char** _names;                                                                                               \
-    struct ah_i_http_iheader_value* _values;
+    struct ah_i_http_hmap_value* _values;
 
-#define AH_I_HTTP_IHEADERS_VALUES_FIELDS const struct ah_i_http_iheader_value* _value;
+#define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS const struct ah_i_http_hmap_value* _value;
 
-struct ah_i_http_iheader_value {
+struct ah_i_http_hmap_value {
     const char* _value;
-    struct ah_i_http_iheader_value* _next_value_with_same_name;
+    struct ah_i_http_hmap_value* _next_value_with_same_name;
 };
 
 #endif

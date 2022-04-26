@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void test_http_iheaders(ah_unit_t* unit);
+void test_http_hmap(ah_unit_t* unit);
 
 int main(void)
 {
@@ -21,7 +21,7 @@ int main(void)
 
     struct ah_unit unit = { 0 };
 
-    test_http_iheaders(&unit);
+    test_http_hmap(&unit);
 
     ah_unit_print_results(&unit);
 

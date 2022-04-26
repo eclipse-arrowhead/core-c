@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "../src/http-iheaders.h"
+#include "../src/http-hmap.h"
 
 #include <ah/err.h>
 #include <ah/unit.h>
@@ -14,7 +14,7 @@ static void s_should_add_and_get_headers(ah_unit_t* unit);
 static void s_should_add_header_if_name_is_not_already_present(ah_unit_t* unit);
 static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit);
 
-void test_http_iheaders(ah_unit_t* unit)
+void test_http_hmap(ah_unit_t* unit)
 {
     s_should_add_and_get_headers(unit);
     s_should_add_header_if_name_is_not_already_present(unit);
@@ -25,26 +25,26 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
 {
     ah_err_t err;
 
-    ah_http_iheaders_t headers;
-    err = ah_i_http_iheaders_init(&headers, realloc, 2u);
+    ah_http_hmap_t headers;
+    err = ah_i_http_hmap_init(&headers, realloc, 2u);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
 
     // Add headers.
 
-    err = ah_i_http_iheaders_add(&headers, "host", "192.168.40.40:40404");
+    err = ah_i_http_hmap_add(&headers, "host", "192.168.40.40:40404");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_iheaders_add(&headers, "content-type", "application/json");
+    err = ah_i_http_hmap_add(&headers, "content-type", "application/json");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
     // Capacity is 2; this should fail.
-    err = ah_i_http_iheaders_add(&headers, "content-length", "16");
+    err = ah_i_http_hmap_add(&headers, "content-length", "16");
     if (!ah_unit_assert_enum_eq(unit, AH_ENOBUFS, err, ah_strerror)) {
         goto term;
     }
@@ -54,7 +54,7 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
     bool has_next;
     const char* value;
 
-    value = ah_http_iheaders_get_value(&headers, "Host", &has_next);
+    value = ah_http_hmap_get_value(&headers, "Host", &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host name/value pair")) {
         goto term;
     }
@@ -62,7 +62,7 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
         goto term;
     }
 
-    value = ah_http_iheaders_get_value(&headers, "Content-Type", &has_next);
+    value = ah_http_hmap_get_value(&headers, "Content-Type", &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host name/value pair")) {
         goto term;
     }
@@ -71,33 +71,33 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
     }
 
     // This header should not be present.
-    value = ah_http_iheaders_get_value(&headers, "Content-Length", &has_next);
+    value = ah_http_hmap_get_value(&headers, "Content-Length", &has_next);
     if (!ah_unit_assert_str_eq(unit, NULL, value)) {
         goto term;
     }
 
 term:
-    ah_i_http_iheaders_term(&headers, realloc);
+    ah_i_http_hmap_term(&headers, realloc);
 }
 
 static void s_should_add_header_if_name_is_not_already_present(ah_unit_t* unit)
 {
     ah_err_t err;
 
-    ah_http_iheaders_t headers;
-    err = ah_i_http_iheaders_init(&headers, realloc, 2u);
+    ah_http_hmap_t headers;
+    err = ah_i_http_hmap_init(&headers, realloc, 2u);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
 
     // Add headers.
 
-    err = ah_i_http_iheaders_add_if_not_exists(&headers, "content-type", "application/cbor");
+    err = ah_i_http_hmap_add_if_not_exists(&headers, "content-type", "application/cbor");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_iheaders_add_if_not_exists(&headers, "Content-Type", "application/json");
+    err = ah_i_http_hmap_add_if_not_exists(&headers, "Content-Type", "application/json");
     if (!ah_unit_assert_enum_eq(unit, AH_EEXIST, err, ah_strerror)) {
         goto term;
     }
@@ -107,7 +107,7 @@ static void s_should_add_header_if_name_is_not_already_present(ah_unit_t* unit)
     bool has_next;
     const char* value;
 
-    value = ah_http_iheaders_get_value(&headers, "content-type", &has_next);
+    value = ah_http_hmap_get_value(&headers, "content-type", &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one content-type name/value pair")) {
         goto term;
     }
@@ -116,67 +116,67 @@ static void s_should_add_header_if_name_is_not_already_present(ah_unit_t* unit)
     }
 
 term:
-    ah_i_http_iheaders_term(&headers, realloc);
+    ah_i_http_hmap_term(&headers, realloc);
 }
 
 static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
 {
     ah_err_t err;
 
-    ah_http_iheaders_t headers;
-    err = ah_i_http_iheaders_init(&headers, realloc, 4u);
+    ah_http_hmap_t headers;
+    err = ah_i_http_hmap_init(&headers, realloc, 4u);
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         return;
     }
 
     // Add headers.
 
-    err = ah_i_http_iheaders_add(&headers, "set-cookie", "munchy");
+    err = ah_i_http_hmap_add(&headers, "set-cookie", "munchy");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_iheaders_add(&headers, "SET-CookIe", "crispy");
+    err = ah_i_http_hmap_add(&headers, "SET-CookIe", "crispy");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_iheaders_add(&headers, "Host", "[::1]:12345");
+    err = ah_i_http_hmap_add(&headers, "Host", "[::1]:12345");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_iheaders_add(&headers, "Set-Cookie", "sweet");
+    err = ah_i_http_hmap_add(&headers, "Set-Cookie", "sweet");
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
     // Get headers.
 
-    ah_http_iheader_value_iter_t iter = ah_http_iheaders_get_values(&headers, "Set-Cookie");
+    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_values(&headers, "Set-Cookie");
 
     const char* value;
 
-    value = ah_http_iheaders_next(&iter);
+    value = ah_http_hmap_next_value(&iter);
     if (!ah_unit_assert_str_eq(unit, "munchy", value)) {
         goto term;
     }
 
-    value = ah_http_iheaders_next(&iter);
+    value = ah_http_hmap_next_value(&iter);
     if (!ah_unit_assert_str_eq(unit, "crispy", value)) {
         goto term;
     }
 
-    value = ah_http_iheaders_next(&iter);
+    value = ah_http_hmap_next_value(&iter);
     if (!ah_unit_assert_str_eq(unit, "sweet", value)) {
         goto term;
     }
 
-    value = ah_http_iheaders_next(&iter);
+    value = ah_http_hmap_next_value(&iter);
     if (!ah_unit_assert_str_eq(unit, NULL, value)) {
         goto term;
     }
 
 term:
-    ah_i_http_iheaders_term(&headers, realloc);
+    ah_i_http_hmap_term(&headers, realloc);
 }
