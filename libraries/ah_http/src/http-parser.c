@@ -13,17 +13,72 @@
 #include <stddef.h>
 #include <string.h>
 
+static bool s_parse_status_code(ah_i_reader_t* r, uint16_t* code);
+static bool s_parse_version(ah_i_reader_t* r, ah_http_ver_t* version);
+
 static bool s_is_digit(uint8_t ch);
-static bool s_is_field_content_char(uint8_t ch);
-static bool s_is_field_vchar(uint8_t ch);
 static bool s_is_ows(uint8_t ch);
 static bool s_is_vchar(uint8_t ch);
 static bool s_is_vchar_not_colon(uint8_t ch);
-static bool s_parse_version(ah_i_reader_t* r, ah_http_ver_t* version);
+static bool s_is_vchar_obs_text_htab_sp(uint8_t ch);
+static bool s_is_vchar_obs_text(uint8_t ch);
+
 static bool s_skip_ch(ah_i_reader_t* r, char ch);
 static bool s_skip_crlf(ah_i_reader_t* r);
 static void s_skip_ows(ah_i_reader_t* r);
+
 static ah_str_t s_take_while(ah_i_reader_t* r, bool (*pred)(uint8_t));
+
+ah_err_t ah_i_http_parse_headers(ah_i_reader_t* r, ah_http_hmap_t* hmap)
+{
+    ah_assert_if_debug(r != NULL);
+    ah_assert_if_debug(hmap != NULL);
+
+    for (;;) {
+        if (s_skip_crlf(r)) {
+            return AH_ENONE;
+        }
+
+        // Read name.
+
+        ah_str_t name = s_take_while(r, s_is_vchar_not_colon);
+        if (ah_str_len(&name) == 0u || !s_skip_ch(r, ':')) {
+            return AH_EILSEQ;
+        }
+
+        // Read value.
+
+        s_skip_ows(r);
+
+        if (r->off == r->end || !s_is_vchar_obs_text(r->off[0u])) {
+            return AH_EILSEQ;
+        }
+
+        uint8_t* field_value_start = r->off;
+
+        do {
+            r->off = &r->off[1u];
+        } while (s_is_vchar_obs_text_htab_sp(r->off[0u]));
+
+        uint8_t* field_value_end = r->off;
+
+        if (!s_skip_crlf(r)) {
+            return AH_EILSEQ;
+        }
+
+        // Remove trailing optional whitespace.
+        while (field_value_end != field_value_start && s_is_ows(field_value_end[-1])) {
+            field_value_end = &field_value_end[-1];
+        }
+
+        ah_str_t value = ah_str_from(field_value_start, field_value_end - field_value_start);
+
+        ah_err_t err = ah_i_http_hmap_add(hmap, name, value);
+        if (err != AH_ENONE) {
+            return err;
+        }
+    }
+}
 
 ah_err_t ah_i_http_parse_req_line(ah_i_reader_t* r, ah_http_req_line_t* req_line)
 {
@@ -47,38 +102,6 @@ ah_err_t ah_i_http_parse_req_line(ah_i_reader_t* r, ah_http_req_line_t* req_line
     return AH_ENONE;
 }
 
-static ah_str_t s_take_while(ah_i_reader_t* r, bool (*pred)(uint8_t))
-{
-    uint8_t* off = r->off;
-
-    for (; off != r->end; off = &off[1u]) {
-        if (!pred(off[0u])) {
-            break;
-        }
-    }
-
-    size_t len = (size_t) (off - r->off);
-    r->off = off;
-
-    return ah_str_from(off, len);
-}
-
-static bool s_is_vchar(uint8_t ch)
-{
-    return ch > ' ' && ch < 0x7F;
-}
-
-static bool s_skip_ch(ah_i_reader_t* r, char ch)
-{
-    if (r->off == r->end || r->off[0u] != ch) {
-        return false;
-    }
-
-    r->off = &r->off[1u];
-
-    return true;
-}
-
 static bool s_parse_version(ah_i_reader_t* r, ah_http_ver_t* version)
 {
     if (r->end - r->off < 8u) {
@@ -99,9 +122,83 @@ static bool s_parse_version(ah_i_reader_t* r, ah_http_ver_t* version)
     return true;
 }
 
+ah_err_t ah_i_http_parse_stat_line(ah_i_reader_t* r, ah_http_stat_line_t* stat_line)
+{
+    ah_assert_if_debug(r != NULL);
+    ah_assert_if_debug(stat_line != NULL);
+
+    if (!s_parse_version(r, &stat_line->version) || !s_skip_ch(r, ' ')) {
+        return AH_EILSEQ;
+    }
+
+    if (!s_parse_status_code(r, &stat_line->code) || !s_skip_ch(r, ' ')) {
+        return AH_EILSEQ;
+    }
+
+    stat_line->reason = s_take_while(r, s_is_vchar_obs_text_htab_sp);
+
+    if (!s_skip_crlf(r)) {
+        return AH_EILSEQ;
+    }
+
+    return AH_ENONE;
+}
+
+static bool s_parse_status_code(ah_i_reader_t* r, uint16_t* code)
+{
+    if (r->end - r->off < 3u) {
+        return false;
+    }
+    if (!s_is_digit(r->off[0u]) || !s_is_digit(r->off[1u]) || !s_is_digit(r->off[2u])) {
+        return false;
+    }
+
+    *code = (('0' - r->off[0u]) * 100) + (('0' - r->off[1u]) * 10) + ('0' - r->off[2u]);
+
+    r->off = &r->off[3u];
+
+    return true;
+}
+
 static bool s_is_digit(uint8_t ch)
 {
     return ch >= '0' && ch <= '9';
+}
+
+static bool s_is_ows(uint8_t ch)
+{
+    return ch == ' ' || ch == '\t';
+}
+
+static bool s_is_vchar(uint8_t ch)
+{
+    return ch > ' ' && ch < 0x7F;
+}
+
+static bool s_is_vchar_not_colon(uint8_t ch)
+{
+    return s_is_vchar(ch) && ch != ':';
+}
+
+static bool s_is_vchar_obs_text(uint8_t ch)
+{
+    return ch > 0x20 && ch != 0x7F;
+}
+
+static bool s_is_vchar_obs_text_htab_sp(uint8_t ch)
+{
+    return (ch >= 0x20 && ch != 0x7F) || ch == '\t';
+}
+
+static bool s_skip_ch(ah_i_reader_t* r, char ch)
+{
+    if (r->off == r->end || r->off[0u] != ch) {
+        return false;
+    }
+
+    r->off = &r->off[1u];
+
+    return true;
 }
 
 static bool s_skip_crlf(ah_i_reader_t* r)
@@ -118,62 +215,6 @@ static bool s_skip_crlf(ah_i_reader_t* r)
     return true;
 }
 
-ah_err_t ah_i_http_parse_headers(ah_i_reader_t* r, ah_http_hmap_t* hmap)
-{
-    ah_assert_if_debug(r != NULL);
-    ah_assert_if_debug(hmap != NULL);
-
-    for (;;) {
-        if (s_skip_crlf(r)) {
-            return AH_ENONE;
-        }
-
-        // Read name.
-
-        ah_str_t name = s_take_while(r, s_is_vchar_not_colon);
-        if (ah_str_len(&name) == 0u || !s_skip_ch(r, ':')) {
-            return AH_EILSEQ;
-        }
-
-        // Read value.
-
-        s_skip_ows(r);
-
-        if (r->off == r->end || !s_is_field_vchar(r->off[0u])) {
-            return AH_EILSEQ;
-        }
-
-        uint8_t* field_value_start = r->off;
-
-        do {
-            r->off = &r->off[1u];
-        } while (s_is_field_content_char(r->off[0u]));
-
-        uint8_t* field_value_end = r->off;
-
-        if (!s_skip_crlf(r)) {
-            return AH_EILSEQ;
-        }
-
-        // Remove trailing optional whitespace.
-        while (field_value_end != field_value_start && s_is_ows(field_value_end[-1])) {
-            field_value_end = &field_value_end[-1];
-        }
-
-        ah_str_t value = ah_str_from(field_value_start, field_value_end - field_value_start);
-
-        ah_err_t err = ah_i_http_hmap_add(hmap, name, value);
-        if (err != AH_ENONE) {
-            return err;
-        }
-    }
-}
-
-static bool s_is_vchar_not_colon(uint8_t ch)
-{
-    return s_is_vchar(ch) && ch != ':';
-}
-
 static void s_skip_ows(ah_i_reader_t* r)
 {
     while (r->off != r->end && s_is_ows(r->off[0u])) {
@@ -181,17 +222,18 @@ static void s_skip_ows(ah_i_reader_t* r)
     }
 }
 
-static bool s_is_ows(uint8_t ch)
+static ah_str_t s_take_while(ah_i_reader_t* r, bool (*pred)(uint8_t))
 {
-    return ch == ' ' || ch == '\t';
-}
+    uint8_t* off = r->off;
 
-static bool s_is_field_vchar(uint8_t ch)
-{
-    return ch > 0x20 && ch != 0x7F;
-}
+    for (; off != r->end; off = &off[1u]) {
+        if (!pred(off[0u])) {
+            break;
+        }
+    }
 
-static bool s_is_field_content_char(uint8_t ch)
-{
-    return (ch >= 0x20 && ch != 0x7F) || ch == '\t';
+    size_t len = (size_t) (off - r->off);
+    r->off = off;
+
+    return ah_str_from(off, len);
 }

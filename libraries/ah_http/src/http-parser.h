@@ -12,11 +12,12 @@
 typedef struct ah_i_reader ah_i_reader_t;
 
 struct ah_i_reader {
-    uint8_t* off; // Pointer to next byte to read in `buf`
-    const uint8_t* end; // Pointer beyond last byte to read in `buf`.
+    uint8_t* off;
+    const uint8_t* end;
 };
 
-ah_err_t ah_i_http_parse_req_line(ah_i_reader_t* r, ah_http_req_line_t* req_line);
 ah_err_t ah_i_http_parse_headers(ah_i_reader_t* r, ah_http_hmap_t* hmap);
+ah_err_t ah_i_http_parse_req_line(ah_i_reader_t* r, ah_http_req_line_t* req_line);
+ah_err_t ah_i_http_parse_stat_line(ah_i_reader_t* r, ah_http_stat_line_t* stat_line);
 
 #endif
