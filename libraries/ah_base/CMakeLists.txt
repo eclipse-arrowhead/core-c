@@ -36,6 +36,7 @@ set(
     src/loop.c
     src/math.c
     src/sock.c
+    src/str.c
     src/task.c
 )
 
