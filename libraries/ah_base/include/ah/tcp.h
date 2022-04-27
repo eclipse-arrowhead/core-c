@@ -50,6 +50,23 @@ struct ah_tcp_sock {
     AH_I_TCP_SOCK_FIELDS
 };
 
+struct ah_tcp_vtab {
+    ah_err_t (*open)(ah_tcp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb);
+    ah_err_t (*connect)(ah_tcp_sock_t* sock, const ah_sockaddr_t* remote_addr, ah_tcp_connect_cb cb);
+    ah_err_t (*listen)(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_listen_ctx_t* ctx);
+    ah_err_t (*read_start)(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx);
+    ah_err_t (*read_stop)(ah_tcp_sock_t* sock);
+    ah_err_t (*write)(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx);
+    ah_err_t (*shutdown)(ah_tcp_sock_t* sock, ah_tcp_shutdown_t flags);
+    ah_err_t (*close)(ah_tcp_sock_t* sock, ah_tcp_close_cb cb);
+};
+
+struct ah_tcp_trans {
+    AH_I_TCP_TRANS_FIELDS
+};
+
+ah_extern const ah_tcp_trans_t* ah_tcp_default_transport(); // Plain TCP transport.
+
 ah_extern_inline void ah_tcp_init(ah_tcp_sock_t* sock, ah_loop_t* loop)
 {
     ah_assert_if_debug(sock != NULL);

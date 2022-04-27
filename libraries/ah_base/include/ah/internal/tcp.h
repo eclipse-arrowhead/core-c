@@ -22,12 +22,17 @@
 
 #define AH_I_TCP_SOCK_FIELDS                                                                                           \
     ah_loop_t* _loop;                                                                                                  \
+    void* _trans_data;                                                                                                 \
     void* _user_data;                                                                                                  \
                                                                                                                        \
     uint8_t _state;                                                                                                    \
     uint8_t _state_read;                                                                                               \
     uint8_t _state_write;                                                                                              \
     AH_I_TCP_SOCK_PLATFORM_FIELDS
+
+#define AH_I_TCP_TRANS_FIELDS                                                                                          \
+    const ah_tcp_vtab_t* _vtab;                                                                                        \
+    void* _data;
 
 #define AH_I_TCP_WRITE_CTX_FIELDS AH_I_TCP_WRITE_CTX_PLATFORM_FIELDS
 

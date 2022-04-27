@@ -38,6 +38,7 @@ set(
     src/sock.c
     src/str.c
     src/task.c
+    src/tcp.c
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
