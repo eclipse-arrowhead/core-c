@@ -77,18 +77,15 @@ struct ah_http_ver {
 };
 
 struct ah_http_req_line {
-    char* method;    // "GET", "PUT", "POST", "DELETE", or any other HTTP token.
-    char* scheme;    // "http" or "https"; may be other value if authority-form.
-    char* authority; // NULL unless authority-form.
-    char* path;      // Leading '/' always omitted. NULL if authority-form; "*" if asterisk-form.
-    char* query;     // Leading '?' always omitted. NULL if none.
+    ah_str_t method;
+    ah_str_t target;
     ah_http_ver_t version;
 };
 
 struct ah_http_stat_line {
     ah_http_ver_t version;
     uint16_t code;
-    char* reason; // NULL if none.
+    ah_str_t reason;
 };
 
 struct ah_http_hmap {

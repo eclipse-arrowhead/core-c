@@ -9,6 +9,7 @@ set(
     src/http-hmap.c
     src/http-hmap.h
     src/http-parser.c
+    src/http-parser.h
 )
 
 add_library(ah_http STATIC ${SOURCE_FILES})

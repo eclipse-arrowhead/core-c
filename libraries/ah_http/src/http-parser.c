@@ -4,191 +4,71 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/http.h"
+#include "http-parser.h"
 
+#include "http-hmap.h"
+
+#include <ah/err.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 
-typedef struct s_reader s_reader_t;
-
-struct s_reader {
-    uint8_t* off;
-    uint8_t* end;
-};
-
-static bool s_parse_request(s_reader_t* r, ah_http_ireq_t* request);
-
 static bool s_is_digit(uint8_t ch);
-static bool s_parse_method(s_reader_t* r, char** token);
-static bool s_parse_target(s_reader_t* r, char** scheme, char** authority, char** path);
-static bool s_parse_version(s_reader_t* r, ah_http_ver_t* version);
-static bool s_skip_ch(s_reader_t* r, char ch);
-static bool s_skip_str(s_reader_t* r, char* str, size_t len);
+static bool s_is_field_content_char(uint8_t ch);
+static bool s_is_field_vchar(uint8_t ch);
+static bool s_is_ows(uint8_t ch);
+static bool s_is_vchar(uint8_t ch);
+static bool s_is_vchar_not_colon(uint8_t ch);
+static bool s_parse_version(ah_i_reader_t* r, ah_http_ver_t* version);
+static bool s_skip_ch(ah_i_reader_t* r, char ch);
+static bool s_skip_crlf(ah_i_reader_t* r);
+static void s_skip_ows(ah_i_reader_t* r);
+static ah_str_t s_take_while(ah_i_reader_t* r, bool (*pred)(uint8_t));
 
-static bool s_parse_request(s_reader_t* r, ah_http_ireq_t* request)
+ah_err_t ah_i_http_parse_req_line(ah_i_reader_t* r, ah_http_req_line_t* req_line)
 {
-    if (!s_parse_method(r, &request->req_line.method)) {
-        return false;
+    ah_assert_if_debug(r != NULL);
+    ah_assert_if_debug(req_line != NULL);
+
+    req_line->method = s_take_while(r, s_is_vchar);
+    if (ah_str_len(&req_line->method) == 0u || !s_skip_ch(r, ' ')) {
+        return AH_EILSEQ;
     }
 
-    if (!s_parse_target(r, &request->req_line.scheme, &request->req_line.authority, &request->req_line.path)) {
-        return false;
+    req_line->target = s_take_while(r, s_is_vchar);
+    if (ah_str_len(&req_line->target) == 0u || !s_skip_ch(r, ' ')) {
+        return AH_EILSEQ;
     }
 
-    // TODO: Check that the version is supported (i.e. is 1.0 or 1.1).
-    if (!s_parse_version(r, &request->req_line.version)) {
-        return false;
+    if (!s_parse_version(r, &req_line->version) || !s_skip_crlf(r)) {
+        return AH_EILSEQ;
     }
 
-    if (!s_skip_str(r, "\r\n", 2u)) {
-        return false;
-    }
-
-    // TODO: Parse headers and body.
-
-    return true;
+    return AH_ENONE;
 }
 
-static bool s_parse_method(s_reader_t* r, char** token)
-{
-    for (uint8_t* off = r->off; off != r->end; off = &off[1u]) {
-        char ch = (char) *off;
-        if (ch <= 0) {
-            break;
-        }
-        if (ch != ' ') {
-            continue;
-        }
-
-        off[0u] = '\0';
-        *token = (char*) r->off;
-        r->off = &off[1u];
-
-        return true;
-    }
-
-    return false;
-}
-
-static bool s_parse_target(s_reader_t* r, char** scheme, char** authority, char** path)
+static ah_str_t s_take_while(ah_i_reader_t* r, bool (*pred)(uint8_t))
 {
     uint8_t* off = r->off;
 
-    if (off == r->end) {
-        return false;
-    }
-
-    // origin-form?
-    if (*off == '/') {
-        off = &off[1u];
-        r->off = off; // Skip leading slash.
-        goto parse_path;
-    }
-
-    // asterisk-form?
-    if (*off == '*') {
-        if (!s_skip_ch(r, ' ')) {
-            return false;
-        }
-
-        off[0u] = '\0';
-        *path = (char*) r->off;
-        r->off = &off[1u];
-
-        return true;
-    }
-
-    // If a scheme is present, absolute-form is used; authority-form otherwise.
-    for (;;) {
-        if (off == r->end) {
-            return false;
-        }
-
-        char ch = (char) *off;
-        if (ch <= 0) {
-            return false;
-        }
-        if (ch != ' ' && ch != ':') {
-            off = &off[1u];
-            continue;
-        }
-
-        // Did we finish without finding "://", which implies authority-form?
-        if (ch == ' ') {
-            off[0u] = '\0';
-            *authority = (char*) r->off;
-            r->off = &off[1u];
-            return true;
-        }
-
-        if ((size_t) (r->end - off) < 2u) {
-            return false;
-        }
-        if (off[1u] == '/') {
-            if (off[2u] != '/') {
-                return false;
-            }
-            off[0u] = '\0';
-            *scheme = (char*) r->off;
-            r->off = &off[2u];
-        }
-
-        break;
-    }
-
-    // Parse authority.
-    for (;;) {
-        if (off == r->end) {
-            return false;
-        }
-
-        char ch = (char) *off;
-        if (ch <= 0) {
-            return false;
-        }
-        if (ch != ' ' && ch != '/') {
-            off = &off[1u];
-            continue;
-        }
-
-        off[0u] = '\0';
-        *authority = (char*) r->off;
-        r->off = &off[1u];
-
-        // Did we finish without finding '/'?
-        if (ch == ' ') {
-            if (*scheme != NULL) {
-                *path = (char*) &r->off[-1];
-            }
-            return true; // No path.
+    for (; off != r->end; off = &off[1u]) {
+        if (!pred(off[0u])) {
+            break;
         }
     }
 
-parse_path:
-    for (;;) {
-        if (off == r->end) {
-            return false;
-        }
+    size_t len = (size_t) (off - r->off);
+    r->off = off;
 
-        char ch = (char) *off;
-        if (ch <= 0) {
-            return false;
-        }
-        if (ch != ' ') {
-            off = &off[1u];
-            continue;
-        }
-
-        off[0u] = '\0';
-        *path = (char*) r->off;
-        r->off = &off[1u];
-
-        return true;
-    }
+    return ah_str_from(off, len);
 }
 
-static bool s_skip_ch(s_reader_t* r, char ch)
+static bool s_is_vchar(uint8_t ch)
+{
+    return ch > ' ' && ch < 0x7F;
+}
+
+static bool s_skip_ch(ah_i_reader_t* r, char ch)
 {
     if (r->off == r->end || r->off[0u] != ch) {
         return false;
@@ -199,7 +79,7 @@ static bool s_skip_ch(s_reader_t* r, char ch)
     return true;
 }
 
-static bool s_parse_version(s_reader_t* r, ah_http_ver_t* version)
+static bool s_parse_version(ah_i_reader_t* r, ah_http_ver_t* version)
 {
     if (r->end - r->off < 8u) {
         return false;
@@ -224,18 +104,94 @@ static bool s_is_digit(uint8_t ch)
     return ch >= '0' && ch <= '9';
 }
 
-static bool s_skip_str(s_reader_t* r, char* str, size_t len)
+static bool s_skip_crlf(ah_i_reader_t* r)
 {
-    if ((size_t) (r->end - r->off) < len) {
+    if ((size_t) (r->end - r->off) < 2u) {
         return false;
     }
-    if (memcmp(r->off, str, len) != 0) {
+    if (memcmp(r->off, (uint8_t[]) { '\r', '\n' }, 2u) != 0) {
         return false;
     }
 
-    (void) s_parse_request;
-
-    r->off = &r->off[len];
+    r->off = &r->off[2u];
 
     return true;
+}
+
+ah_err_t ah_i_http_parse_headers(ah_i_reader_t* r, ah_http_hmap_t* hmap)
+{
+    ah_assert_if_debug(r != NULL);
+    ah_assert_if_debug(hmap != NULL);
+
+    for (;;) {
+        if (s_skip_crlf(r)) {
+            return AH_ENONE;
+        }
+
+        // Read name.
+
+        ah_str_t name = s_take_while(r, s_is_vchar_not_colon);
+        if (ah_str_len(&name) == 0u || !s_skip_ch(r, ':')) {
+            return AH_EILSEQ;
+        }
+
+        // Read value.
+
+        s_skip_ows(r);
+
+        if (r->off == r->end || !s_is_field_vchar(r->off[0u])) {
+            return AH_EILSEQ;
+        }
+
+        uint8_t* field_value_start = r->off;
+
+        do {
+            r->off = &r->off[1u];
+        } while (s_is_field_content_char(r->off[0u]));
+
+        uint8_t* field_value_end = r->off;
+
+        if (!s_skip_crlf(r)) {
+            return AH_EILSEQ;
+        }
+
+        // Remove trailing optional whitespace.
+        while (field_value_end != field_value_start && s_is_ows(field_value_end[-1])) {
+            field_value_end = &field_value_end[-1];
+        }
+
+        ah_str_t value = ah_str_from(field_value_start, field_value_end - field_value_start);
+
+        ah_err_t err = ah_i_http_hmap_add(hmap, name, value);
+        if (err != AH_ENONE) {
+            return err;
+        }
+    }
+}
+
+static bool s_is_vchar_not_colon(uint8_t ch)
+{
+    return s_is_vchar(ch) && ch != ':';
+}
+
+static void s_skip_ows(ah_i_reader_t* r)
+{
+    while (r->off != r->end && s_is_ows(r->off[0u])) {
+        r->off = &r->off[1u];
+    }
+}
+
+static bool s_is_ows(uint8_t ch)
+{
+    return ch == ' ' || ch == '\t';
+}
+
+static bool s_is_field_vchar(uint8_t ch)
+{
+    return ch > 0x20 && ch != 0x7F;
+}
+
+static bool s_is_field_content_char(uint8_t ch)
+{
+    return (ch >= 0x20 && ch != 0x7F) || ch == '\t';
 }
