@@ -18,8 +18,8 @@ static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version);
 
 static bool s_is_digit(uint8_t ch);
 static bool s_is_ows(uint8_t ch);
-static bool s_is_vchar(uint8_t ch);
-static bool s_is_vchar_not_colon(uint8_t ch);
+static bool s_is_rchar(uint8_t ch);
+static bool s_is_tchar(uint8_t ch);
 static bool s_is_vchar_obs_text_htab_sp(uint8_t ch);
 static bool s_is_vchar_obs_text(uint8_t ch);
 
@@ -41,7 +41,7 @@ ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
 
         // Read name.
 
-        ah_str_t name = s_take_while(r, s_is_vchar_not_colon);
+        ah_str_t name = s_take_while(r, s_is_tchar);
         if (ah_str_len(&name) == 0u || !s_skip_ch(r, ':')) {
             return AH_EILSEQ;
         }
@@ -85,12 +85,12 @@ ah_err_t ah_i_http_parse_req_line(ah_i_http_reader_t* r, ah_http_req_line_t* req
     ah_assert_if_debug(r != NULL);
     ah_assert_if_debug(req_line != NULL);
 
-    req_line->method = s_take_while(r, s_is_vchar);
+    req_line->method = s_take_while(r, s_is_tchar);
     if (ah_str_len(&req_line->method) == 0u || !s_skip_ch(r, ' ')) {
         return AH_EILSEQ;
     }
 
-    req_line->target = s_take_while(r, s_is_vchar);
+    req_line->target = s_take_while(r, s_is_rchar);
     if (ah_str_len(&req_line->target) == 0u || !s_skip_ch(r, ' ')) {
         return AH_EILSEQ;
     }
@@ -170,14 +170,31 @@ static bool s_is_ows(uint8_t ch)
     return ch == ' ' || ch == '\t';
 }
 
-static bool s_is_vchar(uint8_t ch)
-{
-    return ch > ' ' && ch < 0x7F;
+static bool s_is_rchar(uint8_t ch) {
+    // Every set bit in this table denotes a character that may occur in an
+    // RFC7230 request-target. Those characters are '!', '$', '%', '&', '\'',
+    // '(', ')', '*', '+', ',', '-', '.', '/', [0-9], ':', ';', '=', '?', '@',
+    // [A-Z], '[', ']', '_', [a-z] and '~'.
+    static const uint32_t tab[] = {
+        0x00000000,
+        0xAFFFFFF2,
+        0xAFFFFFFF,
+        0x47FFFFFE,
+    };
+    return (ch & 0x80) == 0 && ((tab[ch >> 5] >> (ch & 0x1F)) & 1) == 1;
 }
 
-static bool s_is_vchar_not_colon(uint8_t ch)
-{
-    return s_is_vchar(ch) && ch != ':';
+static bool s_is_tchar(uint8_t ch) {
+    // Every set bit in this table denotes a token character (TCHAR) of RFC7230.
+    // Those characters are '!', '#', '$', '%', '&', '\'', '*', '+', '-', '.',
+    // [0-9], [A-Z], '^', '_', '`', [a-z], '|' and '~'.
+    static const uint32_t tab[] = {
+        0x00000000,
+        0x03FF6CFA,
+        0xC7FFFFFE,
+        0x57FFFFFE,
+    };
+    return (ch & 0x80) == 0 && ((tab[ch >> 5] >> (ch & 0x1F)) & 1) == 1;
 }
 
 static bool s_is_vchar_obs_text(uint8_t ch)
