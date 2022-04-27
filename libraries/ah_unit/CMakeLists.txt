@@ -13,3 +13,5 @@ add_library(ah_unit STATIC ${SOURCE_FILES})
 
 target_include_directories(ah_unit
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+target_link_libraries(ah_unit PRIVATE ah_base)

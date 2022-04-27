@@ -13,8 +13,8 @@
 #include <stddef.h>
 #include <string.h>
 
-static bool s_parse_status_code(ah_i_reader_t* r, uint16_t* code);
-static bool s_parse_version(ah_i_reader_t* r, ah_http_ver_t* version);
+static bool s_parse_status_code(ah_i_http_reader_t* r, uint16_t* code);
+static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version);
 
 static bool s_is_digit(uint8_t ch);
 static bool s_is_ows(uint8_t ch);
@@ -23,13 +23,13 @@ static bool s_is_vchar_not_colon(uint8_t ch);
 static bool s_is_vchar_obs_text_htab_sp(uint8_t ch);
 static bool s_is_vchar_obs_text(uint8_t ch);
 
-static bool s_skip_ch(ah_i_reader_t* r, char ch);
-static bool s_skip_crlf(ah_i_reader_t* r);
-static void s_skip_ows(ah_i_reader_t* r);
+static bool s_skip_ch(ah_i_http_reader_t* r, char ch);
+static bool s_skip_crlf(ah_i_http_reader_t* r);
+static void s_skip_ows(ah_i_http_reader_t* r);
 
-static ah_str_t s_take_while(ah_i_reader_t* r, bool (*pred)(uint8_t));
+static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t));
 
-ah_err_t ah_i_http_parse_headers(ah_i_reader_t* r, ah_http_hmap_t* hmap)
+ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
 {
     ah_assert_if_debug(r != NULL);
     ah_assert_if_debug(hmap != NULL);
@@ -50,17 +50,17 @@ ah_err_t ah_i_http_parse_headers(ah_i_reader_t* r, ah_http_hmap_t* hmap)
 
         s_skip_ows(r);
 
-        if (r->off == r->end || !s_is_vchar_obs_text(r->off[0u])) {
+        if (r->_off == r->_end || !s_is_vchar_obs_text(r->_off[0u])) {
             return AH_EILSEQ;
         }
 
-        uint8_t* field_value_start = r->off;
+        const uint8_t* field_value_start = r->_off;
 
         do {
-            r->off = &r->off[1u];
-        } while (s_is_vchar_obs_text_htab_sp(r->off[0u]));
+            r->_off = &r->_off[1u];
+        } while (s_is_vchar_obs_text_htab_sp(r->_off[0u]));
 
-        uint8_t* field_value_end = r->off;
+        const uint8_t* field_value_end = r->_off;
 
         if (!s_skip_crlf(r)) {
             return AH_EILSEQ;
@@ -80,7 +80,7 @@ ah_err_t ah_i_http_parse_headers(ah_i_reader_t* r, ah_http_hmap_t* hmap)
     }
 }
 
-ah_err_t ah_i_http_parse_req_line(ah_i_reader_t* r, ah_http_req_line_t* req_line)
+ah_err_t ah_i_http_parse_req_line(ah_i_http_reader_t* r, ah_http_req_line_t* req_line)
 {
     ah_assert_if_debug(r != NULL);
     ah_assert_if_debug(req_line != NULL);
@@ -102,27 +102,27 @@ ah_err_t ah_i_http_parse_req_line(ah_i_reader_t* r, ah_http_req_line_t* req_line
     return AH_ENONE;
 }
 
-static bool s_parse_version(ah_i_reader_t* r, ah_http_ver_t* version)
+static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version)
 {
-    if (r->end - r->off < 8u) {
+    if (r->_end - r->_off < 8u) {
         return false;
     }
-    if (memcmp(r->off, "HTTP/", 5u) != 0) {
+    if (memcmp(r->_off, "HTTP/", 5u) != 0) {
         return false;
     }
-    if (!s_is_digit(r->off[5u]) || r->off[6u] != '.' || !s_is_digit(r->off[7u])) {
+    if (!s_is_digit(r->_off[5u]) || r->_off[6u] != '.' || !s_is_digit(r->_off[7u])) {
         return false;
     }
 
-    version->major = '0' - r->off[5u];
-    version->minor = '0' - r->off[7u];
+    version->major = r->_off[5u] - '0';
+    version->minor = r->_off[7u] - '0';
 
-    r->off = &r->off[8u];
+    r->_off = &r->_off[8u];
 
     return true;
 }
 
-ah_err_t ah_i_http_parse_stat_line(ah_i_reader_t* r, ah_http_stat_line_t* stat_line)
+ah_err_t ah_i_http_parse_stat_line(ah_i_http_reader_t* r, ah_http_stat_line_t* stat_line)
 {
     ah_assert_if_debug(r != NULL);
     ah_assert_if_debug(stat_line != NULL);
@@ -144,18 +144,18 @@ ah_err_t ah_i_http_parse_stat_line(ah_i_reader_t* r, ah_http_stat_line_t* stat_l
     return AH_ENONE;
 }
 
-static bool s_parse_status_code(ah_i_reader_t* r, uint16_t* code)
+static bool s_parse_status_code(ah_i_http_reader_t* r, uint16_t* code)
 {
-    if (r->end - r->off < 3u) {
+    if (r->_end - r->_off < 3u) {
         return false;
     }
-    if (!s_is_digit(r->off[0u]) || !s_is_digit(r->off[1u]) || !s_is_digit(r->off[2u])) {
+    if (!s_is_digit(r->_off[0u]) || !s_is_digit(r->_off[1u]) || !s_is_digit(r->_off[2u])) {
         return false;
     }
 
-    *code = (('0' - r->off[0u]) * 100) + (('0' - r->off[1u]) * 10) + ('0' - r->off[2u]);
+    *code = ((r->_off[0u] - '0') * 100) + ((r->_off[1u] - '0') * 10) + (r->_off[2u] - '0');
 
-    r->off = &r->off[3u];
+    r->_off = &r->_off[3u];
 
     return true;
 }
@@ -190,50 +190,52 @@ static bool s_is_vchar_obs_text_htab_sp(uint8_t ch)
     return (ch >= 0x20 && ch != 0x7F) || ch == '\t';
 }
 
-static bool s_skip_ch(ah_i_reader_t* r, char ch)
+static bool s_skip_ch(ah_i_http_reader_t* r, char ch)
 {
-    if (r->off == r->end || r->off[0u] != ch) {
+    if (r->_off == r->_end || r->_off[0u] != ch) {
         return false;
     }
 
-    r->off = &r->off[1u];
+    r->_off = &r->_off[1u];
 
     return true;
 }
 
-static bool s_skip_crlf(ah_i_reader_t* r)
+static bool s_skip_crlf(ah_i_http_reader_t* r)
 {
-    if ((size_t) (r->end - r->off) < 2u) {
+    if ((size_t) (r->_end - r->_off) < 2u) {
         return false;
     }
-    if (memcmp(r->off, (uint8_t[]) { '\r', '\n' }, 2u) != 0) {
+    if (memcmp(r->_off, (uint8_t[]) { '\r', '\n' }, 2u) != 0) {
         return false;
     }
 
-    r->off = &r->off[2u];
+    r->_off = &r->_off[2u];
 
     return true;
 }
 
-static void s_skip_ows(ah_i_reader_t* r)
+static void s_skip_ows(ah_i_http_reader_t* r)
 {
-    while (r->off != r->end && s_is_ows(r->off[0u])) {
-        r->off = &r->off[1u];
+    while (r->_off != r->_end && s_is_ows(r->_off[0u])) {
+        r->_off = &r->_off[1u];
     }
 }
 
-static ah_str_t s_take_while(ah_i_reader_t* r, bool (*pred)(uint8_t))
+static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t))
 {
-    uint8_t* off = r->off;
+    const uint8_t* off = r->_off;
 
-    for (; off != r->end; off = &off[1u]) {
+    for (; off != r->_end; off = &off[1u]) {
         if (!pred(off[0u])) {
             break;
         }
     }
 
-    size_t len = (size_t) (off - r->off);
-    r->off = off;
+    const uint8_t* ptr = r->_off;
+    size_t len = (size_t) (off - r->_off);
 
-    return ah_str_from(off, len);
+    r->_off = off;
+
+    return ah_str_from(ptr, len);
 }

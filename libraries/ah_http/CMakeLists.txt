@@ -20,6 +20,7 @@ target_link_libraries(ah_http PRIVATE ah_base)
 set(
     TEST_FILES
     test/http-hmap.c
+    test/http-parser.c
     test/main.c
 )
 

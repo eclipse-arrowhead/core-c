@@ -14,8 +14,12 @@
 #define ah_unit_assertf(unit, is_success, format, ...)                                                                 \
     ah_i_unit_assertf(AH_I_UNIT_WRAP(unit), (is_success), (format), __VA_ARGS__)
 
+#define ah_unit_assert_cstr_eq(unit, a, b) ah_i_unit_assert_cstr_eq(AH_I_UNIT_WRAP(unit), (a), (b), #a " != " #b)
+
 #define ah_unit_assert_enum_eq(unit, a, b, tostr_cb)                                                                   \
     ah_i_unit_assert_enum_eq(AH_I_UNIT_WRAP(unit), (a), (b), (tostr_cb))
+
+#define ah_unit_assert_err_eq(unit, a, b) ah_i_unit_assert_err_eq(AH_I_UNIT_WRAP(unit), (a), (b), #a " != " #b)
 
 #define ah_unit_assert_mem_eq(unit, a, b, size)                                                                        \
     ah_i_unit_assert_mem_eq(AH_I_UNIT_WRAP(unit), (a), (b), (size), #a " != " #b)

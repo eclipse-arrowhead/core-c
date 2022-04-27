@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 void test_http_hmap(ah_unit_t* unit);
+void test_http_parser(ah_unit_t* unit);
 
 int main(void)
 {
@@ -22,6 +23,7 @@ int main(void)
     struct ah_unit unit = { 0 };
 
     test_http_hmap(&unit);
+    test_http_parser(&unit);
 
     ah_unit_print_results(&unit);
 

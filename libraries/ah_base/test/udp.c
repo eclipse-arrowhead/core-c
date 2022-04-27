@@ -82,7 +82,7 @@ static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufvec
         return;
     }
 
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -102,7 +102,7 @@ static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufvec
     if (!ah_unit_assert(unit, bufvec->items != NULL, "bufvec->items == NULL")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0]._octets)) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0]._octets)) {
         return;
     }
 
@@ -126,7 +126,7 @@ static void s_on_send(ah_udp_sock_t* sock, ah_err_t err)
         return;
     }
 
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -156,7 +156,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     ah_sockaddr_t recv_addr;
 
     err = ah_loop_init(&recv_loop, &(ah_loop_opts_t) { .capacity = 4 });
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -164,13 +164,13 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     ah_udp_init(&recv_sock, &recv_loop);
     err = ah_udp_open(&recv_sock, &recv_addr, NULL);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
     ah_udp_set_user_data(&recv_sock, &user_data);
 
     err = ah_udp_get_local_addr(&recv_sock, &recv_addr);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -181,7 +181,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
             .alloc_cb = s_on_alloc,
             .recv_cb = s_on_recv,
         });
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -192,7 +192,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     ah_sockaddr_t send_addr;
 
     err = ah_loop_init(&send_loop, &(ah_loop_opts_t) { .capacity = 4 });
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -200,7 +200,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     ah_udp_init(&send_sock, &send_loop);
     err = ah_udp_open(&send_sock, &send_addr, NULL);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
     ah_udp_set_user_data(&send_sock, &user_data);
@@ -219,24 +219,24 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
             },
             .send_cb = s_on_send,
         });
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     // Submit.
 
     err = ah_loop_run_until(&send_loop, &(struct ah_time) { 0 });
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     struct ah_time deadline;
     err = ah_time_add(ah_time_now(), 10 * AH_TIMEDIFF_MS, &deadline);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
     err = ah_loop_run_until(&recv_loop, &deadline);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -249,16 +249,16 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     // Release all resources.
 
     err = ah_udp_close(&recv_sock, NULL);
-    ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
+    ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_loop_term(&recv_loop);
-    ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
+    ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_udp_close(&send_sock, NULL);
-    ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
+    ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_loop_term(&send_loop);
-    ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
+    ah_unit_assert_err_eq(unit, AH_ENONE, err);
 }
 
 #if AH_HAS_BSD_SOCKETS

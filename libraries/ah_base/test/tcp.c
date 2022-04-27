@@ -53,7 +53,7 @@ static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, ah_sockaddr_t*
         return;
     }
 
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
     if (!ah_unit_assert(unit, conn != NULL, "conn == NULL")) {
@@ -77,7 +77,7 @@ static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, ah_sockaddr_t*
     };
 
     ah_err_t err0 = ah_tcp_read_start(conn, read_ctx);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err0, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
         return;
     }
 
@@ -155,7 +155,7 @@ static void s_on_connect(ah_tcp_sock_t* conn, ah_err_t err)
         return;
     }
 
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -185,7 +185,7 @@ static void s_on_connect(ah_tcp_sock_t* conn, ah_err_t err)
     };
 
     ah_err_t err0 = ah_tcp_write(conn, write_ctx);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err0, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
         return;
     }
 
@@ -204,7 +204,7 @@ static void s_on_listen(ah_tcp_sock_t* sock, ah_err_t err)
         return;
     }
 
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -223,7 +223,7 @@ static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_
         return;
     }
 
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -238,12 +238,12 @@ static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_
     if (!ah_unit_assert(unit, bufvec->items != NULL, "bufvec->items == NULL")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0]._octets)) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0]._octets)) {
         return;
     }
 
     ah_err_t err0 = ah_tcp_close(sock, NULL);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err0, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
         return;
     }
 
@@ -267,7 +267,7 @@ static void s_on_write(ah_tcp_sock_t* sock, ah_err_t err)
         return;
     }
 
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -301,7 +301,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     ah_sockaddr_t read_addr;
 
     err = ah_loop_init(&read_loop, &(ah_loop_opts_t) { .capacity = 4u });
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -309,13 +309,13 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     ah_tcp_init(&read_sock, &read_loop);
     err = ah_tcp_open(&read_sock, &read_addr, NULL);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
     ah_tcp_set_user_data(&read_sock, &user_data);
 
     err = ah_tcp_get_local_addr(&read_sock, &read_addr);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -327,7 +327,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
             .listen_cb = s_on_listen,
             .accept_cb = s_on_accept,
         });
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -338,7 +338,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     ah_sockaddr_t write_addr;
 
     err = ah_loop_init(&write_loop, &(ah_loop_opts_t) { .capacity = 4u });
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -346,7 +346,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     ah_tcp_init(&write_sock, &write_loop);
     err = ah_tcp_open(&write_sock, &write_addr, NULL);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
     ah_tcp_set_user_data(&write_sock, &user_data);
@@ -354,7 +354,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Connect writer to reader.
 
     err = ah_tcp_connect(&write_sock, &read_addr, s_on_connect);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -363,20 +363,20 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     ah_time_t deadline;
 
     err = ah_time_add(ah_time_now(), 10 * AH_TIMEDIFF_MS, &deadline);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
     err = ah_loop_run_until(&write_loop, &deadline);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     err = ah_time_add(ah_time_now(), 10 * AH_TIMEDIFF_MS, &deadline);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
     err = ah_loop_run_until(&read_loop, &deadline);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -393,14 +393,14 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Release all resources.
 
     err = ah_tcp_close(&read_sock, NULL);
-    ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
+    ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_loop_term(&read_loop);
-    ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
+    ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_tcp_close(&write_sock, NULL);
-    ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
+    ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_loop_term(&write_loop);
-    ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror);
+    ah_unit_assert_err_eq(unit, AH_ENONE, err);
 }

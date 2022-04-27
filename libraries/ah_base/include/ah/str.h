@@ -21,7 +21,7 @@ union ah_str {
     AH_I_STR_FIELDS
 };
 
-ah_extern_inline ah_str_t ah_str_from(void* str, size_t len)
+ah_extern_inline ah_str_t ah_str_from(const void* str, size_t len)
 {
     ah_str_t res = { ._as_any._len = len };
 
