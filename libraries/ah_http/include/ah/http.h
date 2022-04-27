@@ -49,15 +49,20 @@ typedef struct ah_http_server ah_http_server_t;
 typedef struct ah_http_stat_line ah_http_stat_line_t;
 typedef struct ah_http_ver ah_http_ver_t;
 
+typedef union ah_http_obody ah_http_obody_t;
+
 struct ah_http_client {
     AH_I_HTTP_CLIENT_FIELDS
 };
 
 struct ah_http_client_vtab {
-    void (*on_head)(ah_http_client_t* client, ah_http_ires_t* res);
+    void (*on_open)(ah_http_client_t* client);
+    void (*on_stat_line)(ah_http_client_t* client, ah_http_ires_t* res);
+    void (*on_headers)(ah_http_client_t* client, ah_http_ires_t* res);
     void (*on_body)(ah_http_client_t* client, ah_http_ires_t* res, ah_bufvec_t bufvec, size_t rem);
     void (*on_done)(ah_http_client_t* client, ah_http_ires_t* res);
     void (*on_err)(ah_http_client_t* client, ah_http_ires_t* res, ah_http_ires_err_t ires_err);
+    void (*on_close)(ah_http_client_t* client);
 };
 
 struct ah_http_server {
@@ -65,10 +70,13 @@ struct ah_http_server {
 };
 
 struct ah_http_server_vtab {
-    void (*on_head)(ah_http_server_t* server, ah_http_ireq_t* req, ah_http_ores_t* res);
+    void (*on_open)(ah_http_server_t* server);
+    void (*on_req_line)(ah_http_server_t* server, ah_http_ireq_t* req, ah_http_ores_t* res);
+    void (*on_headers)(ah_http_server_t* server, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_body)(ah_http_server_t* server, ah_http_ireq_t* req, ah_bufvec_t bufvec, size_t rem, ah_http_ores_t* res);
     void (*on_done)(ah_http_server_t* server, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_err)(ah_http_server_t* server, ah_http_ireq_t* req, ah_http_ireq_err_t cause, ah_http_ores_t* res);
+    void (*on_close)(ah_http_server_t* server);
 };
 
 struct ah_http_ver {
@@ -99,41 +107,62 @@ struct ah_http_hmap_value_iter {
 struct ah_http_ireq {
     ah_http_req_line_t req_line;
     ah_http_hmap_t headers;
+
+    const ah_sockaddr_t* client_addr;
     void* user_data;
 };
 
 struct ah_http_ires {
     ah_http_stat_line_t stat_line;
     ah_http_hmap_t headers;
+
     void* user_data;
 };
 
 struct ah_http_header {
     char* name;
-    char* value;
+    ah_str_t value;
 };
 
 struct ah_http_hlist {
     ah_http_header_t* pairs; // Array terminated by { NULL, * } pair.
 };
 
+union ah_http_obody {
+    AH_I_HTTP_OBODY_FIELDS
+};
+
 struct ah_http_oreq {
     ah_http_req_line_t req_line;
     ah_http_hlist_t headers;
-    void* user_data;
+    ah_http_obody_t body;
+
+    const ah_sockaddr_t* server_addr;
+    void* user_data; // Will be passed on to the corresponding ah_http_ires_t.
 };
 
 struct ah_http_ores {
     ah_http_stat_line_t stat_line;
     ah_http_hlist_t headers;
+    ah_http_obody_t body;
+
     void* user_data;
 };
+
+ah_extern ah_err_t ah_http_client_init(ah_http_client_t* client, ah_loop_t* loop, ah_tcp_trans_t* transport,
+    const ah_http_client_vtab_t* vtab);
+ah_extern ah_err_t ah_http_client_open(ah_http_client_t* client, const ah_sockaddr_t* local_addr);
+ah_extern ah_err_t ah_http_client_send(ah_http_client_t* client, const ah_http_oreq_t* req);
+ah_extern ah_err_t ah_http_client_close(ah_http_client_t* client);
+
+ah_extern ah_err_t ah_http_server_init(ah_http_server_t* server, ah_loop_t* loop, ah_tcp_trans_t* transport,
+    const ah_http_server_vtab_t* vtab);
+ah_extern ah_err_t ah_http_server_open(ah_http_server_t* server, const ah_sockaddr_t* local_addr);
+ah_extern ah_err_t ah_http_server_send(ah_http_server_t* server, const ah_http_ores_t* res);
+ah_extern ah_err_t ah_http_server_close(ah_http_server_t* server);
 
 ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, ah_str_t name, bool* has_next);
 ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, ah_str_t name);
 ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter);
-
-ah_extern ah_err_t ah_http_request(ah_http_client_t* client, const ah_http_oreq_t* req, ah_bufvec_t body);
-ah_extern ah_err_t ah_http_respond(ah_http_server_t* server, const ah_http_ores_t* res, ah_bufvec_t body);
 
 #endif

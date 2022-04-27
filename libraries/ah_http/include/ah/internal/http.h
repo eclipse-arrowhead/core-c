@@ -12,9 +12,9 @@
 #include <ah/str.h>
 #include <stddef.h>
 
-#define AH_I_HTTP_CLIENT_FIELDS int _todo;
+#define AH_I_HTTP_CLIENT_FIELDS void* _user_data;
 
-#define AH_I_HTTP_SERVER_FIELDS int _todo;
+#define AH_I_HTTP_SERVER_FIELDS void* _user_data;
 
 #define AH_I_HTTP_HMAP_FIELDS                                                                                          \
     uint16_t _mask;                                                                                                    \
@@ -23,6 +23,8 @@
     struct ah_i_http_hmap_value* _values;
 
 #define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS const struct ah_i_http_hmap_value* _value;
+
+#define AH_I_HTTP_OBODY_FIELDS int _todo;
 
 struct ah_i_http_hmap_value {
     ah_str_t _value;
