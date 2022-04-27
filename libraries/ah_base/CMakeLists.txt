@@ -14,6 +14,7 @@ set(
     include/ah/err.h
     include/ah/internal/loop.h
     include/ah/internal/sock.h
+    include/ah/internal/str.h
     include/ah/internal/task.h
     include/ah/internal/tcp.h
     include/ah/internal/time.h
@@ -23,6 +24,7 @@ set(
     include/ah/loop.h
     include/ah/math.h
     include/ah/sock.h
+    include/ah/str.h
     include/ah/task.h
     include/ah/tcp.h
     include/ah/time.h

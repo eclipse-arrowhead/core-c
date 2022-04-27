@@ -128,6 +128,7 @@ typedef struct ah_udp_send_ctx ah_udp_send_ctx_t;
 typedef struct ah_udp_sock ah_udp_sock_t;
 
 typedef union ah_sockaddr ah_sockaddr_t;
+typedef union ah_str ah_str_t;
 typedef union ah_udp_group ah_udp_group_t;
 
 typedef struct ah_i_loop_evt ah_i_loop_evt_t;
