@@ -36,7 +36,7 @@ ah_extern_inline ah_str_t ah_str_from(void* str, size_t len)
 }
 
 // `str` must be null-terminated.
-ah_extern_inline ah_str_t ah_str_from_nt(char* str)
+ah_extern_inline ah_str_t ah_str_nt(char* str)
 {
     return ah_str_from(str, strlen(str));
 }
@@ -56,7 +56,9 @@ ah_extern_inline const char* ah_str_ptr(const ah_str_t* str)
     return ah_str_is_inlined(str) ? str->_as_inl._buf : str->_as_ptr._ptr;
 }
 
-ah_extern int ah_str_cmp(const ah_str_t* a, const ah_str_t* b);
-ah_extern bool ah_str_eq(const ah_str_t* a, const ah_str_t* b);
+ah_extern int ah_str_cmp(ah_str_t a, ah_str_t b);
+ah_extern int ah_str_cmp_ignore_case_ascii(ah_str_t a, ah_str_t b);
+ah_extern bool ah_str_eq(ah_str_t a, ah_str_t b);
+ah_extern bool ah_str_eq_ignore_case_ascii(ah_str_t a, ah_str_t b);
 
 #endif

@@ -10,8 +10,8 @@
 #include <ah/err.h>
 #include <string.h>
 
-static struct ah_i_http_hmap_value* s_get_value(const ah_http_hmap_t* headers, const char* name);
-static uint32_t s_hash_header_name(const char* name);
+static struct ah_i_http_hmap_value* s_get_value(const ah_http_hmap_t* headers, ah_str_t name);
+static uint32_t s_hash_header_name(ah_str_t name);
 static uint8_t s_to_lower(uint8_t ch);
 static uint16_t s_to_mask(uint16_t capacity);
 
@@ -25,12 +25,12 @@ ah_extern ah_err_t ah_i_http_hmap_init(ah_http_hmap_t* headers, ah_alloc_cb allo
     }
 
     uint16_t mask;
-    const char** names;
+    ah_str_t* names;
     struct ah_i_http_hmap_value* values;
 
     mask = s_to_mask(capacity);
 
-    names = ah_calloc(alloc_cb, mask + 1u, sizeof(char*));
+    names = ah_calloc(alloc_cb, mask + 1u, sizeof(ah_str_t));
     if (names == NULL) {
         return AH_ENOMEM;
     }
@@ -58,21 +58,18 @@ static uint16_t s_to_mask(const uint16_t capacity)
     if (capacity == 0u) {
         return 15u;
     }
-    if (capacity >= 128u) {
-        return 255u;
-    }
+
     uint16_t v = capacity - 1u;
     v |= v >> 1u;
     v |= v >> 2u;
     v |= v >> 4u;
+    v |= v >> 8u;
     return v;
 }
 
-ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* headers, const char* name, const char* value)
+ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* headers, ah_str_t name, ah_str_t value)
 {
     ah_assert_if_debug(headers != NULL);
-    ah_assert_if_debug(name != NULL);
-    ah_assert_if_debug(value != NULL);
 
     uint32_t hash = s_hash_header_name(name);
 
@@ -80,9 +77,9 @@ ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* headers, const char* name, const cha
 
     for (size_t i = 0u; i <= headers->_mask; i += 1u) {
         size_t index = (hash + i) & headers->_mask;
-        const char* current_name = headers->_names[index];
+        ah_str_t current_name = headers->_names[index];
 
-        if (current_name == NULL) {
+        if (ah_str_len(&current_name) == 0u) {
             headers->_count += 1u;
             headers->_names[index] = name;
             headers->_values[index] = (struct ah_i_http_hmap_value) {
@@ -95,7 +92,7 @@ ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* headers, const char* name, const cha
             return AH_ENONE;
         }
 
-        if (strcasecmp(name, current_name) == 0) {
+        if (ah_str_eq_ignore_case_ascii(name, current_name)) {
             last_value = &headers->_values[index];
         }
     }
@@ -104,11 +101,12 @@ ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* headers, const char* name, const cha
 }
 
 // FNV-1a, 32-bit.
-static uint32_t s_hash_header_name(const char* name)
+static uint32_t s_hash_header_name(ah_str_t name)
 {
+    const char* str_ptr = ah_str_ptr(&name);
     uint32_t hash = 2166136261;
-    for (char ch; (ch = name[0u]) != '\0'; name = &name[1u]) {
-        hash ^= s_to_lower(ch);
+    for (size_t i = 0u; i < ah_str_len(&name); i += 1u) {
+        hash ^= s_to_lower(str_ptr[i]);
         hash *= 16777619;
     }
     return hash;
@@ -117,36 +115,6 @@ static uint32_t s_hash_header_name(const char* name)
 static uint8_t s_to_lower(uint8_t ch)
 {
     return ch >= 'A' && ch <= 'Z' ? (ch | 0x20) : ch;
-}
-
-ah_err_t ah_i_http_hmap_add_if_not_exists(ah_http_hmap_t* headers, const char* name, const char* value)
-{
-    ah_assert_if_debug(headers != NULL);
-    ah_assert_if_debug(name != NULL);
-    ah_assert_if_debug(value != NULL);
-
-    uint32_t hash = s_hash_header_name(name);
-
-    for (size_t i = 0u; i <= headers->_mask; i += 1u) {
-        size_t index = (hash + i) & headers->_mask;
-        const char* current_name = headers->_names[index];
-
-        if (current_name == NULL) {
-            headers->_count += 1u;
-            headers->_names[index] = name;
-            headers->_values[index] = (struct ah_i_http_hmap_value) {
-                ._value = value,
-                ._next_value_with_same_name = NULL,
-            };
-            return AH_ENONE;
-        }
-
-        if (strcasecmp(name, current_name) == 0) {
-            return AH_EEXIST;
-        }
-    }
-
-    return AH_ENOBUFS;
 }
 
 void ah_i_http_hmap_term(ah_http_hmap_t* headers, ah_alloc_cb alloc_cb)
@@ -162,10 +130,9 @@ void ah_i_http_hmap_term(ah_http_hmap_t* headers, ah_alloc_cb alloc_cb)
 #endif
 }
 
-ah_extern const char* ah_http_hmap_get_value(const ah_http_hmap_t* headers, const char* name, bool* has_next)
+ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, ah_str_t name, bool* has_next)
 {
     ah_assert_if_debug(headers != NULL);
-    ah_assert_if_debug(name != NULL);
     ah_assert_if_debug(has_next != NULL);
 
     struct ah_i_http_hmap_value* value = s_get_value(headers, name);
@@ -180,21 +147,20 @@ ah_extern const char* ah_http_hmap_get_value(const ah_http_hmap_t* headers, cons
     }
 
     *has_next = false;
-    return value->_value;
+    return &value->_value;
 }
 
-static struct ah_i_http_hmap_value* s_get_value(const ah_http_hmap_t* headers, const char* name)
+static struct ah_i_http_hmap_value* s_get_value(const ah_http_hmap_t* headers, ah_str_t name)
 {
     ah_assert_if_debug(headers != NULL);
-    ah_assert_if_debug(name != NULL);
 
     uint32_t hash = s_hash_header_name(name);
 
     for (size_t i = 0u; i <= headers->_count; i += 1u) {
         size_t index = (hash + i) & headers->_mask;
-        const char* current_name = headers->_names[index];
+        ah_str_t current_name = headers->_names[index];
 
-        if (current_name == NULL || strcasecmp(name, current_name) == 0) {
+        if (ah_str_len(&current_name) == 0u || ah_str_eq_ignore_case_ascii(name, current_name)) {
             return &headers->_values[index];
         }
     }
@@ -202,17 +168,16 @@ static struct ah_i_http_hmap_value* s_get_value(const ah_http_hmap_t* headers, c
     return NULL;
 }
 
-ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, const char* name)
+ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, ah_str_t name)
 {
     ah_assert_if_debug(headers != NULL);
-    ah_assert_if_debug(name != NULL);
 
     ah_http_hmap_value_iter_t iter;
     iter._value = s_get_value(headers, name);
     return iter;
 }
 
-ah_extern const char* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter)
+ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter)
 {
     ah_assert_if_debug(iter != NULL);
 
@@ -220,14 +185,7 @@ ah_extern const char* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter)
         return NULL;
     }
 
-    const char* value = iter->_value->_value;
-
-    if (iter->_value->_next_value_with_same_name != NULL) {
-        iter->_value = iter->_value->_next_value_with_same_name;
-    }
-    else {
-        iter->_value = NULL;
-    }
-
+    const ah_str_t* value = &iter->_value->_value;
+    iter->_value = iter->_value->_next_value_with_same_name;
     return value;
 }

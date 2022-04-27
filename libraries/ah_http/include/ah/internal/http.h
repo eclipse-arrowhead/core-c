@@ -9,6 +9,7 @@
 
 #include <ah/alloc.h>
 #include <ah/defs.h>
+#include <ah/str.h>
 #include <stddef.h>
 
 #define AH_I_HTTP_CLIENT_FIELDS int _todo;
@@ -18,13 +19,13 @@
 #define AH_I_HTTP_HMAP_FIELDS                                                                                          \
     uint16_t _mask;                                                                                                    \
     uint16_t _count;                                                                                                   \
-    const char** _names;                                                                                               \
+    ah_str_t* _names;                                                                                                  \
     struct ah_i_http_hmap_value* _values;
 
 #define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS const struct ah_i_http_hmap_value* _value;
 
 struct ah_i_http_hmap_value {
-    const char* _value;
+    ah_str_t _value;
     struct ah_i_http_hmap_value* _next_value_with_same_name;
 };
 

@@ -11,13 +11,11 @@
 #include <stdlib.h>
 
 static void s_should_add_and_get_headers(ah_unit_t* unit);
-static void s_should_add_header_if_name_is_not_already_present(ah_unit_t* unit);
 static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit);
 
 void test_http_hmap(ah_unit_t* unit)
 {
     s_should_add_and_get_headers(unit);
-    s_should_add_header_if_name_is_not_already_present(unit);
     s_should_add_same_header_name_multiple_times(unit);
 }
 
@@ -33,18 +31,18 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
 
     // Add headers.
 
-    err = ah_i_http_hmap_add(&headers, "host", "192.168.40.40:40404");
+    err = ah_i_http_hmap_add(&headers, ah_str_nt("host"), ah_str_nt("192.168.40.40:40404"));
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_hmap_add(&headers, "content-type", "application/json");
+    err = ah_i_http_hmap_add(&headers, ah_str_nt("content-type"), ah_str_nt("application/json"));
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
     // Capacity is 2; this should fail.
-    err = ah_i_http_hmap_add(&headers, "content-length", "16");
+    err = ah_i_http_hmap_add(&headers, ah_str_nt("content-length"), ah_str_nt("16"));
     if (!ah_unit_assert_enum_eq(unit, AH_ENOBUFS, err, ah_strerror)) {
         goto term;
     }
@@ -52,66 +50,27 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
     // Get headers.
 
     bool has_next;
-    const char* value;
+    const ah_str_t* value;
 
-    value = ah_http_hmap_get_value(&headers, "Host", &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_nt("Host"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host name/value pair")) {
         goto term;
     }
-    if (!ah_unit_assert_str_eq(unit, "192.168.40.40:40404", value)) {
+    if (!ah_unit_assert_str_eq(unit, "192.168.40.40:40404", ah_str_ptr(value))) {
         goto term;
     }
 
-    value = ah_http_hmap_get_value(&headers, "Content-Type", &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_nt("Content-Type"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host name/value pair")) {
         goto term;
     }
-    if (!ah_unit_assert_str_eq(unit, "application/json", value)) {
+    if (!ah_unit_assert_str_eq(unit, "application/json", ah_str_ptr(value))) {
         goto term;
     }
 
     // This header should not be present.
-    value = ah_http_hmap_get_value(&headers, "Content-Length", &has_next);
-    if (!ah_unit_assert_str_eq(unit, NULL, value)) {
-        goto term;
-    }
-
-term:
-    ah_i_http_hmap_term(&headers, realloc);
-}
-
-static void s_should_add_header_if_name_is_not_already_present(ah_unit_t* unit)
-{
-    ah_err_t err;
-
-    ah_http_hmap_t headers;
-    err = ah_i_http_hmap_init(&headers, realloc, 2u);
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        return;
-    }
-
-    // Add headers.
-
-    err = ah_i_http_hmap_add_if_not_exists(&headers, "content-type", "application/cbor");
-    if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
-        goto term;
-    }
-
-    err = ah_i_http_hmap_add_if_not_exists(&headers, "Content-Type", "application/json");
-    if (!ah_unit_assert_enum_eq(unit, AH_EEXIST, err, ah_strerror)) {
-        goto term;
-    }
-
-    // Get headers.
-
-    bool has_next;
-    const char* value;
-
-    value = ah_http_hmap_get_value(&headers, "content-type", &has_next);
-    if (!ah_unit_assert(unit, !has_next, "there should only exist one content-type name/value pair")) {
-        goto term;
-    }
-    if (!ah_unit_assert_str_eq(unit, "application/cbor", value)) {
+    value = ah_http_hmap_get_value(&headers, ah_str_nt("Content-Length"), &has_next);
+    if (!ah_unit_assert(unit, value == NULL, "expected value to be NULL")) {
         goto term;
     }
 
@@ -131,49 +90,49 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
 
     // Add headers.
 
-    err = ah_i_http_hmap_add(&headers, "set-cookie", "munchy");
+    err = ah_i_http_hmap_add(&headers, ah_str_nt("set-cookie"), ah_str_nt("munchy"));
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_hmap_add(&headers, "SET-CookIe", "crispy");
+    err = ah_i_http_hmap_add(&headers, ah_str_nt("SET-CookIe"), ah_str_nt("crispy"));
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_hmap_add(&headers, "Host", "[::1]:12345");
+    err = ah_i_http_hmap_add(&headers, ah_str_nt("Host"), ah_str_nt("[::1]:12345"));
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
-    err = ah_i_http_hmap_add(&headers, "Set-Cookie", "sweet");
+    err = ah_i_http_hmap_add(&headers, ah_str_nt("Set-Cookie"), ah_str_nt("sweet"));
     if (!ah_unit_assert_enum_eq(unit, AH_ENONE, err, ah_strerror)) {
         goto term;
     }
 
     // Get headers.
 
-    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_values(&headers, "Set-Cookie");
+    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_values(&headers, ah_str_nt("Set-Cookie"));
 
-    const char* value;
+    const ah_str_t* value;
 
     value = ah_http_hmap_next_value(&iter);
-    if (!ah_unit_assert_str_eq(unit, "munchy", value)) {
+    if (!ah_unit_assert_str_eq(unit, "munchy", ah_str_ptr(value))) {
         goto term;
     }
 
     value = ah_http_hmap_next_value(&iter);
-    if (!ah_unit_assert_str_eq(unit, "crispy", value)) {
+    if (!ah_unit_assert_str_eq(unit, "crispy", ah_str_ptr(value))) {
         goto term;
     }
 
     value = ah_http_hmap_next_value(&iter);
-    if (!ah_unit_assert_str_eq(unit, "sweet", value)) {
+    if (!ah_unit_assert_str_eq(unit, "sweet", ah_str_ptr(value))) {
         goto term;
     }
 
     value = ah_http_hmap_next_value(&iter);
-    if (!ah_unit_assert_str_eq(unit, NULL, value)) {
+    if (!ah_unit_assert(unit, value == NULL, "expected value to be NULL")) {
         goto term;
     }
 

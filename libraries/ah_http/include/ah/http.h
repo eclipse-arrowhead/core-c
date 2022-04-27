@@ -132,9 +132,9 @@ struct ah_http_ores {
     void* user_data;
 };
 
-ah_extern const char* ah_http_hmap_get_value(const ah_http_hmap_t* headers, const char* name, bool* has_next);
-ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, const char* name);
-ah_extern const char* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter);
+ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, ah_str_t name, bool* has_next);
+ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, ah_str_t name);
+ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter);
 
 ah_extern ah_err_t ah_http_request(ah_http_client_t* client, const ah_http_oreq_t* req, ah_bufvec_t body);
 ah_extern ah_err_t ah_http_respond(ah_http_server_t* server, const ah_http_ores_t* res, ah_bufvec_t body);
