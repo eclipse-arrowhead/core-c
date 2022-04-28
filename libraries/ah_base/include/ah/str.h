@@ -7,6 +7,7 @@
 #ifndef AH_STR_H_
 #define AH_STR_H_
 
+#include "assert.h"
 #include "defs.h"
 #include "internal/str.h"
 
@@ -23,6 +24,8 @@ union ah_str {
 
 ah_inline ah_str_t ah_str_from(const void* str, size_t len)
 {
+    ah_assert_if_debug(str != NULL || len == 0u);
+
     ah_str_t res = { ._as_any._len = len };
 
     if (len <= AH_I_STR_INL_BUF_SIZE) {
@@ -38,22 +41,32 @@ ah_inline ah_str_t ah_str_from(const void* str, size_t len)
 // `str` must be null-terminated.
 ah_inline ah_str_t ah_str_nt(char* str)
 {
+    ah_assert_if_debug(str != NULL);
     return ah_str_from(str, strlen(str));
 }
 
 ah_inline bool ah_str_is_inlined(const ah_str_t* str)
 {
+    ah_assert_if_debug(str != NULL);
     return str->_as_any._len <= AH_I_STR_INL_BUF_SIZE;
 }
 
 ah_inline size_t ah_str_len(const ah_str_t* str)
 {
+    ah_assert_if_debug(str != NULL);
     return str->_as_any._len;
 }
 
 ah_inline const char* ah_str_ptr(const ah_str_t* str)
 {
+    ah_assert_if_debug(str != NULL);
     return ah_str_is_inlined(str) ? str->_as_inl._buf : str->_as_ptr._ptr;
+}
+
+ah_inline void ah_str_zero(ah_str_t* str)
+{
+    ah_assert_if_debug(str != NULL);
+    *str = (ah_str_t) { 0u };
 }
 
 ah_extern int ah_str_cmp(ah_str_t a, ah_str_t b);

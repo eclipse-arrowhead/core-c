@@ -8,6 +8,7 @@
 
 #include <ah/assert.h>
 #include <ah/err.h>
+#include <string.h>
 
 static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t* hmap, ah_str_t name);
 static uint32_t s_hash_header_name(ah_str_t name);
@@ -26,7 +27,7 @@ ah_err_t ah_i_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_he
     *hmap = (ah_http_hmap_t) {
         ._mask = len - 1u,
         ._count = 0u,
-        ._headers = headers,
+        ._headers = memset(headers, 0, sizeof(struct ah_i_http_hmap_header) * len),
     };
 
     return AH_ENONE;

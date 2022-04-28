@@ -42,13 +42,14 @@ ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, 
     ah_assert_if_debug(vtab->on_client_alloc != NULL);
     ah_assert_if_debug(vtab->on_client_accept != NULL);
     ah_assert_if_debug(vtab->on_client_close != NULL);
-    ah_assert_if_debug(vtab->on_req_alloc_init != NULL);
-    ah_assert_if_debug(vtab->on_req_alloc_body != NULL);
+    ah_assert_if_debug(vtab->on_req_alloc != NULL);
     ah_assert_if_debug(vtab->on_req_line != NULL);
     ah_assert_if_debug(vtab->on_req_headers != NULL);
-    ah_assert_if_debug(vtab->on_req_body != NULL);
-    ah_assert_if_debug(vtab->on_req_done != NULL);
     ah_assert_if_debug(vtab->on_req_err != NULL);
+    ah_assert_if_debug(vtab->on_body_alloc != NULL);
+    ah_assert_if_debug(vtab->on_body_chunk != NULL);
+    ah_assert_if_debug(vtab->on_body_received != NULL);
+    ah_assert_if_debug(vtab->on_res_sent != NULL);
 
     trans._vtab->init(&srv->_sock, trans._loop);
     srv->_trans = trans;

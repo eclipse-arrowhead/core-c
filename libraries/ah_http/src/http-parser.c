@@ -170,7 +170,8 @@ static bool s_is_ows(uint8_t ch)
     return ch == ' ' || ch == '\t';
 }
 
-static bool s_is_rchar(uint8_t ch) {
+static bool s_is_rchar(uint8_t ch)
+{
     // Every set bit in this table denotes a character that may occur in an
     // RFC7230 request-target. Those characters are '!', '$', '%', '&', '\'',
     // '(', ')', '*', '+', ',', '-', '.', '/', [0-9], ':', ';', '=', '?', '@',
@@ -184,7 +185,8 @@ static bool s_is_rchar(uint8_t ch) {
     return (ch & 0x80) == 0 && ((tab[ch >> 5] >> (ch & 0x1F)) & 1) == 1;
 }
 
-static bool s_is_tchar(uint8_t ch) {
+static bool s_is_tchar(uint8_t ch)
+{
     // Every set bit in this table denotes a token character (TCHAR) of RFC7230.
     // Those characters are '!', '#', '$', '%', '&', '\'', '*', '+', '-', '.',
     // [0-9], [A-Z], '^', '_', '`', [a-z], '|' and '~'.
