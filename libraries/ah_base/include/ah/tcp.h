@@ -18,11 +18,47 @@
 #define AH_TCP_SHUTDOWN_WR   2u
 #define AH_TCP_SHUTDOWN_RDWR 3u
 
+/*
+typedef struct ah_tcp_conn ah_tcp_conn_t;
+typedef struct ah_tcp_listener ah_tcp_listener_t;
+ */
+
 typedef unsigned ah_tcp_shutdown_t;
 
 typedef void (*ah_tcp_open_cb)(ah_tcp_sock_t* sock, ah_err_t err);
 typedef void (*ah_tcp_close_cb)(ah_tcp_sock_t* sock, ah_err_t err);
 typedef void (*ah_tcp_connect_cb)(ah_tcp_sock_t* conn, ah_err_t err);
+
+/*
+struct ah_tcp_conn_vtab {
+    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err);
+    void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err);
+    void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
+
+    void (*on_data_alloc)(ah_tcp_conn_t* conn, ah_bufs_t* bufs, size_t n_bytes_expected);
+    void (*on_data_read)(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read, ah_err_t err);
+    void (*on_data_write)(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_written, ah_err_t err);
+};
+
+struct ah_tcp_conn {
+    AH_I_TCP_CONN_FIELDS
+};
+
+struct ah_tcp_listener_vtab {
+    void (*on_open)(ah_tcp_listener_t* ln, ah_err_t err);
+    void (*on_listen)(ah_tcp_listener_t* ln, ah_err_t err);
+    void (*on_close)(ah_tcp_listener_t* ln, ah_err_t err);
+
+    void (*on_conn_alloc)(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
+    void (*on_conn_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* conn_addr, ah_err_t err);
+    void (*on_conn_close)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn);
+};
+
+struct ah_tcp_listener {
+    AH_I_TCP_LISTENER_FIELDS
+};
+*/
+
 
 struct ah_tcp_listen_ctx {
     void (*listen_cb)(ah_tcp_sock_t* sock, ah_err_t err);
