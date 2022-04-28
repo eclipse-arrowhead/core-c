@@ -62,11 +62,16 @@ struct ah_http_client_vtab {
     void (*on_connect)(ah_http_client_t* cln, ah_err_t err);
     void (*on_close)(ah_http_client_t* cln, ah_err_t err);
 
+    void (*on_req_sent)(ah_http_client_t* cln, ah_http_oreq_t* req);
+
+    void (*on_res_alloc)(ah_http_client_t* cln, ah_http_ires_t** res, ah_buf_t* buf);
     void (*on_res_line)(ah_http_client_t* cln, ah_http_ires_t* res);
     void (*on_res_headers)(ah_http_client_t* cln, ah_http_ires_t* res);
-    void (*on_res_body)(ah_http_client_t* cln, ah_http_ires_t* res, ah_bufs_t bufs, size_t rem);
-    void (*on_res_done)(ah_http_client_t* cln, ah_http_ires_t* res);
     void (*on_res_err)(ah_http_client_t* cln, ah_http_ires_t* res, ah_http_ires_err_t ires_err);
+
+    void (*on_res_body_alloc)(ah_http_client_t* cln, ah_bufs_t* bufs, size_t n_expected_bytes);
+    void (*on_res_body)(ah_http_client_t* cln, ah_http_ires_t* res, ah_bufs_t bufs, size_t rem);
+    void (*on_res_body_received)(ah_http_client_t* cln, ah_http_ires_t* res);
 };
 
 struct ah_http_server {
@@ -91,7 +96,7 @@ struct ah_http_server_vtab {
     void (*on_body_chunk)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_bufs_t bufs, size_t rem, ah_http_ores_t* res);
     void (*on_body_received)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
 
-    void (*on_res_sent)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
+    void (*on_res_sent)(ah_http_server_t* srv, ah_http_ores_t* res);
 };
 
 struct ah_http_ver {
