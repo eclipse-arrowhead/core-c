@@ -4,19 +4,12 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
-// SPDX-License-Identifier: EPL-2.0
-
 #include "../src/http-parser.h"
 
 #include "../src/http-hmap.h"
 
 #include <ah/err.h>
 #include <ah/unit.h>
-#include <stdlib.h>
 
 static void s_should_parse_headers(ah_unit_t* unit);
 static void s_should_parse_request_lines(ah_unit_t* unit);
@@ -37,7 +30,7 @@ static void s_should_parse_headers(ah_unit_t* unit)
     ah_i_http_reader_t r;
 
     ah_http_hmap_t headers;
-    err = ah_i_http_hmap_init(&headers, realloc, 4u);
+    err = ah_i_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 4u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -58,50 +51,47 @@ static void s_should_parse_headers(ah_unit_t* unit)
 
     value = ah_http_hmap_get_value(&headers, ah_str_nt("Host"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host header")) {
-        goto term;
+        return;
     }
     if (!ah_unit_assert(unit, value != NULL, "no host header exists")) {
-        goto term;
+        return;
     }
     if (!ah_unit_assert_str_eq(unit, ah_str_nt("192.168.4.44:44444"), *value)) {
-        goto term;
+        return;
     }
 
     value = ah_http_hmap_get_value(&headers, ah_str_nt("Content-Type"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one content-type header")) {
-        goto term;
+        return;
     }
     if (!ah_unit_assert(unit, value != NULL, "no content-type header exists")) {
-        goto term;
+        return;
     }
     if (!ah_unit_assert_str_eq(unit, ah_str_nt("application/json; charset=utf-8"), *value)) {
-        goto term;
+        return;
     }
 
     value = ah_http_hmap_get_value(&headers, ah_str_nt("CONTENT-LENGTH"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one content-length header")) {
-        goto term;
+        return;
     }
     if (!ah_unit_assert(unit, value != NULL, "no content-length header exists")) {
-        goto term;
+        return;
     }
     if (!ah_unit_assert_str_eq(unit, ah_str_nt("143"), *value)) {
-        goto term;
+        return;
     }
 
     value = ah_http_hmap_get_value(&headers, ah_str_nt("Accept"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one accept header")) {
-        goto term;
+        return;
     }
     if (!ah_unit_assert(unit, value != NULL, "no accept header exists")) {
-        goto term;
+        return;
     }
     if (!ah_unit_assert_str_eq(unit, ah_str_nt("application/json, application/cbor"), *value)) {
-        goto term;
+        return;
     }
-
-term:
-    ah_i_http_hmap_term(&headers, realloc);
 }
 
 static ah_i_http_reader_t s_reader_of(const char* str)
@@ -164,7 +154,6 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.minor);
     (void) ah_unit_assert_unsigned_eq(unit, 200u, stat_line.code);
     (void) ah_unit_assert_str_eq(unit, ah_str_nt("OK"), stat_line.reason);
-
 
     r = s_reader_of("HTTP/1.0 201 \r\n");
     err = ah_i_http_parse_stat_line(&r, &stat_line);

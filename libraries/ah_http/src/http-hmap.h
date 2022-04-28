@@ -9,8 +9,7 @@
 
 #include "ah/http.h"
 
-ah_err_t ah_i_http_hmap_init(struct ah_http_hmap* headers, ah_alloc_cb alloc_cb, size_t capacity);
-ah_err_t ah_i_http_hmap_add(struct ah_http_hmap* headers, ah_str_t name, ah_str_t value);
-void ah_i_http_hmap_term(struct ah_http_hmap* headers, ah_alloc_cb alloc_cb);
+ah_err_t ah_i_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_header* headers, size_t len);
+ah_err_t ah_i_http_hmap_add(struct ah_http_hmap* hmap, ah_str_t name, ah_str_t value);
 
 #endif

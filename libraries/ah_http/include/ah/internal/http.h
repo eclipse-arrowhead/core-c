@@ -7,7 +7,6 @@
 #ifndef AH_INTERNAL_HTTP_H_
 #define AH_INTERNAL_HTTP_H_
 
-#include <ah/alloc.h>
 #include <ah/buf.h>
 #include <ah/defs.h>
 #include <ah/str.h>
@@ -35,10 +34,9 @@
 #define AH_I_HTTP_HMAP_FIELDS                                                                                          \
     uint16_t _mask;                                                                                                    \
     uint16_t _count;                                                                                                   \
-    ah_str_t* _names;                                                                                                  \
-    struct ah_i_http_hmap_value* _values;
+    struct ah_i_http_hmap_header* _headers;
 
-#define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS const struct ah_i_http_hmap_value* _value;
+#define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS const struct ah_i_http_hmap_header* _header;
 
 #define AH_I_HTTP_OBODY_FIELDS                                                                                         \
     struct ah_i_http_obody_any _as_any;                                                                                \
@@ -67,9 +65,10 @@ struct ah_i_http_obody_callback {
     void (*_cb)(ah_bufs_t* bufs);
 };
 
-struct ah_i_http_hmap_value {
+struct ah_i_http_hmap_header {
+    ah_str_t _name;
     ah_str_t _value;
-    struct ah_i_http_hmap_value* _next_value_with_same_name;
+    struct ah_i_http_hmap_header* _next_with_same_name;
 };
 
 #endif
