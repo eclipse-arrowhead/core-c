@@ -31,6 +31,7 @@
     AH_I_TCP_SOCK_PLATFORM_FIELDS
 
 #define AH_I_TCP_TRANS_FIELDS                                                                                          \
+    ah_loop_t* _loop;                                                                                                  \
     const ah_tcp_vtab_t* _vtab;                                                                                        \
     void* _data;
 

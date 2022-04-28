@@ -65,7 +65,7 @@ struct ah_tcp_trans {
     AH_I_TCP_TRANS_FIELDS
 };
 
-ah_extern const ah_tcp_trans_t* ah_tcp_default_transport(); // Plain TCP transport.
+ah_extern ah_tcp_trans_t ah_tcp_transport(ah_loop_t* loop);
 
 ah_extern_inline void ah_tcp_init(ah_tcp_sock_t* sock, ah_loop_t* loop)
 {

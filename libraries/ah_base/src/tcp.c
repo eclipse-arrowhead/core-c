@@ -6,8 +6,10 @@
 
 #include "ah/tcp.h"
 
-ah_extern const ah_tcp_trans_t* ah_tcp_default_transport()
+ah_extern ah_tcp_trans_t ah_tcp_transport(ah_loop_t* loop)
 {
+    ah_assert_if_debug(loop != NULL);
+
     static const ah_tcp_vtab_t s_vtab = {
         .open = ah_tcp_open,
         .connect = ah_tcp_connect,
@@ -18,9 +20,10 @@ ah_extern const ah_tcp_trans_t* ah_tcp_default_transport()
         .shutdown = ah_tcp_shutdown,
         .close = ah_tcp_close,
     };
-    static const ah_tcp_trans_t s_trans = {
+
+    return (ah_tcp_trans_t) {
         ._vtab = &s_vtab,
+        ._loop = loop,
         ._data = NULL,
     };
-    return &s_trans;
 }
