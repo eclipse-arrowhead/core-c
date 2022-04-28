@@ -26,7 +26,7 @@ typedef void (*ah_tcp_connect_cb)(ah_tcp_sock_t* conn, ah_err_t err);
 
 struct ah_tcp_listen_ctx {
     void (*listen_cb)(ah_tcp_sock_t* sock, ah_err_t err);
-    void (*accept_cb)(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, ah_sockaddr_t* remote_addr, ah_err_t err);
+    void (*accept_cb)(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* remote_addr, ah_err_t err);
     void (*alloc_cb)(ah_tcp_sock_t* sock, ah_tcp_sock_t** conn);
 
     AH_I_TCP_LISTEN_CTX_FIELDS
@@ -51,6 +51,7 @@ struct ah_tcp_sock {
 };
 
 struct ah_tcp_vtab {
+    void (*init)(ah_tcp_sock_t* sock, ah_loop_t* loop);
     ah_err_t (*open)(ah_tcp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb);
     ah_err_t (*connect)(ah_tcp_sock_t* sock, const ah_sockaddr_t* remote_addr, ah_tcp_connect_cb cb);
     ah_err_t (*listen)(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_listen_ctx_t* ctx);
@@ -67,17 +68,7 @@ struct ah_tcp_trans {
 
 ah_extern ah_tcp_trans_t ah_tcp_transport(ah_loop_t* loop);
 
-ah_inline void ah_tcp_init(ah_tcp_sock_t* sock, ah_loop_t* loop)
-{
-    ah_assert_if_debug(sock != NULL);
-    ah_assert_if_debug(loop != NULL);
-
-    *sock = (ah_tcp_sock_t) {
-        ._loop = loop,
-        ._state = AH_I_TCP_STATE_CLOSED,
-    };
-}
-
+ah_extern void ah_tcp_init(ah_tcp_sock_t* sock, ah_loop_t* loop);
 ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb);
 
 ah_extern ah_err_t ah_tcp_get_local_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* local_addr);

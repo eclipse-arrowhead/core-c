@@ -41,7 +41,7 @@ static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size
 static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_err_t err);
 static void s_on_write(ah_tcp_sock_t* sock, ah_err_t err);
 
-static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, ah_sockaddr_t* remote_addr, ah_err_t err)
+static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* remote_addr, ah_err_t err)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(sock);
     if (user_data == NULL) {

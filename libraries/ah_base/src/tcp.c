@@ -11,6 +11,7 @@ ah_extern ah_tcp_trans_t ah_tcp_transport(ah_loop_t* loop)
     ah_assert_if_debug(loop != NULL);
 
     static const ah_tcp_vtab_t s_vtab = {
+        .init = ah_tcp_init,
         .open = ah_tcp_open,
         .connect = ah_tcp_connect,
         .listen = ah_tcp_listen,
@@ -25,5 +26,16 @@ ah_extern ah_tcp_trans_t ah_tcp_transport(ah_loop_t* loop)
         ._vtab = &s_vtab,
         ._loop = loop,
         ._data = NULL,
+    };
+}
+
+ah_extern void ah_tcp_init(ah_tcp_sock_t* sock, ah_loop_t* loop)
+{
+    ah_assert_if_debug(sock != NULL);
+    ah_assert_if_debug(loop != NULL);
+
+    *sock = (ah_tcp_sock_t) {
+        ._loop = loop,
+        ._state = AH_I_TCP_STATE_CLOSED,
     };
 }

@@ -140,7 +140,7 @@ static void s_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_tcp_sock_t* conn = NULL;
     ctx->alloc_cb(listener, &conn);
     if (conn == NULL) {
-        ctx->accept_cb(listener, NULL, NULL, ENOMEM);
+        ctx->accept_cb(listener, NULL, NULL, AH_ENOBUFS);
         goto prep_another_accept;
     }
     *conn = (ah_tcp_sock_t) {
