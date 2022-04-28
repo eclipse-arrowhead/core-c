@@ -15,7 +15,7 @@
 
 struct iovec;
 
-ah_extern ah_err_t ah_i_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt);
-ah_extern ah_err_t ah_i_bufvec_into_iovec(ah_bufvec_t* bufvec, struct iovec** iov, int* iovcnt);
+ah_extern ah_err_t ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, int iovcnt);
+ah_extern ah_err_t ah_i_bufs_into_iovec(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt);
 
 #endif

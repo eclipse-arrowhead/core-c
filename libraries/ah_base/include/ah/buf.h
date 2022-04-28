@@ -22,7 +22,7 @@ struct ah_buf {
     AH_I_BUF_FIELDS
 };
 
-struct ah_bufvec {
+struct ah_bufs {
     ah_buf_t* items;
     size_t length;
 };

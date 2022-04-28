@@ -15,7 +15,7 @@
     ah_i_sockfd_t _accept_fd;
 
 #define AH_I_TCP_READ_CTX_PLATFORM_FIELDS                                                                              \
-    ah_bufvec_t _bufvec;                                                                                               \
+    ah_bufs_t _bufs;                                                                                               \
     DWORD _recv_flags;
 
 #define AH_I_TCP_SOCK_PLATFORM_FIELDS                                                                                  \

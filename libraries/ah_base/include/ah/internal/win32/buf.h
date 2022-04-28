@@ -18,7 +18,7 @@
 
 typedef struct _WSABUF WSABUF;
 
-ah_extern ah_err_t ah_i_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, ULONG buffer_count);
-ah_extern ah_err_t ah_i_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffers, ULONG* buffer_count);
+ah_extern ah_err_t ah_i_bufs_from_wsabufs(ah_bufs_t* bufs, WSABUF* buffers, ULONG buffer_count);
+ah_extern ah_err_t ah_i_bufs_into_wsabufs(ah_bufs_t* bufs, WSABUF** buffers, ULONG* buffer_count);
 
 #endif

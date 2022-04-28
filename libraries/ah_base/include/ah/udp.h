@@ -33,9 +33,9 @@ union ah_udp_group {
 };
 
 struct ah_udp_recv_ctx {
-    void (*recv_cb)(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufvec_t* bufvec, size_t n_bytes_read,
+    void (*recv_cb)(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufs_t* bufs, size_t n_bytes_read,
         ah_err_t err);
-    void (*alloc_cb)(ah_udp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_expected);
+    void (*alloc_cb)(ah_udp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected);
 
     AH_I_UDP_RECV_CTX_FIELDS
 };
@@ -43,7 +43,7 @@ struct ah_udp_recv_ctx {
 struct ah_udp_send_ctx {
     void (*send_cb)(ah_udp_sock_t* sock, ah_err_t err);
     ah_sockaddr_t remote_addr;
-    ah_bufvec_t bufvec;
+    ah_bufs_t bufs;
 
     AH_I_UDP_SEND_CTX_FIELDS
 };

@@ -28,30 +28,30 @@ ah_extern ah_err_t ah_buf_set(ah_buf_t* buf, uint8_t* octets, size_t size)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_bufvec_from_wsabufs(ah_bufvec_t* bufvec, WSABUF* buffers, ULONG buffer_count)
+ah_extern ah_err_t ah_i_bufs_from_wsabufs(ah_bufs_t* bufs, WSABUF* buffers, ULONG buffer_count)
 {
-    ah_assert_if_debug(bufvec != NULL && buffers != NULL);
+    ah_assert_if_debug(bufs != NULL && buffers != NULL);
 
     if (((uintmax_t) buffer_count) > ((uintmax_t) SIZE_MAX)) {
         return AH_EOVERFLOW;
     }
 
-    bufvec->items = (ah_buf_t*) buffers;
-    bufvec->length = buffer_count;
+    bufs->items = (ah_buf_t*) buffers;
+    bufs->length = buffer_count;
 
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_bufvec_into_wsabufs(ah_bufvec_t* bufvec, WSABUF** buffers, ULONG* buffer_count)
+ah_extern ah_err_t ah_i_bufs_into_wsabufs(ah_bufs_t* bufs, WSABUF** buffers, ULONG* buffer_count)
 {
-    ah_assert_if_debug(bufvec != NULL && buffers != NULL && buffer_count != NULL);
+    ah_assert_if_debug(bufs != NULL && buffers != NULL && buffer_count != NULL);
 
-    if (bufvec->length > MAXDWORD) {
+    if (bufs->length > MAXDWORD) {
         return AH_EOVERFLOW;
     }
 
-    *buffers = (WSABUF*) bufvec->items;
-    *buffer_count = (ULONG) bufvec->length;
+    *buffers = (WSABUF*) bufs->items;
+    *buffer_count = (ULONG) bufs->length;
 
     return AH_ENONE;
 }

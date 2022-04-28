@@ -37,8 +37,8 @@ void test_tcp(ah_unit_t* unit)
     s_should_read_and_write_data(unit);
 }
 
-static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size);
-static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_err_t err);
+static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t size);
+static void s_on_read(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t size, ah_err_t err);
 static void s_on_write(ah_tcp_sock_t* sock, ah_err_t err);
 
 static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* remote_addr, ah_err_t err)
@@ -84,7 +84,7 @@ static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_socka
     user_data->_did_accept = true;
 }
 
-static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size)
+static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t size)
 {
     (void) size;
 
@@ -98,18 +98,18 @@ static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size
         return;
     }
 
-    if (!ah_unit_assert(unit, bufvec != NULL, "bufvec == NULL")) {
+    if (!ah_unit_assert(unit, bufs != NULL, "bufs == NULL")) {
         return;
     }
-    if (!ah_unit_assert(unit, bufvec->items == NULL, "bufvec->items != NULL")) {
+    if (!ah_unit_assert(unit, bufs->items == NULL, "bufs->items != NULL")) {
         return;
     }
     if (!ah_unit_assert(unit, user_data->free_read_buf != NULL, "data->free_read_buf == NULL")) {
         return;
     }
 
-    bufvec->items = user_data->free_read_buf;
-    bufvec->length = 1u;
+    bufs->items = user_data->free_read_buf;
+    bufs->length = 1u;
 
     user_data->free_read_buf = NULL;
     user_data->_did_alloc_mem = true;
@@ -177,7 +177,7 @@ static void s_on_connect(ah_tcp_sock_t* conn, ah_err_t err)
     user_data->free_write_ctx = NULL;
 
     *write_ctx = (ah_tcp_write_ctx_t) {
-        .bufvec = (ah_bufvec_t) {
+        .bufs = (ah_bufs_t) {
             .items = write_buf,
             .length = 1u,
         },
@@ -211,7 +211,7 @@ static void s_on_listen(ah_tcp_sock_t* sock, ah_err_t err)
     user_data->_did_listen = true;
 }
 
-static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_err_t err)
+static void s_on_read(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t size, ah_err_t err)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(sock);
     if (user_data == NULL) {
@@ -227,18 +227,18 @@ static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_
         return;
     }
 
-    ah_unit_assert(unit, bufvec != NULL, "bufvec == NULL");
+    ah_unit_assert(unit, bufs != NULL, "bufs == NULL");
 
     if (!ah_unit_assert_unsigned_eq(unit, 18u, size)) {
         return;
     }
-    if (!ah_unit_assert_unsigned_eq(unit, 1u, bufvec->length)) {
+    if (!ah_unit_assert_unsigned_eq(unit, 1u, bufs->length)) {
         return;
     }
-    if (!ah_unit_assert(unit, bufvec->items != NULL, "bufvec->items == NULL")) {
+    if (!ah_unit_assert(unit, bufs->items != NULL, "bufs->items == NULL")) {
         return;
     }
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) bufvec->items[0]._octets)) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) bufs->items[0]._octets)) {
         return;
     }
 
@@ -247,10 +247,10 @@ static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t size, ah_
         return;
     }
 
-    // Free bufvec.
-    user_data->free_read_buf = bufvec->items;
-    bufvec->items = NULL;
-    bufvec->length = 0u;
+    // Free bufs.
+    user_data->free_read_buf = bufs->items;
+    bufs->items = NULL;
+    bufs->length = 0u;
 
     user_data->_did_read = true;
 }

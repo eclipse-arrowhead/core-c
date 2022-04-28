@@ -72,16 +72,16 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto call_recv_cb_with_err_and_return;
     }
 
-    struct ah_bufvec bufvec = { .items = NULL, .length = 0u };
-    ctx->alloc_cb(sock, &bufvec, dgram_size);
-    if (bufvec.items == NULL) {
+    struct ah_bufs bufs = { .items = NULL, .length = 0u };
+    ctx->alloc_cb(sock, &bufs, dgram_size);
+    if (bufs.items == NULL) {
         err = AH_ENOBUFS;
         goto call_recv_cb_with_err_and_return;
     }
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_i_bufvec_into_iovec(&bufvec, &iov, &iovcnt);
+    err = ah_i_bufs_into_iovec(&bufs, &iov, &iovcnt);
     if (ah_unlikely(err != AH_ENONE)) {
         goto call_recv_cb_with_err_and_return;
     }
@@ -102,7 +102,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto call_recv_cb_with_err_and_return;
     }
 
-    ctx->recv_cb(sock, &remote_addr, &bufvec, n_bytes_read, AH_ENONE);
+    ctx->recv_cb(sock, &remote_addr, &bufs, n_bytes_read, AH_ENONE);
 
     if (!sock->_is_open) {
         return;
@@ -145,7 +145,7 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     if (sock == NULL || ctx == NULL || ctx->send_cb == NULL) {
         return AH_EINVAL;
     }
-    if (ctx->bufvec.items == NULL && ctx->bufvec.length != 0u) {
+    if (ctx->bufs.items == NULL && ctx->bufs.length != 0u) {
         return AH_EINVAL;
     }
     if (!sock->_is_open) {
@@ -180,7 +180,7 @@ static void s_on_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_udp_send_ctx_t* ctx = evt->_body._as_udp_send._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->send_cb != NULL);
-    ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);
+    ah_assert_if_debug(ctx->bufs.items != NULL || ctx->bufs.length == 0u);
 
     ah_err_t err;
 
@@ -196,7 +196,7 @@ static void s_on_send(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_i_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
+    err = ah_i_bufs_into_iovec(&ctx->bufs, &iov, &iovcnt);
     if (ah_unlikely(err != AH_ENONE)) {
         err = AH_EDOM;
         goto call_send_cb_with_sock_and_err;

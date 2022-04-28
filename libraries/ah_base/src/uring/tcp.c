@@ -210,16 +210,16 @@ static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx)
     evt->_body._as_tcp_read._sock = sock;
     evt->_body._as_tcp_read._ctx = ctx;
 
-    ctx->_bufvec.items = NULL;
-    ctx->_bufvec.length = 0u;
-    ctx->alloc_cb(sock, &ctx->_bufvec, 0u);
-    if (ctx->_bufvec.items == NULL) {
+    ctx->_bufs.items = NULL;
+    ctx->_bufs.length = 0u;
+    ctx->alloc_cb(sock, &ctx->_bufs, 0u);
+    if (ctx->_bufs.items == NULL) {
         return AH_ENOBUFS;
     }
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_i_bufvec_into_iovec(&ctx->_bufvec, &iov, &iovcnt);
+    err = ah_i_bufs_into_iovec(&ctx->_bufs, &iov, &iovcnt);
     if (err != AH_ENONE) {
         return err;
     }
@@ -254,7 +254,7 @@ static void s_on_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto call_read_cb_with_err_and_return;
     }
 
-    ctx->read_cb(sock, &ctx->_bufvec, cqe->res, AH_ENONE);
+    ctx->read_cb(sock, &ctx->_bufs, cqe->res, AH_ENONE);
 
     if (sock->_state_read != AH_I_TCP_STATE_READ_STARTED) {
         return;
@@ -289,7 +289,7 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     if (sock == NULL || ctx == NULL || ctx->write_cb == NULL) {
         return AH_EINVAL;
     }
-    if (ctx->bufvec.items == NULL && ctx->bufvec.length != 0u) {
+    if (ctx->bufs.items == NULL && ctx->bufs.length != 0u) {
         return AH_EINVAL;
     }
     if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_write != AH_I_TCP_STATE_WRITE_STOPPED) {
@@ -310,7 +310,7 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
 
     struct iovec* iov;
     int iovcnt;
-    err = ah_i_bufvec_into_iovec(&ctx->bufvec, &iov, &iovcnt);
+    err = ah_i_bufs_into_iovec(&ctx->bufs, &iov, &iovcnt);
     if (err != AH_ENONE) {
         return err;
     }
@@ -334,7 +334,7 @@ static void s_on_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_tcp_write_ctx_t* ctx = evt->_body._as_tcp_write._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->write_cb != NULL);
-    ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);
+    ah_assert_if_debug(ctx->bufs.items != NULL || ctx->bufs.length == 0u);
 
     if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_write != AH_I_TCP_STATE_WRITE_STARTED) {
         return;

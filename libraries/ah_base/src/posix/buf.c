@@ -24,30 +24,30 @@ ah_extern ah_err_t ah_buf_set(ah_buf_t* buf, uint8_t* octets, size_t size)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_bufvec_from_iovec(ah_bufvec_t* bufvec, struct iovec* iov, int iovcnt)
+ah_extern ah_err_t ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, int iovcnt)
 {
-    ah_assert_if_debug(bufvec != NULL && iov != NULL);
+    ah_assert_if_debug(bufs != NULL && iov != NULL);
 
     if (iovcnt < 0 || ((uintmax_t) iovcnt) > ((uintmax_t) SIZE_MAX)) {
         return AH_EOVERFLOW;
     }
 
-    bufvec->items = (ah_buf_t*) iov;
-    bufvec->length = iovcnt;
+    bufs->items = (ah_buf_t*) iov;
+    bufs->length = iovcnt;
 
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_bufvec_into_iovec(ah_bufvec_t* bufvec, struct iovec** iov, int* iovcnt)
+ah_extern ah_err_t ah_i_bufs_into_iovec(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt)
 {
-    ah_assert_if_debug(bufvec != NULL && iov != NULL && iovcnt != NULL);
+    ah_assert_if_debug(bufs != NULL && iov != NULL && iovcnt != NULL);
 
-    if (bufvec->length > INT_MAX) {
+    if (bufs->length > INT_MAX) {
         return AH_EOVERFLOW;
     }
 
-    *iov = (struct iovec*) bufvec->items;
-    *iovcnt = (int) bufvec->length;
+    *iov = (struct iovec*) bufs->items;
+    *iovcnt = (int) bufs->length;
 
     return AH_ENONE;
 }

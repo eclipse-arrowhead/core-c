@@ -11,7 +11,7 @@
     ah_sockaddr_t _remote_addr;                                                                                        \
     socklen_t _remote_addr_len;
 
-#define AH_I_TCP_READ_CTX_PLATFORM_FIELDS ah_bufvec_t _bufvec;
+#define AH_I_TCP_READ_CTX_PLATFORM_FIELDS ah_bufs_t _bufs;
 #define AH_I_TCP_SOCK_PLATFORM_FIELDS     ah_i_sockfd_t _fd;
 #define AH_I_TCP_WRITE_CTX_PLATFORM_FIELDS
 

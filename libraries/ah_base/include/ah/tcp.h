@@ -33,15 +33,15 @@ struct ah_tcp_listen_ctx {
 };
 
 struct ah_tcp_read_ctx {
-    void (*read_cb)(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_read, ah_err_t err);
-    void (*alloc_cb)(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_expected);
+    void (*read_cb)(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_read, ah_err_t err);
+    void (*alloc_cb)(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected);
 
     AH_I_TCP_READ_CTX_FIELDS
 };
 
 struct ah_tcp_write_ctx {
     void (*write_cb)(ah_tcp_sock_t* conn, ah_err_t err);
-    ah_bufvec_t bufvec;
+    ah_bufs_t bufs;
 
     AH_I_TCP_WRITE_CTX_FIELDS
 };
@@ -101,7 +101,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
 
 ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx);
 ah_extern ah_err_t ah_tcp_read_stop(ah_tcp_sock_t* sock); // Caller is responsible for freeing any memory allocated by ah_tcp_read_start().
-ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx); // May modify ctx->bufvec and its items.
+ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx); // May modify ctx->bufs and its items.
 ah_extern ah_err_t ah_tcp_shutdown(ah_tcp_sock_t* sock, ah_tcp_shutdown_t flags);
 
 ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb);

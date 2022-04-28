@@ -63,15 +63,15 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     evt->_body._as_udp_recv._sock = sock;
     evt->_body._as_udp_recv._ctx = ctx;
 
-    struct ah_bufvec bufvec = { .items = NULL, .length = 0u };
-    ctx->alloc_cb(sock, &bufvec, 0u);
-    if (bufvec.items == NULL) {
+    struct ah_bufs bufs = { .items = NULL, .length = 0u };
+    ctx->alloc_cb(sock, &bufs, 0u);
+    if (bufs.items == NULL) {
         return AH_ENOBUFS;
     }
 
     WSABUF* buffers;
     ULONG buffer_count;
-    err = ah_i_bufvec_into_wsabufs(&bufvec, &buffers, &buffer_count);
+    err = ah_i_bufs_into_wsabufs(&bufs, &buffers, &buffer_count);
     if (ah_unlikely(err != AH_ENONE)) {
         return err;
     }
@@ -119,13 +119,13 @@ static void s_on_recv(ah_i_loop_evt_t* evt)
         goto call_recv_cb_with_err_and_return;
     }
 
-    struct ah_bufvec bufvec;
-    err = ah_i_bufvec_from_wsabufs(&bufvec, ctx->_wsa_msg.lpBuffers, ctx->_wsa_msg.dwBufferCount);
+    struct ah_bufs bufs;
+    err = ah_i_bufs_from_wsabufs(&bufs, ctx->_wsa_msg.lpBuffers, ctx->_wsa_msg.dwBufferCount);
     if (err != AH_ENONE) {
         goto call_recv_cb_with_err_and_return;
     }
 
-    ctx->recv_cb(sock, &ctx->_remote_addr, &bufvec, n_bytes_transferred, AH_ENONE);
+    ctx->recv_cb(sock, &ctx->_remote_addr, &bufs, n_bytes_transferred, AH_ENONE);
 
     if (!sock->_is_open) {
         return;
@@ -160,7 +160,7 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     if (sock == NULL || ctx == NULL || ctx->send_cb == NULL) {
         return AH_EINVAL;
     }
-    if (ctx->bufvec.items == NULL && ctx->bufvec.length != 0u) {
+    if (ctx->bufs.items == NULL && ctx->bufs.length != 0u) {
         return AH_EINVAL;
     }
     if (!sock->_is_open) {
@@ -180,7 +180,7 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
 
     WSABUF* buffers;
     ULONG buffer_count;
-    err = ah_i_bufvec_into_wsabufs(&ctx->bufvec, &buffers, &buffer_count);
+    err = ah_i_bufs_into_wsabufs(&ctx->bufs, &buffers, &buffer_count);
     if (ah_unlikely(err != AH_ENONE)) {
         return err;
     }
@@ -213,7 +213,7 @@ static void s_on_send(ah_i_loop_evt_t* evt)
     ah_udp_send_ctx_t* ctx = evt->_body._as_udp_send._ctx;
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->send_cb != NULL);
-    ah_assert_if_debug(ctx->bufvec.items != NULL || ctx->bufvec.length == 0u);
+    ah_assert_if_debug(ctx->bufs.items != NULL || ctx->bufs.length == 0u);
 
     ah_err_t err;
 

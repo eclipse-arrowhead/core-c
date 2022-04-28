@@ -51,7 +51,7 @@ typedef struct ah_http_ver ah_http_ver_t;
 
 typedef union ah_http_obody ah_http_obody_t;
 
-typedef void (*ah_http_obody_cb)(ah_bufvec_t*);
+typedef void (*ah_http_obody_cb)(ah_bufs_t*);
 
 struct ah_http_client {
     AH_I_HTTP_CLIENT_FIELDS
@@ -64,7 +64,7 @@ struct ah_http_client_vtab {
 
     void (*on_res_line)(ah_http_client_t* cnt, ah_http_ires_t* res);
     void (*on_res_headers)(ah_http_client_t* cnt, ah_http_ires_t* res);
-    void (*on_res_body)(ah_http_client_t* cnt, ah_http_ires_t* res, ah_bufvec_t bufvec, size_t rem);
+    void (*on_res_body)(ah_http_client_t* cnt, ah_http_ires_t* res, ah_bufs_t bufs, size_t rem);
     void (*on_res_done)(ah_http_client_t* cnt, ah_http_ires_t* res);
     void (*on_res_err)(ah_http_client_t* cnt, ah_http_ires_t* res, ah_http_ires_err_t ires_err);
 };
@@ -82,10 +82,10 @@ struct ah_http_server_vtab {
     void (*on_client_accept)(ah_http_server_t* srv, ah_http_client_t* cnt, const ah_sockaddr_t* cnt_addr, ah_err_t err);
     void (*on_client_close)(ah_http_server_t* srv, ah_http_client_t* cnt);
 
-    void (*on_req_alloc)(ah_http_server_t* srv, ah_http_ireq_t** req, ah_bufvec_t* bufvec, ah_http_ores_t* res);
+    void (*on_req_alloc)(ah_http_server_t* srv, ah_http_ireq_t** req, ah_bufs_t* bufs, ah_http_ores_t* res);
     void (*on_req_line)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_headers)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
-    void (*on_req_body)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_bufvec_t bufvec, size_t rem, ah_http_ores_t* res);
+    void (*on_req_body)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_bufs_t bufs, size_t rem, ah_http_ores_t* res);
     void (*on_req_done)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_err)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ireq_err_t cause, ah_http_ores_t* res);
 };
@@ -193,9 +193,9 @@ ah_inline ah_http_obody_t ah_http_obody_buf(ah_buf_t buf)
     return (ah_http_obody_t) { ._as_buf._kind = AH_I_HTTP_OBODY_KIND_BUF, ._as_buf._buf = buf };
 }
 
-ah_inline ah_http_obody_t ah_http_obody_bufvec(ah_bufvec_t bufvec)
+ah_inline ah_http_obody_t ah_http_obody_bufs(ah_bufs_t bufs)
 {
-    return (ah_http_obody_t) { ._as_bufvec._kind = AH_I_HTTP_OBODY_KIND_BUFVEC, ._as_bufvec._bufvec = bufvec };
+    return (ah_http_obody_t) { ._as_bufs._kind = AH_I_HTTP_OBODY_KIND_BUFVEC, ._as_bufs._bufs = bufs };
 }
 
 ah_inline ah_http_obody_t ah_http_obody_callback(ah_http_obody_cb cb)

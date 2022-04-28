@@ -106,7 +106,7 @@
 typedef int ah_err_t;
 
 typedef struct ah_buf ah_buf_t;
-typedef struct ah_bufvec ah_bufvec_t;
+typedef struct ah_bufs ah_bufs_t;
 typedef struct ah_ipaddr_v4 ah_ipaddr_v4_t;
 typedef struct ah_ipaddr_v6 ah_ipaddr_v6_t;
 typedef struct ah_loop ah_loop_t;

@@ -43,7 +43,7 @@
 #define AH_I_HTTP_OBODY_FIELDS                                                                                         \
     struct ah_i_http_obody_any _as_any;                                                                                \
     struct ah_i_http_obody_buf _as_buf;                                                                                \
-    struct ah_i_http_obody_bufvec _as_bufvec;                                                                          \
+    struct ah_i_http_obody_bufs _as_bufs;                                                                          \
     struct ah_i_http_obody_callback _as_callback;
 
 #define AH_I_HTTP_OBODY_COMMON int _kind;
@@ -57,14 +57,14 @@ struct ah_i_http_obody_buf {
     ah_buf_t _buf;
 };
 
-struct ah_i_http_obody_bufvec {
+struct ah_i_http_obody_bufs {
     AH_I_HTTP_OBODY_COMMON
-    ah_bufvec_t _bufvec;
+    ah_bufs_t _bufs;
 };
 
 struct ah_i_http_obody_callback {
     AH_I_HTTP_OBODY_COMMON
-    void (*_cb)(ah_bufvec_t* bufvec);
+    void (*_cb)(ah_bufs_t* bufs);
 };
 
 struct ah_i_http_hmap_value {

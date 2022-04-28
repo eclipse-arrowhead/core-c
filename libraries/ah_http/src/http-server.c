@@ -9,12 +9,12 @@
 #include <ah/err.h>
 
 static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* remote_addr, ah_err_t err);
-static void s_on_alloc_bufvec(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_expected);
+static void s_on_alloc_bufs(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected);
 static void s_on_alloc_sock(ah_tcp_sock_t* sock, ah_tcp_sock_t** conn);
 static void s_on_close(ah_tcp_sock_t* sock, ah_err_t err);
 static void s_on_listen(ah_tcp_sock_t* sock, ah_err_t err);
 static void s_on_open(ah_tcp_sock_t* sock, ah_err_t err);
-static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_read, ah_err_t err);
+static void s_on_read(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_read, ah_err_t err);
 
 static ah_http_client_t* s_upcast_to_client(ah_tcp_sock_t* sock);
 static ah_http_server_t* s_upcast_to_server(ah_tcp_sock_t* sock);
@@ -120,7 +120,7 @@ static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_socka
         return;
     }
 
-    cnt->_read_ctx.alloc_cb = s_on_alloc_bufvec;
+    cnt->_read_ctx.alloc_cb = s_on_alloc_bufs;
     cnt->_read_ctx.read_cb = s_on_read;
 
     srv->_trans._vtab->read_start(sock, &cnt->_read_ctx);
@@ -140,18 +140,18 @@ static ah_http_client_t* s_upcast_to_client(ah_tcp_sock_t* sock)
     return srv;
 }
 
-static void s_on_alloc_bufvec(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_expected)
+static void s_on_alloc_bufs(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected)
 {
     ah_http_server_t* srv = s_upcast_to_server(sock);
     (void) srv;
-    (void) bufvec;
+    (void) bufs;
     (void) n_bytes_expected;
 }
 
-static void s_on_read(ah_tcp_sock_t* sock, ah_bufvec_t* bufvec, size_t n_bytes_read, ah_err_t err)
+static void s_on_read(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_read, ah_err_t err)
 {
     (void) sock;
-    (void) bufvec;
+    (void) bufs;
     (void) n_bytes_read;
     (void) err;
 }
