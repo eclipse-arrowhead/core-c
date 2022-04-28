@@ -21,12 +21,14 @@
 #define AH_I_HTTP_CLIENT_FIELDS                                                                                        \
     ah_tcp_sock_t _sock;                                                                                               \
     ah_tcp_trans_t _trans;                                                                                             \
+    ah_sockaddr_t _remote_addr;                                                                                        \
     const ah_http_client_vtab_t* _vtab;                                                                                \
     void* _user_data;
 
 #define AH_I_HTTP_SERVER_FIELDS                                                                                        \
     ah_tcp_sock_t _sock;                                                                                               \
     ah_tcp_trans_t _trans;                                                                                             \
+    ah_tcp_listen_ctx_t _listen_ctx;                                                                                   \
     const ah_http_server_vtab_t* _vtab;                                                                                \
     void* _user_data;
 
