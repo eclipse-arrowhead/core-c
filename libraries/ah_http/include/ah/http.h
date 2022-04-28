@@ -79,9 +79,10 @@ struct ah_http_server_vtab {
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 
     void (*on_client_alloc)(ah_http_server_t* srv, ah_http_client_t** cnt);
-    void (*on_client_accept)(ah_http_server_t* srv, ah_http_client_t* cnt, ah_err_t err);
+    void (*on_client_accept)(ah_http_server_t* srv, ah_http_client_t* cnt, const ah_sockaddr_t* cnt_addr, ah_err_t err);
     void (*on_client_close)(ah_http_server_t* srv, ah_http_client_t* cnt);
 
+    void (*on_req_alloc)(ah_http_server_t* srv, ah_http_ireq_t** req, ah_bufvec_t* bufvec, ah_http_ores_t* res);
     void (*on_req_line)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_headers)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_body)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_bufvec_t bufvec, size_t rem, ah_http_ores_t* res);

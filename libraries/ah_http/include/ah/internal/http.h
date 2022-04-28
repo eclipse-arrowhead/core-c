@@ -21,7 +21,7 @@
 #define AH_I_HTTP_CLIENT_FIELDS                                                                                        \
     ah_tcp_sock_t _sock;                                                                                               \
     ah_tcp_trans_t _trans;                                                                                             \
-    ah_sockaddr_t _remote_addr;                                                                                        \
+    ah_tcp_read_ctx_t _read_ctx;                                                                                       \
     const ah_http_client_vtab_t* _vtab;                                                                                \
     void* _user_data;
 
