@@ -7,6 +7,7 @@
 #include "ah/http.h"
 
 #include <ah/err.h>
+#include <ah/math.h>
 
 static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* remote_addr, ah_err_t err);
 static void s_on_alloc_bufs(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected);
@@ -41,6 +42,7 @@ ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, 
     ah_assert_if_debug(vtab->on_client_alloc != NULL);
     ah_assert_if_debug(vtab->on_client_accept != NULL);
     ah_assert_if_debug(vtab->on_client_close != NULL);
+    ah_assert_if_debug(vtab->on_req_alloc != NULL);
     ah_assert_if_debug(vtab->on_req_line != NULL);
     ah_assert_if_debug(vtab->on_req_headers != NULL);
     ah_assert_if_debug(vtab->on_req_body != NULL);
@@ -116,7 +118,7 @@ static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_socka
 
     srv->_vtab->on_client_accept(srv, cnt, remote_addr, err);
 
-    if (conn == NULL && err != AH_ENONE) {
+    if (conn == NULL || err != AH_ENONE) {
         return;
     }
 
@@ -140,12 +142,19 @@ static ah_http_client_t* s_upcast_to_client(ah_tcp_sock_t* sock)
     return srv;
 }
 
-static void s_on_alloc_bufs(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected)
+static void s_on_alloc_bufs(ah_tcp_sock_t* sock, ah_bufs_t* bufs, const size_t n_bytes_expected)
 {
     ah_http_server_t* srv = s_upcast_to_server(sock);
+
+    size_t n_bytes_expected0;
+    ah_err_t err = ah_add_size(n_bytes_expected, sizeof(ah_http_ireq_t) + sizeof(ah_http_ores_t), &n_bytes_expected0);
+    if (err != AH_ENONE) {
+        n_bytes_expected0 = SIZE_MAX;
+    }
+
     (void) srv;
     (void) bufs;
-    (void) n_bytes_expected;
+    (void) n_bytes_expected0;
 }
 
 static void s_on_read(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_read, ah_err_t err)

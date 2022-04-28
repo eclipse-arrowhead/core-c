@@ -43,7 +43,7 @@
 #define AH_I_HTTP_OBODY_FIELDS                                                                                         \
     struct ah_i_http_obody_any _as_any;                                                                                \
     struct ah_i_http_obody_buf _as_buf;                                                                                \
-    struct ah_i_http_obody_bufs _as_bufs;                                                                          \
+    struct ah_i_http_obody_bufs _as_bufs;                                                                              \
     struct ah_i_http_obody_callback _as_callback;
 
 #define AH_I_HTTP_OBODY_COMMON int _kind;

@@ -82,7 +82,7 @@ struct ah_http_server_vtab {
     void (*on_client_accept)(ah_http_server_t* srv, ah_http_client_t* cnt, const ah_sockaddr_t* cnt_addr, ah_err_t err);
     void (*on_client_close)(ah_http_server_t* srv, ah_http_client_t* cnt);
 
-    void (*on_req_alloc)(ah_http_server_t* srv, ah_http_ireq_t** req, ah_bufs_t* bufs, ah_http_ores_t* res);
+    void (*on_req_alloc)(ah_http_server_t* srv, ah_bufs_t* bufs, size_t n_bytes_expected, ah_http_ores_t* res);
     void (*on_req_line)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_headers)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_body)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_bufs_t bufs, size_t rem, ah_http_ores_t* res);
@@ -178,11 +178,23 @@ ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cnt, const ah_sockad
 ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cnt, const ah_http_oreq_t* req);
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cnt);
 
+ah_inline ah_tcp_sock_t* ah_http_client_get_sock(ah_http_client_t* srv)
+{
+    ah_assert_if_debug(srv != NULL);
+    return &srv->_sock;
+}
+
 ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab);
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* local_addr);
 ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog);
 ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_ores_t* res);
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
+
+ah_inline ah_tcp_sock_t* ah_http_server_get_sock(ah_http_server_t* srv)
+{
+    ah_assert_if_debug(srv != NULL);
+    return &srv->_sock;
+}
 
 ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, ah_str_t name, bool* has_next);
 ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, ah_str_t name);
