@@ -8,6 +8,7 @@
 
 #include "ah/abort.h"
 #include "ah/err.h"
+#include "ah/intrin.h"
 
 #include <mach/mach_time.h>
 #include <string.h>

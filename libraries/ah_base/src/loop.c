@@ -8,6 +8,7 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
+#include "ah/intrin.h"
 #include "ah/math.h"
 
 static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list);

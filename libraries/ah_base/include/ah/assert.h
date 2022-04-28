@@ -8,7 +8,7 @@
 #define AH_ASSERT_H_
 
 #include "abort.h"
-#include "defs.h"
+#include "intrin.h"
 
 #define ah_assert(expr) (ah_likely((expr)) ? ((void) 0) : ah_abortf("%s:%d " #expr "\n", __FILE__, __LINE__))
 

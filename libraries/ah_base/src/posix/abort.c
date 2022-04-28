@@ -6,7 +6,7 @@
 
 #include "ah/abort.h"
 
-#include "ah/defs.h"
+#include "ah/intrin.h"
 
 #include <signal.h>
 #include <unistd.h>

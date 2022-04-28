@@ -7,6 +7,7 @@
 #include "ah/math.h"
 
 #include "ah/err.h"
+#include "ah/intrin.h"
 
 #if AH_IS_WIN32
 #    define ENABLE_INTSAFE_SIGNED_FUNCTIONS

@@ -19,6 +19,7 @@ set(
     include/ah/internal/tcp.h
     include/ah/internal/time.h
     include/ah/internal/udp.h
+    include/ah/intrin.h
     include/ah/ip.h
     include/ah/lib.h
     include/ah/loop.h
