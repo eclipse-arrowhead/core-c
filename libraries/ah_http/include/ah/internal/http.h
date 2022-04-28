@@ -19,11 +19,15 @@
 #define AH_I_HTTP_OBODY_KIND_CALLBACK 3u
 
 #define AH_I_HTTP_CLIENT_FIELDS                                                                                        \
-    ah_tcp_trans_t _transport;                                                                                         \
+    ah_tcp_sock_t _sock;                                                                                               \
+    ah_tcp_trans_t _trans;                                                                                             \
+    const ah_http_client_vtab_t* _vtab;                                                                                \
     void* _user_data;
 
 #define AH_I_HTTP_SERVER_FIELDS                                                                                        \
-    ah_tcp_trans_t _transport;                                                                                         \
+    ah_tcp_sock_t _sock;                                                                                               \
+    ah_tcp_trans_t _trans;                                                                                             \
+    const ah_http_server_vtab_t* _vtab;                                                                                \
     void* _user_data;
 
 #define AH_I_HTTP_HMAP_FIELDS                                                                                          \

@@ -33,8 +33,6 @@
 typedef uint16_t ah_http_ireq_err_t;
 typedef uint16_t ah_http_ires_err_t;
 
-typedef void (*ah_http_obody_cb)(ah_bufvec_t*);
-
 typedef struct ah_http_client ah_http_client_t;
 typedef struct ah_http_hmap ah_http_hmap_t;
 typedef struct ah_http_hmap_value_iter ah_http_hmap_value_iter_t;
@@ -52,6 +50,8 @@ typedef struct ah_http_stat_line ah_http_stat_line_t;
 typedef struct ah_http_ver ah_http_ver_t;
 
 typedef union ah_http_obody ah_http_obody_t;
+
+typedef void (*ah_http_obody_cb)(ah_bufvec_t*);
 
 struct ah_http_client {
     AH_I_HTTP_CLIENT_FIELDS
@@ -118,6 +118,7 @@ struct ah_http_ires {
     ah_http_stat_line_t stat_line;
     ah_http_hmap_t headers;
 
+    const ah_sockaddr_t* server_addr;
     void* user_data;
 };
 
@@ -139,7 +140,6 @@ struct ah_http_oreq {
     ah_http_hlist_t headers;
     ah_http_obody_t body;
 
-    const ah_sockaddr_t* server_addr;
     void* user_data; // Will be passed on to the corresponding ah_http_ires_t.
 };
 
@@ -151,12 +151,36 @@ struct ah_http_ores {
     void* user_data;
 };
 
-ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cnt, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab);
+ah_inline void ah_http_client_init(ah_http_client_t* cnt, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
+{
+    ah_assert_if_debug(cnt != NULL);
+    ah_assert_if_debug(trans._loop != NULL);
+    ah_assert_if_debug(trans._vtab != NULL);
+    ah_assert_if_debug(vtab != NULL);
+
+    *cnt = (ah_http_client_t) {
+        ._trans = trans,
+        ._vtab = vtab,
+    };
+}
+
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cnt, const ah_sockaddr_t* local_addr);
 ah_extern ah_err_t ah_http_client_send(ah_http_client_t* cnt, const ah_http_oreq_t* req);
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cnt);
 
-ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab);
+ah_inline void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab)
+{
+    ah_assert_if_debug(srv != NULL);
+    ah_assert_if_debug(trans._loop != NULL);
+    ah_assert_if_debug(trans._vtab != NULL);
+    ah_assert_if_debug(vtab != NULL);
+
+    *srv = (ah_http_server_t) {
+        ._trans = trans,
+        ._vtab = vtab,
+    };
+}
+
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* local_addr);
 ah_extern ah_err_t ah_http_server_send(ah_http_server_t* srv, const ah_http_ores_t* res);
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
