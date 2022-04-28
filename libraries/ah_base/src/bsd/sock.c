@@ -120,16 +120,17 @@ ah_extern ah_err_t ah_i_sock_open_bind(struct ah_loop* loop, const int type, con
     ah_i_sockfd_t* fd)
 {
     ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(local_addr != NULL);
     ah_assert_if_debug(fd != NULL);
 
+    const int sockfamily = local_addr != NULL ? local_addr->as_any.family : AH_SOCKFAMILY_DEFAULT;
+
     ah_i_sockfd_t fd0;
-    ah_err_t err = ah_i_sock_open(loop, local_addr->as_any.family, type, &fd0);
+    ah_err_t err = ah_i_sock_open(loop, sockfamily, type, &fd0);
     if (err != AH_ENONE) {
         return err;
     }
 
-    if (local_addr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(local_addr)) {
+    if (local_addr != NULL && (local_addr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(local_addr))) {
         if (bind(fd0, ah_i_sockaddr_const_into_bsd(local_addr), ah_i_sockaddr_get_size(local_addr)) != 0) {
 #if AH_IS_WIN32
             err = WSAGetLastError();

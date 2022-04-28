@@ -27,7 +27,7 @@
 
 ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb)
 {
-    if (sock == NULL || sock->_loop == NULL || local_addr == NULL) {
+    if (sock == NULL || sock->_loop == NULL) {
         return AH_EINVAL;
     }
     if (sock->_state != AH_I_TCP_STATE_CLOSED) {

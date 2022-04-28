@@ -16,7 +16,7 @@
 
 ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_udp_open_cb cb)
 {
-    if (sock == NULL || sock->_loop == NULL || local_addr == NULL) {
+    if (sock == NULL || sock->_loop == NULL) {
         return AH_EINVAL;
     }
     if (sock->_is_open) {
@@ -28,7 +28,7 @@ ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_a
 
     if (err == AH_ENONE) {
         sock->_fd = fd;
-        sock->_is_ipv6 = local_addr->as_any.family == AH_SOCKFAMILY_IPV6;
+        sock->_is_ipv6 = (local_addr != NULL ? local_addr->as_any.family : AH_SOCKFAMILY_DEFAULT) == AH_SOCKFAMILY_IPV6;
         sock->_is_open = true;
     }
 
