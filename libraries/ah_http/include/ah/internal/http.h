@@ -29,6 +29,7 @@
     ah_tcp_trans_t _trans;                                                                                             \
     ah_tcp_listen_ctx_t _listen_ctx;                                                                                   \
     const ah_http_server_vtab_t* _vtab;                                                                                \
+    uint16_t _req_header_capacity;                                                                                     \
     void* _user_data;
 
 #define AH_I_HTTP_HMAP_FIELDS                                                                                          \
