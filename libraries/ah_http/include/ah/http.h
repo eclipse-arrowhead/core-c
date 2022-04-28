@@ -165,27 +165,27 @@ ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, 
 ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, ah_str_t name);
 ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter);
 
-ah_extern_inline ah_http_obody_t ah_http_obody_buf(ah_buf_t buf)
+ah_inline ah_http_obody_t ah_http_obody_buf(ah_buf_t buf)
 {
     return (ah_http_obody_t) { ._as_buf._kind = AH_I_HTTP_OBODY_KIND_BUF, ._as_buf._buf = buf };
 }
 
-ah_extern_inline ah_http_obody_t ah_http_obody_bufvec(ah_bufvec_t bufvec)
+ah_inline ah_http_obody_t ah_http_obody_bufvec(ah_bufvec_t bufvec)
 {
     return (ah_http_obody_t) { ._as_bufvec._kind = AH_I_HTTP_OBODY_KIND_BUFVEC, ._as_bufvec._bufvec = bufvec };
 }
 
-ah_extern_inline ah_http_obody_t ah_http_obody_callback(ah_http_obody_cb cb)
+ah_inline ah_http_obody_t ah_http_obody_callback(ah_http_obody_cb cb)
 {
     return (ah_http_obody_t) { ._as_callback._kind = AH_I_HTTP_OBODY_KIND_CALLBACK, ._as_callback._cb = cb };
 }
 
-ah_extern_inline ah_http_obody_t ah_http_obody_cstr(char* cstr)
+ah_inline ah_http_obody_t ah_http_obody_cstr(char* cstr)
 {
     return ah_http_obody_buf((ah_buf_t) { ._octets = (uint8_t*) cstr, ._size = strlen(cstr) });
 }
 
-ah_extern_inline ah_http_obody_t ah_http_obody_str(ah_str_t str)
+ah_inline ah_http_obody_t ah_http_obody_str(ah_str_t str)
 {
     return ah_http_obody_buf((ah_buf_t) { ._octets = (uint8_t*) ah_str_ptr(&str), ._size = ah_str_len(&str) });
 }

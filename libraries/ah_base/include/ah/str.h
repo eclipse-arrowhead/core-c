@@ -21,7 +21,7 @@ union ah_str {
     AH_I_STR_FIELDS
 };
 
-ah_extern_inline ah_str_t ah_str_from(const void* str, size_t len)
+ah_inline ah_str_t ah_str_from(const void* str, size_t len)
 {
     ah_str_t res = { ._as_any._len = len };
 
@@ -36,22 +36,22 @@ ah_extern_inline ah_str_t ah_str_from(const void* str, size_t len)
 }
 
 // `str` must be null-terminated.
-ah_extern_inline ah_str_t ah_str_nt(char* str)
+ah_inline ah_str_t ah_str_nt(char* str)
 {
     return ah_str_from(str, strlen(str));
 }
 
-ah_extern_inline bool ah_str_is_inlined(const ah_str_t* str)
+ah_inline bool ah_str_is_inlined(const ah_str_t* str)
 {
     return str->_as_any._len <= AH_I_STR_INL_BUF_SIZE;
 }
 
-ah_extern_inline size_t ah_str_len(const ah_str_t* str)
+ah_inline size_t ah_str_len(const ah_str_t* str)
 {
     return str->_as_any._len;
 }
 
-ah_extern_inline const char* ah_str_ptr(const ah_str_t* str)
+ah_inline const char* ah_str_ptr(const ah_str_t* str)
 {
     return ah_str_is_inlined(str) ? str->_as_inl._buf : str->_as_ptr._ptr;
 }

@@ -27,14 +27,14 @@ struct ah_bufvec {
     size_t length;
 };
 
-ah_extern_inline uint8_t* ah_buf_get_octets(const ah_buf_t* buf)
+ah_inline uint8_t* ah_buf_get_octets(const ah_buf_t* buf)
 {
     ah_assert_if_debug(buf != NULL);
 
     return (uint8_t*) buf->_octets;
 }
 
-ah_extern_inline size_t ah_buf_get_size(const ah_buf_t* buf)
+ah_inline size_t ah_buf_get_size(const ah_buf_t* buf)
 {
     ah_assert_if_debug(buf != NULL);
 

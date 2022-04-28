@@ -76,10 +76,10 @@
 #endif
 
 #if AH_VIA_CLANG || AH_VIA_GCC
-#    define ah_extern        __attribute__((visibility("default"), unused))
-#    define ah_extern_inline static inline __attribute__((unused))
-#    define ah_noreturn      __attribute__((noreturn))
-#    define ah_unused        __attribute__((unused))
+#    define ah_extern   __attribute__((visibility("default"), unused))
+#    define ah_inline   static inline __attribute__((unused))
+#    define ah_noreturn __attribute__((noreturn))
+#    define ah_unused   __attribute__((unused))
 
 #    define ah_likely(expr)   __builtin_expect(!!(expr), 1)
 #    define ah_trap()         __builtin_trap()
@@ -92,9 +92,9 @@
 #elif AH_VIA_MSVC
 #    pragma intrinsic(__debugbreak)
 
-#    define ah_extern        __declspec(dllexport)
-#    define ah_extern_inline static inline
-#    define ah_noreturn      __declspec(noreturn)
+#    define ah_extern   __declspec(dllexport)
+#    define ah_inline   static inline
+#    define ah_noreturn __declspec(noreturn)
 #    define ah_unused
 
 #    define ah_likely(expr)   expr

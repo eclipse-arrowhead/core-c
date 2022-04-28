@@ -59,7 +59,7 @@ ah_extern bool ah_time_is_zero(ah_time_t time);
 // Error codes:
 // * AH_EINVAL - `result` is NULL.
 // * AH_ERANGE - Adding `a` and `b` produced an unrepresentable result.
-ah_extern_inline ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
+ah_inline ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
 {
     return ah_add_int64(a, b, result);
 }
@@ -68,7 +68,7 @@ ah_extern_inline ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_t
 // * AH_EDOM   - `b` is 0.
 // * AH_EINVAL - `result` is NULL.
 // * AH_ERANGE - Dividing `a` with `b` produced an unrepresentable result.
-ah_extern_inline ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
+ah_inline ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
 {
     return ah_div_int64(a, b, result);
 }
@@ -76,7 +76,7 @@ ah_extern_inline ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_t
 // Error codes:
 // * AH_EINVAL - `result` is NULL.
 // * AH_ERANGE - Multiplying `a` with `b` produced an unrepresentable result.
-ah_extern_inline ah_err_t ah_timediff_mul(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
+ah_inline ah_err_t ah_timediff_mul(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
 {
     return ah_mul_int64(a, b, result);
 }
@@ -84,7 +84,7 @@ ah_extern_inline ah_err_t ah_timediff_mul(ah_timediff_t a, ah_timediff_t b, ah_t
 // Error codes:
 // * AH_EINVAL - `result` is NULL.
 // * AH_ERANGE - Subtracting `a` and `b` produced an unrepresentable result.
-ah_extern_inline ah_err_t ah_timediff_sub(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
+ah_inline ah_err_t ah_timediff_sub(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result)
 {
     return ah_sub_int64(a, b, result);
 }

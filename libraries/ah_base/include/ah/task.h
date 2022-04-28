@@ -28,25 +28,25 @@ struct ah_task {
 // All arguments must be non-NULL.
 ah_extern void ah_task_init(ah_task_t* task, ah_loop_t* loop, ah_task_cb cb);
 
-ah_extern_inline void* ah_task_get_user_data(const ah_task_t* task)
+ah_inline void* ah_task_get_user_data(const ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
     return task->_user_data;
 }
 
-ah_extern_inline ah_loop_t* ah_task_get_loop(const ah_task_t* task)
+ah_inline ah_loop_t* ah_task_get_loop(const ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
     return task->_loop;
 }
 
-ah_extern_inline ah_task_state_t ah_task_get_state(const ah_task_t* task)
+ah_inline ah_task_state_t ah_task_get_state(const ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
     return task->_state;
 }
 
-ah_extern_inline void ah_task_set_user_data(ah_task_t* task, void* user_data)
+ah_inline void ah_task_set_user_data(ah_task_t* task, void* user_data)
 {
     ah_assert_if_debug(task != NULL);
     task->_user_data = user_data;

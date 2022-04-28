@@ -67,7 +67,7 @@ struct ah_tcp_trans {
 
 ah_extern ah_tcp_trans_t ah_tcp_transport(ah_loop_t* loop);
 
-ah_extern_inline void ah_tcp_init(ah_tcp_sock_t* sock, ah_loop_t* loop)
+ah_inline void ah_tcp_init(ah_tcp_sock_t* sock, ah_loop_t* loop)
 {
     ah_assert_if_debug(sock != NULL);
     ah_assert_if_debug(loop != NULL);
@@ -83,13 +83,13 @@ ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, const ah_sockaddr_t* local_a
 ah_extern ah_err_t ah_tcp_get_local_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* local_addr);
 ah_extern ah_err_t ah_tcp_get_remote_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* remote_addr);
 
-ah_extern_inline ah_loop_t* ah_tcp_get_loop(const ah_tcp_sock_t* sock)
+ah_inline ah_loop_t* ah_tcp_get_loop(const ah_tcp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
     return sock->_loop;
 }
 
-ah_extern_inline void* ah_tcp_get_user_data(const ah_tcp_sock_t* sock)
+ah_inline void* ah_tcp_get_user_data(const ah_tcp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
     return sock->_user_data;
@@ -99,7 +99,7 @@ ah_extern ah_err_t ah_tcp_set_keepalive(ah_tcp_sock_t* sock, bool keepalive);
 ah_extern ah_err_t ah_tcp_set_no_delay(ah_tcp_sock_t* sock, bool no_delay);
 ah_extern ah_err_t ah_tcp_set_reuse_addr(ah_tcp_sock_t* sock, bool reuse_addr);
 
-ah_extern_inline void ah_tcp_set_user_data(ah_tcp_sock_t* sock, void* user_data)
+ah_inline void ah_tcp_set_user_data(ah_tcp_sock_t* sock, void* user_data)
 {
     ah_assert_if_debug(sock != NULL);
     sock->_user_data = user_data;

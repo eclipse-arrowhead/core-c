@@ -52,7 +52,7 @@ struct ah_udp_sock {
     AH_I_UDP_SOCK_FIELDS
 };
 
-ah_extern_inline void ah_udp_init(ah_udp_sock_t* sock, ah_loop_t* loop)
+ah_inline void ah_udp_init(ah_udp_sock_t* sock, ah_loop_t* loop)
 {
     ah_assert_if_debug(sock != NULL);
     ah_assert_if_debug(loop != NULL);
@@ -64,13 +64,13 @@ ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_a
 
 ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr);
 
-ah_extern_inline ah_loop_t* ah_udp_get_loop(const ah_udp_sock_t* sock)
+ah_inline ah_loop_t* ah_udp_get_loop(const ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
     return sock->_loop;
 }
 
-ah_extern_inline void* ah_udp_get_user_data(const ah_udp_sock_t* sock)
+ah_inline void* ah_udp_get_user_data(const ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
     return sock->_user_data;
@@ -81,7 +81,7 @@ ah_extern ah_err_t ah_udp_set_multicast_loopback(ah_udp_sock_t* sock, bool loopb
 ah_extern ah_err_t ah_udp_set_reuse_addr(ah_udp_sock_t* sock, bool reuseaddr);
 ah_extern ah_err_t ah_udp_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
 
-ah_extern_inline void ah_udp_set_user_data(ah_udp_sock_t* sock, void* user_data)
+ah_inline void ah_udp_set_user_data(ah_udp_sock_t* sock, void* user_data)
 {
     ah_assert_if_debug(sock != NULL);
     sock->_user_data = user_data;
