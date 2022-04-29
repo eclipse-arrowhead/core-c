@@ -332,7 +332,7 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
     if (ln == NULL || conn_vtab == NULL) {
         return AH_EINVAL;
     }
-    if (conn_vtab->on_open == NULL || conn_vtab->on_connect == NULL || conn_vtab->on_close == NULL) {
+    if (conn_vtab->on_close == NULL) {
         return AH_EINVAL;
     }
     if (conn_vtab->on_read_alloc == NULL || conn_vtab->on_read_done == NULL || conn_vtab->on_write_done == NULL) {

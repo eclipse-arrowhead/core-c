@@ -12,20 +12,24 @@
 #include "ah/sock.h"
 #include "ah/unit.h"
 
-struct s_tcp_user_data {
-    ah_tcp_sock_t* free_read_conn;
-    ah_buf_t* free_read_buf;
-    ah_tcp_read_ctx_t* free_read_ctx;
-    ah_buf_t* free_write_buf;
-    ah_tcp_write_ctx_t* free_write_ctx;
+struct s_tcp_conn_user_data {
+    ah_buf_t* free_buf;
+    ah_buf_t* write_buf;
 
-    bool _did_accept;
-    bool _did_alloc_mem;
-    bool _did_alloc_sock;
-    bool _did_connect;
-    bool _did_listen;
-    bool _did_read;
-    bool _did_write;
+    const ah_sockaddr_t* remote_addr;
+
+    bool did_call_open_cb;
+    bool did_call_connect_cb;
+    bool did_call_close_cb;
+    bool did_call_read_alloc_cb;
+    bool did_call_read_done_cb;
+    bool did_call_write_done_cb;
+
+    ah_unit_t* unit;
+};
+
+struct s_tcp_listener_user_data {
+    ah_buf_t* free_buf;
 
     ah_unit_t* unit;
 };
@@ -36,6 +40,94 @@ void test_tcp(ah_unit_t* unit)
 {
     s_should_read_and_write_data(unit);
 }
+
+static void s_on_conn_a_open(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_conn_a_connect(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_conn_a_close(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_conn_a_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs, size_t n_bytes_expected);
+static void s_on_conn_a_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read, ah_err_t err);
+static void s_on_conn_a_write_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_written, ah_err_t err);
+
+static const ah_tcp_conn_vtab_t s_conn_a_vtab = {
+    .on_open = s_on_conn_a_open,
+    .on_connect = s_on_conn_a_connect,
+    .on_close = s_on_conn_a_close,
+    .on_read_alloc = s_on_conn_a_read_alloc,
+    .on_read_done = s_on_conn_a_read_done,
+    .on_write_done = s_on_conn_a_write_done,
+};
+
+static void s_on_conn_a_open(ah_tcp_conn_t* conn, ah_err_t err)
+{
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+
+    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+        return;
+    }
+
+    err = ah_tcp_conn_set_keepalive(conn, false);
+    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+        return;
+    }
+
+    err = ah_tcp_conn_set_nodelay(conn, true);
+    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+        return;
+    }
+
+    err = ah_tcp_conn_set_reuseaddr(conn, false);
+    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+        return;
+    }
+
+    err = ah_tcp_conn_connect(conn, user_data->remote_addr);
+    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+        return;
+    }
+
+    user_data->did_call_open_cb = true;
+}
+
+static void s_on_conn_a_connect(ah_tcp_conn_t* conn, ah_err_t err)
+{
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+
+    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+        return;
+    }
+
+    err = ah_tcp_conn_read_start(conn);
+    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+        return;
+    }
+
+    user_data->did_call_connect_cb = true;
+}
+
+static void s_on_conn_a_close(ah_tcp_conn_t* conn, ah_err_t err)
+{
+
+}
+
+static void s_on_conn_a_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs, size_t n_bytes_expected)
+{
+
+}
+
+static void s_on_conn_a_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read, ah_err_t err)
+{
+
+}
+
+static void s_on_conn_a_write_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_written, ah_err_t err)
+{
+
+}
+
+
+
+
+
 
 static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t size);
 static void s_on_read(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t size, ah_err_t err);
@@ -297,7 +389,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Setup reader.
 
     ah_loop_t read_loop;
-    ah_tcp_sock_t read_sock;
+    ah_tcp_conn_t read_conn;
     ah_sockaddr_t read_addr;
 
     err = ah_loop_init(&read_loop, &(ah_loop_opts_t) { .capacity = 4u });
@@ -307,21 +399,21 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     ah_sockaddr_init_ipv4(&read_addr, 0u, &ah_ipaddr_v4_loopback);
 
-    ah_tcp_init(&read_sock, &read_loop);
-    err = ah_tcp_open(&read_sock, &read_addr, NULL);
+    ah_tcp_conn_init(&read_conn, &read_loop, );
+    err = ah_tcp_open(&read_conn, &read_addr, NULL);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    ah_tcp_set_user_data(&read_sock, &user_data);
+    ah_tcp_set_user_data(&read_conn, &user_data);
 
-    err = ah_tcp_get_local_addr(&read_sock, &read_addr);
+    err = ah_tcp_get_local_addr(&read_conn, &read_addr);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     // Listen for writer connection.
 
-    err = ah_tcp_listen(&read_sock, 4,
+    err = ah_tcp_listen(&read_conn, 4,
         &(ah_tcp_listen_ctx_t) {
             .alloc_cb = s_on_alloc_sock,
             .listen_cb = s_on_listen,
@@ -392,7 +484,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     // Release all resources.
 
-    err = ah_tcp_close(&read_sock, NULL);
+    err = ah_tcp_close(&read_conn, NULL);
     ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_loop_term(&read_loop);

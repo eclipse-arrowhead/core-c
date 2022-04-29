@@ -18,15 +18,15 @@
 #define AH_TCP_SHUTDOWN_WR   2u
 #define AH_TCP_SHUTDOWN_RDWR 3u
 
-typedef unsigned ah_tcp_shutdown_t;
+typedef uint8_t ah_tcp_shutdown_t;
 
 struct ah_tcp_conn {
     AH_I_TCP_CONN_FIELDS
 };
 
 struct ah_tcp_conn_vtab {
-    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err);
-    void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err);
+    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err); // Unused by accepted connections.
+    void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err); // Unused by accepted connections.
     void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
 
     void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_bufs_t* bufs, size_t n_bytes_expected);
