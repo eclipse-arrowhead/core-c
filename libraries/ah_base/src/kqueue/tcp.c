@@ -26,7 +26,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     if (sock == NULL || !ah_sockaddr_is_ip(remote_addr) || cb == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_TCP_STATE_OPEN) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_OPEN) {
         return AH_ESTATE;
     }
 
@@ -48,7 +48,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
 
             EV_SET(kev, sock->_fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0u, 0u, evt);
 
-            sock->_state = AH_I_TCP_STATE_CONNECTING;
+            sock->_state = AH_I_TCP_SOCK_STATE_CONNECTING;
 
             return AH_ENONE;
         }
@@ -63,9 +63,9 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
         return AH_ENONE;
     }
 
-    sock->_state = AH_I_TCP_STATE_CONNECTED;
-    sock->_state_read = AH_I_TCP_STATE_READ_STOPPED;
-    sock->_state_write = AH_I_TCP_STATE_WRITE_STOPPED;
+    sock->_state = AH_I_TCP_SOCK_STATE_CONNECTED;
+    sock->_state_read = AH_I_TCP_CONN_READ_STOPPED;
+    sock->_state_write = AH_I_TCP_CONN_WRITE_STOPPED;
 
     cb(sock, AH_ENONE);
 
@@ -95,9 +95,9 @@ static void s_on_connect(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     if (ah_likely(err == AH_ENONE)) {
-        sock->_state = AH_I_TCP_STATE_CONNECTED;
-        sock->_state_read = AH_I_TCP_STATE_READ_STOPPED;
-        sock->_state_write = AH_I_TCP_STATE_WRITE_STOPPED;
+        sock->_state = AH_I_TCP_SOCK_STATE_CONNECTED;
+        sock->_state_read = AH_I_TCP_CONN_READ_STOPPED;
+        sock->_state_write = AH_I_TCP_CONN_WRITE_STOPPED;
     }
 
     cb(sock, err);
@@ -108,7 +108,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     if (sock == NULL || ctx == NULL || ctx->listen_cb == NULL || ctx->accept_cb == NULL || ctx->alloc_cb == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_TCP_STATE_OPEN) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_OPEN) {
         return AH_ESTATE;
     }
 
@@ -136,7 +136,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
     sock->_read_or_listen_evt = evt;
 
-    sock->_state = AH_I_TCP_STATE_LISTENING;
+    sock->_state = AH_I_TCP_SOCK_STATE_LISTENING;
     ctx->listen_cb(sock, AH_ENONE);
     return AH_ENONE;
 }
@@ -185,9 +185,9 @@ static void s_on_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
         *conn = (ah_tcp_sock_t) {
             ._loop = listener->_loop,
             ._fd = fd,
-            ._state = AH_I_TCP_STATE_CONNECTED,
-            ._state_read = AH_I_TCP_STATE_READ_STOPPED,
-            ._state_write = AH_I_TCP_STATE_WRITE_STOPPED,
+            ._state = AH_I_TCP_SOCK_STATE_CONNECTED,
+            ._state_read = AH_I_TCP_CONN_READ_STOPPED,
+            ._state_write = AH_I_TCP_CONN_WRITE_STOPPED,
         };
 
         ctx->accept_cb(listener, conn, &sockaddr, AH_ENONE);
@@ -203,7 +203,7 @@ ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx
     if (sock == NULL || ctx == NULL || ctx->alloc_cb == NULL || ctx->read_cb == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_read != AH_I_TCP_STATE_READ_STOPPED) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_CONNECTED || sock->_state_read != AH_I_TCP_CONN_READ_STOPPED) {
         return AH_ESTATE;
     }
 
@@ -222,7 +222,7 @@ ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx
     EV_SET(kev, sock->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
     sock->_read_or_listen_evt = evt;
 
-    sock->_state_read = AH_I_TCP_STATE_READ_STARTED;
+    sock->_state_read = AH_I_TCP_CONN_READ_STARTED;
 
     return AH_ENONE;
 }
@@ -240,7 +240,7 @@ static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(ctx->read_cb != NULL);
     ah_assert_if_debug(ctx->alloc_cb != NULL);
 
-    if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_read != AH_I_TCP_STATE_READ_STARTED) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_CONNECTED || sock->_state_read != AH_I_TCP_CONN_READ_STARTED) {
         return;
     }
 
@@ -278,7 +278,7 @@ static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         ctx->read_cb(sock, &bufs, (size_t) n_bytes_read, AH_ENONE);
 
-        if (sock->_state_read != AH_I_TCP_STATE_READ_STARTED) {
+        if (sock->_state_read != AH_I_TCP_CONN_READ_STARTED) {
             return;
         }
 
@@ -290,7 +290,7 @@ static void s_on_read(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
-        sock->_state_read = AH_I_TCP_STATE_READ_OFF;
+        sock->_state_read = AH_I_TCP_CONN_READ_OFF;
         goto call_read_cb_with_err_and_return;
     }
 
@@ -305,10 +305,10 @@ ah_extern ah_err_t ah_tcp_read_stop(ah_tcp_sock_t* sock)
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state_read != AH_I_TCP_STATE_READ_STARTED) {
+    if (sock->_state_read != AH_I_TCP_CONN_READ_STARTED) {
         return AH_ESTATE;
     }
-    sock->_state_read = AH_I_TCP_STATE_READ_STOPPED;
+    sock->_state_read = AH_I_TCP_CONN_READ_STOPPED;
 
     struct kevent* kev;
     ah_err_t err = ah_i_loop_alloc_kev(sock->_loop, &kev);
@@ -329,7 +329,7 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
     if (ctx->bufs.items == NULL && ctx->bufs.length != 0u) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_write != AH_I_TCP_STATE_WRITE_STOPPED) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_CONNECTED || sock->_state_write != AH_I_TCP_CONN_WRITE_STOPPED) {
         return AH_ESTATE;
     }
 
@@ -343,7 +343,7 @@ ah_extern ah_err_t ah_tcp_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx)
         return err;
     }
 
-    sock->_state_write = AH_I_TCP_STATE_WRITE_STARTED;
+    sock->_state_write = AH_I_TCP_CONN_WRITE_STARTED;
 
     return AH_ENONE;
 }
@@ -383,7 +383,7 @@ static void s_on_write(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(ctx->write_cb != NULL);
     ah_assert_if_debug(ctx->bufs.items != NULL || ctx->bufs.length == 0u);
 
-    if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_write != AH_I_TCP_STATE_WRITE_STARTED) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_CONNECTED || sock->_state_write != AH_I_TCP_CONN_WRITE_STARTED) {
         return;
     }
 
@@ -462,7 +462,12 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
     sock->_state_read = AH_I_TCP_STATE_READ_OFF;
     sock->_state_write = AH_I_TCP_STATE_WRITE_OFF;
 
-    ah_err_t err = ah_i_sock_close(sock->_loop, sock->_fd);
+    ah_err_t err = ah_i_sock_close(sock->_fd);
+    if (err == AH_EINTR) {
+        if (ah_i_loop_try_set_pending_err(sock->_loop, AH_EINTR)) {
+            err = AH_ENONE;
+        }
+    }
 
     if (sock->_read_or_listen_evt != NULL) {
         ah_i_loop_evt_dealloc(sock->_loop, sock->_read_or_listen_evt);

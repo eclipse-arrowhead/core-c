@@ -19,6 +19,15 @@
 #    include "uring/loop.h"
 #endif
 
+#define AH_I_LOOP_STATE_INITIAL     0x01
+#define AH_I_LOOP_STATE_RUNNING     0x02
+#define AH_I_LOOP_STATE_STOPPED     0x04
+#define AH_I_LOOP_STATE_TERMINATING 0x08
+#define AH_I_LOOP_STATE_TERMINATED  0x10
+
+#define AH_I_LOOP_EVT_PAGE_SIZE     8192
+#define AH_I_LOOP_EVT_PAGE_CAPACITY ((AH_I_LOOP_EVT_PAGE_SIZE / sizeof(ah_i_loop_evt_t)) - 1)
+
 #define AH_I_LOOP_FIELDS                                                                                               \
     ah_alloc_cb _alloc_cb;                                                                                             \
                                                                                                                        \
@@ -31,142 +40,17 @@
                                                                                                                        \
     AH_I_LOOP_PLATFORM_FIELDS
 
-#define AH_I_LOOP_STATE_INITIAL     0x01
-#define AH_I_LOOP_STATE_RUNNING     0x02
-#define AH_I_LOOP_STATE_STOPPED     0x04
-#define AH_I_LOOP_STATE_TERMINATING 0x08
-#define AH_I_LOOP_STATE_TERMINATED  0x10
-
-#define AH_I_LOOP_EVT_PAGE_SIZE     8192
-#define AH_I_LOOP_EVT_PAGE_CAPACITY ((AH_I_LOOP_EVT_PAGE_SIZE / sizeof(ah_i_loop_evt_t)) - 1)
-
-#if AH_I_LOOP_EVT_BODY_HAS_TASK_SCHEDULE_AT
-struct ah_i_loop_evt_body_task_schedule_at {
-    struct ah_task* _task;
-    AH_I_LOOP_EVT_BODY_TASK_SCHEDULE_AT_PLATFORM_FIELDS
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_CLOSE
-struct ah_i_loop_evt_body_tcp_close {
-    struct ah_tcp_sock* _sock;
-    void (*_cb)(struct ah_tcp_sock*, ah_err_t);
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_CONNECT
-struct ah_i_loop_evt_body_tcp_connect {
-    struct ah_tcp_sock* _sock;
-    void (*_cb)(struct ah_tcp_sock*, ah_err_t);
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_LISTEN
-struct ah_i_loop_evt_body_tcp_listen {
-    struct ah_tcp_sock* _sock;
-    struct ah_tcp_listen_ctx* _ctx;
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_OPEN
-struct ah_i_loop_evt_body_tcp_open {
-    struct ah_tcp_sock* _sock;
-    void (*_cb)(struct ah_tcp_sock*, ah_err_t);
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_READ
-struct ah_i_loop_evt_body_tcp_read {
-    struct ah_tcp_sock* _sock;
-    struct ah_tcp_read_ctx* _ctx;
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_WRITE
-struct ah_i_loop_evt_body_tcp_write {
-    struct ah_tcp_sock* _sock;
-    struct ah_tcp_write_ctx* _ctx;
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_UDP_CLOSE
-struct ah_i_loop_evt_body_udp_close {
-    struct ah_udp_sock* _sock;
-    void (*_cb)(struct ah_udp_sock*, ah_err_t);
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_UDP_OPEN
-struct ah_i_loop_evt_body_udp_open {
-    struct ah_udp_sock* _sock;
-    void (*_cb)(struct ah_udp_sock*, ah_err_t);
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_UDP_RECV
-struct ah_i_loop_evt_body_udp_recv {
-    struct ah_udp_sock* _sock;
-    struct ah_udp_recv_ctx* _ctx;
-};
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_UDP_SEND
-struct ah_i_loop_evt_body_udp_send {
-    struct ah_udp_sock* _sock;
-    struct ah_udp_send_ctx* _ctx;
-};
-#endif
-
-union ah_i_loop_evt_body {
-#if AH_I_LOOP_EVT_BODY_HAS_TASK_SCHEDULE_AT
-    struct ah_i_loop_evt_body_task_schedule_at _as_task_schedule_at;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_CLOSE
-    struct ah_i_loop_evt_body_tcp_close _as_tcp_close;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_CONNECT
-    struct ah_i_loop_evt_body_tcp_connect _as_tcp_connect;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_LISTEN
-    struct ah_i_loop_evt_body_tcp_listen _as_tcp_listen;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_OPEN
-    struct ah_i_loop_evt_body_tcp_open _as_tcp_open;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_READ
-    struct ah_i_loop_evt_body_tcp_read _as_tcp_read;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_TCP_WRITE
-    struct ah_i_loop_evt_body_tcp_write _as_tcp_write;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_UDP_CLOSE
-    struct ah_i_loop_evt_body_udp_close _as_udp_close;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_UDP_OPEN
-    struct ah_i_loop_evt_body_udp_open _as_udp_open;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_UDP_RECV
-    struct ah_i_loop_evt_body_udp_recv _as_udp_recv;
-#endif
-
-#if AH_I_LOOP_EVT_BODY_HAS_UDP_SEND
-    struct ah_i_loop_evt_body_udp_send _as_udp_send;
-#endif
+union ah_i_loop_evt_subject {
+    struct ah_task* _as_task;
+    struct ah_tcp_conn* _as_tcp_conn;
+    struct ah_tcp_listener* _as_tcp_listener;
+    struct ah_udp_sock* _as_udp_sock;
 };
 
 struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS
 
-    union ah_i_loop_evt_body _body;
+    union ah_i_loop_evt_subject _subject;
     ah_i_loop_evt_t* _next_free; // Used by loop allocator. Do not use directly.
 };
 

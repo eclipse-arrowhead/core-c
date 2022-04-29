@@ -7,12 +7,14 @@
 #ifndef AH_INTERNAL_URING_TCP_H_
 #define AH_INTERNAL_URING_TCP_H_
 
-#define AH_I_TCP_LISTEN_CTX_PLATFORM_FIELDS                                                                            \
+#define AH_I_TCP_CONN_PLATFORM_FIELDS                                                                                  \
+    int _fd;                                                                                                           \
+    ah_bufs_t _read_bufs;                                                                                              \
+    ah_bufs_t _write_bufs;
+
+#define AH_I_TCP_LISTENER_PLATFORM_FIELDS                                                                              \
+    int _fd;                                                                                                           \
     ah_sockaddr_t _remote_addr;                                                                                        \
     socklen_t _remote_addr_len;
-
-#define AH_I_TCP_READ_CTX_PLATFORM_FIELDS ah_bufs_t _bufs;
-#define AH_I_TCP_SOCK_PLATFORM_FIELDS     ah_i_sockfd_t _fd;
-#define AH_I_TCP_WRITE_CTX_PLATFORM_FIELDS
 
 #endif

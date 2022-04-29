@@ -14,7 +14,7 @@
 #    include <ws2ipdef.h>
 #endif
 
-ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_udp_open_cb cb)
+ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr)
 {
     if (sock == NULL || sock->_loop == NULL) {
         return AH_EINVAL;
@@ -23,24 +23,19 @@ ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_a
         return AH_ESTATE;
     }
 
-    ah_i_sockfd_t fd;
-    ah_err_t err = ah_i_sock_open_bind(sock->_loop, SOCK_DGRAM, local_addr, &fd);
+    ah_err_t err = ah_i_sock_open_bind(local_addr, SOCK_DGRAM, &sock->_fd);
 
     if (err == AH_ENONE) {
-        sock->_fd = fd;
         sock->_is_ipv6 = (local_addr != NULL ? local_addr->as_any.family : AH_SOCKFAMILY_DEFAULT) == AH_SOCKFAMILY_IPV6;
         sock->_is_open = true;
     }
 
-    if (cb != NULL) {
-        cb(sock, err);
-        return AH_ENONE;
-    }
+    sock->_vtab->on_open(sock, err);
 
     return err;
 }
 
-ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr)
+ah_extern ah_err_t ah_udp_sock_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr)
 {
     if (sock == NULL || local_addr == NULL) {
         return AH_EINVAL;
@@ -51,7 +46,7 @@ ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_
     return ah_i_sock_getsockname(sock->_fd, local_addr);
 }
 
-ah_extern ah_err_t ah_udp_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit)
+ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -80,7 +75,7 @@ ah_extern ah_err_t ah_udp_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t h
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_set_multicast_loopback(ah_udp_sock_t* sock, bool loopback)
+ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool is_enabled)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -101,7 +96,7 @@ ah_extern ah_err_t ah_udp_set_multicast_loopback(ah_udp_sock_t* sock, bool loopb
         name = IP_MULTICAST_LOOP;
     }
 
-    int value = loopback ? 1 : 0;
+    int value = is_enabled ? 1 : 0;
     if (setsockopt(sock->_fd, level, name, (void*) &value, sizeof(value)) != 0) {
         return errno;
     }
@@ -109,7 +104,7 @@ ah_extern ah_err_t ah_udp_set_multicast_loopback(ah_udp_sock_t* sock, bool loopb
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_set_reuse_addr(ah_udp_sock_t* sock, bool reuse_addr)
+ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enabled)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -117,14 +112,14 @@ ah_extern ah_err_t ah_udp_set_reuse_addr(ah_udp_sock_t* sock, bool reuse_addr)
     if (!sock->_is_open) {
         return AH_ESTATE;
     }
-    int value = reuse_addr ? 1 : 0;
+    int value = is_enabled ? 1 : 0;
     if (setsockopt(sock->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
         return errno;
     }
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit)
+ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -153,7 +148,7 @@ ah_extern ah_err_t ah_udp_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_join(ah_udp_sock_t* sock, const ah_udp_group_t* group)
+ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* group)
 {
     if (sock == NULL || group == NULL) {
         return AH_EINVAL;
@@ -181,7 +176,7 @@ ah_extern ah_err_t ah_udp_join(ah_udp_sock_t* sock, const ah_udp_group_t* group)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group)
+ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group)
 {
     if (sock == NULL || group == NULL) {
         return AH_EINVAL;

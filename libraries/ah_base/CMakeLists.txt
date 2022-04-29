@@ -40,6 +40,7 @@ set(
     src/str.c
     src/task.c
     src/tcp.c
+    src/udp.c
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")

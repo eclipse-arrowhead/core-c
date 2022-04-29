@@ -8,7 +8,6 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/loop.h"
 
 #if AH_IS_DARWIN
 #    include <fcntl.h>
@@ -46,14 +45,9 @@ ah_extern ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
     }
 }
 
-ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, const int sockfamily, const int type, ah_i_sockfd_t* fd)
+ah_extern ah_err_t ah_i_sock_open(const int sockfamily, const int type, ah_i_sockfd_t* fd)
 {
-    ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(fd != NULL);
-
-    if (ah_loop_is_term(loop)) {
-        return AH_ESTATE;
-    }
 
     ah_i_sockfd_t fd0 = socket(sockfamily, type, 0);
 
@@ -116,16 +110,14 @@ close_fd0_and_return:
 #endif
 }
 
-ah_extern ah_err_t ah_i_sock_open_bind(struct ah_loop* loop, const int type, const ah_sockaddr_t* local_addr,
-    ah_i_sockfd_t* fd)
+ah_extern ah_err_t ah_i_sock_open_bind(const ah_sockaddr_t* local_addr, int type, ah_i_sockfd_t* fd)
 {
-    ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(fd != NULL);
 
     const int sockfamily = local_addr != NULL ? local_addr->as_any.family : AH_SOCKFAMILY_DEFAULT;
 
     ah_i_sockfd_t fd0;
-    ah_err_t err = ah_i_sock_open(loop, sockfamily, type, &fd0);
+    ah_err_t err = ah_i_sock_open(sockfamily, type, &fd0);
     if (err != AH_ENONE) {
         return err;
     }
@@ -151,17 +143,13 @@ close_fd0_and_return:
     return err;
 }
 
-ah_extern ah_err_t ah_i_sock_close(struct ah_loop* loop, ah_i_sockfd_t fd)
+ah_extern ah_err_t ah_i_sock_close(ah_i_sockfd_t fd)
 {
-    ah_assert_if_debug(loop != NULL);
-
     if (close(fd) != 0) {
 #if AH_IS_WIN32
         return WSAGetLastError();
 #else
-        if (!(errno == AH_EINTR && ah_i_loop_try_set_pending_err(loop, AH_EINTR))) {
-            return errno;
-        }
+        return errno;
 #endif
     }
 
@@ -174,7 +162,11 @@ ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* local_
 
     ah_i_socklen_t socklen = sizeof(ah_sockaddr_t);
     if (getsockname(fd, ah_i_sockaddr_into_bsd(local_addr), &socklen) != 0) {
+#if AH_IS_WIN32
+        return WSAGetLastError();
+#else
         return errno;
+#endif
     }
 
 #if AH_I_SOCKADDR_HAS_SIZE
@@ -191,7 +183,11 @@ ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* remote
 
     ah_i_socklen_t socklen = sizeof(ah_sockaddr_t);
     if (getpeername(fd, ah_i_sockaddr_into_bsd(remote_addr), &socklen) != 0) {
+#if AH_IS_WIN32
+        return WSAGetLastError();
+#else
         return errno;
+#endif
     }
 
 #if AH_I_SOCKADDR_HAS_SIZE

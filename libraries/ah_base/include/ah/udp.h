@@ -14,9 +14,6 @@
 
 #include <stdbool.h>
 
-typedef void (*ah_udp_open_cb)(ah_udp_sock_t* sock, ah_err_t err);
-typedef void (*ah_udp_close_cb)(ah_udp_sock_t* sock, ah_err_t err);
-
 struct ah_udp_group_ipv4 {
     ah_ipaddr_v4_t group_addr;
     ah_ipaddr_v4_t interface_addr; // Default if zeroed.
@@ -32,68 +29,73 @@ union ah_udp_group {
     ah_udp_group_ipv6_t as_ipv6;
 };
 
-struct ah_udp_recv_ctx {
-    void (*recv_cb)(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufs_t* bufs, size_t n_bytes_read,
-        ah_err_t err);
-    void (*alloc_cb)(ah_udp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected);
-
-    AH_I_UDP_RECV_CTX_FIELDS
-};
-
-struct ah_udp_send_ctx {
-    void (*send_cb)(ah_udp_sock_t* sock, ah_err_t err);
-    ah_sockaddr_t remote_addr;
-    ah_bufs_t bufs;
-
-    AH_I_UDP_SEND_CTX_FIELDS
-};
-
 struct ah_udp_sock {
     AH_I_UDP_SOCK_FIELDS
 };
 
-ah_inline void ah_udp_init(ah_udp_sock_t* sock, ah_loop_t* loop)
-{
-    ah_assert_if_debug(sock != NULL);
-    ah_assert_if_debug(loop != NULL);
+struct ah_udp_sock_vtab {
+    void (*on_open)(ah_udp_sock_t* sock, ah_err_t err);
+    void (*on_connect)(ah_udp_sock_t* sock, ah_err_t err);
+    void (*on_close)(ah_udp_sock_t* sock, ah_err_t err);
 
-    *sock = (ah_udp_sock_t) { ._loop = loop };
-}
+    // If both are NULL, receiving is shutdown automatically. Either both or none must be set.
+    void (*on_recv_alloc)(ah_udp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected);
+    void (*on_recv_done)(ah_udp_sock_t* sock, const ah_sockaddr_t* remote_addr, ah_bufs_t bufs, size_t n_bytes_received,
+        ah_err_t err);
 
-ah_extern ah_err_t ah_udp_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_udp_open_cb cb);
+    // If NULL, sending is shutdown automatically.
+    void (*on_send_done)(ah_udp_sock_t* sock, const ah_sockaddr_t* remote_addr, ah_bufs_t bufs, size_t n_bytes_sent,
+        ah_err_t err);
+};
 
-ah_extern ah_err_t ah_udp_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr);
+struct ah_udp_trans {
+    AH_I_UDP_TRANS_FIELDS
+};
 
-ah_inline ah_loop_t* ah_udp_get_loop(const ah_udp_sock_t* sock)
+struct ah_udp_trans_vtab {
+    ah_err_t (*sock_init)(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_udp_sock_vtab_t* vtab);
+    ah_err_t (*sock_open)(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr);
+    ah_err_t (*sock_recv_start)(ah_udp_sock_t* sock);
+    ah_err_t (*sock_recv_stop)(ah_udp_sock_t* sock);
+    ah_err_t (*sock_send)(ah_udp_sock_t* sock, ah_bufs_t bufs, const ah_sockaddr_t* remote_addr);
+    ah_err_t (*sock_close)(ah_udp_sock_t* sock);
+};
+
+ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_udp_sock_vtab_t* vtab);
+ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr);
+ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
+ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_bufs_t bufs, const ah_sockaddr_t* remote_addr);
+ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
+
+ah_extern ah_err_t ah_udp_sock_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr);
+
+ah_inline ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
     return sock->_loop;
 }
 
-ah_inline void* ah_udp_get_user_data(const ah_udp_sock_t* sock)
+ah_inline void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
     return sock->_user_data;
 }
 
-ah_extern ah_err_t ah_udp_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
-ah_extern ah_err_t ah_udp_set_multicast_loopback(ah_udp_sock_t* sock, bool loopback);
-ah_extern ah_err_t ah_udp_set_reuse_addr(ah_udp_sock_t* sock, bool reuseaddr);
-ah_extern ah_err_t ah_udp_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
+ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
+ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool is_enabled);
+ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enabled);
+ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
 
-ah_inline void ah_udp_set_user_data(ah_udp_sock_t* sock, void* user_data)
+ah_inline void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
 {
     ah_assert_if_debug(sock != NULL);
     sock->_user_data = user_data;
 }
 
-ah_extern ah_err_t ah_udp_join(ah_udp_sock_t* sock, const ah_udp_group_t* group);
-ah_extern ah_err_t ah_udp_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
+ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* group);
+ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 
-ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx);
-ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx);
-ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock);  // Caller is responsible for freeing any memory allocated by ah_udp_recv_start().
-
-ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb);
+ah_extern void ah_udp_trans_init(ah_udp_trans_t* trans, ah_loop_t* loop);
 
 #endif

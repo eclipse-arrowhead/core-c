@@ -9,13 +9,15 @@
 
 #include "../../defs.h"
 
+#include <stddef.h>
+
 #define AH_I_BUF_PLATFORM_FIELDS                                                                                       \
     uint8_t* _octets;                                                                                                  \
     size_t _size;
 
 struct iovec;
 
-ah_extern ah_err_t ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, int iovcnt);
+ah_extern void ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, size_t iovcnt);
 ah_extern ah_err_t ah_i_bufs_into_iovec(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt);
 
 #endif

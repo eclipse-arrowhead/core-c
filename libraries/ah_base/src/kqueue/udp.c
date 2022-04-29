@@ -236,7 +236,12 @@ ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
 #endif
     sock->_is_open = false;
 
-    ah_err_t err = ah_i_sock_close(sock->_loop, sock->_fd);
+    ah_err_t err = ah_i_sock_close(sock->_fd);
+    if (err == AH_EINTR) {
+        if (ah_i_loop_try_set_pending_err(sock->_loop, AH_EINTR)) {
+            err = AH_ENONE;
+        }
+    }
 
 #ifndef NDEBUG
     sock->_fd = 0;

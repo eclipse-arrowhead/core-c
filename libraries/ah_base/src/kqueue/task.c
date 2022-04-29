@@ -47,7 +47,7 @@ ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baselin
     }
 
     evt->_cb = s_on_execution;
-    evt->_body._as_task_schedule_at._task = task;
+    evt->_subject._as_task = task;
 
     uint32_t fflags;
     intptr_t data;
@@ -83,7 +83,7 @@ static void s_on_execution(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(kev != NULL);
 
-    ah_task_t* task = evt->_body._as_task_schedule_at._task;
+    ah_task_t* task = evt->_subject._as_task;
     ah_assert_if_debug(task != NULL);
 
     if (task->_state == AH_TASK_STATE_CANCELED) {

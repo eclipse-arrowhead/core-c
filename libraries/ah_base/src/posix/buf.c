@@ -24,18 +24,12 @@ ah_extern ah_err_t ah_buf_set(ah_buf_t* buf, uint8_t* octets, size_t size)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, int iovcnt)
+ah_extern void ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, size_t iovcnt)
 {
     ah_assert_if_debug(bufs != NULL && iov != NULL);
 
-    if (iovcnt < 0 || ((uintmax_t) iovcnt) > ((uintmax_t) SIZE_MAX)) {
-        return AH_EOVERFLOW;
-    }
-
     bufs->items = (ah_buf_t*) iov;
     bufs->length = iovcnt;
-
-    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_i_bufs_into_iovec(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt)

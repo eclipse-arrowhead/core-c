@@ -13,7 +13,7 @@
 #ifndef AH_INTERNAL_POSIX_SOCK_H_
 #define AH_INTERNAL_POSIX_SOCK_H_
 
-#include "ah/defs.h"
+#include "../../defs.h"
 
 #if AH_HAS_POSIX
 #    include <netinet/in.h>
@@ -60,9 +60,9 @@ ah_inline const struct sockaddr* ah_i_sockaddr_const_into_bsd(const ah_sockaddr_
     return (const struct sockaddr*) sockaddr;
 }
 
-ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, int sockfamily, int type, ah_i_sockfd_t* fd);
-ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, int type, const ah_sockaddr_t* local_addr, ah_i_sockfd_t* fd);
-ah_extern ah_err_t ah_i_sock_close(ah_loop_t* loop, ah_i_sockfd_t fd);
+ah_extern ah_err_t ah_i_sock_open(int sockfamily, int type, ah_i_sockfd_t* fd);
+ah_extern ah_err_t ah_i_sock_open_bind(const ah_sockaddr_t* local_addr, int type, ah_i_sockfd_t* fd);
+ah_extern ah_err_t ah_i_sock_close(ah_i_sockfd_t fd);
 
 ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* local_addr);
 ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* remote_addr);

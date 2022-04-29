@@ -43,7 +43,7 @@ static void s_on_alloc(ah_udp_sock_t* sock, ah_bufs_t* bufs, size_t size)
 {
     (void) size;
 
-    struct s_udp_user_data* user_data = ah_udp_get_user_data(sock);
+    struct s_udp_user_data* user_data = ah_udp_sock_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
@@ -72,7 +72,7 @@ static void s_on_alloc(ah_udp_sock_t* sock, ah_bufs_t* bufs, size_t size)
 
 static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufs_t* bufs, size_t size, ah_err_t err)
 {
-    struct s_udp_user_data* user_data = ah_udp_get_user_data(sock);
+    struct s_udp_user_data* user_data = ah_udp_sock_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
@@ -116,7 +116,7 @@ static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufs_t
 
 static void s_on_send(ah_udp_sock_t* sock, ah_err_t err)
 {
-    struct s_udp_user_data* user_data = ah_udp_get_user_data(sock);
+    struct s_udp_user_data* user_data = ah_udp_sock_get_user_data(sock);
     if (user_data == NULL) {
         return;
     }
@@ -163,24 +163,20 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     ah_sockaddr_init_ipv4(&recv_addr, 0u, &ah_ipaddr_v4_loopback);
 
     ah_udp_init(&recv_sock, &recv_loop);
-    err = ah_udp_open(&recv_sock, &recv_addr, NULL);
+    err = ah_udp_sock_open(&recv_sock, &recv_addr);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    ah_udp_set_user_data(&recv_sock, &user_data);
+    ah_udp_sock_set_user_data(&recv_sock, &user_data);
 
-    err = ah_udp_get_local_addr(&recv_sock, &recv_addr);
+    err = ah_udp_sock_get_local_addr(&recv_sock, &recv_addr);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     // Receive data.
 
-    err = ah_udp_recv_start(&recv_sock,
-        &(ah_udp_recv_ctx_t) {
-            .alloc_cb = s_on_alloc,
-            .recv_cb = s_on_recv,
-        });
+    err = ah_udp_sock_recv_start(&recv_sock);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -199,15 +195,15 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     ah_sockaddr_init_ipv4(&send_addr, 0u, &ah_ipaddr_v4_loopback);
 
     ah_udp_init(&send_sock, &send_loop);
-    err = ah_udp_open(&send_sock, &send_addr, NULL);
+    err = ah_udp_sock_open(&send_sock, &send_addr);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    ah_udp_set_user_data(&send_sock, &user_data);
+    ah_udp_sock_set_user_data(&send_sock, &user_data);
 
     // Send data.
 
-    err = ah_udp_send(&send_sock,
+    err = ah_udp_sock_send(&send_sock,
         &(ah_udp_send_ctx_t) {
             .remote_addr = recv_addr,
             .bufs = (ah_bufs_t) {
@@ -218,7 +214,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
                 .length = 1u,
             },
             .send_cb = s_on_send,
-        });
+        },NULL);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -248,13 +244,13 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     // Release all resources.
 
-    err = ah_udp_close(&recv_sock, NULL);
+    err = ah_udp_sock_close(&recv_sock);
     ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_loop_term(&recv_loop);
     ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
-    err = ah_udp_close(&send_sock, NULL);
+    err = ah_udp_sock_close(&send_sock);
     ah_unit_assert_err_eq(unit, AH_ENONE, err);
 
     err = ah_loop_term(&send_loop);

@@ -11,24 +11,21 @@
 
 #include <liburing.h>
 
-#define AH_I_LOOP_PLATFORM_FIELDS struct io_uring _uring;
+#define AH_I_LOOP_PLATFORM_FIELDS     struct io_uring _uring;
+#define AH_I_LOOP_EVT_PLATFORM_FIELDS void (*_cb)(ah_i_loop_evt_t*, struct io_uring_cqe*);
 
-#define AH_I_LOOP_EVT_BODY_HAS_TASK_SCHEDULE_AT 1
-#define AH_I_LOOP_EVT_BODY_HAS_TCP_CLOSE        1
-#define AH_I_LOOP_EVT_BODY_HAS_TCP_CONNECT      1
-#define AH_I_LOOP_EVT_BODY_HAS_TCP_LISTEN       1
-#define AH_I_LOOP_EVT_BODY_HAS_TCP_OPEN         0
-#define AH_I_LOOP_EVT_BODY_HAS_TCP_READ         1
-#define AH_I_LOOP_EVT_BODY_HAS_TCP_WRITE        1
-#define AH_I_LOOP_EVT_BODY_HAS_UDP_CLOSE        1
-#define AH_I_LOOP_EVT_BODY_HAS_UDP_OPEN         0
-#define AH_I_LOOP_EVT_BODY_HAS_UDP_RECV         1
-#define AH_I_LOOP_EVT_BODY_HAS_UDP_SEND         1
-
-#define AH_I_LOOP_EVT_BODY_TASK_SCHEDULE_AT_PLATFORM_FIELDS struct ah_time _baseline;
-#define AH_I_LOOP_EVT_PLATFORM_FIELDS                       void (*_cb)(ah_i_loop_evt_t*, struct io_uring_cqe*);
-
+// All error codes returned by this function are safe to ignore.
+//
+// Error codes:
+// * AH_ESTATE  - `loop` is shutting down or is already shut down.
+// * AH_ENOMEM  - `loop` allocator failed to allocate memory for additional ah_i_loop_evt_t values.
+// * AH_ENOBUFS - `loop` out of io_uring SQEs and could not make more available.
 ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe);
+
+// All error codes returned by this function are safe to ignore.
+//
+// Error codes:
+// * AH_ENOBUFS - `loop` out of io_uring SQEs and could not make more available.
 ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sqe);
 
 #endif

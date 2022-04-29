@@ -25,110 +25,97 @@
 #    define SHUT_RDWR SD_BOTH
 #endif
 
-ah_extern ah_err_t ah_tcp_open(ah_tcp_sock_t* sock, const ah_sockaddr_t* local_addr, ah_tcp_open_cb cb)
+ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* local_addr)
 {
-    if (sock == NULL || sock->_loop == NULL) {
+    if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_TCP_STATE_CLOSED) {
+    if (conn->_state != AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
 
-    ah_i_sockfd_t fd;
-    ah_err_t err = ah_i_sock_open_bind(sock->_loop, SOCK_STREAM, local_addr, &fd);
+    ah_err_t err = ah_i_sock_open_bind(local_addr, SOCK_STREAM, &conn->_fd);
+    conn->_vtab->on_open(conn, err);
 
-    if (err == AH_ENONE) {
-        sock->_fd = fd;
-        sock->_state = AH_I_TCP_STATE_OPEN;
-#if AH_USE_IOCP
-        sock->_sockfamily = local_addr->as_ip.family;
-#endif
-    }
-
-    if (cb != NULL) {
-        cb(sock, err);
-        return AH_ENONE;
-    }
-
-    return err;
+    return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_get_local_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* local_addr)
+ah_err_t ah_tcp_conn_get_local_addr(const ah_tcp_conn_t* conn, ah_sockaddr_t* local_addr)
 {
-    if (sock == NULL || local_addr == NULL) {
+    if (conn == NULL || local_addr == NULL) {
         return AH_EINVAL;
     }
-    if ((sock->_state & (AH_I_TCP_STATE_OPEN | AH_I_TCP_STATE_CONNECTED | AH_I_TCP_STATE_LISTENING)) == 0u) {
+    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-    return ah_i_sock_getsockname(sock->_fd, local_addr);
+    return ah_i_sock_getsockname(conn->_fd, local_addr);
 }
 
-ah_extern ah_err_t ah_tcp_get_remote_addr(const ah_tcp_sock_t* sock, ah_sockaddr_t* remote_addr)
+ah_err_t ah_tcp_conn_get_remote_addr(const ah_tcp_conn_t* conn, ah_sockaddr_t* remote_addr)
 {
-    if (sock == NULL || remote_addr == NULL) {
+    if (conn == NULL || remote_addr == NULL) {
         return AH_EINVAL;
     }
-    if ((sock->_state & (AH_I_TCP_STATE_OPEN | AH_I_TCP_STATE_CONNECTED | AH_I_TCP_STATE_LISTENING)) == 0u) {
+    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-    return ah_i_sock_getpeername(sock->_fd, remote_addr);
+    return ah_i_sock_getpeername(conn->_fd, remote_addr);
 }
 
-ah_extern ah_err_t ah_tcp_set_keepalive(ah_tcp_sock_t* sock, bool keepalive)
+ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled)
 {
-    if (sock == NULL) {
+    if (conn == NULL) {
         return AH_EINVAL;
     }
-    if ((sock->_state & (AH_I_TCP_STATE_OPEN | AH_I_TCP_STATE_CONNECTED | AH_I_TCP_STATE_LISTENING)) == 0u) {
+    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-    int value = keepalive ? 1 : 0;
-    if (setsockopt(sock->_fd, SOL_SOCKET, SO_KEEPALIVE, (void*) &value, sizeof(value)) != 0) {
+    int value = is_enabled ? 1 : 0;
+    if (setsockopt(conn->_fd, SOL_SOCKET, SO_KEEPALIVE, (void*) &value, sizeof(value)) != 0) {
         return errno;
     }
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_set_no_delay(ah_tcp_sock_t* sock, bool no_delay)
+ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
 {
-    if (sock == NULL) {
+    if (conn == NULL) {
         return AH_EINVAL;
     }
-    if ((sock->_state & (AH_I_TCP_STATE_OPEN | AH_I_TCP_STATE_CONNECTED | AH_I_TCP_STATE_LISTENING)) == 0u) {
+    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-    int value = no_delay ? 1 : 0;
-    if (setsockopt(sock->_fd, IPPROTO_TCP, TCP_NODELAY, (void*) &value, sizeof(value)) != 0) {
+    int value = is_enabled ? 1 : 0;
+    if (setsockopt(conn->_fd, IPPROTO_TCP, TCP_NODELAY, (void*) &value, sizeof(value)) != 0) {
         return errno;
     }
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_set_reuse_addr(ah_tcp_sock_t* sock, bool reuse_addr)
+ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled)
 {
-    if (sock == NULL) {
+    if (conn == NULL) {
         return AH_EINVAL;
     }
-    if ((sock->_state & (AH_I_TCP_STATE_OPEN | AH_I_TCP_STATE_CONNECTED | AH_I_TCP_STATE_LISTENING)) == 0u) {
+    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-    int value = reuse_addr ? 1 : 0;
-    if (setsockopt(sock->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
+    int value = is_enabled ? 1 : 0;
+    if (setsockopt(conn->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
         return errno;
     }
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_shutdown(ah_tcp_sock_t* sock, ah_tcp_shutdown_t flags)
+ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
 {
-    if (sock == NULL || (flags & ~AH_TCP_SHUTDOWN_RDWR) != 0u) {
+    if (conn == NULL || (flags & ~AH_TCP_SHUTDOWN_RDWR) != 0u) {
         return AH_EINVAL;
     }
     if ((flags & AH_TCP_SHUTDOWN_RDWR) == 0u) {
         return AH_ENONE;
     }
-    if (sock->_state != AH_I_TCP_STATE_CONNECTED) {
+    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED) {
         return AH_ESTATE;
     }
 
@@ -161,7 +148,7 @@ ah_extern ah_err_t ah_tcp_shutdown(ah_tcp_sock_t* sock, ah_tcp_shutdown_t flags)
 
     ah_err_t err;
 
-    if (shutdown(sock->_fd, how) != 0) {
+    if (shutdown(conn->_fd, how) != 0) {
 #if AH_IS_WIN32
         err = WSAGetLastError();
 #else
@@ -170,14 +157,84 @@ ah_extern ah_err_t ah_tcp_shutdown(ah_tcp_sock_t* sock, ah_tcp_shutdown_t flags)
     }
     else {
         err = AH_ENONE;
-
-        if ((flags & AH_TCP_SHUTDOWN_RD) != 0) {
-            sock->_state_read = AH_I_TCP_STATE_READ_OFF;
-        }
-        if ((flags & AH_TCP_SHUTDOWN_WR) != 0) {
-            sock->_state_write = AH_I_TCP_STATE_WRITE_OFF;
-        }
+        conn->_shutdown_flags = flags;
     }
 
     return err;
+}
+
+ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* local_addr)
+{
+    if (ln == NULL) {
+        return AH_EINVAL;
+    }
+    if (ln->_state != AH_I_TCP_LISTENER_STATE_CLOSED) {
+        return AH_ESTATE;
+    }
+
+    ah_err_t err = ah_i_sock_open_bind(local_addr, SOCK_STREAM, &ln->_fd);
+
+#if AH_USE_IOCP
+    conn->_sockfamily = local_addr != NULL ? local_addr->as_ip.family : AH_SOCKFAMILY_DEFAULT;
+#endif
+
+    ln->_vtab->on_open(ln, err);
+
+    return AH_ENONE;
+}
+
+ah_err_t ah_tcp_listener_get_local_addr(const ah_tcp_listener_t* ln, ah_sockaddr_t* local_addr)
+{
+    if (ln == NULL || local_addr == NULL) {
+        return AH_EINVAL;
+    }
+    if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
+        return AH_ESTATE;
+    }
+    return ah_i_sock_getsockname(ln->_fd, local_addr);
+}
+
+ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled)
+{
+    if (ln == NULL) {
+        return AH_EINVAL;
+    }
+    if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
+        return AH_ESTATE;
+    }
+    int value = is_enabled ? 1 : 0;
+    if (setsockopt(ln->_fd, SOL_SOCKET, SO_KEEPALIVE, (void*) &value, sizeof(value)) != 0) {
+        return errno;
+    }
+    return AH_ENONE;
+}
+
+ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled)
+{
+    if (ln == NULL) {
+        return AH_EINVAL;
+    }
+    if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
+        return AH_ESTATE;
+    }
+    int value = is_enabled ? 1 : 0;
+    if (setsockopt(ln->_fd, IPPROTO_TCP, TCP_NODELAY, (void*) &value, sizeof(value)) != 0) {
+        return errno;
+    }
+    return AH_ENONE;
+}
+
+ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled)
+{
+    if (ln == NULL) {
+        return AH_EINVAL;
+    }
+    if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
+        return AH_ESTATE;
+    }
+    int value = is_enabled ? 1 : 0;
+    if (setsockopt(ln->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
+        return errno;
+    }
+    return AH_ENONE;
 }

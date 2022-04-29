@@ -26,7 +26,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     if (sock == NULL || !ah_sockaddr_is_ip(remote_addr) || cb == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_TCP_STATE_OPEN) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_OPEN) {
         return AH_ESTATE;
     }
 
@@ -60,7 +60,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
         }
     }
 
-    sock->_state = AH_I_TCP_STATE_CONNECTING;
+    sock->_state = AH_I_TCP_SOCK_STATE_CONNECTING;
 
     return AH_ENONE;
 }
@@ -81,9 +81,9 @@ static void s_on_connect(ah_i_loop_evt_t* evt)
         return;
     }
 
-    sock->_state = AH_I_TCP_STATE_CONNECTED;
-    sock->_state_read = AH_I_TCP_STATE_READ_STOPPED;
-    sock->_state_write = AH_I_TCP_STATE_WRITE_STOPPED;
+    sock->_state = AH_I_TCP_SOCK_STATE_CONNECTED;
+    sock->_state_read = AH_I_TCP_CONN_READ_STOPPED;
+    sock->_state_write = AH_I_TCP_CONN_WRITE_STOPPED;
 
     cb(sock, AH_ENONE);
 }
@@ -93,7 +93,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     if (sock == NULL || ctx == NULL || ctx->listen_cb == NULL || ctx->accept_cb == NULL || ctx->alloc_cb == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_TCP_STATE_OPEN) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_OPEN) {
         return AH_ESTATE;
     }
 
@@ -123,7 +123,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
         sock->_is_listening = true;
     }
 
-    sock->_state = AH_I_TCP_STATE_LISTENING;
+    sock->_state = AH_I_TCP_SOCK_STATE_LISTENING;
 
 #ifndef NDEBUG
     ctx->_accept_fd = INVALID_SOCKET;
@@ -132,7 +132,7 @@ ah_extern ah_err_t ah_tcp_listen(ah_tcp_sock_t* sock, unsigned backlog, ah_tcp_l
     err = s_prep_accept(sock, ctx);
 
     if (err != AH_ENONE) {
-        sock->_state = AH_I_TCP_STATE_OPEN;
+        sock->_state = AH_I_TCP_SOCK_STATE_OPEN;
     }
 
 handle_err:
@@ -144,7 +144,7 @@ handle_err:
 static ah_err_t s_prep_accept(ah_tcp_sock_t* listener, ah_tcp_listen_ctx_t* ctx)
 {
     ah_assert_if_debug(listener != NULL);
-    ah_assert_if_debug(listener->_state == AH_I_TCP_STATE_LISTENING);
+    ah_assert_if_debug(listener->_state == AH_I_TCP_SOCK_STATE_LISTENING);
     ah_assert_if_debug(listener->_is_listening);
     ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->_accept_fd == INVALID_SOCKET);
@@ -224,9 +224,9 @@ static void s_on_accept(ah_i_loop_evt_t* evt)
     *conn = (ah_tcp_sock_t) {
         ._loop = listener->_loop,
         ._fd = ctx->_accept_fd,
-        ._state = AH_I_TCP_STATE_CONNECTED,
-        ._state_read = AH_I_TCP_STATE_READ_STOPPED,
-        ._state_write = AH_I_TCP_STATE_WRITE_STOPPED,
+        ._state = AH_I_TCP_SOCK_STATE_CONNECTED,
+        ._state_read = AH_I_TCP_CONN_READ_STOPPED,
+        ._state_write = AH_I_TCP_CONN_WRITE_STOPPED,
     };
 
 #ifndef NDEBUG
@@ -268,7 +268,7 @@ ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx
     if (sock == NULL || ctx == NULL || ctx->alloc_cb == NULL || ctx->read_cb == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_TCP_STATE_CONNECTED || sock->_state_read != AH_I_TCP_STATE_READ_STOPPED) {
+    if (sock->_state != AH_I_TCP_SOCK_STATE_CONNECTED || sock->_state_read != AH_I_TCP_CONN_READ_STOPPED) {
         return AH_ESTATE;
     }
 
@@ -277,7 +277,7 @@ ah_extern ah_err_t ah_tcp_read_start(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx
         return err;
     }
 
-    sock->_state_read = AH_I_TCP_STATE_READ_STARTED;
+    sock->_state_read = AH_I_TCP_CONN_READ_STARTED;
 
     return AH_ENONE;
 }
@@ -468,7 +468,12 @@ ah_extern ah_err_t ah_tcp_close(ah_tcp_sock_t* sock, ah_tcp_close_cb cb)
     sock->_state_read = AH_I_TCP_STATE_READ_OFF;
     sock->_state_write = AH_I_TCP_STATE_WRITE_OFF;
 
-    ah_err_t err = ah_i_sock_close(sock->_loop, sock->_fd);
+    ah_err_t err = ah_i_sock_close(sock->_fd);
+    if (err == AH_EINTR) {
+        if (ah_i_loop_try_set_pending_err(sock->_loop, AH_EINTR)) {
+            err = AH_ENONE;
+        }
+    }
 
 #ifndef NDEBUG
     sock->_fd = INVALID_SOCKET;

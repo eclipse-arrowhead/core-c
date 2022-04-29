@@ -17,38 +17,38 @@
 #    include "uring/tcp.h"
 #endif
 
-#define AH_I_TCP_LISTEN_CTX_FIELDS AH_I_TCP_LISTEN_CTX_PLATFORM_FIELDS
-#define AH_I_TCP_READ_CTX_FIELDS   AH_I_TCP_READ_CTX_PLATFORM_FIELDS
+#define AH_I_TCP_CONN_STATE_CLOSED     0u
+#define AH_I_TCP_CONN_STATE_OPEN       1u
+#define AH_I_TCP_CONN_STATE_CONNECTING 2u
+#define AH_I_TCP_CONN_STATE_CONNECTED  3u
 
-#define AH_I_TCP_SOCK_FIELDS                                                                                           \
+#define AH_I_TCP_LISTENER_STATE_CLOSED    0u
+#define AH_I_TCP_LISTENER_STATE_OPEN      1u
+#define AH_I_TCP_LISTENER_STATE_LISTENING 2u
+
+#define AH_I_TCP_CONN_FIELDS                                                                                           \
     ah_loop_t* _loop;                                                                                                  \
+    const ah_tcp_conn_vtab_t* _vtab;                                                                                   \
     void* _trans_data;                                                                                                 \
     void* _user_data;                                                                                                  \
-                                                                                                                       \
+    ah_tcp_shutdown_t _shutdown_flags;                                                                                 \
     uint8_t _state;                                                                                                    \
-    uint8_t _state_read;                                                                                               \
-    uint8_t _state_write;                                                                                              \
-    AH_I_TCP_SOCK_PLATFORM_FIELDS
+    bool _is_reading;                                                                                                  \
+    bool _is_writing;                                                                                                  \
+    AH_I_TCP_CONN_PLATFORM_FIELDS
+
+#define AH_I_TCP_LISTENER_FIELDS                                                                                       \
+    ah_loop_t* _loop;                                                                                                  \
+    const ah_tcp_listener_vtab_t* _vtab;                                                                               \
+    const ah_tcp_conn_vtab_t* _conn_vtab;                                                                              \
+    void* _trans_data;                                                                                                 \
+    void* _user_data;                                                                                                  \
+    uint8_t _state;                                                                                                    \
+    AH_I_TCP_LISTENER_PLATFORM_FIELDS
 
 #define AH_I_TCP_TRANS_FIELDS                                                                                          \
     ah_loop_t* _loop;                                                                                                  \
-    const ah_tcp_vtab_t* _vtab;                                                                                        \
+    const ah_tcp_trans_vtab_t* _vtab;                                                                                  \
     void* _data;
-
-#define AH_I_TCP_WRITE_CTX_FIELDS AH_I_TCP_WRITE_CTX_PLATFORM_FIELDS
-
-#define AH_I_TCP_STATE_CLOSED     0x01
-#define AH_I_TCP_STATE_OPEN       0x02
-#define AH_I_TCP_STATE_CONNECTING 0x04
-#define AH_I_TCP_STATE_CONNECTED  0x08
-#define AH_I_TCP_STATE_LISTENING  0x10
-
-#define AH_I_TCP_STATE_READ_OFF     0x01
-#define AH_I_TCP_STATE_READ_STOPPED 0x02
-#define AH_I_TCP_STATE_READ_STARTED 0x04
-
-#define AH_I_TCP_STATE_WRITE_OFF     0x01
-#define AH_I_TCP_STATE_WRITE_STOPPED 0x02
-#define AH_I_TCP_STATE_WRITE_STARTED 0x04
 
 #endif

@@ -10,22 +10,22 @@
 #include "ah/err.h"
 #include "ah/loop.h"
 
-static void s_on_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
-static void s_on_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
-static void s_on_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_sock_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
+static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
-static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx);
+static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock);
 
-ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
+ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
 {
-    if (sock == NULL || ctx == NULL || ctx->alloc_cb == NULL || ctx->recv_cb == NULL) {
+    if (sock == NULL) {
         return AH_EINVAL;
     }
     if (!sock->_is_open || sock->_is_receiving) {
         return AH_ESTATE;
     }
 
-    ah_err_t err = s_prep_recv(sock, ctx);
+    ah_err_t err = s_prep_sock_recv(sock);
     if (err != AH_ENONE) {
         return err;
     }
@@ -35,10 +35,9 @@ ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx
     return AH_ENONE;
 }
 
-static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
+static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
-    ah_assert_if_debug(ctx != NULL);
 
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
@@ -48,48 +47,42 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
         return err;
     }
 
-    evt->_cb = s_on_recv;
-    evt->_body._as_udp_recv._sock = sock;
-    evt->_body._as_udp_recv._ctx = ctx;
+    evt->_cb = s_on_sock_recv;
+    evt->_subject._as_udp_sock = sock;
 
-    struct ah_bufs bufs = { .items = NULL, .length = 0u };
-    ctx->alloc_cb(sock, &bufs, 0u);
-    if (bufs.items == NULL) {
+    ah_bufs_t bufs = { .items = NULL, .length = 0u };
+    sock->_vtab->on_recv_alloc(sock, &bufs, 0u);
+    if (bufs.items == NULL || bufs.length == 0u) {
         return AH_ENOBUFS;
     }
 
     struct iovec* iov;
-    int iovcnt;
-    err = ah_i_bufs_into_iovec(&bufs, &iov, &iovcnt);
+    int iovlen;
+    err = ah_i_bufs_into_iovec(&bufs, &iov, &iovlen);
     if (ah_unlikely(err != AH_ENONE)) {
         return err;
     }
 
-    ctx->_msghdr = (struct msghdr) {
-        .msg_name = ah_i_sockaddr_into_bsd(&ctx->_remote_addr),
+    sock->_recv_msghdr = (struct msghdr) {
+        .msg_name = ah_i_sockaddr_into_bsd(&sock->_recv_addr),
         .msg_namelen = sizeof(ah_sockaddr_t),
         .msg_iov = iov,
-        .msg_iovlen = iovcnt,
+        .msg_iovlen = iovlen,
     };
 
-    io_uring_prep_recvmsg(sqe, sock->_fd, &ctx->_msghdr, 0);
+    io_uring_prep_recvmsg(sqe, sock->_fd, &sock->_recv_msghdr, 0);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
 }
 
-static void s_on_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
+static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(cqe != NULL);
 
-    ah_udp_sock_t* sock = evt->_body._as_udp_recv._sock;
+    ah_udp_sock_t* sock = evt->_subject._as_udp_sock;
     ah_assert_if_debug(sock != NULL);
-
-    ah_udp_recv_ctx_t* ctx = evt->_body._as_udp_recv._ctx;
-    ah_assert_if_debug(ctx != NULL);
-    ah_assert_if_debug(ctx->recv_cb != NULL);
-    ah_assert_if_debug(ctx->alloc_cb != NULL);
 
     if (!sock->_is_open || !sock->_is_receiving) {
         return;
@@ -102,20 +95,16 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto call_recv_cb_with_err_and_return;
     }
 
-    struct ah_bufs bufs;
-    err = ah_i_bufs_from_iovec(&bufs, ctx->_msghdr.msg_iov, 0);
-    if (err != AH_ENONE) {
-        goto call_recv_cb_with_err_and_return;
-    }
-    bufs.length = ctx->_msghdr.msg_iovlen;
+    ah_bufs_t bufs;
+    ah_i_bufs_from_iovec(&bufs, sock->_recv_msghdr.msg_iov, sock->_recv_msghdr.msg_iovlen);
 
-    ctx->recv_cb(sock, &ctx->_remote_addr, &bufs, cqe->res, AH_ENONE);
+    sock->_vtab->on_recv_done(sock, ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name), bufs, cqe->res, AH_ENONE);
 
     if (!sock->_is_open) {
         return;
     }
 
-    err = s_prep_recv(sock, ctx);
+    err = s_prep_sock_recv(sock);
     if (err != AH_ENONE) {
         goto call_recv_cb_with_err_and_return;
     }
@@ -123,10 +112,10 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     return;
 
 call_recv_cb_with_err_and_return:
-    ctx->recv_cb(sock, NULL, NULL, 0u, err);
+    sock->_vtab->on_recv_done(sock, &sock->_recv_addr, (ah_bufs_t) { 0u }, 0u, err);
 }
 
-ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock)
+ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -139,16 +128,16 @@ ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_bufs_t bufs, const ah_sockaddr_t* remote_addr)
 {
-    if (sock == NULL || ctx == NULL || ctx->send_cb == NULL) {
-        return AH_EINVAL;
-    }
-    if (ctx->bufs.items == NULL && ctx->bufs.length != 0u) {
+    if (sock == NULL || (bufs.items == NULL && bufs.length != 0u)) {
         return AH_EINVAL;
     }
     if (!sock->_is_open) {
         return AH_ESTATE;
+    }
+    if (sock->_is_sending) {
+        return AH_EAGAIN;
     }
 
     ah_i_loop_evt_t* evt;
@@ -159,57 +148,56 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
         return err;
     }
 
-    evt->_cb = s_on_send;
-    evt->_body._as_udp_send._sock = sock;
-    evt->_body._as_udp_send._ctx = ctx;
+    evt->_cb = s_on_sock_send;
+    evt->_subject._as_udp_sock = sock;
 
     struct iovec* iov;
-    int iovcnt;
-    err = ah_i_bufs_into_iovec(&ctx->bufs, &iov, &iovcnt);
+    int iovlen;
+    err = ah_i_bufs_into_iovec(&bufs, &iov, &iovlen);
     if (err != AH_ENONE) {
         return err;
     }
 
-    ctx->_msghdr = (struct msghdr) {
-        .msg_name = ah_i_sockaddr_into_bsd(&ctx->remote_addr),
-        .msg_namelen = ah_i_sockaddr_get_size(&ctx->remote_addr),
+    sock->_send_msghdr = (struct msghdr) {
+        .msg_name = ah_i_sockaddr_into_bsd((ah_sockaddr_t*) remote_addr),
+        .msg_namelen = ah_i_sockaddr_get_size(remote_addr),
         .msg_iov = iov,
-        .msg_iovlen = iovcnt,
+        .msg_iovlen = iovlen,
     };
 
-    io_uring_prep_sendmsg(sqe, sock->_fd, &ctx->_msghdr, 0u);
+    io_uring_prep_sendmsg(sqe, sock->_fd, &sock->_send_msghdr, 0u);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
 }
 
-static void s_on_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
+static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(cqe != NULL);
 
-    ah_udp_sock_t* sock = evt->_body._as_udp_send._sock;
+    ah_udp_sock_t* sock = evt->_subject._as_udp_sock;
     ah_assert_if_debug(sock != NULL);
 
-    ah_udp_send_ctx_t* ctx = evt->_body._as_udp_send._ctx;
-    ah_assert_if_debug(ctx != NULL);
-    ah_assert_if_debug(ctx->send_cb != NULL);
-    ah_assert_if_debug(ctx->bufs.items != NULL || ctx->bufs.length == 0u);
-
     ah_err_t err;
+    size_t n_bytes_sent;
 
     if (ah_unlikely(cqe->res < 0)) {
         err = -(cqe->res);
-        goto call_send_cb_with_sock_and_err;
+        n_bytes_sent = 0u;
+    }
+    else {
+        err = AH_ENONE;
+        n_bytes_sent = cqe->res;
     }
 
-    err = AH_ENONE;
+    ah_bufs_t bufs;
+    ah_i_bufs_from_iovec(&bufs, sock->_recv_msghdr.msg_iov, sock->_recv_msghdr.msg_iovlen);
 
-call_send_cb_with_sock_and_err:
-    ctx->send_cb(sock, err);
+    sock->_vtab->on_send_done(sock, sock->_send_msghdr.msg_name, bufs, n_bytes_sent, err);
 }
 
-ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
+ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -226,52 +214,50 @@ ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
 
     ah_err_t err;
 
-    if (cb != NULL) {
-        ah_i_loop_evt_t* evt;
-        struct io_uring_sqe* sqe;
+    ah_i_loop_evt_t* evt;
+    struct io_uring_sqe* sqe;
 
-        err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
-        if (err == AH_ENONE) {
-            evt->_cb = s_on_close;
-            evt->_body._as_udp_close._sock = sock;
-            evt->_body._as_udp_close._cb = cb;
+    err = ah_i_loop_evt_alloc_with_sqe(sock->_loop, &evt, &sqe);
+    if (err == AH_ENONE) {
+        evt->_cb = s_on_sock_close;
+        evt->_subject._as_udp_sock = sock;
 
-            io_uring_prep_close(sqe, sock->_fd);
-            io_uring_sqe_set_data(sqe, evt);
+        io_uring_prep_close(sqe, sock->_fd);
+        io_uring_sqe_set_data(sqe, evt);
 
-            return AH_ENONE;
-        }
-
-        (void) ah_i_loop_try_set_pending_err(sock->_loop, err);
+        return AH_ENONE;
     }
 
-    err = ah_i_sock_close(sock->_loop, sock->_fd);
+    // These events are safe to ignore. No other errors should be possible.
+    ah_assert_if_debug(err == AH_ENOMEM || err == AH_ENOBUFS || err == AH_ESTATE);
+
+    err = ah_i_sock_close(sock->_fd);
+    if (err == AH_EINTR) {
+        if (ah_i_loop_try_set_pending_err(sock->_loop, AH_EINTR)) {
+            err = AH_ENONE;
+        }
+    }
 
 #ifndef NDEBUG
     sock->_fd = 0;
 #endif
 
-    if (cb != NULL) {
-        cb(sock, err);
-    }
+    sock->_vtab->on_close(sock, err);
 
-    return err;
+    return AH_ENONE;
 }
 
-static void s_on_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
+static void s_on_sock_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(cqe != NULL);
 
-    ah_udp_sock_t* sock = evt->_body._as_udp_close._sock;
+    ah_udp_sock_t* sock = evt->_subject._as_udp_sock;
     ah_assert_if_debug(sock != NULL);
 
 #ifndef NDEBUG
     sock->_fd = 0;
 #endif
 
-    ah_udp_close_cb cb = evt->_body._as_udp_close._cb;
-    ah_assert_if_debug(cb != NULL);
-
-    cb(sock, -(cqe->res));
+    sock->_vtab->on_close(sock, -(cqe->res));
 }

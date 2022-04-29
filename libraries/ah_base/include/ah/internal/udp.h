@@ -17,15 +17,20 @@
 #    include "uring/udp.h"
 #endif
 
-#define AH_I_UDP_RECV_CTX_FIELDS AH_I_UDP_RECV_CTX_PLATFORM_FIELDS
-#define AH_I_UDP_SEND_CTX_FIELDS AH_I_UDP_SEND_CTX_PLATFORM_FIELDS
-
 #define AH_I_UDP_SOCK_FIELDS                                                                                           \
     ah_loop_t* _loop;                                                                                                  \
+    const ah_udp_sock_vtab_t* _vtab;                                                                                   \
+    void* _trans_data;                                                                                                 \
     void* _user_data;                                                                                                  \
     bool _is_ipv6;                                                                                                     \
     bool _is_open;                                                                                                     \
     bool _is_receiving;                                                                                                \
+    bool _is_sending;                                                                                                  \
     AH_I_UDP_SOCK_PLATFORM_FIELDS
+
+#define AH_I_UDP_TRANS_FIELDS                                                                                          \
+    ah_loop_t* _loop;                                                                                                  \
+    const ah_udp_trans_vtab_t* _vtab;                                                                                  \
+    void* _trans_data;
 
 #endif
