@@ -14,7 +14,7 @@
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS                                                                              \
     int _fd;                                                                                                           \
-    ah_sockaddr_t _remote_addr;                                                                                        \
-    socklen_t _remote_addr_len;
+    ah_sockaddr_t _raddr;                                                                                        \
+    socklen_t _raddr_len;
 
 #endif

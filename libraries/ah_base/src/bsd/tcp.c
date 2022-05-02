@@ -25,7 +25,7 @@
 #    define SHUT_RDWR SD_BOTH
 #endif
 
-ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* local_addr)
+ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -34,32 +34,32 @@ ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* local_addr)
         return AH_ESTATE;
     }
 
-    ah_err_t err = ah_i_sock_open_bind(local_addr, SOCK_STREAM, &conn->_fd);
+    ah_err_t err = ah_i_sock_open_bind(laddr, SOCK_STREAM, &conn->_fd);
     conn->_vtab->on_open(conn, err);
 
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_conn_get_local_addr(const ah_tcp_conn_t* conn, ah_sockaddr_t* local_addr)
+ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
 {
-    if (conn == NULL || local_addr == NULL) {
+    if (conn == NULL || laddr == NULL) {
         return AH_EINVAL;
     }
     if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-    return ah_i_sock_getsockname(conn->_fd, local_addr);
+    return ah_i_sock_getsockname(conn->_fd, laddr);
 }
 
-ah_err_t ah_tcp_conn_get_remote_addr(const ah_tcp_conn_t* conn, ah_sockaddr_t* remote_addr)
+ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
 {
-    if (conn == NULL || remote_addr == NULL) {
+    if (conn == NULL || raddr == NULL) {
         return AH_EINVAL;
     }
     if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-    return ah_i_sock_getpeername(conn->_fd, remote_addr);
+    return ah_i_sock_getpeername(conn->_fd, raddr);
 }
 
 ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled)
@@ -163,7 +163,7 @@ ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
     return err;
 }
 
-ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* local_addr)
+ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
     if (ln == NULL) {
         return AH_EINVAL;
@@ -172,10 +172,10 @@ ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* local_
         return AH_ESTATE;
     }
 
-    ah_err_t err = ah_i_sock_open_bind(local_addr, SOCK_STREAM, &ln->_fd);
+    ah_err_t err = ah_i_sock_open_bind(laddr, SOCK_STREAM, &ln->_fd);
 
 #if AH_USE_IOCP
-    conn->_sockfamily = local_addr != NULL ? local_addr->as_ip.family : AH_SOCKFAMILY_DEFAULT;
+    conn->_sockfamily = laddr != NULL ? laddr->as_ip.family : AH_SOCKFAMILY_DEFAULT;
 #endif
 
     ln->_vtab->on_open(ln, err);
@@ -183,15 +183,15 @@ ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* local_
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_listener_get_local_addr(const ah_tcp_listener_t* ln, ah_sockaddr_t* local_addr)
+ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr)
 {
-    if (ln == NULL || local_addr == NULL) {
+    if (ln == NULL || laddr == NULL) {
         return AH_EINVAL;
     }
     if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
         return AH_ESTATE;
     }
-    return ah_i_sock_getsockname(ln->_fd, local_addr);
+    return ah_i_sock_getsockname(ln->_fd, laddr);
 }
 
 ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled)

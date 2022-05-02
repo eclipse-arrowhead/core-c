@@ -14,7 +14,7 @@
 #    include <ws2ipdef.h>
 #endif
 
-ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* local_addr)
+ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr)
 {
     if (sock == NULL || sock->_loop == NULL) {
         return AH_EINVAL;
@@ -23,10 +23,10 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* lo
         return AH_ESTATE;
     }
 
-    ah_err_t err = ah_i_sock_open_bind(local_addr, SOCK_DGRAM, &sock->_fd);
+    ah_err_t err = ah_i_sock_open_bind(laddr, SOCK_DGRAM, &sock->_fd);
 
     if (err == AH_ENONE) {
-        sock->_is_ipv6 = (local_addr != NULL ? local_addr->as_any.family : AH_SOCKFAMILY_DEFAULT) == AH_SOCKFAMILY_IPV6;
+        sock->_is_ipv6 = (laddr != NULL ? laddr->as_any.family : AH_SOCKFAMILY_DEFAULT) == AH_SOCKFAMILY_IPV6;
         sock->_is_open = true;
     }
 
@@ -35,15 +35,15 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* lo
     return err;
 }
 
-ah_extern ah_err_t ah_udp_sock_get_local_addr(const ah_udp_sock_t* sock, ah_sockaddr_t* local_addr)
+ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_t* laddr)
 {
-    if (sock == NULL || local_addr == NULL) {
+    if (sock == NULL || laddr == NULL) {
         return AH_EINVAL;
     }
     if (!sock->_is_open) {
         return AH_ESTATE;
     }
-    return ah_i_sock_getsockname(sock->_fd, local_addr);
+    return ah_i_sock_getsockname(sock->_fd, laddr);
 }
 
 ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit)

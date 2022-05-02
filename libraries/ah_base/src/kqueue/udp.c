@@ -86,11 +86,11 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto call_recv_cb_with_err_and_return;
     }
 
-    ah_sockaddr_t remote_addr;
-    socklen_t socklen = sizeof(remote_addr);
+    ah_sockaddr_t raddr;
+    socklen_t socklen = sizeof(raddr);
 
     struct msghdr msghdr = {
-        .msg_name = ah_i_sockaddr_into_bsd(&remote_addr),
+        .msg_name = ah_i_sockaddr_into_bsd(&raddr),
         .msg_namelen = socklen,
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
@@ -102,7 +102,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto call_recv_cb_with_err_and_return;
     }
 
-    ctx->recv_cb(sock, &remote_addr, &bufs, n_bytes_read, AH_ENONE);
+    ctx->recv_cb(sock, &raddr, &bufs, n_bytes_read, AH_ENONE);
 
     if (!sock->_is_open) {
         return;
@@ -203,8 +203,8 @@ static void s_on_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     struct msghdr msghdr = {
-        .msg_name = ah_i_sockaddr_into_bsd(&ctx->remote_addr),
-        .msg_namelen = ah_i_sockaddr_get_size(&ctx->remote_addr),
+        .msg_name = ah_i_sockaddr_into_bsd(&ctx->raddr),
+        .msg_namelen = ah_i_sockaddr_get_size(&ctx->raddr),
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
     };

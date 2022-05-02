@@ -110,11 +110,11 @@ close_fd0_and_return:
 #endif
 }
 
-ah_extern ah_err_t ah_i_sock_open_bind(const ah_sockaddr_t* local_addr, int type, ah_i_sockfd_t* fd)
+ah_extern ah_err_t ah_i_sock_open_bind(const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd)
 {
     ah_assert_if_debug(fd != NULL);
 
-    const int sockfamily = local_addr != NULL ? local_addr->as_any.family : AH_SOCKFAMILY_DEFAULT;
+    const int sockfamily = laddr != NULL ? laddr->as_any.family : AH_SOCKFAMILY_DEFAULT;
 
     ah_i_sockfd_t fd0;
     ah_err_t err = ah_i_sock_open(sockfamily, type, &fd0);
@@ -122,8 +122,8 @@ ah_extern ah_err_t ah_i_sock_open_bind(const ah_sockaddr_t* local_addr, int type
         return err;
     }
 
-    if (local_addr != NULL && (local_addr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(local_addr))) {
-        if (bind(fd0, ah_i_sockaddr_const_into_bsd(local_addr), ah_i_sockaddr_get_size(local_addr)) != 0) {
+    if (laddr != NULL && (laddr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(laddr))) {
+        if (bind(fd0, ah_i_sockaddr_const_into_bsd(laddr), ah_i_sockaddr_get_size(laddr)) != 0) {
 #if AH_IS_WIN32
             err = WSAGetLastError();
 #else
@@ -156,12 +156,12 @@ ah_extern ah_err_t ah_i_sock_close(ah_i_sockfd_t fd)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* local_addr)
+ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr)
 {
-    ah_assert_if_debug(local_addr != NULL);
+    ah_assert_if_debug(laddr != NULL);
 
     ah_i_socklen_t socklen = sizeof(ah_sockaddr_t);
-    if (getsockname(fd, ah_i_sockaddr_into_bsd(local_addr), &socklen) != 0) {
+    if (getsockname(fd, ah_i_sockaddr_into_bsd(laddr), &socklen) != 0) {
 #if AH_IS_WIN32
         return WSAGetLastError();
 #else
@@ -171,18 +171,18 @@ ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* local_
 
 #if AH_I_SOCKADDR_HAS_SIZE
     ah_assert_if_debug(socklen <= UINT8_MAX);
-    local_addr->as_any.size = (uint8_t) socklen;
+    laddr->as_any.size = (uint8_t) socklen;
 #endif
 
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* remote_addr)
+ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* raddr)
 {
-    ah_assert_if_debug(remote_addr != NULL);
+    ah_assert_if_debug(raddr != NULL);
 
     ah_i_socklen_t socklen = sizeof(ah_sockaddr_t);
-    if (getpeername(fd, ah_i_sockaddr_into_bsd(remote_addr), &socklen) != 0) {
+    if (getpeername(fd, ah_i_sockaddr_into_bsd(raddr), &socklen) != 0) {
 #if AH_IS_WIN32
         return WSAGetLastError();
 #else
@@ -192,7 +192,7 @@ ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* remote
 
 #if AH_I_SOCKADDR_HAS_SIZE
     ah_assert_if_debug(socklen <= UINT8_MAX);
-    remote_addr->as_any.size = (uint8_t) socklen;
+    raddr->as_any.size = (uint8_t) socklen;
 #endif
 
     return AH_ENONE;

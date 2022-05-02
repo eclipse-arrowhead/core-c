@@ -12,7 +12,7 @@
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS                                                                                  \
     SOCKET _fd;                                                                                                        \
-    ah_sockaddr_t _remote_addr;                                                                                        \
+    ah_sockaddr_t _raddr;                                                                                        \
     struct msghdr _recv_wsamsg;                                                                                        \
     struct msghdr _send_wsamsg;                                                                                        \
     LPFN_WSARECVMSG _WSARecvMsg;

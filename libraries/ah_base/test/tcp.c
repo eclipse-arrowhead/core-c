@@ -16,7 +16,7 @@ struct s_tcp_conn_user_data {
     ah_buf_t* free_buf;
     ah_buf_t* write_buf;
 
-    const ah_sockaddr_t* remote_addr;
+    const ah_sockaddr_t* raddr;
 
     bool did_call_open_cb;
     bool did_call_connect_cb;
@@ -80,7 +80,7 @@ static void s_on_conn_a_open(ah_tcp_conn_t* conn, ah_err_t err)
         return;
     }
 
-    err = ah_tcp_conn_connect(conn, user_data->remote_addr);
+    err = ah_tcp_conn_connect(conn, user_data->raddr);
     if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
         return;
     }
@@ -133,7 +133,7 @@ static void s_on_alloc_mem(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t size);
 static void s_on_read(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t size, ah_err_t err);
 static void s_on_write(ah_tcp_sock_t* sock, ah_err_t err);
 
-static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* remote_addr, ah_err_t err)
+static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     struct s_tcp_user_data* user_data = ah_tcp_get_user_data(sock);
     if (user_data == NULL) {
@@ -151,7 +151,7 @@ static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_socka
     if (!ah_unit_assert(unit, conn != NULL, "conn == NULL")) {
         return;
     }
-    if (!ah_unit_assert(unit, remote_addr != NULL, "remote_addr == NULL")) {
+    if (!ah_unit_assert(unit, raddr != NULL, "raddr == NULL")) {
         return;
     }
 
@@ -406,7 +406,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     }
     ah_tcp_set_user_data(&read_conn, &user_data);
 
-    err = ah_tcp_get_local_addr(&read_conn, &read_addr);
+    err = ah_tcp_get_laddr(&read_conn, &read_addr);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

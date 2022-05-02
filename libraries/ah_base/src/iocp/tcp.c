@@ -21,9 +21,9 @@ static void s_on_write(ah_i_loop_evt_t* evt);
 static ah_err_t s_prep_accept(ah_tcp_sock_t* sock, ah_tcp_listen_ctx_t* ctx);
 static ah_err_t s_prep_read(ah_tcp_sock_t* sock, ah_tcp_read_ctx_t* ctx);
 
-ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remote_addr, ah_tcp_connect_cb cb)
+ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* raddr, ah_tcp_connect_cb cb)
 {
-    if (sock == NULL || !ah_sockaddr_is_ip(remote_addr) || cb == NULL) {
+    if (sock == NULL || !ah_sockaddr_is_ip(raddr) || cb == NULL) {
         return AH_EINVAL;
     }
     if (sock->_state != AH_I_TCP_SOCK_STATE_OPEN) {
@@ -49,8 +49,8 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
     evt->_body._as_tcp_connect._sock = sock;
     evt->_body._as_tcp_connect._cb = cb;
 
-    const struct sockaddr* name = ah_i_sockaddr_const_into_bsd(remote_addr);
-    const int namelen = ah_i_sockaddr_get_size(remote_addr);
+    const struct sockaddr* name = ah_i_sockaddr_const_into_bsd(raddr);
+    const int namelen = ah_i_sockaddr_get_size(raddr);
 
     DWORD bytes;
     if (!sock->_ConnectEx(sock->_fd, name, namelen, NULL, 0u, &bytes, &evt->_overlapped)) {
@@ -235,16 +235,16 @@ static void s_on_accept(ah_i_loop_evt_t* evt)
 
     const DWORD addr_size = sizeof(struct sockaddr_storage);
 
-    struct sockaddr* local_addr;
-    INT local_addr_size;
+    struct sockaddr* laddr;
+    INT laddr_size;
 
-    struct sockaddr* remote_addr = NULL;
-    INT remote_addr_size;
+    struct sockaddr* raddr = NULL;
+    INT raddr_size;
 
-    listener->_GetAcceptExSockaddrs(ctx->_accept_buffer, 0u, addr_size, addr_size, &local_addr, &local_addr_size,
-        &remote_addr, &remote_addr_size);
+    listener->_GetAcceptExSockaddrs(ctx->_accept_buffer, 0u, addr_size, addr_size, &laddr, &laddr_size,
+        &raddr, &raddr_size);
 
-    ctx->accept_cb(listener, conn, ah_i_sockaddr_from_bsd(remote_addr), AH_ENONE);
+    ctx->accept_cb(listener, conn, ah_i_sockaddr_from_bsd(raddr), AH_ENONE);
 
 prep_another_accept:
 

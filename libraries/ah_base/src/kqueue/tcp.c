@@ -21,9 +21,9 @@ static void s_on_write(ah_i_loop_evt_t* evt, struct kevent* kev);
 
 static ah_err_t s_prep_write(ah_tcp_sock_t* sock, ah_tcp_write_ctx_t* ctx);
 
-ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remote_addr, ah_tcp_connect_cb cb)
+ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* raddr, ah_tcp_connect_cb cb)
 {
-    if (sock == NULL || !ah_sockaddr_is_ip(remote_addr) || cb == NULL) {
+    if (sock == NULL || !ah_sockaddr_is_ip(raddr) || cb == NULL) {
         return AH_EINVAL;
     }
     if (sock->_state != AH_I_TCP_SOCK_STATE_OPEN) {
@@ -32,7 +32,7 @@ ah_extern ah_err_t ah_tcp_connect(ah_tcp_sock_t* sock, const ah_sockaddr_t* remo
 
     ah_err_t err;
 
-    if (connect(sock->_fd, ah_i_sockaddr_const_into_bsd(remote_addr), ah_i_sockaddr_get_size(remote_addr)) != 0) {
+    if (connect(sock->_fd, ah_i_sockaddr_const_into_bsd(raddr), ah_i_sockaddr_get_size(raddr)) != 0) {
         if (errno == EINPROGRESS) {
             ah_i_loop_evt_t* evt;
             struct kevent* kev;

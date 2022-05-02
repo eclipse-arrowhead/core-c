@@ -128,7 +128,7 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_bufs_t bufs, const ah_sockaddr_t* remote_addr)
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_bufs_t bufs, const ah_sockaddr_t* raddr)
 {
     if (sock == NULL || (bufs.items == NULL && bufs.length != 0u)) {
         return AH_EINVAL;
@@ -159,8 +159,8 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_bufs_t bufs, const a
     }
 
     sock->_send_msghdr = (struct msghdr) {
-        .msg_name = ah_i_sockaddr_into_bsd((ah_sockaddr_t*) remote_addr),
-        .msg_namelen = ah_i_sockaddr_get_size(remote_addr),
+        .msg_name = ah_i_sockaddr_into_bsd((ah_sockaddr_t*) raddr),
+        .msg_namelen = ah_i_sockaddr_get_size(raddr),
         .msg_iov = iov,
         .msg_iovlen = iovlen,
     };

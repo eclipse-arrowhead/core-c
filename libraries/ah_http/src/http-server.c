@@ -9,7 +9,7 @@
 #include <ah/err.h>
 #include <ah/math.h>
 
-static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* remote_addr, ah_err_t err);
+static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 static void s_on_alloc_bufs(ah_tcp_sock_t* sock, ah_bufs_t* bufs, size_t n_bytes_expected);
 static void s_on_alloc_sock(ah_tcp_sock_t* sock, ah_tcp_sock_t** conn);
 static void s_on_close(ah_tcp_sock_t* sock, ah_err_t err);
@@ -59,12 +59,12 @@ ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, 
     srv->_listen_ctx.alloc_cb = s_on_alloc_sock;
 }
 
-ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* local_addr)
+ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr)
 {
     if (srv == NULL) {
         return AH_EINVAL;
     }
-    return srv->_trans._vtab->open(&srv->_sock, local_addr, s_on_open);
+    return srv->_trans._vtab->open(&srv->_sock, laddr, s_on_open);
 }
 
 static void s_on_open(ah_tcp_sock_t* sock, ah_err_t err)
@@ -113,12 +113,12 @@ static void s_on_alloc_sock(ah_tcp_sock_t* sock, ah_tcp_sock_t** conn)
     }
 }
 
-static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* remote_addr, ah_err_t err)
+static void s_on_accept(ah_tcp_sock_t* sock, ah_tcp_sock_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     ah_http_server_t* srv = s_upcast_to_server(sock);
     ah_http_client_t* cnt = conn != NULL ? s_upcast_to_client(conn) : NULL;
 
-    srv->_vtab->on_client_accept(srv, cnt, remote_addr, err);
+    srv->_vtab->on_client_accept(srv, cnt, raddr, err);
 
     if (conn == NULL || err != AH_ENONE) {
         return;

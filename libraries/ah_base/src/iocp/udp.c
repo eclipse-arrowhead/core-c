@@ -77,7 +77,7 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     }
 
     ctx->_wsa_msg = (WSAMSG) {
-        .name = ah_i_sockaddr_into_bsd(&ctx->_remote_addr),
+        .name = ah_i_sockaddr_into_bsd(&ctx->_raddr),
         .namelen = sizeof(ah_sockaddr_t),
         .lpBuffers = buffers,
         .dwBufferCount = buffer_count,
@@ -125,7 +125,7 @@ static void s_on_recv(ah_i_loop_evt_t* evt)
         goto call_recv_cb_with_err_and_return;
     }
 
-    ctx->recv_cb(sock, &ctx->_remote_addr, &bufs, n_bytes_transferred, AH_ENONE);
+    ctx->recv_cb(sock, &ctx->_raddr, &bufs, n_bytes_transferred, AH_ENONE);
 
     if (!sock->_is_open) {
         return;
@@ -186,8 +186,8 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
     }
 
     ctx->_wsa_msg = (WSAMSG) {
-        .name = ah_i_sockaddr_into_bsd(&ctx->remote_addr),
-        .namelen = ah_i_sockaddr_get_size(&ctx->remote_addr),
+        .name = ah_i_sockaddr_into_bsd(&ctx->raddr),
+        .namelen = ah_i_sockaddr_get_size(&ctx->raddr),
         .lpBuffers = buffers,
         .dwBufferCount = buffer_count,
     };

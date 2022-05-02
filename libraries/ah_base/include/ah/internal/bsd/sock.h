@@ -61,10 +61,10 @@ ah_inline const struct sockaddr* ah_i_sockaddr_const_into_bsd(const ah_sockaddr_
 }
 
 ah_extern ah_err_t ah_i_sock_open(int sockfamily, int type, ah_i_sockfd_t* fd);
-ah_extern ah_err_t ah_i_sock_open_bind(const ah_sockaddr_t* local_addr, int type, ah_i_sockfd_t* fd);
+ah_extern ah_err_t ah_i_sock_open_bind(const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd);
 ah_extern ah_err_t ah_i_sock_close(ah_i_sockfd_t fd);
 
-ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* local_addr);
-ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* remote_addr);
+ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr);
+ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* raddr);
 
 #endif

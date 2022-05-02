@@ -23,9 +23,9 @@ static void s_on_listener_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn);
 
-ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* remote_addr)
+ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
-    if (conn == NULL || remote_addr == NULL || !ah_sockaddr_is_ip(remote_addr)) {
+    if (conn == NULL || raddr == NULL || !ah_sockaddr_is_ip(raddr)) {
         return AH_EINVAL;
     }
     if (conn->_state != AH_I_TCP_CONN_STATE_OPEN) {
@@ -43,8 +43,8 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
     evt->_cb = s_on_conn_connect;
     evt->_subject._as_tcp_conn = conn;
 
-    io_uring_prep_connect(sqe, conn->_fd, ah_i_sockaddr_const_into_bsd(remote_addr),
-        ah_i_sockaddr_get_size(remote_addr));
+    io_uring_prep_connect(sqe, conn->_fd, ah_i_sockaddr_const_into_bsd(raddr),
+        ah_i_sockaddr_get_size(raddr));
     io_uring_sqe_set_data(sqe, evt);
 
     conn->_state = AH_I_TCP_CONN_STATE_CONNECTING;
@@ -362,8 +362,8 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
     evt->_cb = s_on_listener_accept;
     evt->_subject._as_tcp_listener = ln;
 
-    ln->_remote_addr_len = sizeof(ah_sockaddr_t);
-    io_uring_prep_accept(sqe, ln->_fd, ah_i_sockaddr_into_bsd(&ln->_remote_addr), &ln->_remote_addr_len, 0);
+    ln->_raddr_len = sizeof(ah_sockaddr_t);
+    io_uring_prep_accept(sqe, ln->_fd, ah_i_sockaddr_into_bsd(&ln->_raddr), &ln->_raddr_len, 0);
     io_uring_sqe_set_data(sqe, evt);
 
     ln->_conn_vtab = conn_vtab;
@@ -382,14 +382,14 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_assert_if_debug(ln != NULL);
 
     if (ah_unlikely(cqe->res < 0)) {
-        ln->_vtab->on_conn_accept(ln, NULL, &ln->_remote_addr, -cqe->res);
+        ln->_vtab->on_conn_accept(ln, NULL, &ln->_raddr, -cqe->res);
         goto prep_another_accept;
     }
 
     ah_tcp_conn_t* conn = NULL;
-    ln->_vtab->on_conn_alloc(ln, &conn, &ln->_remote_addr);
+    ln->_vtab->on_conn_alloc(ln, &conn, &ln->_raddr);
     if (conn == NULL) {
-        ln->_vtab->on_conn_accept(ln, NULL, &ln->_remote_addr, AH_ENOBUFS);
+        ln->_vtab->on_conn_accept(ln, NULL, &ln->_raddr, AH_ENOBUFS);
         goto prep_another_accept;
     }
 
@@ -400,7 +400,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         ._fd = cqe->res,
     };
 
-    ln->_vtab->on_conn_accept(ln, conn, &ln->_remote_addr, AH_ENONE);
+    ln->_vtab->on_conn_accept(ln, conn, &ln->_raddr, AH_ENONE);
 
     ah_err_t err;
     ah_i_loop_evt_t* evt0;
@@ -417,8 +417,8 @@ prep_another_accept:
     evt0->_cb = s_on_listener_accept;
     evt0->_subject._as_tcp_listener = ln;
 
-    ln->_remote_addr_len = sizeof(ah_sockaddr_t);
-    io_uring_prep_accept(sqe, ln->_fd, ah_i_sockaddr_into_bsd(&ln->_remote_addr), &ln->_remote_addr_len, 0);
+    ln->_raddr_len = sizeof(ah_sockaddr_t);
+    io_uring_prep_accept(sqe, ln->_fd, ah_i_sockaddr_into_bsd(&ln->_raddr), &ln->_raddr_len, 0);
     io_uring_sqe_set_data(sqe, evt0);
 }
 

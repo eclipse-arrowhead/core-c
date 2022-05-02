@@ -70,7 +70,7 @@ static void s_on_alloc(ah_udp_sock_t* sock, ah_bufs_t* bufs, size_t size)
     user_data->_did_alloc = true;
 }
 
-static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufs_t* bufs, size_t size, ah_err_t err)
+static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* raddr, ah_bufs_t* bufs, size_t size, ah_err_t err)
 {
     struct s_udp_user_data* user_data = ah_udp_sock_get_user_data(sock);
     if (user_data == NULL) {
@@ -86,7 +86,7 @@ static void s_on_recv(ah_udp_sock_t* sock, ah_sockaddr_t* remote_addr, ah_bufs_t
         return;
     }
 
-    if (!ah_unit_assert(unit, remote_addr != NULL, "remote_addr == NULL")) {
+    if (!ah_unit_assert(unit, raddr != NULL, "raddr == NULL")) {
         return;
     }
     if (!ah_unit_assert(unit, bufs != NULL, "bufs == NULL")) {
@@ -169,7 +169,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     }
     ah_udp_sock_set_user_data(&recv_sock, &user_data);
 
-    err = ah_udp_sock_get_local_addr(&recv_sock, &recv_addr);
+    err = ah_udp_sock_get_laddr(&recv_sock, &recv_addr);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -205,7 +205,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     err = ah_udp_sock_send(&send_sock,
         &(ah_udp_send_ctx_t) {
-            .remote_addr = recv_addr,
+            .raddr = recv_addr,
             .bufs = (ah_bufs_t) {
                 .items = &(ah_buf_t) {
                     ._octets = (uint8_t*) "Hello, Arrowhead!",
