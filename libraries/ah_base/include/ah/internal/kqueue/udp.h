@@ -7,6 +7,9 @@
 #ifndef AH_INTERNAL_KQUEUE_UDP_H_
 #define AH_INTERNAL_KQUEUE_UDP_H_
 
-#define AH_I_UDP_SOCK_PLATFORM_FIELDS int _fd;
+#define AH_I_UDP_SOCK_PLATFORM_FIELDS                                                                                  \
+    int _fd;                                                                                                           \
+    const ah_sockaddr_t* _send_addr;                                                                                   \
+    ah_bufs_t _send_bufs;
 
 #endif

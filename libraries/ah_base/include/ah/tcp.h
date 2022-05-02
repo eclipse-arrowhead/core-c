@@ -25,8 +25,8 @@ struct ah_tcp_conn {
 };
 
 struct ah_tcp_conn_vtab {
-    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err); // Unused by accepted connections.
-    void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err); // Unused by accepted connections.
+    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err); // Never called for accepted connections.
+    void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err); // Never called for accepted connections.
     void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
 
     // If both are NULL, receiving is shutdown automatically. Either both or none must be set.
@@ -46,7 +46,7 @@ struct ah_tcp_listener_vtab {
     void (*on_listen)(ah_tcp_listener_t* ln, ah_err_t err);
     void (*on_close)(ah_tcp_listener_t* ln, ah_err_t err);
 
-    void (*on_conn_alloc)(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn, const ah_sockaddr_t* raddr);
+    void (*on_conn_alloc)(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
     void (*on_conn_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 };
 

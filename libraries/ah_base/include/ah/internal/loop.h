@@ -40,17 +40,10 @@
                                                                                                                        \
     AH_I_LOOP_PLATFORM_FIELDS
 
-union ah_i_loop_evt_subject {
-    struct ah_task* _as_task;
-    struct ah_tcp_conn* _as_tcp_conn;
-    struct ah_tcp_listener* _as_tcp_listener;
-    struct ah_udp_sock* _as_udp_sock;
-};
-
 struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS
 
-    union ah_i_loop_evt_subject _subject;
+    void* _subject;
     ah_i_loop_evt_t* _next_free; // Used by loop allocator. Do not use directly.
 };
 

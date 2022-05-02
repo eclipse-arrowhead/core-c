@@ -17,7 +17,7 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, const 
     if (vtab->on_open == NULL || vtab->on_connect == NULL || vtab->on_close == NULL) {
         return AH_EINVAL;
     }
-    if (vtab->on_read_alloc == NULL || vtab->on_read_done == NULL || vtab->on_write_done == NULL) {
+    if ((vtab->on_read_alloc == NULL) != (vtab->on_read_done == NULL)) {
         return AH_EINVAL;
     }
     if (ah_loop_is_term(loop)) {

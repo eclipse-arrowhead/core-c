@@ -9,7 +9,8 @@
 
 #define AH_I_TCP_CONN_PLATFORM_FIELDS                                                                                  \
     int _fd;                                                                                                           \
-    struct ah_i_loop_evt* _read_evt;
+    struct ah_i_loop_evt* _read_evt;                                                                                   \
+    ah_bufs_t _write_bufs;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS                                                                              \
     int _fd;                                                                                                           \

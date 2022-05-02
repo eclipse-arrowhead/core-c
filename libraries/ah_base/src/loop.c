@@ -236,7 +236,7 @@ ah_err_t ah_loop_term(ah_loop_t* loop)
 
 bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err)
 {
-    if (ah_loop_is_term(loop)) {
+    if (ah_loop_is_term(loop) || (loop->_pending_err != AH_ENONE && loop->_pending_err != err)) {
         return false;
     }
     loop->_pending_err = err;

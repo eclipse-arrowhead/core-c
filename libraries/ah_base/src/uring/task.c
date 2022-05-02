@@ -48,7 +48,7 @@ ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baselin
     }
 
     evt->_cb = s_on_execution;
-    evt->_subject._as_task = task;
+    evt->_subject = task;
 
     task->_baseline = baseline;
     io_uring_prep_timeout(sqe, &task->_baseline._timespec, 0u, IORING_TIMEOUT_ABS);
@@ -64,7 +64,7 @@ static void s_on_execution(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(cqe != NULL);
 
-    ah_task_t* task = evt->_subject._as_task;
+    ah_task_t* task = evt->_subject;
     ah_assert_if_debug(task != NULL);
 
     if (task->_state == AH_TASK_STATE_CANCELED) {
