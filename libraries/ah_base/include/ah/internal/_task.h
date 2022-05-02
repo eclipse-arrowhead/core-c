@@ -10,11 +10,11 @@
 #include "../defs.h"
 
 #if AH_USE_IOCP
-#    include "iocp/task.h"
+#    include "_task-iocp.h"
 #elif AH_USE_KQUEUE
-#    include "kqueue/task.h"
+#    include "_task-kqueue.h"
 #elif AH_USE_URING
-#    include "uring/task.h"
+#    include "_task-uring.h"
 #endif
 
 #define AH_I_TASK_FIELDS                                                                                               \

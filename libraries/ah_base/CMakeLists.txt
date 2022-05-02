@@ -12,13 +12,13 @@ set(
     include/ah/buf.h
     include/ah/defs.h
     include/ah/err.h
-    include/ah/internal/loop.h
-    include/ah/internal/sock.h
-    include/ah/internal/str.h
-    include/ah/internal/task.h
-    include/ah/internal/tcp.h
-    include/ah/internal/time.h
-    include/ah/internal/udp.h
+    include/ah/internal/_loop.h
+    include/ah/internal/_sock.h
+    include/ah/internal/_str.h
+    include/ah/internal/_task.h
+    include/ah/internal/_tcp.h
+    include/ah/internal/_time.h
+    include/ah/internal/_udp.h
     include/ah/intrin.h
     include/ah/ip.h
     include/ah/lib.h
@@ -47,13 +47,13 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/bsd/sock.h
-        include/ah/internal/darwin/time.h
-        include/ah/internal/kqueue/loop.h
-        include/ah/internal/kqueue/task.h
-        include/ah/internal/kqueue/tcp.h
-        include/ah/internal/kqueue/udp.h
-        include/ah/internal/posix/buf.h
+        include/ah/internal/_sock-bsd.h
+        include/ah/internal/_time-darwin.h
+        include/ah/internal/_loop-kqueue.h
+        include/ah/internal/_task-kqueue.h
+        include/ah/internal/_tcp-kqueue.h
+        include/ah/internal/_udp-kqueue.h
+        include/ah/internal/_buf-posix.h
         src/abort-posix.c
         src/buf-posix.c
         src/loop-kqueue.c
@@ -71,13 +71,13 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/bsd/sock.h
-        include/ah/internal/posix/buf.h
-        include/ah/internal/uring/loop.h
-        include/ah/internal/uring/task.h
-        include/ah/internal/uring/tcp.h
-        include/ah/internal/uring/time.h
-        include/ah/internal/uring/udp.h
+        include/ah/internal/_sock-bsd.h
+        include/ah/internal/_buf-posix.h
+        include/ah/internal/_loop-uring.h
+        include/ah/internal/_task-uring.h
+        include/ah/internal/_tcp-uring.h
+        include/ah/internal/_time-uring.h
+        include/ah/internal/_udp-uring.h
         src/abort-posix.c
         src/buf-posix.c
         src/loop-uring.c
@@ -95,13 +95,13 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/bsd/sock.h
-        include/ah/internal/iocp/loop.h
-        include/ah/internal/iocp/task.h
-        include/ah/internal/iocp/tcp.h
-        include/ah/internal/iocp/udp.h
-        include/ah/internal/win32/buf.h
-        include/ah/internal/win32/time.h
+        include/ah/internal/_sock-bsd.h
+        include/ah/internal/_loop-iocp.h
+        include/ah/internal/_task-iocp.h
+        include/ah/internal/_tcp-iocp.h
+        include/ah/internal/_udp-iocp.h
+        include/ah/internal/_buf-win32.h
+        include/ah/internal/_time-win32.h
         src/abort-win32.c
         src/buf-win32.c
         src/loop-iocp.c

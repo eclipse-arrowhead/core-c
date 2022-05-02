@@ -13,7 +13,7 @@
 #ifndef AH_INTERNAL_POSIX_SOCK_H_
 #define AH_INTERNAL_POSIX_SOCK_H_
 
-#include "../../defs.h"
+#include "../defs.h"
 
 #if AH_HAS_POSIX
 #    include <netinet/in.h>

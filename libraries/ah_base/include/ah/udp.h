@@ -9,7 +9,7 @@
 
 #include "assert.h"
 #include "buf.h"
-#include "internal/udp.h"
+#include "internal/_udp.h"
 #include "sock.h"
 
 #include <stdbool.h>

@@ -7,7 +7,7 @@
 #ifndef AH_INTERNAL_KQUEUE_LOOP_H_
 #define AH_INTERNAL_KQUEUE_LOOP_H_
 
-#include "../../defs.h"
+#include "../defs.h"
 
 #include <sys/event.h>
 
@@ -18,7 +18,6 @@
     struct kevent* _kqueue_changelist;                                                                                 \
     struct kevent* _kqueue_eventlist;
 
-#define AH_I_LOOP_EVT_BODY_TASK_SCHEDULE_AT_PLATFORM_FIELDS
 #define AH_I_LOOP_EVT_PLATFORM_FIELDS void (*_cb)(ah_i_loop_evt_t*, struct kevent*);
 
 ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev);

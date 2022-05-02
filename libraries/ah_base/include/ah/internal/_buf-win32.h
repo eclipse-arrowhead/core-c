@@ -7,7 +7,7 @@
 #ifndef AH_INTERNAL_WIN32_BUF_H_
 #define AH_INTERNAL_WIN32_BUF_H_
 
-#include "../../defs.h"
+#include "../defs.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

@@ -9,7 +9,7 @@
 
 #include "assert.h"
 #include "buf.h"
-#include "internal/tcp.h"
+#include "internal/_tcp.h"
 #include "sock.h"
 
 #include <stdbool.h>

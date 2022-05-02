@@ -7,7 +7,7 @@
 #ifndef AH_INTERNAL_URING_LOOP_H_
 #define AH_INTERNAL_URING_LOOP_H_
 
-#include "../../defs.h"
+#include "../defs.h"
 
 #include <liburing.h>
 

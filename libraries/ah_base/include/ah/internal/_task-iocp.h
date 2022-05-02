@@ -4,17 +4,13 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_SOCK_H_
-#define AH_INTERNAL_SOCK_H_
+#ifndef AH_INTERNAL_IOCP_TASK_H_
+#define AH_INTERNAL_IOCP_TASK_H_
+
+#define AH_I_TASK_PLATFORM_FIELDS
 
 #include "../defs.h"
 
-#if AH_HAS_BSD_SOCKETS
-#    include "bsd/sock.h"
-#endif
-
-#ifndef AH_I_SOCKADDR_HAS_SIZE
-#    define AH_I_SOCKADDR_HAS_SIZE 0
-#endif
+ah_extern void ah_i_task_execute_scheduled(ah_task_t* task);
 
 #endif

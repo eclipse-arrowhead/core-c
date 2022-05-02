@@ -12,11 +12,11 @@
 #include "../time.h"
 
 #if AH_USE_IOCP
-#    include "iocp/loop.h"
+#    include "_loop-iocp.h"
 #elif AH_USE_KQUEUE
-#    include "kqueue/loop.h"
+#    include "_loop-kqueue.h"
 #elif AH_USE_URING
-#    include "uring/loop.h"
+#    include "_loop-uring.h"
 #endif
 
 #define AH_I_LOOP_STATE_INITIAL     0x01

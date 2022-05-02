@@ -10,7 +10,7 @@
 #include "assert.h"
 #include "buf.h"
 #include "defs.h"
-#include "internal/str.h"
+#include "internal/_str.h"
 
 #include <stdbool.h>
 #include <string.h>

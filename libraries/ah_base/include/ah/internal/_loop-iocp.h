@@ -7,7 +7,7 @@
 #ifndef AH_INTERNAL_IOCP_LOOP_H_
 #define AH_INTERNAL_IOCP_LOOP_H_
 
-#include "../../time.h"
+#include "../time.h"
 
 #include <stdbool.h>
 
@@ -17,8 +17,6 @@
 #define AH_I_LOOP_PLATFORM_FIELDS                                                                                      \
     HANDLE _iocp_handle;                                                                                               \
     struct ah_i_loop_task_queue _task_queue;
-
-#define AH_I_LOOP_EVT_BODY_TASK_SCHEDULE_AT_PLATFORM_FIELDS
 
 #define AH_I_LOOP_EVT_PLATFORM_FIELDS                                                                                  \
     void (*_cb)(ah_i_loop_evt_t*);                                                                                     \

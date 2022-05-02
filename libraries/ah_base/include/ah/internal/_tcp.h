@@ -10,11 +10,11 @@
 #include "../defs.h"
 
 #if AH_USE_IOCP
-#    include "iocp/tcp.h"
+#    include "_tcp-iocp.h"
 #elif AH_USE_KQUEUE
-#    include "kqueue/tcp.h"
+#    include "_tcp-kqueue.h"
 #elif AH_USE_URING
-#    include "uring/tcp.h"
+#    include "_tcp-uring.h"
 #endif
 
 #define AH_I_TCP_CONN_STATE_CLOSED     0u

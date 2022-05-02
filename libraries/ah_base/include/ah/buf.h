@@ -8,7 +8,7 @@
 #define AH_BUF_H_
 
 #include "assert.h"
-#include "internal/buf.h"
+#include "internal/_buf.h"
 
 #include <stddef.h>
 #include <stdint.h>

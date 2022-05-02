@@ -7,7 +7,7 @@
 #ifndef AH_INTERNAL_POSIX_BUF_H_
 #define AH_INTERNAL_POSIX_BUF_H_
 
-#include "../../defs.h"
+#include "../defs.h"
 
 #include <stddef.h>
 

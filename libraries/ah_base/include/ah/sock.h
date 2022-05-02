@@ -7,7 +7,7 @@
 #ifndef AH_SOCK_H_
 #define AH_SOCK_H_
 
-#include "internal/sock.h"
+#include "internal/_sock.h"
 #include "ip.h"
 
 #include <stdbool.h>

@@ -7,7 +7,7 @@
 #ifndef AH_TIME_H_
 #define AH_TIME_H_
 
-#include "internal/time.h"
+#include "internal/_time.h"
 #include "math.h"
 
 #include <stdbool.h>
