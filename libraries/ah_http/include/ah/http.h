@@ -265,7 +265,7 @@ ah_inline ah_http_obody_t ah_http_obody_cstr(char* cstr)
 
 ah_inline ah_http_obody_t ah_http_obody_str(ah_str_t str)
 {
-    return ah_http_obody_buf((ah_buf_t) { ._octets = (uint8_t*) ah_str_ptr(&str), ._size = ah_str_len(&str) });
+    return ah_http_obody_buf((ah_buf_t) { ._octets = (uint8_t*) ah_str_get_ptr(&str), ._size = ah_str_get_len(&str) });
 }
 
 #endif

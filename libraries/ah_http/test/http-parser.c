@@ -49,47 +49,47 @@ static void s_should_parse_headers(ah_unit_t* unit)
     bool has_next;
     const ah_str_t* value;
 
-    value = ah_http_hmap_get_value(&headers, ah_str_nt("Host"), &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_from_cstr("Host"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host header")) {
         return;
     }
     if (!ah_unit_assert(unit, value != NULL, "no host header exists")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("192.168.4.44:44444"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("192.168.4.44:44444"), *value)) {
         return;
     }
 
-    value = ah_http_hmap_get_value(&headers, ah_str_nt("Content-Type"), &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_from_cstr("Content-Type"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one content-type header")) {
         return;
     }
     if (!ah_unit_assert(unit, value != NULL, "no content-type header exists")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("application/json; charset=utf-8"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("application/json; charset=utf-8"), *value)) {
         return;
     }
 
-    value = ah_http_hmap_get_value(&headers, ah_str_nt("CONTENT-LENGTH"), &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_from_cstr("CONTENT-LENGTH"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one content-length header")) {
         return;
     }
     if (!ah_unit_assert(unit, value != NULL, "no content-length header exists")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("143"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("143"), *value)) {
         return;
     }
 
-    value = ah_http_hmap_get_value(&headers, ah_str_nt("Accept"), &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_from_cstr("Accept"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one accept header")) {
         return;
     }
     if (!ah_unit_assert(unit, value != NULL, "no accept header exists")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("application/json, application/cbor"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("application/json, application/cbor"), *value)) {
         return;
     }
 }
@@ -113,8 +113,8 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt("GET"), req_line.method);
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt("/things/132"), req_line.target);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("GET"), req_line.method);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("/things/132"), req_line.target);
     (void) ah_unit_assert_unsigned_eq(unit, 1u, req_line.version.major);
     (void) ah_unit_assert_unsigned_eq(unit, 1u, req_line.version.minor);
 
@@ -123,8 +123,8 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt("OPTIONS"), req_line.method);
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt("*"), req_line.target);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("OPTIONS"), req_line.method);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("*"), req_line.target);
     (void) ah_unit_assert_unsigned_eq(unit, 1u, req_line.version.major);
     (void) ah_unit_assert_unsigned_eq(unit, 0u, req_line.version.minor);
 
@@ -133,8 +133,8 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt("CONNECT"), req_line.method);
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt("[::1]:44444"), req_line.target);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("CONNECT"), req_line.method);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("[::1]:44444"), req_line.target);
     (void) ah_unit_assert_unsigned_eq(unit, 1u, req_line.version.major);
     (void) ah_unit_assert_unsigned_eq(unit, 1u, req_line.version.minor);
 }
@@ -153,7 +153,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.major);
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.minor);
     (void) ah_unit_assert_unsigned_eq(unit, 200u, stat_line.code);
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt("OK"), stat_line.reason);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("OK"), stat_line.reason);
 
     r = s_reader_of("HTTP/1.0 201 \r\n");
     err = ah_i_http_parse_stat_line(&r, &stat_line);
@@ -163,7 +163,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.major);
     (void) ah_unit_assert_unsigned_eq(unit, 0u, stat_line.version.minor);
     (void) ah_unit_assert_unsigned_eq(unit, 201u, stat_line.code);
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt(""), stat_line.reason);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr(""), stat_line.reason);
 
     r = s_reader_of("HTTP/1.1 500 Internal server errör \r\n");
     err = ah_i_http_parse_stat_line(&r, &stat_line);
@@ -173,5 +173,5 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.major);
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.minor);
     (void) ah_unit_assert_unsigned_eq(unit, 500u, stat_line.code);
-    (void) ah_unit_assert_str_eq(unit, ah_str_nt("Internal server errör "), stat_line.reason);
+    (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("Internal server errör "), stat_line.reason);
 }

@@ -12,7 +12,7 @@
 #include <limits.h>
 #include <sys/uio.h>
 
-ah_extern ah_err_t ah_buf_set(ah_buf_t* buf, uint8_t* octets, size_t size)
+ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* octets, size_t size)
 {
     if (buf == NULL || (octets == NULL && size != 0)) {
         return AH_EINVAL;

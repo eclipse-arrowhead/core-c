@@ -9,11 +9,14 @@
 
 #define AH_I_TCP_CONN_PLATFORM_FIELDS                                                                                  \
     int _fd;                                                                                                           \
-    struct ah_i_loop_evt* _read_evt;                                                                                   \
-    ah_bufs_t _write_bufs;
+    struct ah_i_loop_evt* _read_evt;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS                                                                              \
     int _fd;                                                                                                           \
     struct ah_i_loop_evt* _listen_evt;
+
+#define AH_I_TCP_OMSG_PLATFORM_FIELDS                                                                                  \
+    struct iovec* _iov;                                                                                                \
+    int _iovcnt;
 
 #endif

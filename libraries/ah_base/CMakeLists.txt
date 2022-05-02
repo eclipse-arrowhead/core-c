@@ -54,16 +54,16 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         include/ah/internal/kqueue/tcp.h
         include/ah/internal/kqueue/udp.h
         include/ah/internal/posix/buf.h
-        src/bsd/sock.c
-        src/bsd/tcp.c
-        src/bsd/udp.c
-        src/darwin/time.c
-        src/kqueue/loop.c
-        src/kqueue/task.c
-        src/kqueue/tcp.c
-        src/kqueue/udp.c
-        src/posix/abort.c
-        src/posix/buf.c
+        src/abort-posix.c
+        src/buf-posix.c
+        src/loop-kqueue.c
+        src/sock-bsd.c
+        src/task-kqueue.c
+        src/tcp-bsd.c
+        src/tcp-kqueue.c
+        src/time-darwin.c
+        src/udp-bsd.c
+        src/udp-kqueue.c
     )
 endif ()
 
@@ -72,22 +72,22 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         APPEND
         SOURCE_FILES
         include/ah/internal/bsd/sock.h
+        include/ah/internal/posix/buf.h
         include/ah/internal/uring/loop.h
         include/ah/internal/uring/task.h
         include/ah/internal/uring/tcp.h
         include/ah/internal/uring/time.h
         include/ah/internal/uring/udp.h
-        include/ah/internal/posix/buf.h
-        src/bsd/sock.c
-        src/bsd/tcp.c
-        src/bsd/udp.c
-        src/uring/loop.c
-        src/uring/task.c
-        src/uring/tcp.c
-        src/uring/udp.c
-        src/uring/time.c
-        src/posix/abort.c
-        src/posix/buf.c
+        src/abort-posix.c
+        src/buf-posix.c
+        src/loop-uring.c
+        src/sock-bsd.c
+        src/task-uring.c
+        src/tcp-bsd.c
+        src/tcp-uring.c
+        src/time-uring.c
+        src/udp-bsd.c
+        src/udp-uring.c
     )
 endif ()
 
@@ -102,18 +102,18 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         include/ah/internal/iocp/udp.h
         include/ah/internal/win32/buf.h
         include/ah/internal/win32/time.h
-        src/bsd/sock.c
-        src/bsd/tcp.c
-        src/bsd/udp.c
-        src/iocp/loop.c
-        src/iocp/task.c
-        src/iocp/tcp.c
-        src/iocp/udp.c
-        src/win32/abort.c
-        src/win32/buf.c
-        src/win32/time.c
-        src/win32/winapi.c
-        src/win32/winapi.h
+        src/abort-win32.c
+        src/buf-win32.c
+        src/loop-iocp.c
+        src/sock-bsd.c
+        src/task-iocp.c
+        src/tcp-bsd.c
+        src/tcp-iocp.c
+        src/time-win32.c
+        src/udp-bsd.c
+        src/udp-iocp.c
+        src/winapi.c
+        src/winapi.h
     )
 endif ()
 
@@ -154,15 +154,15 @@ endif ()
 
 set(
     TEST_FILES
-    test/buf.c
-    test/err.c
     test/main.c
-    test/math.c
-    test/sock.c
-    test/task.c
-    #test/tcp.c
-    test/time.c
-    #test/udp.c
+    test/test-buf.c
+    test/test-err.c
+    test/test-math.c
+    test/test-sock.c
+    test/test-task.c
+    test/test-tcp.c
+    test/test-time.c
+    #test/test-udp.c
 )
 
 add_executable(ah_base_tests ${TEST_FILES})

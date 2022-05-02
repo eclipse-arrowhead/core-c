@@ -31,18 +31,18 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
 
     // Add headers.
 
-    err = ah_i_http_hmap_add(&headers, ah_str_nt("host"), ah_str_nt("192.168.40.40:40404"));
+    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("host"), ah_str_from_cstr("192.168.40.40:40404"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_i_http_hmap_add(&headers, ah_str_nt("content-type"), ah_str_nt("application/json"));
+    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("content-type"), ah_str_from_cstr("application/json"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     // Capacity is 2; this should fail.
-    err = ah_i_http_hmap_add(&headers, ah_str_nt("content-length"), ah_str_nt("16"));
+    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("content-length"), ah_str_from_cstr("16"));
     if (!ah_unit_assert_err_eq(unit, AH_ENOBUFS, err)) {
         return;
     }
@@ -52,24 +52,24 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
     bool has_next;
     const ah_str_t* value;
 
-    value = ah_http_hmap_get_value(&headers, ah_str_nt("Host"), &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_from_cstr("Host"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host name/value pair")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("192.168.40.40:40404"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("192.168.40.40:40404"), *value)) {
         return;
     }
 
-    value = ah_http_hmap_get_value(&headers, ah_str_nt("Content-Type"), &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_from_cstr("Content-Type"), &has_next);
     if (!ah_unit_assert(unit, !has_next, "there should only exist one host name/value pair")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("application/json"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("application/json"), *value)) {
         return;
     }
 
     // This header should not be present.
-    value = ah_http_hmap_get_value(&headers, ah_str_nt("Content-Length"), &has_next);
+    value = ah_http_hmap_get_value(&headers, ah_str_from_cstr("Content-Length"), &has_next);
     if (!ah_unit_assert(unit, value == NULL, "expected value to be NULL")) {
         return;
     }
@@ -87,44 +87,44 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
 
     // Add headers.
 
-    err = ah_i_http_hmap_add(&headers, ah_str_nt("set-cookie"), ah_str_nt("munchy"));
+    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("set-cookie"), ah_str_from_cstr("munchy"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_i_http_hmap_add(&headers, ah_str_nt("SET-CookIe"), ah_str_nt("crispy"));
+    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("SET-CookIe"), ah_str_from_cstr("crispy"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_i_http_hmap_add(&headers, ah_str_nt("Host"), ah_str_nt("[::1]:12345"));
+    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("Host"), ah_str_from_cstr("[::1]:12345"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_i_http_hmap_add(&headers, ah_str_nt("Set-Cookie"), ah_str_nt("sweet"));
+    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("Set-Cookie"), ah_str_from_cstr("sweet"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     // Get headers.
 
-    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_values(&headers, ah_str_nt("Set-Cookie"));
+    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_values(&headers, ah_str_from_cstr("Set-Cookie"));
 
     const ah_str_t* value;
 
     value = ah_http_hmap_next_value(&iter);
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("munchy"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("munchy"), *value)) {
         return;
     }
 
     value = ah_http_hmap_next_value(&iter);
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("crispy"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("crispy"), *value)) {
         return;
     }
 
     value = ah_http_hmap_next_value(&iter);
-    if (!ah_unit_assert_str_eq(unit, ah_str_nt("sweet"), *value)) {
+    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("sweet"), *value)) {
         return;
     }
 

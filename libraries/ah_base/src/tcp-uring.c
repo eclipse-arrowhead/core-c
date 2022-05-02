@@ -190,7 +190,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_bufs_t bufs)
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
 {
     if (conn == NULL || (bufs.items == NULL && bufs.length != 0u)) {
         return AH_EINVAL;

@@ -111,7 +111,7 @@
     E(NOMEM, AH_I_ERR_ONE_OF(ENOMEM, ERROR_NOT_ENOUGH_MEMORY), "not enough memory")                                    \
     E(NOMSG, AH_I_ERR_ONE_OF(ENOMSG, 5522), "no message of the desired type")                                          \
     E(NOPROTOOPT, AH_I_ERR_ONE_OF(ENOPROTOOPT, WSAENOPROTOOPT), "protocol not available")                              \
-    E(NOSPC, AH_I_ERR_ONE_OF(ENOSPC, 5523), "no space left on device")                                                 \
+    E(NOSPC, AH_I_ERR_ONE_OF(ENOSPC, 5523), "no space left")                                                           \
     E(NOSR, AH_I_ERR_ONE_OF(ENOSR, 5524), "no STREAM resources")                                                       \
     E(NOSTR, AH_I_ERR_ONE_OF(ENOSTR, 5525), "not a STREAM")                                                            \
     E(NOSYS, AH_I_ERR_ONE_OF(ENOSYS, WSASYSCALLFAILURE), "system call unsupported")                                    \

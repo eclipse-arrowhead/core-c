@@ -39,6 +39,8 @@ ah_extern void ah_udp_trans_init(ah_udp_trans_t* trans, ah_loop_t* loop)
     static const ah_udp_trans_vtab_t s_vtab = {
         .sock_init = ah_udp_sock_init,
         .sock_open = ah_udp_sock_open,
+        .sock_recv_start = ah_udp_sock_recv_start,
+        .sock_recv_stop = ah_udp_sock_recv_stop,
         .sock_send = ah_udp_sock_send,
         .sock_close = ah_udp_sock_close,
     };

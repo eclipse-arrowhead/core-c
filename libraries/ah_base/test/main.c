@@ -15,7 +15,7 @@ void test_err(ah_unit_t* unit);
 void test_math(ah_unit_t* unit);
 void test_sock(ah_unit_t* unit);
 void test_task(ah_unit_t* unit);
-//void test_tcp(ah_unit_t* unit);
+void test_tcp(ah_unit_t* unit);
 void test_time(ah_unit_t* unit);
 //void test_udp(ah_unit_t* unit);
 
@@ -33,7 +33,7 @@ int main(void)
     test_math(&unit);
     test_sock(&unit);
     test_task(&unit);
-    //test_tcp(&unit);
+    test_tcp(&unit);
     test_time(&unit);
     //test_udp(&unit);
 

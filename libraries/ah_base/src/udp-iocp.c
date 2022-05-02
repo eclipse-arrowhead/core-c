@@ -4,15 +4,14 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/udp.h"
-
-#include "../win32/winapi.h"
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "ah/udp.h"
+#include "winapi.h"
 
-#include <ws2ipdef.h>
 #include <mswsock.h>
+#include <ws2ipdef.h>
 
 static void s_on_recv(ah_i_loop_evt_t* evt);
 static void s_on_send(ah_i_loop_evt_t* evt);

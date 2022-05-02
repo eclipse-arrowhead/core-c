@@ -4,11 +4,10 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/tcp.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "ah/tcp.h"
 
 #include <sys/uio.h>
 
@@ -132,12 +131,13 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
 
-    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) == 0u) {
+    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) != 0u) {
         return;
     }
     ah_assert_if_debug(conn->_is_reading);
 
     ah_err_t err;
+    ah_bufs_t bufs = { .items = NULL, .length = 0u };
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -146,15 +146,8 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     size_t n_bytes_left = kev->data;
 
-    ah_bufs_t bufs;
-
     while (n_bytes_left != 0u) {
-        bufs = (ah_bufs_t) { .items = NULL, .length = 0u };
-        conn->_vtab->on_read_alloc(conn, &bufs, n_bytes_left);
-        if (bufs.items == NULL) {
-            err = AH_ENOBUFS;
-            goto report_err;
-        }
+        conn->_vtab->on_read_alloc(conn, &bufs);
 
         struct iovec* iov;
         int iovcnt;
@@ -168,6 +161,12 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             err = errno;
             goto report_err;
         }
+        if (n_bytes_read == 0) {
+            // We know there are bytes left to read, so the only thing that
+            // could cause 0 bytes being read is bufs having no allocated space.
+            err = AH_ENOBUFS;
+            goto report_err;
+        }
 
         conn->_vtab->on_read_done(conn, bufs, (size_t) n_bytes_read, AH_ENONE);
 
@@ -176,10 +175,13 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
         }
 
         n_bytes_left -= (size_t) n_bytes_read;
+
+        // Allocated memory referred to by bufs must be freed by now.
+        bufs = (ah_bufs_t) { .items = NULL, .length = 0u };
     }
 
-    if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
+    if (ah_unlikely((kev->flags & EV_EOF) != 0) && kev->fflags != 0u) {
+        err = (ah_err_t) kev->fflags;
         conn->_shutdown_flags |= AH_TCP_SHUTDOWN_RD;
         goto report_err;
     }
@@ -187,7 +189,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    conn->_vtab->on_read_done(conn, (ah_bufs_t) { 0u }, 0u, err);
+    conn->_vtab->on_read_done(conn, bufs, 0u, err);
 }
 
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
@@ -212,26 +214,28 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_bufs_t bufs)
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
 {
-    if (conn == NULL || (bufs.items == NULL && bufs.length != 0u)) {
+    if (conn == NULL || omsg == NULL) {
         return AH_EINVAL;
     }
     if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return AH_ESTATE;
     }
-    if (conn->_is_writing) {
-        return AH_EAGAIN;
+
+    if (conn->_write_queue_head != NULL) {
+        conn->_write_queue_end->_next = omsg;
+        conn->_write_queue_end = omsg;
+        return AH_ENONE;
     }
 
-    conn->_write_bufs = bufs;
+    conn->_write_queue_head = omsg;
+    conn->_write_queue_end = omsg;
 
     ah_err_t err = s_prep_conn_write(conn);
     if (err != AH_ENONE) {
         return err;
     }
-
-    conn->_is_writing = true;
 
     return AH_ENONE;
 }
@@ -263,69 +267,71 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
+    ah_assert_if_debug(conn->_write_queue_head != NULL);
 
     if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return;
     }
-    ah_assert_if_debug(conn->_is_writing);
 
     ah_err_t err;
-    size_t n_bytes_written = 0u;
+
+    ah_tcp_omsg_t* omsg = conn->_write_queue_head;
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
-        goto report_err;
+        goto report_err_and_prep_next;
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
         conn->_shutdown_flags |= AH_TCP_SHUTDOWN_WR;
-        goto report_err;
+        goto report_err_and_prep_next;
     }
 
-    struct iovec* iov;
-    int iovcnt;
-    err = ah_i_bufs_into_iovec(&conn->_write_bufs, &iov, &iovcnt);
-    if (ah_unlikely(err != AH_ENONE)) {
-        err = AH_EDOM;
-        goto report_err;
-    }
-
-    ssize_t res = writev(conn->_fd, iov, iovcnt);
+    ssize_t res = writev(conn->_fd, omsg->_iov, omsg->_iovcnt);
     if (ah_unlikely(res < 0)) {
         err = errno;
-        goto report_err;
+        goto report_err_and_prep_next;
     }
 
-    n_bytes_written = (size_t) res;
-
     // If more remains to be written but no output buffer space is available,
-    // adjust bufs and schedule another writing.
-    for (size_t i = 0u; i < conn->_write_bufs.length; i += 1u) {
-        ah_buf_t* buf = &conn->_write_bufs.items[0u];
+    // adjust current write buffers and schedule another writing.
+    for (int i = 0; i < omsg->_iovcnt; i += 1) {
+        struct iovec* iov = &omsg->_iov[i];
 
-        if (((size_t) res) >= buf->_size) {
-            res -= (ssize_t) buf->_size;
+        if (((size_t) res) >= iov->iov_len) {
+            res -= (ssize_t) iov->iov_len;
             continue;
         }
 
-        conn->_write_bufs.items = &conn->_write_bufs.items[i];
-        conn->_write_bufs.length -= i;
+        // There is more, adjust current write buffers and reschedule.
 
-        buf->_octets = &buf->_octets[(size_t) res];
-        buf->_size -= (size_t) res;
+        omsg->_iov = &omsg->_iov[i];
+        omsg->_iovcnt -= i;
 
-        err = s_prep_conn_write(conn);
-        if (err != AH_ENONE) {
-            goto report_err;
-        }
+        iov->iov_base = &((uint8_t*) iov->iov_base)[(size_t) res];
+        iov->iov_len -= (size_t) res;
+
+        goto prep_next;
+    }
+
+    // We're done! Dequeue the current write and schedule the next one, if any.
+    conn->_write_queue_head = omsg->_next;
+    err = AH_ENONE;
+
+report_err_and_prep_next:
+    conn->_vtab->on_write_done(conn, err);
+
+    if (conn->_write_queue_head == NULL) {
         return;
     }
 
-    err = AH_ENONE;
-
-report_err:
-    conn->_vtab->on_write_done(conn, conn->_write_bufs, n_bytes_written, err);
+prep_next:
+    err = s_prep_conn_write(conn);
+    if (err != AH_ENONE) {
+        conn->_write_queue_head = conn->_write_queue_head->_next;
+        goto report_err_and_prep_next;
+    }
 }
 
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)

@@ -45,7 +45,7 @@ ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* hmap, ah_str_t name, ah_str_t value)
         size_t index = (hash + i) & hmap->_mask;
         struct ah_i_http_hmap_header* header = &hmap->_headers[index];
 
-        if (ah_str_len(&header->_name) == 0u) {
+        if (ah_str_get_len(&header->_name) == 0u) {
             hmap->_count += 1u;
             *header = (struct ah_i_http_hmap_header) {
                 ._name = name,
@@ -69,9 +69,9 @@ ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* hmap, ah_str_t name, ah_str_t value)
 // FNV-1a, 32-bit.
 static uint32_t s_hash_header_name(ah_str_t name)
 {
-    const char* str_ptr = ah_str_ptr(&name);
+    const char* str_ptr = ah_str_get_ptr(&name);
     uint32_t hash = 2166136261;
-    for (size_t i = 0u; i < ah_str_len(&name); i += 1u) {
+    for (size_t i = 0u; i < ah_str_get_len(&name); i += 1u) {
         hash ^= s_to_lower(str_ptr[i]);
         hash *= 16777619;
     }
@@ -113,7 +113,7 @@ static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t*
         size_t index = (hash + i) & hmap->_mask;
         struct ah_i_http_hmap_header* header = &hmap->_headers[index];
 
-        if (ah_str_len(&header->_name) == 0u) {
+        if (ah_str_get_len(&header->_name) == 0u) {
             break;
         }
         if (ah_str_eq_ignore_case_ascii(name, header->_name)) {

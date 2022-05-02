@@ -30,11 +30,11 @@ struct ah_tcp_conn_vtab {
     void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
 
     // If both are NULL, receiving is shutdown automatically. Either both or none must be set.
-    void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_bufs_t* bufs, size_t n_bytes_expected);
-    void (*on_read_done)(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read, ah_err_t err);
+    void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_bufs_t* bufs);
+    void (*on_read_done)(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_read, ah_err_t err);
 
     // If NULL, sending is shutdown automatically.
-    void (*on_write_done)(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_written, ah_err_t err);
+    void (*on_write_done)(ah_tcp_conn_t* conn, ah_err_t err);
 };
 
 struct ah_tcp_listener {
@@ -50,6 +50,10 @@ struct ah_tcp_listener_vtab {
     void (*on_conn_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 };
 
+struct ah_tcp_omsg {
+    AH_I_TCP_OMSG_FIELDS
+};
+
 struct ah_tcp_trans {
     AH_I_TCP_TRANS_FIELDS
 };
@@ -60,7 +64,7 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*conn_connect)(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
     ah_err_t (*conn_read_start)(ah_tcp_conn_t* conn);
     ah_err_t (*conn_read_stop)(ah_tcp_conn_t* conn);
-    ah_err_t (*conn_write)(ah_tcp_conn_t* conn, ah_bufs_t bufs); // May modify bufs.items.
+    ah_err_t (*conn_write)(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg); // May modify ah_bufs_t items in omsg.
     ah_err_t (*conn_shutdown)(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
     ah_err_t (*conn_close)(ah_tcp_conn_t* conn);
 
@@ -75,7 +79,7 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_bufs_t bufs); // May modify bufs.items.
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg);  // May modify ah_bufs_t items in omsg.
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 
@@ -132,6 +136,9 @@ ah_inline void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_d
     ah_assert_if_debug(ln != NULL);
     ln->_user_data = user_data;
 }
+
+ah_extern ah_err_t ah_tcp_omsg_init(ah_tcp_omsg_t* omsg, ah_bufs_t bufs);
+ah_extern ah_bufs_t ah_tcp_omsg_get_bufs(ah_tcp_omsg_t* omsg);
 
 ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop);
 

@@ -29,12 +29,13 @@
 #define AH_I_TCP_CONN_FIELDS                                                                                           \
     ah_loop_t* _loop;                                                                                                  \
     const ah_tcp_conn_vtab_t* _vtab;                                                                                   \
+    ah_tcp_omsg_t* _write_queue_head;                                                                                  \
+    ah_tcp_omsg_t* _write_queue_end;                                                                                   \
     void* _trans_data;                                                                                                 \
     void* _user_data;                                                                                                  \
     ah_tcp_shutdown_t _shutdown_flags;                                                                                 \
     uint8_t _state;                                                                                                    \
     bool _is_reading;                                                                                                  \
-    bool _is_writing;                                                                                                  \
     AH_I_TCP_CONN_PLATFORM_FIELDS
 
 #define AH_I_TCP_LISTENER_FIELDS                                                                                       \
@@ -45,6 +46,10 @@
     void* _user_data;                                                                                                  \
     uint8_t _state;                                                                                                    \
     AH_I_TCP_LISTENER_PLATFORM_FIELDS
+
+#define AH_I_TCP_OMSG_FIELDS                                                                                           \
+    ah_tcp_omsg_t* _next;                                                                                              \
+    AH_I_TCP_OMSG_PLATFORM_FIELDS
 
 #define AH_I_TCP_TRANS_FIELDS                                                                                          \
     ah_loop_t* _loop;                                                                                                  \

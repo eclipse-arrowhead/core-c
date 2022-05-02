@@ -54,7 +54,7 @@ exit_uring_and_return_err:
     return err;
 }
 
-ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time)
+ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time)
 {
     ah_assert_if_debug(loop != NULL);
 
@@ -138,7 +138,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* ti
     return AH_ENONE;
 }
 
-ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe)
+ah_extern ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
@@ -166,7 +166,7 @@ ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, st
     return AH_ENONE;
 }
 
-ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sqe)
+ah_extern ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sqe)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(sqe != NULL);

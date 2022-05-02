@@ -42,7 +42,7 @@ ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
         // Read name.
 
         ah_str_t name = s_take_while(r, s_is_tchar);
-        if (ah_str_len(&name) == 0u || !s_skip_ch(r, ':')) {
+        if (ah_str_get_len(&name) == 0u || !s_skip_ch(r, ':')) {
             return AH_EILSEQ;
         }
 
@@ -86,12 +86,12 @@ ah_err_t ah_i_http_parse_req_line(ah_i_http_reader_t* r, ah_http_req_line_t* req
     ah_assert_if_debug(req_line != NULL);
 
     req_line->method = s_take_while(r, s_is_tchar);
-    if (ah_str_len(&req_line->method) == 0u || !s_skip_ch(r, ' ')) {
+    if (ah_str_get_len(&req_line->method) == 0u || !s_skip_ch(r, ' ')) {
         return AH_EILSEQ;
     }
 
     req_line->target = s_take_while(r, s_is_rchar);
-    if (ah_str_len(&req_line->target) == 0u || !s_skip_ch(r, ' ')) {
+    if (ah_str_get_len(&req_line->target) == 0u || !s_skip_ch(r, ' ')) {
         return AH_EILSEQ;
     }
 
