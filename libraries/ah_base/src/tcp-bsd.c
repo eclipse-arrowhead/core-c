@@ -4,11 +4,10 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/tcp.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "ah/tcp.h"
 
 #include <stddef.h>
 

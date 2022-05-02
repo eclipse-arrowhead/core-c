@@ -387,27 +387,27 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Check results.
 
     struct s_tcp_conn_user_data* conn_data = &conn_user_data;
-    ah_unit_assert(unit, conn_data->did_call_open_cb, "conn open callback never called");
-    ah_unit_assert(unit, conn_data->did_call_connect_cb, "conn connect callback never called");
-    ah_unit_assert(unit, conn_data->did_call_close_cb, "conn close callback never called");
-    ah_unit_assert(unit, conn_data->did_call_read_alloc_cb, "conn read alloc callback never called");
-    ah_unit_assert(unit, conn_data->did_call_read_done_cb, "conn read done callback never called");
-    ah_unit_assert(unit, !conn_data->did_call_write_done_cb, "conn write done callback called unexpectedly");
+    (void) ah_unit_assert(unit, conn_data->did_call_open_cb, "conn open callback never called");
+    (void) ah_unit_assert(unit, conn_data->did_call_connect_cb, "conn connect callback never called");
+    (void) ah_unit_assert(unit, conn_data->did_call_close_cb, "conn close callback never called");
+    (void) ah_unit_assert(unit, conn_data->did_call_read_alloc_cb, "conn read alloc callback never called");
+    (void) ah_unit_assert(unit, conn_data->did_call_read_done_cb, "conn read done callback never called");
+    (void) ah_unit_assert(unit, !conn_data->did_call_write_done_cb, "conn write done called unexpectedly");
 
     struct s_tcp_listener_user_data* ln_data = &ln_user_data;
-    ah_unit_assert(unit, ln_data->did_call_open_cb, "ln open callback never called");
-    ah_unit_assert(unit, ln_data->did_call_listen_cb, "ln listen callback never called");
-    ah_unit_assert(unit, ln_data->did_call_close_cb, "ln close callback never called");
-    ah_unit_assert(unit, ln_data->did_call_conn_alloc_cb, "ln conn alloc callback never called");
-    ah_unit_assert(unit, ln_data->did_call_conn_accept_cb, "ln conn accept callback never called");
+    (void) ah_unit_assert(unit, ln_data->did_call_open_cb, "ln open callback never called");
+    (void) ah_unit_assert(unit, ln_data->did_call_listen_cb, "ln listen callback never called");
+    (void) ah_unit_assert(unit, ln_data->did_call_close_cb, "ln close callback never called");
+    (void) ah_unit_assert(unit, ln_data->did_call_conn_alloc_cb, "ln conn alloc callback never called");
+    (void) ah_unit_assert(unit, ln_data->did_call_conn_accept_cb, "ln conn accept callback never called");
 
     struct s_tcp_conn_user_data* accept_data = &ln_data->accept_user_data;
-    ah_unit_assert(unit, !accept_data->did_call_open_cb, "accepted conn open callback called unexpectedly");
-    ah_unit_assert(unit, !accept_data->did_call_connect_cb, "accepted conn connect callback called unexpectedly");
-    ah_unit_assert(unit, accept_data->did_call_close_cb, "accepted conn close callback never called");
-    ah_unit_assert(unit, !accept_data->did_call_read_alloc_cb, "accepted conn read alloc callback called unexpectedly");
-    ah_unit_assert(unit, !accept_data->did_call_read_done_cb, "accepted conn read done callback called unexpectedly");
-    ah_unit_assert(unit, accept_data->did_call_write_done_cb, "accepted conn write done callback never called");
+    (void) ah_unit_assert(unit, !accept_data->did_call_open_cb, "accepted conn open called unexpectedly");
+    (void) ah_unit_assert(unit, !accept_data->did_call_connect_cb, "accepted conn connect called unexpectedly");
+    (void) ah_unit_assert(unit, accept_data->did_call_close_cb, "accepted conn close callback never called");
+    (void) ah_unit_assert(unit, !accept_data->did_call_read_alloc_cb, "accepted conn read alloc called unexpectedly");
+    (void) ah_unit_assert(unit, !accept_data->did_call_read_done_cb, "accepted conn read done called unexpectedly");
+    (void) ah_unit_assert(unit, accept_data->did_call_write_done_cb, "accepted conn write done callback never called");
 
     // Release event loop.
 

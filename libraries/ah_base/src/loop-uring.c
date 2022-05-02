@@ -4,10 +4,9 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/loop.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
+#include "ah/loop.h"
 
 #include <fcntl.h>
 #include <limits.h>
@@ -70,9 +69,8 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct a
 
     int res;
 
+    struct __kernel_timespec timeout;
     if (time != NULL) {
-        struct __kernel_timespec timeout;
-
         ah_timediff_t diff;
         err = ah_time_diff(*time, loop->_now, &diff);
         if (err != AH_ENONE) {
@@ -83,30 +81,23 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct a
         }
         timeout.tv_sec = diff / 1000000000;
         timeout.tv_nsec = diff % 1000000000;
-
-        // TODO: Replace these two calls with io_uring_submit_and_wait_timeout() when liburing-2.2 comes out.
-        res = io_uring_submit(&loop->_uring);
-        if (res < 0) {
-            return -res;
-        }
-
-        res = io_uring_wait_cqes(&loop->_uring, &cqe, 1, &timeout, NULL);
-        if (res == -ETIME) {
-            return AH_ENONE;
-        }
-    }
-    else {
-        res = io_uring_submit_and_wait(&loop->_uring, 1);
     }
 
-    if (ah_unlikely(res < 0)) {
+    // TODO: Replace these two calls with io_uring_submit_and_wait_timeout() when liburing-2.2 comes out.
+    res = io_uring_submit(&loop->_uring);
+    if (res < 0) {
         return -res;
+    }
+
+    res = io_uring_wait_cqes(&loop->_uring, &cqe, 1, time != NULL ? &timeout : NULL, NULL);
+    if (res == -ETIME) {
+        return AH_ENONE;
     }
 
     loop->_now = ah_time_now();
 
     for (;;) {
-    ah_i_loop_evt_t* evt = io_uring_cqe_get_data(cqe);
+        ah_i_loop_evt_t* evt = io_uring_cqe_get_data(cqe);
 
         if (evt != NULL && cqe->res != -ECANCELED) {
             if (evt->_cb != NULL) {

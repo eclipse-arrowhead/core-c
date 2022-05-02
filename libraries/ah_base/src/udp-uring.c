@@ -4,17 +4,17 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/udp.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "ah/udp.h"
 
 static void s_on_sock_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock);
+static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock);
 
 ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
 {
@@ -51,7 +51,7 @@ static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
     evt->_subject = sock;
 
     ah_bufs_t bufs = { .items = NULL, .length = 0u };
-    sock->_vtab->on_recv_alloc(sock, &bufs, 0u);
+    sock->_vtab->on_recv_alloc(sock, &bufs);
     if (bufs.items == NULL || bufs.length == 0u) {
         return AH_ENOBUFS;
     }
@@ -98,7 +98,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_bufs_t bufs;
     ah_i_bufs_from_iovec(&bufs, sock->_recv_msghdr.msg_iov, sock->_recv_msghdr.msg_iovlen);
 
-    sock->_vtab->on_recv_done(sock, ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name), bufs, cqe->res, AH_ENONE);
+    sock->_vtab->on_recv_done(sock, bufs, cqe->res, ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name), AH_ENONE);
 
     if (!sock->_is_open) {
         return;
@@ -112,7 +112,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     return;
 
 call_recv_cb_with_err_and_return:
-    sock->_vtab->on_recv_done(sock, &sock->_recv_addr, (ah_bufs_t) { 0u }, 0u, err);
+    sock->_vtab->on_recv_done(sock, (ah_bufs_t) { 0u }, 0u, &sock->_recv_addr, err);
 }
 
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
@@ -128,18 +128,29 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_bufs_t bufs, const ah_sockaddr_t* raddr)
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_omsg_t* omsg)
 {
-    if (sock == NULL || (bufs.items == NULL && bufs.length != 0u)) {
+    if (sock == NULL || omsg == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open) {
+    if (!sock->_is_open || sock->_vtab->on_send_done == NULL) {
         return AH_ESTATE;
     }
-    if (sock->_is_sending) {
-        return AH_EAGAIN;
+
+    if (sock->_send_queue_head != NULL) {
+        sock->_send_queue_end->_next = omsg;
+        sock->_send_queue_end = omsg;
+        return AH_ENONE;
     }
 
+    sock->_send_queue_head = omsg;
+    sock->_send_queue_end = omsg;
+
+    return s_prep_sock_send(sock);
+}
+
+static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
+{
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
@@ -151,21 +162,9 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_bufs_t bufs, const a
     evt->_cb = s_on_sock_send;
     evt->_subject = sock;
 
-    struct iovec* iov;
-    int iovlen;
-    err = ah_i_bufs_into_iovec(&bufs, &iov, &iovlen);
-    if (err != AH_ENONE) {
-        return err;
-    }
+    ah_udp_omsg_t* omsg = sock->_send_queue_head;
 
-    sock->_send_msghdr = (struct msghdr) {
-        .msg_name = ah_i_sockaddr_into_bsd((ah_sockaddr_t*) raddr),
-        .msg_namelen = ah_i_sockaddr_get_size(raddr),
-        .msg_iov = iov,
-        .msg_iovlen = iovlen,
-    };
-
-    io_uring_prep_sendmsg(sqe, sock->_fd, &sock->_send_msghdr, 0u);
+    io_uring_prep_sendmsg(sqe, sock->_fd, &omsg->_msghdr, 0u);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -191,10 +190,22 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         n_bytes_sent = cqe->res;
     }
 
-    ah_bufs_t bufs;
-    ah_i_bufs_from_iovec(&bufs, sock->_recv_msghdr.msg_iov, sock->_recv_msghdr.msg_iovlen);
+    ah_udp_omsg_t* omsg = sock->_send_queue_head;
+    sock->_send_queue_head = omsg->_next;
 
-    sock->_vtab->on_send_done(sock, sock->_send_msghdr.msg_name, bufs, n_bytes_sent, err);
+report_err_and_prep_next:
+    sock->_vtab->on_send_done(sock, n_bytes_sent, ah_i_sockaddr_const_from_bsd(omsg->_msghdr.msg_name), err);
+
+    if (sock->_send_queue_head == NULL) {
+        return;
+    }
+
+    err = s_prep_sock_send(sock);
+    if (err != AH_ENONE) {
+        omsg = sock->_send_queue_head;
+        sock->_send_queue_head = omsg->_next;
+        goto report_err_and_prep_next;
+    }
 }
 
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock)

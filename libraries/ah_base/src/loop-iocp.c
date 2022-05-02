@@ -4,10 +4,9 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/loop.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
+#include "ah/loop.h"
 #include "ah/task.h"
 
 #include <stdlib.h>
@@ -268,7 +267,6 @@ ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, 
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(task != NULL);
-
 
     if (ah_time_is_before(baseline, loop->_now)) {
         baseline._performance_count = INT64_MAX;

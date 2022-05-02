@@ -4,11 +4,10 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/task.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "ah/task.h"
 #include "ah/time.h"
 
 ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)

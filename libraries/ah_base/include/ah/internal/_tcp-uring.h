@@ -9,12 +9,15 @@
 
 #define AH_I_TCP_CONN_PLATFORM_FIELDS                                                                                  \
     int _fd;                                                                                                           \
-    ah_bufs_t _read_bufs;                                                                                              \
-    ah_bufs_t _write_bufs;
+    ah_bufs_t _read_bufs;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS                                                                              \
     int _fd;                                                                                                           \
     ah_sockaddr_t _raddr;                                                                                              \
     socklen_t _raddr_len;
+
+#define AH_I_TCP_OMSG_PLATFORM_FIELDS                                                                                  \
+    struct iovec* _iov;                                                                                                \
+    int _iovcnt;
 
 #endif

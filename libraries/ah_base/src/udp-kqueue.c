@@ -4,11 +4,10 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/udp.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "ah/udp.h"
 
 static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev);
 static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev);

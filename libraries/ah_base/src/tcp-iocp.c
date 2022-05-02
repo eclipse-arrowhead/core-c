@@ -240,8 +240,8 @@ static void s_on_accept(ah_i_loop_evt_t* evt)
     struct sockaddr* raddr = NULL;
     INT raddr_size;
 
-    listener->_GetAcceptExSockaddrs(ctx->_accept_buffer, 0u, addr_size, addr_size, &laddr, &laddr_size,
-        &raddr, &raddr_size);
+    listener->_GetAcceptExSockaddrs(ctx->_accept_buffer, 0u, addr_size, addr_size, &laddr, &laddr_size, &raddr,
+        &raddr_size);
 
     ctx->accept_cb(listener, conn, ah_i_sockaddr_from_bsd(raddr), AH_ENONE);
 
