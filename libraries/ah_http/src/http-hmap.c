@@ -25,7 +25,7 @@ ah_err_t ah_i_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_he
     }
 
     *hmap = (ah_http_hmap_t) {
-        ._mask = len - 1u,
+        ._mask = (uint16_t) len - 1u,
         ._count = 0u,
         ._headers = memset(headers, 0, sizeof(struct ah_i_http_hmap_header) * len),
     };

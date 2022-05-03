@@ -11,11 +11,11 @@
 
 #include <mswsock.h>
 
+#define AH_I_UDP_OMSG_PLATFORM_FIELDS WSAMSG _wsamsg;
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS                                                                                  \
     SOCKET _fd;                                                                                                        \
-    ah_sockaddr_t _raddr;                                                                                              \
-    struct msghdr _recv_wsamsg;                                                                                        \
-    struct msghdr _send_wsamsg;                                                                                        \
+    ah_sockaddr_t _recv_addr;                                                                                          \
+    WSAMSG _recv_wsamsg;                                                                                               \
     LPFN_WSARECVMSG _WSARecvMsg;
 
 #endif

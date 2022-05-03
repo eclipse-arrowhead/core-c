@@ -56,4 +56,6 @@
     const ah_tcp_trans_vtab_t* _vtab;                                                                                  \
     void* _data;
 
+void ah_i_tcp_listener_force_close_with_err(ah_tcp_listener_t* ln, ah_err_t err);
+
 #endif

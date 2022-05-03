@@ -76,6 +76,7 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         err = ah_tcp_conn_shutdown(conn, shutdown_flags);
     }
     else {
+        conn->_state = AH_I_TCP_CONN_STATE_OPEN;
         err = -(cqe->res);
     }
 
@@ -419,7 +420,7 @@ prep_another_accept:
 
     err = ah_i_loop_evt_alloc_with_sqe(ln->_loop, &evt0, &sqe);
     if (err != AH_ENONE) {
-        ln->_vtab->on_conn_accept(ln, NULL, NULL, err);
+        ah_i_tcp_listener_force_close_with_err(ln, err);
         return;
     }
 

@@ -23,7 +23,7 @@ struct ah_i_str_any {
 
 struct ah_i_str_ptr {
     AH_I_STR_COMMON_FIELDS
-    const char* _ptr;
+    char* _ptr;
 };
 
 struct ah_i_str_inl {

@@ -12,8 +12,8 @@
 typedef struct ah_i_http_reader ah_i_http_reader_t;
 
 struct ah_i_http_reader {
-    const uint8_t* _off;
-    const uint8_t* _end;
+    uint8_t* _off;
+    uint8_t* _end;
 };
 
 ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap);

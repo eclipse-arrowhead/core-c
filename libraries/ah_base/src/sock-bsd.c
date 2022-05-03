@@ -46,9 +46,14 @@ ah_extern ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
     }
 }
 
-ah_extern ah_err_t ah_i_sock_open(const int sockfamily, const int type, ah_i_sockfd_t* fd)
+ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, const int sockfamily, const int type, ah_i_sockfd_t* fd)
 {
+    ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(fd != NULL);
+
+    if (ah_loop_is_term(loop)) {
+        return AH_ESTATE;
+    }
 
     ah_i_sockfd_t fd0 = socket(sockfamily, type, 0);
 
@@ -111,14 +116,15 @@ close_fd0_and_return:
 #endif
 }
 
-ah_extern ah_err_t ah_i_sock_open_bind(const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd)
+ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd)
 {
+    ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(fd != NULL);
 
     const int sockfamily = laddr != NULL ? laddr->as_any.family : AH_SOCKFAMILY_DEFAULT;
 
     ah_i_sockfd_t fd0;
-    ah_err_t err = ah_i_sock_open(sockfamily, type, &fd0);
+    ah_err_t err = ah_i_sock_open(loop, sockfamily, type, &fd0);
     if (err != AH_ENONE) {
         return err;
     }

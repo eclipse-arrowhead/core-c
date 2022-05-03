@@ -29,18 +29,13 @@ ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* octets, size_t size)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_bufs_from_wsabufs(ah_bufs_t* bufs, WSABUF* buffers, ULONG buffer_count)
+ah_extern void ah_i_bufs_from_wsabufs(ah_bufs_t* bufs, WSABUF* buffers, ULONG buffer_count)
 {
     ah_assert_if_debug(bufs != NULL && buffers != NULL);
-
-    if (((uintmax_t) buffer_count) > ((uintmax_t) SIZE_MAX)) {
-        return AH_EOVERFLOW;
-    }
+    ah_assert_if_debug(sizeof(ULONG) <= sizeof(size_t));
 
     bufs->items = (ah_buf_t*) buffers;
     bufs->length = buffer_count;
-
-    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_i_bufs_into_wsabufs(ah_bufs_t* bufs, WSABUF** buffers, ULONG* buffer_count)

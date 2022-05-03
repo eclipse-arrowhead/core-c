@@ -54,13 +54,13 @@ ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
             return AH_EILSEQ;
         }
 
-        const uint8_t* field_value_start = r->_off;
+        uint8_t* field_value_start = r->_off;
 
         do {
             r->_off = &r->_off[1u];
         } while (s_is_vchar_obs_text_htab_sp(r->_off[0u]));
 
-        const uint8_t* field_value_end = r->_off;
+        uint8_t* field_value_end = r->_off;
 
         if (!s_skip_crlf(r)) {
             return AH_EILSEQ;
@@ -243,7 +243,7 @@ static void s_skip_ows(ah_i_http_reader_t* r)
 
 static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t))
 {
-    const uint8_t* off = r->_off;
+    uint8_t* off = r->_off;
 
     for (; off != r->_end; off = &off[1u]) {
         if (!pred(off[0u])) {
@@ -251,7 +251,7 @@ static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t))
         }
     }
 
-    const uint8_t* ptr = r->_off;
+    uint8_t* ptr = r->_off;
     size_t len = (size_t) (off - r->_off);
 
     r->_off = off;

@@ -8,7 +8,7 @@
 
 static int s_to_lower_ascii(char ch);
 
-ah_extern int ah_str_cmp(const ah_str_t a, const ah_str_t b)
+ah_extern int ah_str_cmp(ah_str_t a, ah_str_t b)
 {
     int diff_len;
     size_t len;
@@ -68,9 +68,10 @@ static int s_to_lower_ascii(char ch)
     return (ch >= 'A' && ch <= 'Z') ? (ch | 0x20) : ch;
 }
 
-ah_extern bool ah_str_eq(const ah_str_t a, const ah_str_t b)
+ah_extern bool ah_str_eq(ah_str_t a, ah_str_t b)
 {
-    return ah_str_get_len(&a) == ah_str_get_len(&b) && memcmp(ah_str_get_ptr(&a), ah_str_get_ptr(&b), ah_str_get_len(&a)) == 0;
+    return ah_str_get_len(&a) == ah_str_get_len(&b)
+        && memcmp(ah_str_get_ptr(&a), ah_str_get_ptr(&b), ah_str_get_len(&a)) == 0;
 }
 
 ah_extern bool ah_str_eq_ignore_case_ascii(ah_str_t a, ah_str_t b)

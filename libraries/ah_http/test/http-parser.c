@@ -15,7 +15,7 @@ static void s_should_parse_headers(ah_unit_t* unit);
 static void s_should_parse_request_lines(ah_unit_t* unit);
 static void s_should_parse_status_lines(ah_unit_t* unit);
 
-static ah_i_http_reader_t s_reader_of(const char* str);
+static ah_i_http_reader_t s_reader_of(char* str);
 
 void test_http_parser(ah_unit_t* unit)
 {
@@ -56,7 +56,7 @@ static void s_should_parse_headers(ah_unit_t* unit)
     if (!ah_unit_assert(unit, value != NULL, "no host header exists")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("192.168.4.44:44444"), *value)) {
+    if (value != NULL && !ah_unit_assert_str_eq(unit, ah_str_from_cstr("192.168.4.44:44444"), *value)) {
         return;
     }
 
@@ -67,7 +67,7 @@ static void s_should_parse_headers(ah_unit_t* unit)
     if (!ah_unit_assert(unit, value != NULL, "no content-type header exists")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("application/json; charset=utf-8"), *value)) {
+    if (value != NULL && !ah_unit_assert_str_eq(unit, ah_str_from_cstr("application/json; charset=utf-8"), *value)) {
         return;
     }
 
@@ -78,7 +78,7 @@ static void s_should_parse_headers(ah_unit_t* unit)
     if (!ah_unit_assert(unit, value != NULL, "no content-length header exists")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("143"), *value)) {
+    if (value != NULL && !ah_unit_assert_str_eq(unit, ah_str_from_cstr("143"), *value)) {
         return;
     }
 
@@ -89,16 +89,16 @@ static void s_should_parse_headers(ah_unit_t* unit)
     if (!ah_unit_assert(unit, value != NULL, "no accept header exists")) {
         return;
     }
-    if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("application/json, application/cbor"), *value)) {
+    if (value != NULL && !ah_unit_assert_str_eq(unit, ah_str_from_cstr("application/json, application/cbor"), *value)) {
         return;
     }
 }
 
-static ah_i_http_reader_t s_reader_of(const char* str)
+static ah_i_http_reader_t s_reader_of(char* str)
 {
     ah_i_http_reader_t r;
-    r._off = &((const uint8_t*) str)[0u];
-    r._end = &((const uint8_t*) str)[strlen(str)];
+    r._off = &((uint8_t*) str)[0u];
+    r._end = &((uint8_t*) str)[strlen(str)];
     return r;
 }
 

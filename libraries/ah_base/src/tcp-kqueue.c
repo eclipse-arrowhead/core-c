@@ -72,8 +72,8 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt, struct kevent* kev)
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
     }
     else if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
+        err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
     }
     else {
         conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;

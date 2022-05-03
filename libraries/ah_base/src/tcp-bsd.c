@@ -25,39 +25,6 @@
 #    define SHUT_RDWR SD_BOTH
 #endif
 
-ah_extern ah_err_t ah_tcp_omsg_init(ah_tcp_omsg_t* omsg, ah_bufs_t bufs)
-{
-    if (omsg == NULL || (bufs.items == NULL && bufs.length != 0u)) {
-        return AH_EINVAL;
-    }
-
-    struct iovec* iov;
-    int iovcnt;
-
-    ah_err_t err = ah_i_bufs_into_iovec(&bufs, &iov, &iovcnt);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    *omsg = (ah_tcp_omsg_t) {
-        ._next = NULL,
-        ._iov = iov,
-        ._iovcnt = iovcnt,
-    };
-
-    return AH_ENONE;
-}
-
-ah_extern ah_bufs_t ah_tcp_omsg_get_bufs(ah_tcp_omsg_t* omsg)
-{
-    ah_assert_if_debug(omsg != NULL);
-
-    ah_bufs_t bufs;
-    ah_i_bufs_from_iovec(&bufs, omsg->_iov, omsg->_iovcnt);
-
-    return bufs;
-}
-
 ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
     if (conn == NULL) {
@@ -67,7 +34,7 @@ ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
         return AH_ESTATE;
     }
 
-    ah_err_t err = ah_i_sock_open_bind(laddr, SOCK_STREAM, &conn->_fd);
+    ah_err_t err = ah_i_sock_open_bind(conn->_loop, laddr, SOCK_STREAM, &conn->_fd);
 
     if (err == AH_ENONE) {
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
@@ -210,10 +177,10 @@ ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
         return AH_ESTATE;
     }
 
-    ah_err_t err = ah_i_sock_open_bind(laddr, SOCK_STREAM, &ln->_fd);
+    ah_err_t err = ah_i_sock_open_bind(ln->_loop, laddr, SOCK_STREAM, &ln->_fd);
 
 #if AH_USE_IOCP
-    conn->_sockfamily = laddr != NULL ? laddr->as_ip.family : AH_SOCKFAMILY_DEFAULT;
+    ln->_sockfamily = laddr != NULL ? laddr->as_ip.family : AH_SOCKFAMILY_DEFAULT;
 #endif
 
     if (err == AH_ENONE) {
@@ -279,4 +246,24 @@ ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled)
         return errno;
     }
     return AH_ENONE;
+}
+
+void ah_i_tcp_listener_force_close_with_err(ah_tcp_listener_t* ln, ah_err_t err)
+{
+    ah_assert_if_debug(ln != NULL);
+    ah_assert_if_debug(ln->_state != AH_I_TCP_LISTENER_STATE_CLOSED);
+    ah_assert_if_debug(ln->_fd != 0);
+
+    ln->_state = AH_I_TCP_LISTENER_STATE_CLOSED;
+
+    ah_err_t err0 = ah_i_sock_close(ln->_fd);
+    if (err0 == AH_EINTR) {
+        (void) ah_i_loop_try_set_pending_err(ln->_loop, AH_EINTR);
+    }
+
+#ifndef NDEBUG
+    ln->_fd = 0;
+#endif
+
+    ln->_vtab->on_close(ln, err);
 }

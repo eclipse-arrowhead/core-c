@@ -13,14 +13,56 @@
 
 #include <ws2ipdef.h>
 
-static void s_on_recv(ah_i_loop_evt_t* evt);
-static void s_on_send(ah_i_loop_evt_t* evt);
+static void s_on_sock_recv(ah_i_loop_evt_t* evt);
+static void s_on_sock_send(ah_i_loop_evt_t* evt);
 
-static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx);
+static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock);
+static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock);
 
-ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
+ah_extern ah_err_t ah_udp_omsg_init(ah_udp_omsg_t* omsg, ah_bufs_t bufs, ah_sockaddr_t* raddr)
 {
-    if (sock == NULL || ctx == NULL || ctx->alloc_cb == NULL || ctx->recv_cb == NULL) {
+    if (omsg == NULL || (bufs.items == NULL && bufs.length != 0u) || raddr == NULL) {
+        return AH_EINVAL;
+    }
+
+    WSABUF* buffers;
+    ULONG buffer_count;
+
+    ah_err_t err = ah_i_bufs_into_wsabufs(&bufs, &buffers, &buffer_count);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    *omsg = (ah_udp_omsg_t) {
+        ._next = NULL,
+        ._wsamsg.name = ah_i_sockaddr_into_bsd(raddr),
+        ._wsamsg.namelen = ah_i_sockaddr_get_size(raddr),
+        ._wsamsg.lpBuffers = buffers,
+        ._wsamsg.dwBufferCount = buffer_count,
+    };
+
+    return AH_ENONE;
+}
+
+ah_extern ah_sockaddr_t* ah_udp_omsg_get_raddr(ah_udp_omsg_t* omsg)
+{
+    ah_assert_if_debug(omsg != NULL);
+    return ah_i_sockaddr_from_bsd(omsg->_wsamsg.name);
+}
+
+ah_extern ah_bufs_t ah_udp_omsg_get_bufs(ah_udp_omsg_t* omsg)
+{
+    ah_assert_if_debug(omsg != NULL);
+
+    ah_bufs_t bufs;
+    ah_i_bufs_from_wsabufs(&bufs, omsg->_wsamsg.lpBuffers, omsg->_wsamsg.dwBufferCount);
+
+    return bufs;
+}
+
+ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
+{
+    if (sock == NULL) {
         return AH_EINVAL;
     }
     if (!sock->_is_open || sock->_is_receiving) {
@@ -36,7 +78,7 @@ ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx
         }
     }
 
-    err = s_prep_recv(sock, ctx);
+    err = s_prep_sock_recv(sock);
     if (err != AH_ENONE) {
         return err;
     }
@@ -46,10 +88,9 @@ ah_extern ah_err_t ah_udp_recv_start(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx
     return AH_ENONE;
 }
 
-static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
+static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
-    ah_assert_if_debug(ctx != NULL);
 
     ah_i_loop_evt_t* evt;
 
@@ -58,13 +99,12 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
         return err;
     }
 
-    evt->_cb = s_on_recv;
-    evt->_body._as_udp_recv._sock = sock;
-    evt->_body._as_udp_recv._ctx = ctx;
+    evt->_cb = s_on_sock_recv;
+    evt->_subject = sock;
 
-    struct ah_bufs bufs = { .items = NULL, .length = 0u };
-    ctx->alloc_cb(sock, &bufs, 0u);
-    if (bufs.items == NULL) {
+    ah_bufs_t bufs = { .items = NULL, .length = 0u };
+    sock->_vtab->on_recv_alloc(sock, &bufs);
+    if (bufs.items == NULL || bufs.length == 0u) {
         return AH_ENOBUFS;
     }
 
@@ -75,14 +115,14 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
         return err;
     }
 
-    ctx->_wsa_msg = (WSAMSG) {
-        .name = ah_i_sockaddr_into_bsd(&ctx->_raddr),
+    sock->_recv_wsamsg = (WSAMSG) {
+        .name = ah_i_sockaddr_into_bsd(&sock->_recv_addr),
         .namelen = sizeof(ah_sockaddr_t),
         .lpBuffers = buffers,
         .dwBufferCount = buffer_count,
     };
 
-    int res = sock->_WSARecvMsg(sock->_fd, &ctx->_wsa_msg, NULL, &evt->_overlapped, NULL);
+    int res = sock->_WSARecvMsg(sock->_fd, &sock->_recv_wsamsg, NULL, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {
@@ -93,17 +133,12 @@ static ah_err_t s_prep_recv(ah_udp_sock_t* sock, ah_udp_recv_ctx_t* ctx)
     return AH_ENONE;
 }
 
-static void s_on_recv(ah_i_loop_evt_t* evt)
+static void s_on_sock_recv(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
-    ah_udp_sock_t* sock = evt->_body._as_udp_recv._sock;
+    ah_udp_sock_t* sock = evt->_subject;
     ah_assert_if_debug(sock != NULL);
-
-    ah_udp_recv_ctx_t* ctx = evt->_body._as_udp_recv._ctx;
-    ah_assert_if_debug(ctx != NULL);
-    ah_assert_if_debug(ctx->recv_cb != NULL);
-    ah_assert_if_debug(ctx->alloc_cb != NULL);
 
     if (!sock->_is_open || !sock->_is_receiving) {
         return;
@@ -118,19 +153,17 @@ static void s_on_recv(ah_i_loop_evt_t* evt)
         goto call_recv_cb_with_err_and_return;
     }
 
-    struct ah_bufs bufs;
-    err = ah_i_bufs_from_wsabufs(&bufs, ctx->_wsa_msg.lpBuffers, ctx->_wsa_msg.dwBufferCount);
-    if (err != AH_ENONE) {
-        goto call_recv_cb_with_err_and_return;
-    }
+    ah_bufs_t bufs;
+    ah_i_bufs_from_wsabufs(&bufs, sock->_recv_wsamsg.lpBuffers, sock->_recv_wsamsg.dwBufferCount);
 
-    ctx->recv_cb(sock, &ctx->_raddr, &bufs, n_bytes_transferred, AH_ENONE);
+    ah_sockaddr_t* raddr = ah_i_sockaddr_from_bsd(sock->_recv_wsamsg.name);
+    sock->_vtab->on_recv_done(sock, bufs, n_bytes_transferred, raddr, AH_ENONE);
 
     if (!sock->_is_open) {
         return;
     }
 
-    err = s_prep_recv(sock, ctx);
+    err = s_prep_sock_recv(sock);
     if (err != AH_ENONE) {
         goto call_recv_cb_with_err_and_return;
     }
@@ -138,10 +171,10 @@ static void s_on_recv(ah_i_loop_evt_t* evt)
     return;
 
 call_recv_cb_with_err_and_return:
-    ctx->recv_cb(sock, NULL, NULL, 0u, err);
+    sock->_vtab->on_recv_done(sock, (ah_bufs_t) { 0u }, 0u, &sock->_recv_addr, err);
 }
 
-ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock)
+ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -154,18 +187,29 @@ ah_extern ah_err_t ah_udp_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_omsg_t* omsg)
 {
-    if (sock == NULL || ctx == NULL || ctx->send_cb == NULL) {
+    if (sock == NULL || omsg == NULL) {
         return AH_EINVAL;
     }
-    if (ctx->bufs.items == NULL && ctx->bufs.length != 0u) {
-        return AH_EINVAL;
-    }
-    if (!sock->_is_open) {
+    if (!sock->_is_open || sock->_vtab->on_send_done == NULL) {
         return AH_ESTATE;
     }
 
+    if (sock->_send_queue_head != NULL) {
+        sock->_send_queue_end->_next = omsg;
+        sock->_send_queue_end = omsg;
+        return AH_ENONE;
+    }
+
+    sock->_send_queue_head = omsg;
+    sock->_send_queue_end = omsg;
+
+    return s_prep_sock_send(sock);
+}
+
+static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
+{
     ah_i_loop_evt_t* evt;
 
     ah_err_t err = ah_i_loop_evt_alloc(sock->_loop, &evt);
@@ -173,63 +217,60 @@ ah_extern ah_err_t ah_udp_send(ah_udp_sock_t* sock, ah_udp_send_ctx_t* ctx)
         return err;
     }
 
-    evt->_cb = s_on_send;
-    evt->_body._as_udp_send._sock = sock;
-    evt->_body._as_udp_send._ctx = ctx;
+    evt->_cb = s_on_sock_send;
+    evt->_subject = sock;
 
-    WSABUF* buffers;
-    ULONG buffer_count;
-    err = ah_i_bufs_into_wsabufs(&ctx->bufs, &buffers, &buffer_count);
-    if (ah_unlikely(err != AH_ENONE)) {
-        return err;
-    }
+    ah_udp_omsg_t* omsg = sock->_send_queue_head;
 
-    ctx->_wsa_msg = (WSAMSG) {
-        .name = ah_i_sockaddr_into_bsd(&ctx->raddr),
-        .namelen = ah_i_sockaddr_get_size(&ctx->raddr),
-        .lpBuffers = buffers,
-        .dwBufferCount = buffer_count,
-    };
-
-    int res = WSASendMsg(sock->_fd, &ctx->_wsa_msg, 0u, NULL, &evt->_overlapped, NULL);
+    int res = WSASendMsg(sock->_fd, &omsg->_wsamsg, 0u, NULL, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
-        if (err != WSA_IO_PENDING) {
-            return err;
+        if (err == WSA_IO_PENDING) {
+            err = AH_ENONE;
         }
     }
 
-    return AH_ENONE;
+    return err;
 }
 
-static void s_on_send(ah_i_loop_evt_t* evt)
+static void s_on_sock_send(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
-    ah_udp_sock_t* sock = evt->_body._as_udp_send._sock;
+    ah_udp_sock_t* sock = evt->_subject;
     ah_assert_if_debug(sock != NULL);
-
-    ah_udp_send_ctx_t* ctx = evt->_body._as_udp_send._ctx;
-    ah_assert_if_debug(ctx != NULL);
-    ah_assert_if_debug(ctx->send_cb != NULL);
-    ah_assert_if_debug(ctx->bufs.items != NULL || ctx->bufs.length == 0u);
 
     ah_err_t err;
 
-    DWORD n_bytes_transferred;
+    DWORD n_bytes_sent;
     DWORD flags;
-    if (!WSAGetOverlappedResult(sock->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
+    if (WSAGetOverlappedResult(sock->_fd, &evt->_overlapped, &n_bytes_sent, false, &flags)) {
+        err = AH_ENONE;
+    }
+    else {
         err = WSAGetLastError();
-        goto call_send_cb_with_sock_and_err;
+        n_bytes_sent = 0u;
     }
 
-    err = AH_ENONE;
+    ah_udp_omsg_t* omsg = sock->_send_queue_head;
+    sock->_send_queue_head = omsg->_next;
 
-call_send_cb_with_sock_and_err:
-    ctx->send_cb(sock, err);
+report_err_and_prep_next:
+    sock->_vtab->on_send_done(sock, n_bytes_sent, ah_i_sockaddr_from_bsd(omsg->_wsamsg.name), err);
+
+    if (sock->_send_queue_head == NULL) {
+        return;
+    }
+
+    err = s_prep_sock_send(sock);
+    if (err != AH_ENONE) {
+        omsg = sock->_send_queue_head;
+        sock->_send_queue_head = omsg->_next;
+        goto report_err_and_prep_next;
+    }
 }
 
-ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
+ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -255,9 +296,7 @@ ah_extern ah_err_t ah_udp_close(ah_udp_sock_t* sock, ah_udp_close_cb cb)
     sock->_fd = 0;
 #endif
 
-    if (cb != NULL) {
-        cb(sock, err);
-    }
+    sock->_vtab->on_close(sock, err);
 
     return err;
 }

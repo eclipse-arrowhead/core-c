@@ -219,7 +219,7 @@ ah_inline void ah_http_server_set_req_header_capacity(ah_http_server_t* srv, siz
 {
     ah_assert_if_debug(srv != NULL);
     ah_assert_if_debug(capacity != 0u && ((capacity & (capacity - 1u)) == 0u));
-    srv->_req_header_capacity = capacity;
+    srv->_req_header_capacity = (uint16_t) capacity;
 }
 
 ah_inline void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data)
@@ -249,12 +249,18 @@ ah_inline ah_http_obody_t ah_http_obody_callback(ah_http_obody_cb cb)
 
 ah_inline ah_http_obody_t ah_http_obody_cstr(char* cstr)
 {
-    return ah_http_obody_buf((ah_buf_t) { ._octets = (uint8_t*) cstr, ._size = strlen(cstr) });
+    ah_buf_t buf;
+    ah_err_t err = ah_buf_init(&buf, (uint8_t*) cstr, strlen(cstr));
+    ah_assert(err == 0);
+    return ah_http_obody_buf(buf);
 }
 
 ah_inline ah_http_obody_t ah_http_obody_str(ah_str_t str)
 {
-    return ah_http_obody_buf((ah_buf_t) { ._octets = (uint8_t*) ah_str_get_ptr(&str), ._size = ah_str_get_len(&str) });
+    ah_buf_t buf;
+    ah_err_t err = ah_buf_init(&buf, (uint8_t*) ah_str_get_ptr(&str), ah_str_get_len(&str));
+    ah_assert(err == 0);
+    return ah_http_obody_buf(buf);
 }
 
 #endif
