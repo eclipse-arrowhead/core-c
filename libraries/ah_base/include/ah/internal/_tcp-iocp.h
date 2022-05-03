@@ -7,8 +7,8 @@
 #ifndef AH_INTERNAL_IOCP_TCP_H_
 #define AH_INTERNAL_IOCP_TCP_H_
 
-#include <mswsock.h>
 #include <winsock2.h>
+#include <mswsock.h>
 
 #define AH_I_TCP_CONN_PLATFORM_FIELDS                                                                                  \
     DWORD _recv_flags;                                                                                                 \

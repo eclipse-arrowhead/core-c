@@ -4,13 +4,15 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
+#include "ah/loop.h"
+
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/loop.h"
 #include "ah/task.h"
 
-#include <stdlib.h>
 #include <winsock2.h>
+
+#include <stdlib.h>
 
 #define S_COMPLETION_ENTRY_BUFFER_SIZE 32u
 

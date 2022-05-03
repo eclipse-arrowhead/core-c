@@ -4,8 +4,9 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/assert.h"
 #include "ah/buf.h"
+
+#include "ah/assert.h"
 #include "ah/err.h"
 
 #include <limits.h>

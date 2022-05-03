@@ -4,9 +4,11 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
+#include "ah/sock.h"
+
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/sock.h"
+#include "ah/loop.h"
 
 #if AH_IS_DARWIN
 #    include <fcntl.h>

@@ -4,12 +4,14 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/assert.h"
 #include "ah/buf.h"
+
+#include "ah/assert.h"
 #include "ah/err.h"
 
-#include <limits.h>
 #include <winsock2.h>
+
+#include <limits.h>
 
 ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* octets, size_t size)
 {

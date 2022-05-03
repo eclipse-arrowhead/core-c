@@ -4,10 +4,9 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/task.h"
-
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "ah/task.h"
 #include "ah/unit.h"
 
 struct s_task_data {

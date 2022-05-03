@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/buf.h"
-
 #include "ah/unit.h"
 
 #if AH_IS_WIN32

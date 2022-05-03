@@ -4,9 +4,8 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/math.h"
-
 #include "ah/err.h"
+#include "ah/math.h"
 #include "ah/unit.h"
 
 static void s_should_avoid_add_overflows(ah_unit_t* unit);

@@ -4,10 +4,11 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
+#include "ah/time.h"
+
 #include "ah/abort.h"
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/time.h"
 
 #include <string.h>
 #include <time.h>

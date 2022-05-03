@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/sock.h"
-
 #include "ah/unit.h"
 
 #if AH_HAS_BSD_SOCKETS && AH_IS_WIN32

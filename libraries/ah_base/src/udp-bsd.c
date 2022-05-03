@@ -4,13 +4,13 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
+#include "ah/udp.h"
+
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
-#include "ah/udp.h"
 
 #if AH_IS_WIN32
-#    include <mswsock.h>
 #    include <ws2ipdef.h>
 #endif
 

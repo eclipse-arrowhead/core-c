@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/time.h"
-
 #include "ah/unit.h"
 
 void s_should_return_non_zero_time(ah_unit_t* unit);

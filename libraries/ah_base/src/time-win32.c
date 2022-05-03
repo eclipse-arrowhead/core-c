@@ -4,10 +4,12 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
+#include "ah/time.h"
+
 #include "ah/abort.h"
 #include "ah/err.h"
+#include "ah/intrin.h"
 #include "ah/math.h"
-#include "ah/time.h"
 #include "winapi.h"
 
 #define WIN32_LEAN_AND_MEAN

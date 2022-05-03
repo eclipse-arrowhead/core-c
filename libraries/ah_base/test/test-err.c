@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/err.h"
-
 #include "ah/unit.h"
 
 static void s_should_never_return_null_when_calling_strerror(ah_unit_t* unit);

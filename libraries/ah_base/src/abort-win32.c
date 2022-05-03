@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/abort.h"
-#include "ah/defs.h"
+
+#include "ah/intrin.h"
 
 #include <signal.h>
 

@@ -4,9 +4,10 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
+#include "ah/loop.h"
+
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/loop.h"
 
 #include <fcntl.h>
 #include <limits.h>

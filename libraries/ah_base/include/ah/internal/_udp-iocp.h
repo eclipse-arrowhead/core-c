@@ -7,8 +7,9 @@
 #ifndef AH_INTERNAL_IOCP_UDP_H_
 #define AH_INTERNAL_IOCP_UDP_H_
 
-#include <mswsock.h>
 #include <winsock2.h>
+
+#include <mswsock.h>
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS                                                                                  \
     SOCKET _fd;                                                                                                        \
