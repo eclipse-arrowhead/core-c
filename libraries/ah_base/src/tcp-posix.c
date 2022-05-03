@@ -6,6 +6,8 @@
 
 #include "ah/tcp.h"
 
+#include "ah/err.h"
+
 ah_extern ah_err_t ah_tcp_omsg_init(ah_tcp_omsg_t* omsg, ah_bufs_t bufs)
 {
     if (omsg == NULL || (bufs.items == NULL && bufs.length != 0u)) {

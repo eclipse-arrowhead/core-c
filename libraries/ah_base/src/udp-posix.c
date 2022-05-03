@@ -6,6 +6,8 @@
 
 #include "ah/udp.h"
 
+#include "ah/err.h"
+
 ah_extern ah_err_t ah_udp_omsg_init(ah_udp_omsg_t* omsg, ah_bufs_t bufs, ah_sockaddr_t* raddr)
 {
     if (omsg == NULL || (bufs.items == NULL && bufs.length != 0u) || raddr == NULL) {
