@@ -106,6 +106,10 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt)
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
 
+    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTING) {
+        return;
+    }
+
     ah_err_t err;
 
     DWORD n_bytes_transferred;
@@ -215,6 +219,9 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
 
     conn->_vtab->on_read_done(conn, conn->_read_bufs, n_bytes_transferred, AH_ENONE);
 
+    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) != 0u) {
+        return;
+    }
     if (!conn->_is_reading) {
         return;
     }
@@ -318,6 +325,9 @@ report_err_and_prep_next:
     conn->_write_queue_head = conn->_write_queue_head->_next;
     conn->_vtab->on_write_done(conn, err);
 
+    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
+        return;
+    }
     if (conn->_write_queue_head == NULL) {
         return;
     }
@@ -473,6 +483,10 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt)
     ah_tcp_listener_t* ln = evt->_subject;
     ah_assert_if_debug(ln != NULL);
 
+    if (ln->_state != AH_I_TCP_LISTENER_STATE_LISTENING) {
+        return;
+    }
+
     ah_err_t err;
 
     DWORD n_bytes_transferred;
@@ -510,6 +524,10 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt)
 
     ln->_GetAcceptExSockaddrs(ln->_accept_buffer, 0u, addr_size, addr_size, &laddr, &laddr_size, &raddr, &raddr_size);
     ln->_vtab->on_conn_accept(ln, conn, ah_i_sockaddr_from_bsd(raddr), AH_ENONE);
+
+    if (ln->_state != AH_I_TCP_LISTENER_STATE_LISTENING) {
+        return;
+    }
 
 prep_another_accept:
 
