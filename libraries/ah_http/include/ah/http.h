@@ -69,7 +69,7 @@ struct ah_http_client_vtab {
     void (*on_res_headers)(ah_http_client_t* cln, ah_http_ires_t* res);
     void (*on_res_err)(ah_http_client_t* cln, ah_http_ires_t* res, ah_http_ires_err_t ires_err);
 
-    void (*on_res_body_alloc)(ah_http_client_t* cln, ah_bufs_t* bufs, size_t n_expected_bytes);
+    void (*on_res_body_alloc)(ah_http_client_t* cln, ah_bufs_t* bufs);
     void (*on_res_body)(ah_http_client_t* cln, ah_http_ires_t* res, ah_bufs_t bufs, size_t rem);
     void (*on_res_body_received)(ah_http_client_t* cln, ah_http_ires_t* res);
 };
@@ -194,7 +194,7 @@ ah_inline void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_da
     ah_tcp_conn_set_user_data(&cln->_conn, user_data);
 }
 
-ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab);
+ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab);
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog);
 ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_ores_t* res);

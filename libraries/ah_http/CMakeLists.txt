@@ -6,6 +6,7 @@ set(
     SOURCE_FILES
     include/ah/http.h
     include/ah/internal/_http.h
+    src/http-client.c
     src/http-hmap.c
     src/http-hmap.h
     src/http-parser.c

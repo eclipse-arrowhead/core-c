@@ -20,7 +20,9 @@
 #define AH_I_HTTP_CLIENT_FIELDS                                                                                        \
     ah_tcp_conn_t _conn;                                                                                               \
     ah_tcp_trans_t _trans;                                                                                             \
-    const ah_http_client_vtab_t* _vtab;
+    const ah_http_client_vtab_t* _vtab;                                                                                \
+    ah_http_ires_t* _ires;                                                                                             \
+    ah_buf_t _ibuf;
 
 #define AH_I_HTTP_SERVER_FIELDS                                                                                        \
     ah_tcp_listener_t _ln;                                                                                             \

@@ -18,12 +18,12 @@ static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const a
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln);
 
-ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab)
+ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab)
 {
-    ah_assert_if_debug(srv != NULL);
+    if (srv == NULL || trans._vtab == NULL || trans._loop == NULL || vtab == NULL) {
+        return AH_EINVAL;
+    }
 
-    ah_assert_if_debug(trans._loop != NULL);
-    ah_assert_if_debug(trans._vtab != NULL);
     ah_assert_if_debug(trans._vtab->conn_init != NULL);
     ah_assert_if_debug(trans._vtab->conn_open != NULL);
     ah_assert_if_debug(trans._vtab->conn_connect != NULL);
@@ -37,7 +37,6 @@ ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, 
     ah_assert_if_debug(trans._vtab->listener_listen != NULL);
     ah_assert_if_debug(trans._vtab->listener_close != NULL);
 
-    ah_assert_if_debug(vtab != NULL);
     ah_assert_if_debug(vtab->on_open != NULL);
     ah_assert_if_debug(vtab->on_listen != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
@@ -61,9 +60,15 @@ ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, 
         .on_conn_accept = s_on_conn_accept,
     };
 
-    trans._vtab->listener_init(&srv->_ln, trans._loop, &s_vtab);
+    ah_err_t err = trans._vtab->listener_init(&srv->_ln, trans._loop, &s_vtab);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
     srv->_trans = trans;
     srv->_vtab = vtab;
+
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr)
