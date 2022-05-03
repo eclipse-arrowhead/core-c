@@ -162,7 +162,7 @@ set(
     test/test-task.c
     test/test-tcp.c
     test/test-time.c
-    #test/test-udp.c
+    test/test-udp.c
 )
 
 add_executable(ah_base_tests ${TEST_FILES})
