@@ -18,19 +18,15 @@
 #define AH_I_HTTP_OBODY_KIND_CALLBACK 3u
 
 #define AH_I_HTTP_CLIENT_FIELDS                                                                                        \
-    ah_tcp_sock_t _sock;                                                                                               \
+    ah_tcp_conn_t _conn;                                                                                               \
     ah_tcp_trans_t _trans;                                                                                             \
-    ah_tcp_read_ctx_t _read_ctx;                                                                                       \
-    const ah_http_client_vtab_t* _vtab;                                                                                \
-    void* _user_data;
+    const ah_http_client_vtab_t* _vtab;
 
 #define AH_I_HTTP_SERVER_FIELDS                                                                                        \
-    ah_tcp_sock_t _sock;                                                                                               \
+    ah_tcp_listener_t _ln;                                                                                             \
     ah_tcp_trans_t _trans;                                                                                             \
-    ah_tcp_listen_ctx_t _listen_ctx;                                                                                   \
     const ah_http_server_vtab_t* _vtab;                                                                                \
-    uint16_t _req_header_capacity;                                                                                     \
-    void* _user_data;
+    uint16_t _req_header_capacity;
 
 #define AH_I_HTTP_HMAP_FIELDS                                                                                          \
     uint16_t _mask;                                                                                                    \

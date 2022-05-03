@@ -170,39 +170,28 @@ struct ah_http_ores {
     void* user_data;
 };
 
-ah_inline void ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
-{
-    ah_assert_if_debug(cln != NULL);
-    ah_assert_if_debug(trans._loop != NULL);
-    ah_assert_if_debug(trans._vtab != NULL);
-    ah_assert_if_debug(vtab != NULL);
-
-    trans._vtab->init(&cln->_sock, trans._loop);
-    cln->_trans = trans;
-    cln->_vtab = vtab;
-}
-
+ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab);
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, const ah_http_oreq_t* req);
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
 
-ah_inline ah_tcp_sock_t* ah_http_client_get_sock(ah_http_client_t* srv)
+ah_inline ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln)
 {
-    ah_assert_if_debug(srv != NULL);
-    return &srv->_sock;
+    ah_assert_if_debug(cln != NULL);
+    return &cln->_conn;
 }
 
 ah_inline void* ah_http_client_get_user_data(ah_http_client_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
-    return cln->_user_data;
+    return ah_tcp_conn_get_user_data(&cln->_conn);
 }
 
 ah_inline void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data)
 {
     ah_assert_if_debug(cln != NULL);
-    cln->_user_data = user_data;
+    ah_tcp_conn_set_user_data(&cln->_conn, user_data);
 }
 
 ah_extern void ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab);
@@ -211,16 +200,16 @@ ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog
 ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_ores_t* res);
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
 
-ah_inline ah_tcp_sock_t* ah_http_server_get_sock(ah_http_server_t* srv)
+ah_inline ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv)
 {
     ah_assert_if_debug(srv != NULL);
-    return &srv->_sock;
+    return &srv->_ln;
 }
 
 ah_inline void* ah_http_server_get_user_data(ah_http_server_t* srv)
 {
     ah_assert_if_debug(srv != NULL);
-    return srv->_user_data;
+    return ah_tcp_listener_get_user_data(&srv->_ln);
 }
 
 // `capacity` must be one of {0, 1, 2, 4, 8, 16, 32, 64, 128 or 256}. If not,
@@ -236,7 +225,7 @@ ah_inline void ah_http_server_set_req_header_capacity(ah_http_server_t* srv, siz
 ah_inline void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data)
 {
     ah_assert_if_debug(srv != NULL);
-    srv->_user_data = user_data;
+    ah_tcp_listener_set_user_data(&srv->_ln, user_data);
 }
 
 ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, ah_str_t name, bool* has_next);
