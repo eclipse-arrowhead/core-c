@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 99)
 set(
     SOURCE_FILES
     include/ah/http.h
-    include/ah/internal/http.h
+    include/ah/internal/_http.h
     src/http-hmap.c
     src/http-hmap.h
     src/http-parser.c

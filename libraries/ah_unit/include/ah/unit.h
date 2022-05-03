@@ -7,7 +7,7 @@
 #ifndef AH_UNIT_H_
 #define AH_UNIT_H_
 
-#include "internal/unit.h"
+#include "internal/_unit.h"
 
 #define ah_unit_assert(unit, is_success, message) ah_i_unit_assert(AH_I_UNIT_WRAP(unit), (is_success), (message))
 

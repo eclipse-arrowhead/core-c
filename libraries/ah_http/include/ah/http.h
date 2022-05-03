@@ -7,7 +7,7 @@
 #ifndef AH_HTTP_H_
 #define AH_HTTP_H_
 
-#include "internal/http.h"
+#include "internal/_http.h"
 
 #include <ah/buf.h>
 #include <stdbool.h>
