@@ -203,6 +203,14 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 {
     ah_err_t err;
 
+    // Setup event loop.
+
+    ah_loop_t loop;
+    err = ah_loop_init(&loop, &(ah_loop_opts_t) { .capacity = 4 });
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
+
     // Setup and open receiver socket.
 
     uint8_t free_buf_octets[24] = { 0u };
@@ -217,18 +225,12 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
         .unit = unit,
     };
 
-    ah_loop_t recv_loop;
     ah_udp_sock_t recv_sock;
     ah_sockaddr_t recv_addr;
 
-    err = ah_loop_init(&recv_loop, &(ah_loop_opts_t) { .capacity = 4 });
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
-
     ah_sockaddr_init_ipv4(&recv_addr, 0u, &ah_ipaddr_v4_loopback);
 
-    err = ah_udp_sock_init(&recv_sock, &recv_loop, &s_sock_vtab);
+    err = ah_udp_sock_init(&recv_sock, &loop, &s_sock_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -260,18 +262,12 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
         .unit = unit,
     };
 
-    ah_loop_t send_loop;
     ah_udp_sock_t send_sock;
     ah_sockaddr_t send_addr;
 
-    err = ah_loop_init(&send_loop, &(ah_loop_opts_t) { .capacity = 4 });
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
-
     ah_sockaddr_init_ipv4(&send_addr, 0u, &ah_ipaddr_v4_loopback);
 
-    err = ah_udp_sock_init(&send_sock, &send_loop, &s_sock_vtab);
+    err = ah_udp_sock_init(&send_sock, &loop, &s_sock_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -285,17 +281,12 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     // Submit issued events for execution.
 
-    err = ah_loop_run_until(&send_loop, &(struct ah_time) { 0 });
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
-
     struct ah_time deadline;
     err = ah_time_add(ah_time_now(), 10 * AH_TIMEDIFF_MS, &deadline);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    err = ah_loop_run_until(&recv_loop, &deadline);
+    err = ah_loop_run_until(&loop, &deadline);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -318,10 +309,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     // Release event loops.
 
-    err = ah_loop_term(&recv_loop);
-    ah_unit_assert_err_eq(unit, AH_ENONE, err);
-
-    err = ah_loop_term(&send_loop);
+    err = ah_loop_term(&loop);
     ah_unit_assert_err_eq(unit, AH_ENONE, err);
 }
 
