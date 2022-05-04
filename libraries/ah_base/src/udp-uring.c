@@ -90,16 +90,21 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     }
 
     ah_err_t err;
+    ah_sockaddr_t* raddr;
 
     if (ah_unlikely(cqe->res < 0)) {
         err = -(cqe->res);
-        goto call_recv_cb_with_err_and_return;
+        raddr = NULL;
+        goto report_err;
+    }
+    else {
+        raddr = ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name);
     }
 
     ah_bufs_t bufs;
     ah_i_bufs_from_iovec(&bufs, sock->_recv_msghdr.msg_iov, sock->_recv_msghdr.msg_iovlen);
 
-    sock->_vtab->on_recv_done(sock, bufs, cqe->res, ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name), AH_ENONE);
+    sock->_vtab->on_recv_data(sock, bufs, cqe->res, raddr);
 
     if (!sock->_is_open) {
         return;
@@ -107,13 +112,13 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     err = s_prep_sock_recv(sock);
     if (err != AH_ENONE) {
-        goto call_recv_cb_with_err_and_return;
+        goto report_err;
     }
 
     return;
 
-call_recv_cb_with_err_and_return:
-    sock->_vtab->on_recv_done(sock, (ah_bufs_t) { 0u }, 0u, &sock->_recv_addr, err);
+report_err:
+    sock->_vtab->on_recv_err(sock, raddr, err);
 }
 
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)

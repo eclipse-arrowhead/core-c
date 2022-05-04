@@ -20,7 +20,7 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open || sock->_is_receiving || sock->_vtab->on_recv_done == NULL) {
+    if (!sock->_is_open || sock->_is_receiving || sock->_vtab->on_recv_data == NULL) {
         return AH_ESTATE;
     }
 
@@ -56,7 +56,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     ah_err_t err;
     ah_bufs_t bufs = { .items = NULL, .length = 0u };
-    ah_sockaddr_t* raddr_ptr = NULL;
+    ah_sockaddr_t* raddr = NULL;
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -77,12 +77,12 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err;
     }
 
-    ah_sockaddr_t raddr;
-    socklen_t socklen = sizeof(raddr);
+    ah_sockaddr_t name;
+    socklen_t namelen = sizeof(name);
 
     struct msghdr msghdr = {
-        .msg_name = ah_i_sockaddr_into_bsd(&raddr),
-        .msg_namelen = socklen,
+        .msg_name = ah_i_sockaddr_into_bsd(&name),
+        .msg_namelen = namelen,
         .msg_iov = iov,
         .msg_iovlen = iovcnt,
     };
@@ -93,7 +93,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err;
     }
 
-    raddr_ptr = &raddr;
+    raddr = &name;
 
     if (n_bytes_read == 0) {
         // We know there are bytes left to read, so the only thing that
@@ -102,7 +102,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err;
     }
 
-    sock->_vtab->on_recv_done(sock, bufs, n_bytes_read, raddr_ptr, AH_ENONE);
+    sock->_vtab->on_recv_data(sock, bufs, n_bytes_read, raddr);
 
     if (!sock->_is_open) {
         return;
@@ -116,7 +116,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    sock->_vtab->on_recv_done(sock, bufs, 0u, raddr_ptr, err);
+    sock->_vtab->on_recv_err(sock, raddr, err);
 }
 
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
