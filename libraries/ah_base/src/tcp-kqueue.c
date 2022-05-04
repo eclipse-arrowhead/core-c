@@ -101,9 +101,6 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
     if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) != 0) {
         return AH_ESTATE;
     }
-    if (conn->_is_reading) {
-        return AH_ESTATE;
-    }
 
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
@@ -119,7 +116,7 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
     EV_SET(kev, conn->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
     conn->_read_evt = evt;
 
-    conn->_is_reading = true;
+    conn->_state = AH_I_TCP_CONN_STATE_READING;
 
     return AH_ENONE;
 }
@@ -132,10 +129,9 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
 
-    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) != 0u) {
+    if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;
     }
-    ah_assert_if_debug(conn->_is_reading);
 
     ah_err_t err;
     ah_bufs_t bufs = { .items = NULL, .length = 0u };
@@ -149,6 +145,10 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     while (n_bytes_left != 0u) {
         conn->_vtab->on_read_alloc(conn, &bufs);
+
+        if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
+            return;
+        }
 
         struct iovec* iov;
         int iovcnt;
@@ -171,7 +171,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         conn->_vtab->on_read_data(conn, bufs, (size_t) n_bytes_read);
 
-        if (!conn->_is_reading) {
+        if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
             return;
         }
 
@@ -198,8 +198,8 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (!conn->_is_reading) {
-        return AH_ESTATE;
+    if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
+        return conn->_state == AH_I_TCP_CONN_STATE_CONNECTED ? AH_ESTATE : AH_ENONE;
     }
 
     struct kevent* kev;
@@ -210,7 +210,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
 
     EV_SET(kev, conn->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
 
-    conn->_is_reading = false;
+    conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
 
     return AH_ENONE;
 }
@@ -220,7 +220,7 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
     if (conn == NULL || omsg == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
+    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return AH_ESTATE;
     }
 
@@ -270,7 +270,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(conn != NULL);
     ah_assert_if_debug(conn->_write_queue_head != NULL);
 
-    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
+    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
     }
 

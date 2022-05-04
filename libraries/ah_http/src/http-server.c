@@ -117,7 +117,8 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
         return err;
     }
 
-    srv->_trans = trans;
+    srv->_ln._trans_data = trans._data;
+    srv->_trans_vtab = trans._vtab;
     srv->_vtab = vtab;
 
     return AH_ENONE;
@@ -128,7 +129,7 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
     if (srv == NULL) {
         return AH_EINVAL;
     }
-    return srv->_trans._vtab->listener_open(&srv->_ln, laddr);
+    return srv->_trans_vtab->listener_open(&srv->_ln, laddr);
 }
 
 static void s_on_open(ah_tcp_listener_t* ln, ah_err_t err)
@@ -147,8 +148,7 @@ static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln)
     ah_http_server_t* srv = (ah_http_server_t*) &((uint8_t*) ln)[-((ptrdiff_t) ln_member_offset)];
 
     ah_assert_if_debug(srv->_vtab != NULL);
-    ah_assert_if_debug(srv->_trans._vtab != NULL);
-    ah_assert_if_debug(srv->_trans._loop != NULL);
+    ah_assert_if_debug(srv->_trans_vtab != NULL);
 
     return srv;
 }
@@ -158,7 +158,7 @@ ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog
     if (srv == NULL) {
         return AH_EINVAL;
     }
-    return srv->_trans._vtab->listener_listen(&srv->_ln, backlog, NULL); // TODO: conn vtab.
+    return srv->_trans_vtab->listener_listen(&srv->_ln, backlog, NULL); // TODO: conn vtab.
 }
 
 static void s_on_listen(ah_tcp_listener_t* ln, ah_err_t err)
@@ -181,7 +181,7 @@ static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const a
     ah_http_server_t* srv = s_upcast_to_server(ln);
     ah_http_client_t* cnt = s_upcast_to_client(conn);
 
-    ah_err_t err = srv->_trans._vtab->conn_read_start(conn);
+    ah_err_t err = srv->_trans_vtab->conn_read_start(conn);
 
     (void) cnt;
     (void) raddr;
@@ -205,8 +205,7 @@ static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)
     ah_http_client_t* cln = (ah_http_client_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
 
     ah_assert_if_debug(cln->_vtab != NULL);
-    ah_assert_if_debug(cln->_trans._vtab != NULL);
-    ah_assert_if_debug(cln->_trans._loop != NULL);
+    ah_assert_if_debug(cln->_trans_vtab != NULL);
 
     return cln;
 }
@@ -227,7 +226,7 @@ ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
     if (srv == NULL) {
         return AH_EINVAL;
     }
-    return srv->_trans._vtab->listener_close(&srv->_ln);
+    return srv->_trans_vtab->listener_close(&srv->_ln);
 }
 
 static void s_on_close(ah_tcp_listener_t* ln, ah_err_t err)

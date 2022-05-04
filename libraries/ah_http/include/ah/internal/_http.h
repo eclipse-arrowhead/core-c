@@ -13,10 +13,9 @@
 #include <ah/tcp.h>
 #include <stddef.h>
 
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING  0u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE 1u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS  2u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_BODY     3u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING 0u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEAD    1u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_BODY    2u
 
 #define AH_I_HTTP_CLIENT_OSTATE_READY        0u
 #define AH_I_HTTP_CLIENT_OSTATE_SENDING_HEAD 1u
@@ -28,18 +27,18 @@
 
 #define AH_I_HTTP_CLIENT_FIELDS                                                                                        \
     ah_tcp_conn_t _conn;                                                                                               \
-    ah_tcp_trans_t _trans;                                                                                             \
+    const ah_tcp_trans_vtab_t* _trans_vtab;                                                                            \
     const ah_http_client_vtab_t* _vtab;                                                                                \
     ah_http_ires_t* _ires;                                                                                             \
     ah_buf_t _ibuf;                                                                                                    \
+    uint16_t _ibuf_len;                                                                                                \
     uint8_t _istate;                                                                                                   \
     uint8_t _ostate;
 
 #define AH_I_HTTP_SERVER_FIELDS                                                                                        \
     ah_tcp_listener_t _ln;                                                                                             \
-    ah_tcp_trans_t _trans;                                                                                             \
-    const ah_http_server_vtab_t* _vtab;                                                                                \
-    uint16_t _req_header_capacity;
+    const ah_tcp_trans_vtab_t* _trans_vtab;                                                                            \
+    const ah_http_server_vtab_t* _vtab;
 
 #define AH_I_HTTP_HMAP_FIELDS                                                                                          \
     uint16_t _mask;                                                                                                    \

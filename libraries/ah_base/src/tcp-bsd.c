@@ -120,7 +120,7 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t f
     if ((flags & AH_TCP_SHUTDOWN_RDWR) == 0u) {
         return AH_ENONE;
     }
-    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED) {
+    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return AH_ESTATE;
     }
 
@@ -163,6 +163,10 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t f
     else {
         err = AH_ENONE;
         conn->_shutdown_flags = flags;
+
+        if (conn->_state == AH_I_TCP_CONN_STATE_READING) {
+            conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
+        }
     }
 
     return err;

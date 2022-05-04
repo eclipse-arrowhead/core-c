@@ -104,13 +104,13 @@ static ah_i_http_reader_t s_reader_of(char* str)
 
 static void s_should_parse_request_lines(ah_unit_t* unit)
 {
-    ah_err_t err;
+    bool res;
     ah_i_http_reader_t r;
     ah_http_req_line_t req_line;
 
     r = s_reader_of("GET /things/132 HTTP/1.1\r\n");
-    err = ah_i_http_parse_req_line(&r, &req_line);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+    res = ah_i_http_parse_req_line(&r, &req_line);
+    if (!ah_unit_assert_err_eq(unit, true, res)) {
         return;
     }
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("GET"), req_line.method);
@@ -119,8 +119,8 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
     (void) ah_unit_assert_unsigned_eq(unit, 1u, req_line.version.minor);
 
     r = s_reader_of("OPTIONS * HTTP/1.0\r\n");
-    err = ah_i_http_parse_req_line(&r, &req_line);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+    res = ah_i_http_parse_req_line(&r, &req_line);
+    if (!ah_unit_assert_err_eq(unit, true, res)) {
         return;
     }
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("OPTIONS"), req_line.method);
@@ -129,8 +129,8 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
     (void) ah_unit_assert_unsigned_eq(unit, 0u, req_line.version.minor);
 
     r = s_reader_of("CONNECT [::1]:44444 HTTP/1.1\r\n");
-    err = ah_i_http_parse_req_line(&r, &req_line);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+    res = ah_i_http_parse_req_line(&r, &req_line);
+    if (!ah_unit_assert_err_eq(unit, true, res)) {
         return;
     }
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("CONNECT"), req_line.method);
@@ -141,13 +141,13 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
 
 static void s_should_parse_status_lines(ah_unit_t* unit)
 {
-    ah_err_t err;
+    bool res;
     ah_i_http_reader_t r;
     ah_http_stat_line_t stat_line;
 
     r = s_reader_of("HTTP/1.1 200 OK\r\n");
-    err = ah_i_http_parse_stat_line(&r, &stat_line);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+    res = ah_i_http_parse_stat_line(&r, &stat_line);
+    if (!ah_unit_assert_err_eq(unit, true, res)) {
         return;
     }
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.major);
@@ -156,8 +156,8 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("OK"), stat_line.reason);
 
     r = s_reader_of("HTTP/1.0 201 \r\n");
-    err = ah_i_http_parse_stat_line(&r, &stat_line);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+    res = ah_i_http_parse_stat_line(&r, &stat_line);
+    if (!ah_unit_assert_err_eq(unit, true, res)) {
         return;
     }
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.major);
@@ -166,8 +166,8 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr(""), stat_line.reason);
 
     r = s_reader_of("HTTP/1.1 500 Internal server errör \r\n");
-    err = ah_i_http_parse_stat_line(&r, &stat_line);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+    res = ah_i_http_parse_stat_line(&r, &stat_line);
+    if (!ah_unit_assert_err_eq(unit, true, res)) {
         return;
     }
     (void) ah_unit_assert_unsigned_eq(unit, 1u, stat_line.version.major);

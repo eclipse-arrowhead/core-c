@@ -23,10 +23,12 @@
 #define AH_HTTP_IREQ_ERR_VER_UNSUPPORTED            8708u
 
 #define AH_HTTP_IRES_ERR_ALLOC_FAILED       8901u
-#define AH_HTTP_IRES_ERR_HEADERS_TOO_LARGE  8902u
-#define AH_HTTP_IRES_ERR_HEADERS_TOO_MANY   8903u
-#define AH_HTTP_IRES_ERR_STAT_LINE_TOO_LONG 8904u
-#define AH_HTTP_IRES_ERR_VER_UNSUPPORTED    8905u
+#define AH_HTTP_IRES_ERR_FORMAT_INVALID     8902u
+#define AH_HTTP_IRES_ERR_HEADERS_TOO_LARGE  8903u
+#define AH_HTTP_IRES_ERR_HEADERS_TOO_MANY   8904u
+#define AH_HTTP_IRES_ERR_STAT_LINE_TOO_LONG 8905u
+#define AH_HTTP_IRES_ERR_UNEXPECTED         8906u
+#define AH_HTTP_IRES_ERR_VER_UNSUPPORTED    8907u
 
 typedef struct ah_http_client ah_http_client_t;
 typedef struct ah_http_client_vtab ah_http_client_vtab_t;
@@ -118,11 +120,8 @@ struct ah_http_hmap_value_iter {
 };
 
 struct ah_http_ireq {
-    ah_http_client_t* client;
-
     ah_http_req_line_t req_line;
     ah_http_hmap_t headers;
-
     void* user_data;
 };
 
@@ -136,8 +135,6 @@ struct ah_http_ireq_err {
 struct ah_http_ires {
     ah_http_stat_line_t stat_line;
     ah_http_hmap_t headers;
-
-    const ah_sockaddr_t* server_addr;
     void* user_data;
 };
 
@@ -164,7 +161,6 @@ struct ah_http_oreq {
     ah_http_req_line_t req_line;
     ah_http_hlist_t headers;
     ah_http_obody_t body;
-
     void* user_data; // Will be passed on to the corresponding ah_http_ires_t.
 };
 
@@ -172,7 +168,6 @@ struct ah_http_ores {
     ah_http_stat_line_t stat_line;
     ah_http_hlist_t headers;
     ah_http_obody_t body;
-
     void* user_data;
 };
 

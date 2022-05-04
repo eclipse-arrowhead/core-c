@@ -20,7 +20,8 @@
 #define AH_I_TCP_CONN_STATE_CLOSED     0u
 #define AH_I_TCP_CONN_STATE_OPEN       1u
 #define AH_I_TCP_CONN_STATE_CONNECTING 2u
-#define AH_I_TCP_CONN_STATE_CONNECTED  3u
+#define AH_I_TCP_CONN_STATE_CONNECTED  3u // Writes allowed.
+#define AH_I_TCP_CONN_STATE_READING    4u // Writes allowed.
 
 #define AH_I_TCP_LISTENER_STATE_CLOSED    0u
 #define AH_I_TCP_LISTENER_STATE_OPEN      1u
@@ -35,7 +36,6 @@
     void* _user_data;                                                                                                  \
     ah_tcp_shutdown_t _shutdown_flags;                                                                                 \
     uint8_t _state;                                                                                                    \
-    bool _is_reading;                                                                                                  \
     AH_I_TCP_CONN_PLATFORM_FIELDS
 
 #define AH_I_TCP_LISTENER_FIELDS                                                                                       \

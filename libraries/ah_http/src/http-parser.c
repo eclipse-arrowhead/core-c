@@ -78,26 +78,26 @@ ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
     }
 }
 
-ah_err_t ah_i_http_parse_req_line(ah_i_http_reader_t* r, ah_http_req_line_t* req_line)
+bool ah_i_http_parse_req_line(ah_i_http_reader_t* r, ah_http_req_line_t* req_line)
 {
     ah_assert_if_debug(r != NULL);
     ah_assert_if_debug(req_line != NULL);
 
     req_line->method = s_take_while(r, s_is_tchar);
     if (ah_str_get_len(&req_line->method) == 0u || !s_skip_ch(r, ' ')) {
-        return AH_EILSEQ;
+        return false;
     }
 
     req_line->target = s_take_while(r, s_is_rchar);
     if (ah_str_get_len(&req_line->target) == 0u || !s_skip_ch(r, ' ')) {
-        return AH_EILSEQ;
+        return false;
     }
 
     if (!s_parse_version(r, &req_line->version) || !s_skip_crlf(r)) {
-        return AH_EILSEQ;
+        return false;
     }
 
-    return AH_ENONE;
+    return true;
 }
 
 static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version)
@@ -120,26 +120,26 @@ static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version)
     return true;
 }
 
-ah_err_t ah_i_http_parse_stat_line(ah_i_http_reader_t* r, ah_http_stat_line_t* stat_line)
+bool ah_i_http_parse_stat_line(ah_i_http_reader_t* r, ah_http_stat_line_t* stat_line)
 {
     ah_assert_if_debug(r != NULL);
     ah_assert_if_debug(stat_line != NULL);
 
     if (!s_parse_version(r, &stat_line->version) || !s_skip_ch(r, ' ')) {
-        return AH_EILSEQ;
+        return false;
     }
 
     if (!s_parse_status_code(r, &stat_line->code) || !s_skip_ch(r, ' ')) {
-        return AH_EILSEQ;
+        return false;
     }
 
     stat_line->reason = s_take_while(r, s_is_vchar_obs_text_htab_sp);
 
     if (!s_skip_crlf(r)) {
-        return AH_EILSEQ;
+        return false;
     }
 
-    return AH_ENONE;
+    return true;
 }
 
 static bool s_parse_status_code(ah_i_http_reader_t* r, uint16_t* code)
@@ -180,7 +180,7 @@ static bool s_is_rchar(uint8_t ch)
         0xAFFFFFFF,
         0x47FFFFFE,
     };
-    return (ch & 0x80) == 0 && ((tab[ch >> 5] >> (ch & 0x1F)) & 1) == 1;
+    return (ch & 0x80) == 0u && ((tab[ch >> 5u] >> (ch & 0x1F)) & 1u) == 1u;
 }
 
 static bool s_is_tchar(uint8_t ch)
@@ -194,7 +194,7 @@ static bool s_is_tchar(uint8_t ch)
         0xC7FFFFFE,
         0x57FFFFFE,
     };
-    return (ch & 0x80) == 0 && ((tab[ch >> 5] >> (ch & 0x1F)) & 1) == 1;
+    return (ch & 0x80) == 0u && ((tab[ch >> 5u] >> (ch & 0x1F)) & 1u) == 1u;
 }
 
 static bool s_is_vchar_obs_text(uint8_t ch)

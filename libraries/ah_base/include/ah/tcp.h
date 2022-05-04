@@ -25,7 +25,7 @@ struct ah_tcp_conn {
 };
 
 struct ah_tcp_conn_vtab {
-    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err); // Never called for accepted connections.
+    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err);    // Never called for accepted connections.
     void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err); // Never called for accepted connections.
     void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
 
@@ -81,7 +81,7 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg);  // May modify ah_bufs_t items in omsg.
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg); // May modify ah_bufs_t items in omsg.
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 
@@ -98,6 +98,12 @@ ah_inline void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
     return conn->_user_data;
+}
+
+ah_inline bool ah_tcp_conn_is_closed(ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+    return conn->_state == AH_I_TCP_CONN_STATE_CLOSED;
 }
 
 ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled);
@@ -127,6 +133,12 @@ ah_inline void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln)
 {
     ah_assert_if_debug(ln != NULL);
     return ln->_user_data;
+}
+
+ah_inline bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln)
+{
+    ah_assert_if_debug(ln != NULL);
+    return ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED;
 }
 
 ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled);

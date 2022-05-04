@@ -91,16 +91,13 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
     if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) != 0) {
         return AH_ESTATE;
     }
-    if (conn->_is_reading) {
-        return AH_ESTATE;
-    }
 
     ah_err_t err = s_prep_conn_read(conn);
     if (err != AH_ENONE) {
         return err;
     }
 
-    conn->_is_reading = true;
+    conn->_state = AH_I_TCP_CONN_STATE_READING;
 
     return AH_ENONE;
 }
@@ -122,7 +119,13 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
 
     conn->_read_bufs.items = NULL;
     conn->_read_bufs.length = 0u;
+
     conn->_vtab->on_read_alloc(conn, &conn->_read_bufs);
+
+    if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
+        return AH_ENONE;
+    }
+
     if (conn->_read_bufs.items == NULL || conn->_read_bufs.length == 0u) {
         return AH_ENOBUFS;
     }
@@ -148,10 +151,9 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
 
-    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) != 0u) {
+    if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;
     }
-    ah_assert_if_debug(conn->_is_reading);
 
     ah_err_t err;
 
@@ -162,7 +164,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     conn->_vtab->on_read_data(conn, conn->_read_bufs, cqe->res);
 
-    if (!conn->_is_reading) {
+    if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;
     }
 
@@ -182,11 +184,11 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (!conn->_is_reading) {
-        return AH_ESTATE;
+    if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
+        return conn->_state == AH_I_TCP_CONN_STATE_CONNECTED ? AH_ESTATE : AH_ENONE;
     }
 
-    conn->_is_reading = false;
+    conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
 
     return AH_ENONE;
 }
@@ -196,7 +198,7 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
     if (conn == NULL || omsg == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
+    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return AH_ESTATE;
     }
 
@@ -242,7 +244,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_assert_if_debug(conn != NULL);
     ah_assert_if_debug(conn->_write_queue_head != NULL);
 
-    if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
+    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
     }
 
@@ -259,6 +261,9 @@ report_err_and_prep_next:
     conn->_write_queue_head = conn->_write_queue_head->_next;
     conn->_vtab->on_write_done(conn, err);
 
+    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
+        return;
+    }
     if (conn->_write_queue_head == NULL) {
         return;
     }
