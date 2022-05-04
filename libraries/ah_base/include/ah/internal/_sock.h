@@ -17,4 +17,12 @@
 #    define AH_I_SOCKADDR_HAS_SIZE 0
 #endif
 
+#if AH_I_SOCKADDR_HAS_SIZE
+#    define AH_I_SOCKADDR_PREAMBLE_IPV4 sizeof(ah_sockaddr_ipv4_t),
+#    define AH_I_SOCKADDR_PREAMBLE_IPV6 sizeof(ah_sockaddr_ipv6_t),
+#else
+#    define AH_I_SOCKADDR_PREAMBLE_IPV4
+#    define AH_I_SOCKADDR_PREAMBLE_IPV6
+#endif
+
 #endif
