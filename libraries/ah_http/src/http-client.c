@@ -8,6 +8,27 @@
 
 #include <ah/err.h>
 
+static const ah_http_ires_err_t s_ires_err_headers_too_large = {
+    "headers section too large",
+    AH_HTTP_IRES_ERR_HEADERS_TOO_LARGE,
+    AH_ENOBUFS,
+};
+static const ah_http_ires_err_t s_ires_err_headers_too_many = {
+    "too many headers",
+    AH_HTTP_IRES_ERR_HEADERS_TOO_MANY,
+    AH_ENOBUFS,
+};
+static const ah_http_ires_err_t s_ires_err_stat_line_too_long = {
+    "status line too long",
+    AH_HTTP_IRES_ERR_STAT_LINE_TOO_LONG,
+    AH_ENOBUFS,
+};
+static const ah_http_ires_err_t s_ires_err_ver_unsupported = {
+    "HTTP version not supported",
+    AH_HTTP_IRES_ERR_VER_UNSUPPORTED,
+    AH_EILSEQ,
+};
+
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
@@ -15,6 +36,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs);
 static void s_on_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_read, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
+static ah_http_ires_err_t s_ires_err_internal_error_from(ah_err_t err);
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
@@ -22,6 +44,12 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     if (cln == NULL || trans._vtab == NULL || trans._loop == NULL || vtab == NULL) {
         return AH_EINVAL;
     }
+
+    (void) s_ires_err_headers_too_large;
+    (void) s_ires_err_headers_too_many;
+    (void) s_ires_err_stat_line_too_long;
+    (void) s_ires_err_ver_unsupported;
+    (void) s_ires_err_internal_error_from;
 
     ah_assert_if_debug(trans._vtab->conn_init != NULL);
     ah_assert_if_debug(trans._vtab->conn_open != NULL);
@@ -178,4 +206,9 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
     cln->_vtab->on_close(cln, err);
+}
+
+static ah_http_ires_err_t s_ires_err_internal_error_from(ah_err_t err)
+{
+    return (ah_http_ires_err_t) { "internal client error", AH_HTTP_IRES_ERR_INTERNAL, err };
 }

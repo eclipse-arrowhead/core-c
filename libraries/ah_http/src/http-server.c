@@ -9,12 +9,56 @@
 #include <ah/err.h>
 #include <ah/math.h>
 
+static const ah_http_ireq_err_t s_ireq_err_content_length_respecified = {
+    "'content-length' already specified",
+    AH_HTTP_IREQ_ERR_CONTENT_LENGTH_RESPECIFIED,
+    400,
+    AH_EILSEQ,
+};
+static const ah_http_ireq_err_t s_ireq_err_headers_too_large = {
+    "headers section too large",
+    AH_HTTP_IREQ_ERR_HEADERS_TOO_LARGE,
+    431,
+    AH_ENOBUFS,
+};
+static const ah_http_ireq_err_t s_ireq_err_headers_too_many = {
+    "too many headers",
+    AH_HTTP_IREQ_ERR_HEADERS_TOO_MANY,
+    400,
+    AH_ENOBUFS,
+};
+static const ah_http_ireq_err_t s_ireq_err_host_respecified = {
+    "'host' already specified",
+    AH_HTTP_IREQ_ERR_HOST_RESPECIFIED,
+    400,
+    AH_EILSEQ,
+};
+static const ah_http_ireq_err_t s_ireq_err_host_unspecified = {
+    "'host' not specified",
+    AH_HTTP_IREQ_ERR_HOST_UNSPECIFIED,
+    400,
+    AH_EILSEQ,
+};
+static const ah_http_ireq_err_t s_ireq_err_req_line_too_long = {
+    "request line too long",
+    AH_HTTP_IREQ_ERR_REQ_LINE_TOO_LONG,
+    400,
+    AH_ENOBUFS,
+};
+static const ah_http_ireq_err_t s_ireq_err_ver_unsupported = {
+    "HTTP version not supported",
+    AH_HTTP_IREQ_ERR_VER_UNSUPPORTED,
+    505,
+    AH_ENOBUFS,
+};
+
 static void s_on_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listen(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_close(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
 static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
+static ah_http_ireq_err_t s_ireq_err_internal_error_from(ah_err_t err);
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln);
 
@@ -23,6 +67,15 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     if (srv == NULL || trans._vtab == NULL || trans._loop == NULL || vtab == NULL) {
         return AH_EINVAL;
     }
+
+    (void) s_ireq_err_content_length_respecified;
+    (void) s_ireq_err_headers_too_large;
+    (void) s_ireq_err_headers_too_many;
+    (void) s_ireq_err_host_respecified;
+    (void) s_ireq_err_host_unspecified;
+    (void) s_ireq_err_req_line_too_long;
+    (void) s_ireq_err_ver_unsupported;
+    (void) s_ireq_err_internal_error_from;
 
     ah_assert_if_debug(trans._vtab->conn_init != NULL);
     ah_assert_if_debug(trans._vtab->conn_open != NULL);
@@ -174,4 +227,9 @@ static void s_on_close(ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_http_server_t* srv = s_upcast_to_server(ln);
     srv->_vtab->on_close(srv, err);
+}
+
+static ah_http_ireq_err_t s_ireq_err_internal_error_from(ah_err_t err)
+{
+    return (ah_http_ireq_err_t) { "internal server error", AH_HTTP_IREQ_ERR_INTERNAL, 500, err };
 }
