@@ -174,7 +174,8 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs)
         (void) cln->_trans_vtab->conn_close(conn);
         break;
 
-    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEAD:
+    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE:
+    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS:
         if (cln->_ibuf_len == 0u) {
             cln->_ibuf._octets = NULL;
             cln->_ibuf._size = 0u;
@@ -209,6 +210,9 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_r
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
 
+    ah_i_http_reader_t r;
+    ah_i_http_reader_t s;
+
     switch (cln->_istate) {
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING:
         // Every data read is preceded by a data alloc. If this is the state,
@@ -216,11 +220,13 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_r
         // which means that this function will never be called.
         ah_unreachable();
 
-    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEAD:
+    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE:
         ah_assert_if_debug(bufs.length == 1u);
 
-        ah_i_http_reader_t r = ah_i_http_reader_from_buf(&bufs.items[0u]);
-        ah_i_http_reader_t s;
+        // TODO: Make this work.
+
+        r = ah_i_http_reader_from_buf(&bufs.items[0u]);
+
         if (!ah_i_http_split_at_crlf(&r, &s)) {
             return;
         }
@@ -232,6 +238,15 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_r
         }
 
         cln->_vtab->on_res_line(cln, cln->_ires);
+
+        if (ah_tcp_conn_is_closed(&cln->_conn)) {
+            return;
+        }
+
+        cln->_ostate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS;
+        // fallthrough
+
+    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS:
 
         if (cln->_ostate != AH_I_HTTP_CLIENT_OSTATE_READY) {
             return; //
