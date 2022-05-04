@@ -69,16 +69,7 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
         return AH_ESTATE;
     }
 
-    ah_err_t err;
-
-    if (sock->_WSARecvMsg == NULL) {
-        err = ah_i_winapi_get_wsa_fn(sock->_fd, &(GUID) WSAID_WSARECVMSG, (void**) &sock->_WSARecvMsg);
-        if (err != AH_ENONE) {
-            return err;
-        }
-    }
-
-    err = s_prep_sock_recv(sock);
+    ah_err_t err = s_prep_sock_recv(sock);
     if (err != AH_ENONE) {
         return err;
     }
@@ -102,27 +93,24 @@ static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
     evt->_cb = s_on_sock_recv;
     evt->_subject = sock;
 
-    ah_bufs_t bufs = { .items = NULL, .length = 0u };
-    sock->_vtab->on_recv_alloc(sock, &bufs);
-    if (bufs.items == NULL || bufs.length == 0u) {
+    sock->_recv_buf = NULL;
+
+    sock->_vtab->on_recv_alloc(sock, &sock->_recv_buf);
+
+    if (!sock->_is_open || !sock->_is_receiving) {
+        return;
+    }
+
+    if (sock->_recv_buf == NULL || ah_buf_get_size(sock->_recv_buf) == 0u) {
         return AH_ENOBUFS;
     }
 
-    WSABUF* buffers;
-    ULONG buffer_count;
-    err = ah_i_bufs_into_wsabufs(&bufs, &buffers, &buffer_count);
-    if (ah_unlikely(err != AH_ENONE)) {
-        return err;
-    }
+    WSABUF* buffer = ah_i_buf_into_wsabuf(conn->_recv_buf);
 
-    sock->_recv_wsamsg = (WSAMSG) {
-        .name = ah_i_sockaddr_into_bsd(&sock->_recv_addr),
-        .namelen = sizeof(ah_sockaddr_t),
-        .lpBuffers = buffers,
-        .dwBufferCount = buffer_count,
-    };
+    struct sockaddr* from = ah_i_sockaddr_into_bsd(&sock->recv_addr);
+    LPINT fromlen = &sock->recv_addr_ln;
 
-    int res = sock->_WSARecvMsg(sock->_fd, &sock->_recv_wsamsg, NULL, &evt->_overlapped, NULL);
+    int res = WSARecvFrom(sock->_fd, buffer, 1u, NULL, &sock->_recv_flags, from, fromlen, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {
@@ -147,23 +135,21 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt)
     ah_err_t err;
     ah_sockaddr_t* raddr;
 
-    DWORD n_bytes_transferred;
+    DWORD nrecv;
     DWORD flags;
-    if (!WSAGetOverlappedResult(sock->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
+    if (!WSAGetOverlappedResult(sock->_fd, &evt->_overlapped, &nrecv, false, &flags)) {
         err = WSAGetLastError();
         raddr = NULL;
         goto report_err;
     }
     else {
-        raddr = ah_i_sockaddr_from_bsd(sock->_recv_wsamsg.name);
+        raddr = ah_i_sockaddr_from_bsd(sock->_recv_addr);
     }
 
-    ah_bufs_t bufs;
-    ah_i_bufs_from_wsabufs(&bufs, sock->_recv_wsamsg.lpBuffers, sock->_recv_wsamsg.dwBufferCount);
+    sock->_vtab->on_recv_data(sock, sock->_recv_buf, nrecv, raddr);
+    sock->_recv_buf = NULL;
 
-    sock->_vtab->on_recv_data(sock, bufs, n_bytes_transferred, raddr);
-
-    if (!sock->_is_open) {
+    if (!sock->_is_open || !sock->_is_receiving) {
         return;
     }
 

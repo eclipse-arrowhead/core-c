@@ -40,7 +40,7 @@ ah_inline ah_str_t ah_str_from(void* str, size_t len)
 }
 
 ah_inline ah_str_t ah_str_from_buf(ah_buf_t buf) {
-    return ah_str_from(ah_buf_get_octets(&buf), ah_buf_get_size(&buf));
+    return ah_str_from(ah_buf_get_base(&buf), ah_buf_get_size(&buf));
 }
 
 // `str` must be null-terminated.

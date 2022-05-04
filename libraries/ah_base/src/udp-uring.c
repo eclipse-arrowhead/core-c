@@ -51,24 +51,23 @@ static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
     evt->_cb = s_on_sock_recv;
     evt->_subject = sock;
 
-    ah_bufs_t bufs = { .items = NULL, .length = 0u };
-    sock->_vtab->on_recv_alloc(sock, &bufs);
-    if (bufs.items == NULL || bufs.length == 0u) {
-        return AH_ENOBUFS;
+    ah_buf_t* buf = NULL;
+
+    sock->_vtab->on_recv_alloc(sock, &buf);
+
+    if (!sock->_is_open || !sock->_is_receiving) {
+        return AH_ENONE;
     }
 
-    struct iovec* iov;
-    int iovlen;
-    err = ah_i_bufs_into_iovec(&bufs, &iov, &iovlen);
-    if (ah_unlikely(err != AH_ENONE)) {
-        return err;
+    if (buf == NULL || ah_buf_get_size(buf) == 0u) {
+        return AH_ENOBUFS;
     }
 
     sock->_recv_msghdr = (struct msghdr) {
         .msg_name = ah_i_sockaddr_into_bsd(&sock->_recv_addr),
         .msg_namelen = sizeof(ah_sockaddr_t),
-        .msg_iov = iov,
-        .msg_iovlen = iovlen,
+        .msg_iov = ah_i_buf_into_iovec(buf),
+        .msg_iovlen = 1,
     };
 
     io_uring_prep_recvmsg(sqe, sock->_fd, &sock->_recv_msghdr, 0);
@@ -101,12 +100,9 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         raddr = ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name);
     }
 
-    ah_bufs_t bufs;
-    ah_i_bufs_from_iovec(&bufs, sock->_recv_msghdr.msg_iov, sock->_recv_msghdr.msg_iovlen);
+    sock->_vtab->on_recv_data(sock, ah_i_buf_from_iovec(sock->_recv_msghdr.msg_iov), cqe->res, raddr);
 
-    sock->_vtab->on_recv_data(sock, bufs, cqe->res, raddr);
-
-    if (!sock->_is_open) {
+    if (!sock->_is_open || !sock->_is_receiving) {
         return;
     }
 

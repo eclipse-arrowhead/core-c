@@ -17,7 +17,7 @@ ah_extern ah_err_t ah_udp_omsg_init(ah_udp_omsg_t* omsg, ah_bufs_t bufs, ah_sock
     struct iovec* iov;
     int iovlen;
 
-    ah_err_t err = ah_i_bufs_into_iovec(&bufs, &iov, &iovlen);
+    ah_err_t err = ah_i_bufs_into_iovecs(&bufs, &iov, &iovlen);
     if (err != AH_ENONE) {
         return err;
     }

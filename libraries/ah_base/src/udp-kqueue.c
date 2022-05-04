@@ -55,7 +55,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     ah_err_t err;
-    ah_bufs_t bufs = { .items = NULL, .length = 0u };
+    ah_buf_t* buf = NULL;
     ah_sockaddr_t* raddr = NULL;
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
@@ -68,43 +68,34 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err;
     }
 
-    sock->_vtab->on_recv_alloc(sock, &bufs);
+    sock->_vtab->on_recv_alloc(sock, &buf);
 
-    struct iovec* iov;
-    int iovcnt;
-    err = ah_i_bufs_into_iovec(&bufs, &iov, &iovcnt);
-    if (ah_unlikely(err != AH_ENONE)) {
-        goto report_err;
+    if (!sock->_is_open || !sock->_is_receiving) {
+        return;
     }
 
-    ah_sockaddr_t name;
-    socklen_t namelen = sizeof(name);
+    ah_sockaddr_t raddr_buf;
+    struct sockaddr* name = ah_i_sockaddr_into_bsd(&raddr_buf);
+    socklen_t namelen = sizeof(raddr_buf);
 
-    struct msghdr msghdr = {
-        .msg_name = ah_i_sockaddr_into_bsd(&name),
-        .msg_namelen = namelen,
-        .msg_iov = iov,
-        .msg_iovlen = iovcnt,
-    };
-
-    ssize_t n_bytes_read = recvmsg(sock->_fd, &msghdr, 0);
-    if (n_bytes_read < 0) {
+    ssize_t nread = recvfrom(sock->_fd, ah_buf_get_base(buf), ah_buf_get_size(buf), 0, name, &namelen);
+    if (nread < 0) {
         err = errno;
         goto report_err;
     }
 
-    raddr = &name;
+    raddr = &raddr_buf;
 
-    if (n_bytes_read == 0) {
+    if (nread == 0) {
         // We know there are bytes left to read, so the only thing that
         // could cause 0 bytes being read is bufs having no allocated space.
         err = AH_ENOBUFS;
         goto report_err;
     }
 
-    sock->_vtab->on_recv_data(sock, bufs, n_bytes_read, raddr);
+    sock->_vtab->on_recv_data(sock, buf, nread, raddr);
 
-    if (!sock->_is_open) {
+    if (!sock->_is_open || !sock->_is_receiving) {
         return;
     }
 

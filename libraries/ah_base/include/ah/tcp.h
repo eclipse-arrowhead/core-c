@@ -30,8 +30,8 @@ struct ah_tcp_conn_vtab {
     void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
 
     // If all three are NULL, receiving is shutdown automatically. Either all or none must be set.
-    void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_bufs_t* bufs);
-    void (*on_read_data)(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read);
+    void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_buf_t** buf);
+    void (*on_read_data)(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
     void (*on_read_err)(ah_tcp_conn_t* conn, ah_err_t err);
 
     // If NULL, sending is shutdown automatically.

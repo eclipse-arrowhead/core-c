@@ -117,27 +117,19 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_read;
     evt->_subject = conn;
 
-    conn->_read_bufs.items = NULL;
-    conn->_read_bufs.length = 0u;
+    conn->_recv_buf = NULL;
 
-    conn->_vtab->on_read_alloc(conn, &conn->_read_bufs);
+    conn->_vtab->on_read_alloc(conn, &conn->_recv_buf);
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return AH_ENONE;
     }
 
-    if (conn->_read_bufs.items == NULL || conn->_read_bufs.length == 0u) {
+    if (conn->_recv_buf == NULL || ah_buf_get_size(conn->_recv_buf) == 0u) {
         return AH_ENOBUFS;
     }
 
-    struct iovec* iovecs;
-    int nr_vecs;
-    err = ah_i_bufs_into_iovec(&conn->_read_bufs, &iovecs, &nr_vecs);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    io_uring_prep_readv(sqe, conn->_fd, iovecs, nr_vecs, 0);
+    io_uring_prep_recv(sqe, conn->_fd, ah_buf_get_base(conn->_recv_buf), ah_buf_get_size(conn->_recv_buf), 0);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -159,10 +151,11 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     if (ah_unlikely(cqe->res < 0)) {
         err = -(cqe->res);
-        goto call_read_cb_with_err_and_return;
+        goto report_err;
     }
 
-    conn->_vtab->on_read_data(conn, conn->_read_bufs, cqe->res);
+    conn->_vtab->on_read_data(conn, conn->_recv_buf, cqe->res);
+    conn->_recv_buf = NULL;
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;
@@ -170,12 +163,12 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     err = s_prep_conn_read(conn);
     if (err != AH_ENONE) {
-        goto call_read_cb_with_err_and_return;
+        goto report_err;
     }
 
     return;
 
-call_read_cb_with_err_and_return:
+report_err:
     conn->_vtab->on_read_err(conn, err);
 }
 

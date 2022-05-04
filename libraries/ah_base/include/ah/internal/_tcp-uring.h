@@ -9,7 +9,7 @@
 
 #define AH_I_TCP_CONN_PLATFORM_FIELDS                                                                                  \
     int _fd;                                                                                                           \
-    ah_bufs_t _read_bufs;
+    ah_buf_t* _recv_buf;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS                                                                              \
     int _fd;                                                                                                           \

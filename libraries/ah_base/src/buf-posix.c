@@ -12,13 +12,13 @@
 #include <limits.h>
 #include <sys/uio.h>
 
-ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* octets, size_t size)
+ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size)
 {
-    if (buf == NULL || (octets == NULL && size != 0)) {
+    if (buf == NULL || (base == NULL && size != 0)) {
         return AH_EINVAL;
     }
 
-    buf->_octets = octets;
+    buf->_base = base;
     buf->_size = size;
 
     return AH_ENONE;
@@ -32,7 +32,7 @@ ah_extern void ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, size_t i
     bufs->length = iovcnt;
 }
 
-ah_extern ah_err_t ah_i_bufs_into_iovec(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt)
+ah_extern ah_err_t ah_i_bufs_into_iovecs(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt)
 {
     ah_assert_if_debug(bufs != NULL && iov != NULL && iovcnt != NULL);
 

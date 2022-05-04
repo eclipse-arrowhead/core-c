@@ -17,7 +17,7 @@ ah_extern ah_err_t ah_tcp_omsg_init(ah_tcp_omsg_t* omsg, ah_bufs_t bufs)
     struct iovec* iov;
     int iovcnt;
 
-    ah_err_t err = ah_i_bufs_into_iovec(&bufs, &iov, &iovcnt);
+    ah_err_t err = ah_i_bufs_into_iovecs(&bufs, &iov, &iovcnt);
     if (err != AH_ENONE) {
         return err;
     }

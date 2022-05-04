@@ -13,10 +13,11 @@
 #include <ah/tcp.h>
 #include <stddef.h>
 
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING  0u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE 1u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS  2u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_BODY     3u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING        0u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START 1u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT  2u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS        3u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_BODY           4u
 
 #define AH_I_HTTP_CLIENT_OSTATE_READY        0u
 #define AH_I_HTTP_CLIENT_OSTATE_SENDING_HEAD 1u
@@ -31,8 +32,8 @@
     const ah_tcp_trans_vtab_t* _trans_vtab;                                                                            \
     const ah_http_client_vtab_t* _vtab;                                                                                \
     ah_http_ires_t* _ires;                                                                                             \
-    ah_buf_t _ibuf;                                                                                                    \
-    uint16_t _ibuf_len;                                                                                                \
+    ah_buf_t _ihead_rd;                                                                                                \
+    ah_buf_t _ihead_wr;                                                                                                \
     uint8_t _istate;                                                                                                   \
     uint8_t _ostate;
 

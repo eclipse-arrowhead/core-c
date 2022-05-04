@@ -13,9 +13,9 @@
 
 #include <limits.h>
 
-ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* octets, size_t size)
+ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size)
 {
-    if (buf == NULL || (octets == NULL && size != 0)) {
+    if (buf == NULL || (base == NULL && size != 0)) {
         return AH_EINVAL;
     }
 
@@ -24,7 +24,7 @@ ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* octets, size_t size)
     }
 
     buf->_size = (ULONG) size;
-    buf->_octets = octets;
+    buf->_base = base;
 
     return AH_ENONE;
 }

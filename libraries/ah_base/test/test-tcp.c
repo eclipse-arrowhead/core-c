@@ -52,8 +52,8 @@ void test_tcp(ah_unit_t* unit)
 static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs);
-static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read);
+static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf);
+static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
 static void s_on_conn_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
@@ -141,7 +141,7 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs)
+static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
@@ -149,35 +149,30 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs)
         return;
     }
 
-    bufs->items = user_data->free_buf;
-    bufs->length = 1u;
-
+    *buf = user_data->free_buf;
     user_data->free_buf = NULL;
 
     user_data->did_call_read_alloc_cb = true;
 }
 
-static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read)
+static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_t* unit = user_data->unit;
 
-    if (!ah_unit_assert(unit, bufs.items != NULL, "bufs.items == NULL")) {
-        return;
-    }
-    if (!ah_unit_assert_unsigned_eq(unit, 1u, bufs.length)) {
+    if (!ah_unit_assert(unit, ah_buf_get_base_const(buf) != NULL, "ah_buf_get_base_const(buf) == NULL")) {
         return;
     }
 
-    if (!ah_unit_assert_unsigned_eq(unit, 18u, n_bytes_read)) {
+    if (!ah_unit_assert_unsigned_eq(unit, 18u, nread)) {
         return;
     }
 
-    if (!ah_unit_assert_unsigned_eq(unit, 24u, ah_buf_get_size(&bufs.items[0]))) {
+    if (!ah_unit_assert_unsigned_eq(unit, 24u, ah_buf_get_size(buf))) {
         return;
     }
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_octets(&bufs.items[0u]))) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base_const(buf))) {
         return;
     }
 
@@ -185,10 +180,6 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_by
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-
-    // Free bufs.
-    ah_buf_init(&bufs.items[0u], NULL, 0u);
-    user_data->free_buf = &bufs.items[0u];
 
     user_data->did_call_read_done_cb = true;
 }
@@ -313,9 +304,9 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     // Setup user data.
 
-    uint8_t free_buf_octets[24] = { 0u };
+    uint8_t free_buf_base[24] = { 0u };
     ah_buf_t free_buf;
-    err = ah_buf_init(&free_buf, free_buf_octets, sizeof(free_buf_octets));
+    err = ah_buf_init(&free_buf, free_buf_base, sizeof(free_buf_base));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

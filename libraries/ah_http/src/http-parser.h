@@ -18,11 +18,12 @@ struct ah_i_http_reader {
 
 static inline ah_i_http_reader_t ah_i_http_reader_from_buf(ah_buf_t* buf)
 {
-    uint8_t* off = ah_buf_get_octets(buf);
+    uint8_t* off = ah_buf_get_base(buf);
     return (ah_i_http_reader_t) { off, &off[ah_buf_get_size(buf)] };
 }
 
-bool ah_i_http_split_at_crlf(ah_i_http_reader_t* r, ah_i_http_reader_t* s);
+bool ah_i_http_buf_has_line_end(const ah_buf_t* buf);
+bool ah_i_http_buf_has_headers_end(const ah_buf_t* buf);
 
 ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap);
 bool ah_i_http_parse_req_line(ah_i_http_reader_t* r, ah_http_req_line_t* req_line);

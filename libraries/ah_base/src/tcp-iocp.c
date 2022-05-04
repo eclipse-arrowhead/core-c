@@ -168,27 +168,21 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_read;
     evt->_subject = conn;
 
-    conn->_read_bufs.items = NULL;
-    conn->_read_bufs.length = 0u;
+    conn->_recv_buf = NULL;
 
-    conn->_vtab->on_read_alloc(conn, &conn->_read_bufs);
+    conn->_vtab->on_read_alloc(conn, &conn->_recv_buf);
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return AH_ENONE;
     }
 
-    if (conn->_read_bufs.items == NULL || conn->_read_bufs.length == 0u) {
+    if (conn->_recv_buf == NULL || ah_buf_get_size(conn->_recv_buf) == 0u) {
         return AH_ENOBUFS;
     }
 
-    WSABUF* buffers;
-    ULONG buffer_count;
-    err = ah_i_bufs_into_wsabufs(&conn->_read_bufs, &buffers, &buffer_count);
-    if (ah_unlikely(err != AH_ENONE)) {
-        return err;
-    }
+    WSABUF* buffer = ah_i_buf_into_wsabuf(conn->_recv_buf);
 
-    int res = WSARecv(conn->_fd, buffers, (DWORD) buffer_count, NULL, &conn->_recv_flags, &evt->_overlapped, NULL);
+    int res = WSARecv(conn->_fd, buffer, 1u, NULL, &conn->_recv_flags, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {
@@ -212,14 +206,15 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
 
     ah_err_t err;
 
-    DWORD n_bytes_transferred;
+    DWORD nread;
     DWORD flags;
-    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
+    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &nread, false, &flags)) {
         err = WSAGetLastError();
         goto handle_err;
     }
 
-    conn->_vtab->on_read_data(conn, conn->_read_bufs, n_bytes_transferred);
+    conn->_vtab->on_read_data(conn, conn->_recv_buf, (size_t) nread);
+    conn->_recv_buf = NULL;
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;

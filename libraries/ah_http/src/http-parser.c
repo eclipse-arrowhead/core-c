@@ -27,6 +27,54 @@ static void s_skip_ows(ah_i_http_reader_t* r);
 
 static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t));
 
+bool ah_i_http_buf_has_line_end(const ah_buf_t* buf)
+{
+    ah_assert_if_debug(buf != NULL);
+
+    const uint8_t* off = ah_buf_get_base_const(buf);
+    const uint8_t* const end = &off[ah_buf_get_size(buf)];
+
+    for (; off != end; off = &off[1u]) {
+        if (*off != '\r') {
+            continue;
+        }
+        off = &off[1u];
+        if (off == end) {
+            return false;
+        }
+        if (*off != '\n') {
+            continue;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+bool ah_i_http_buf_has_headers_end(const ah_buf_t* buf)
+{
+    ah_assert_if_debug(buf != NULL);
+
+    const uint8_t* off = ah_buf_get_base_const(buf);
+    const uint8_t* const end = &off[ah_buf_get_size(buf)];
+
+    for (; off != end; off = &off[1u]) {
+        if (*off != '\r') {
+            continue;
+        }
+        off = &off[1u];
+        if ((end - off) < 3) {
+            return false;
+        }
+        if (memcmp(off, (uint8_t[]) { '\n', '\r', '\n' }, 3u) != 0u) {
+            continue;
+        }
+        return true;
+    }
+
+    return false;
+}
+
 ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
 {
     ah_assert_if_debug(r != NULL);

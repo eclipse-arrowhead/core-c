@@ -14,9 +14,14 @@
 
 #define AH_I_BUF_PLATFORM_FIELDS                                                                                       \
     ULONG _size;                                                                                                       \
-    uint8_t* _octets;
+    uint8_t* _base;
 
 typedef struct _WSABUF WSABUF;
+
+ah_inline WSABUF* ah_i_buf_into_wsabuf(ah_buf_t* buf)
+{
+    return (WSABUF*) buf;
+}
 
 ah_extern void ah_i_bufs_from_wsabufs(ah_bufs_t* bufs, WSABUF* buffers, ULONG buffer_count);
 ah_extern ah_err_t ah_i_bufs_into_wsabufs(ah_bufs_t* bufs, WSABUF** buffers, ULONG* buffer_count);
