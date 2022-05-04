@@ -4,11 +4,10 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "../src/http-hmap.h"
+#include "ah/http.h"
 
 #include <ah/err.h>
 #include <ah/unit.h>
-#include <stdlib.h>
 
 static void s_should_add_and_get_headers(ah_unit_t* unit);
 static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit);
@@ -24,25 +23,25 @@ static void s_should_add_and_get_headers(ah_unit_t* unit)
     ah_err_t err;
 
     ah_http_hmap_t headers;
-    err = ah_i_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 2u);
+    err = ah_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 2u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     // Add headers.
 
-    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("host"), ah_str_from_cstr("192.168.40.40:40404"));
+    err = ah_http_hmap_add(&headers, ah_str_from_cstr("host"), ah_str_from_cstr("192.168.40.40:40404"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("content-type"), ah_str_from_cstr("application/json"));
+    err = ah_http_hmap_add(&headers, ah_str_from_cstr("content-type"), ah_str_from_cstr("application/json"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     // Capacity is 2; this should fail.
-    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("content-length"), ah_str_from_cstr("16"));
+    err = ah_http_hmap_add(&headers, ah_str_from_cstr("content-length"), ah_str_from_cstr("16"));
     if (!ah_unit_assert_err_eq(unit, AH_ENOBUFS, err)) {
         return;
     }
@@ -80,29 +79,29 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
     ah_err_t err;
 
     ah_http_hmap_t headers;
-    err = ah_i_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 4u);
+    err = ah_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 4u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     // Add headers.
 
-    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("set-cookie"), ah_str_from_cstr("munchy"));
+    err = ah_http_hmap_add(&headers, ah_str_from_cstr("set-cookie"), ah_str_from_cstr("munchy"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("SET-CookIe"), ah_str_from_cstr("crispy"));
+    err = ah_http_hmap_add(&headers, ah_str_from_cstr("SET-CookIe"), ah_str_from_cstr("crispy"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("Host"), ah_str_from_cstr("[::1]:12345"));
+    err = ah_http_hmap_add(&headers, ah_str_from_cstr("Host"), ah_str_from_cstr("[::1]:12345"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_i_http_hmap_add(&headers, ah_str_from_cstr("Set-Cookie"), ah_str_from_cstr("sweet"));
+    err = ah_http_hmap_add(&headers, ah_str_from_cstr("Set-Cookie"), ah_str_from_cstr("sweet"));
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

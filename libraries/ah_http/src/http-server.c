@@ -143,7 +143,9 @@ static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln)
     ah_assert_if_debug(ln != NULL);
 
     // This is only safe if `ln` is a member of an ah_http_server_t value.
-    ah_http_server_t* srv = (ah_http_server_t*) &((uint8_t*) ln)[-((ptrdiff_t) offsetof(ah_http_server_t, _ln))];
+    const size_t ln_member_offset = offsetof(ah_http_server_t, _ln);
+    ah_assert_if_debug(ln_member_offset <= PTRDIFF_MAX);
+    ah_http_server_t* srv = (ah_http_server_t*) &((uint8_t*) ln)[-((ptrdiff_t) ln_member_offset)];
 
     ah_assert_if_debug(srv->_vtab != NULL);
     ah_assert_if_debug(srv->_trans._vtab != NULL);
@@ -195,13 +197,15 @@ static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)
     ah_assert_if_debug(conn != NULL);
 
     // This is only safe if `conn` is a member of an ah_http_client_t value.
-    ah_http_client_t* srv = (ah_http_client_t*) &((uint8_t*) conn)[-((ptrdiff_t) offsetof(ah_http_client_t, _conn))];
+    const size_t conn_member_offset = offsetof(ah_http_client_t, _conn);
+    ah_assert_if_debug(conn_member_offset <= PTRDIFF_MAX);
+    ah_http_client_t* cln = (ah_http_client_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
 
-    ah_assert_if_debug(srv->_vtab != NULL);
-    ah_assert_if_debug(srv->_trans._vtab != NULL);
-    ah_assert_if_debug(srv->_trans._loop != NULL);
+    ah_assert_if_debug(cln->_vtab != NULL);
+    ah_assert_if_debug(cln->_trans._vtab != NULL);
+    ah_assert_if_debug(cln->_trans._loop != NULL);
 
-    return srv;
+    return cln;
 }
 
 ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_ores_t* res)

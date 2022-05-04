@@ -14,7 +14,7 @@ static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t*
 static uint32_t s_hash_header_name(ah_str_t name);
 static uint8_t s_to_lower(uint8_t ch);
 
-ah_err_t ah_i_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_header* headers, size_t len)
+ah_extern ah_err_t ah_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_header* headers, size_t len)
 {
     ah_assert_if_debug(hmap != NULL);
     ah_assert_if_debug(headers != NULL || len == 0u);
@@ -33,7 +33,7 @@ ah_err_t ah_i_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_he
     return AH_ENONE;
 }
 
-ah_err_t ah_i_http_hmap_add(ah_http_hmap_t* hmap, ah_str_t name, ah_str_t value)
+ah_extern ah_err_t ah_http_hmap_add(ah_http_hmap_t* hmap, ah_str_t name, ah_str_t value)
 {
     ah_assert_if_debug(hmap != NULL);
 

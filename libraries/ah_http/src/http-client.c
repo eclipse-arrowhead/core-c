@@ -8,6 +8,11 @@
 
 #include <ah/err.h>
 
+static const ah_http_ires_err_t s_ires_err_alloc_failed = {
+    "memory allocation failed",
+    AH_HTTP_IRES_ERR_ALLOC_FAILED,
+    AH_ENOMEM,
+};
 static const ah_http_ires_err_t s_ires_err_headers_too_large = {
     "headers section too large",
     AH_HTTP_IRES_ERR_HEADERS_TOO_LARGE,
@@ -36,7 +41,6 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs);
 static void s_on_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_read, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
-static ah_http_ires_err_t s_ires_err_internal_error_from(ah_err_t err);
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
@@ -49,7 +53,6 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     (void) s_ires_err_headers_too_many;
     (void) s_ires_err_stat_line_too_long;
     (void) s_ires_err_ver_unsupported;
-    (void) s_ires_err_internal_error_from;
 
     ah_assert_if_debug(trans._vtab->conn_init != NULL);
     ah_assert_if_debug(trans._vtab->conn_open != NULL);
@@ -111,13 +114,15 @@ static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)
     ah_assert_if_debug(conn != NULL);
 
     // This is only safe if `conn` is a member of an ah_http_client_t value.
-    ah_http_client_t* srv = (ah_http_client_t*) &((uint8_t*) conn)[-((ptrdiff_t) offsetof(ah_http_client_t, _conn))];
+    const size_t conn_member_offset = offsetof(ah_http_client_t, _conn);
+    ah_assert_if_debug(conn_member_offset <= PTRDIFF_MAX);
+    ah_http_client_t* cln = (ah_http_client_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
 
-    ah_assert_if_debug(srv->_vtab != NULL);
-    ah_assert_if_debug(srv->_trans._vtab != NULL);
-    ah_assert_if_debug(srv->_trans._loop != NULL);
+    ah_assert_if_debug(cln->_vtab != NULL);
+    ah_assert_if_debug(cln->_trans._vtab != NULL);
+    ah_assert_if_debug(cln->_trans._loop != NULL);
 
-    return srv;
+    return cln;
 }
 
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr)
@@ -155,7 +160,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs)
 
     if (cln->_ires == NULL || cln->_ibuf._octets == NULL || cln->_ibuf._size == 0u) {
         cln->_ires = NULL;
-        // TODO: Report error.
+        cln->_vtab->on_res_err(cln, NULL, &s_ires_err_alloc_failed);
         return;
     }
 
@@ -206,9 +211,4 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
     cln->_vtab->on_close(cln, err);
-}
-
-static ah_http_ires_err_t s_ires_err_internal_error_from(ah_err_t err)
-{
-    return (ah_http_ires_err_t) { "internal client error", AH_HTTP_IRES_ERR_INTERNAL, err };
 }

@@ -6,7 +6,7 @@
 
 #include "../src/http-parser.h"
 
-#include "../src/http-hmap.h"
+#include "ah/http.h"
 
 #include <ah/err.h>
 #include <ah/unit.h>
@@ -30,7 +30,7 @@ static void s_should_parse_headers(ah_unit_t* unit)
     ah_i_http_reader_t r;
 
     ah_http_hmap_t headers;
-    err = ah_i_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 4u);
+    err = ah_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 4u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

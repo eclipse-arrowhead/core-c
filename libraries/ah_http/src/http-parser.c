@@ -6,8 +6,6 @@
 
 #include "http-parser.h"
 
-#include "http-hmap.h"
-
 #include <ah/err.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -73,7 +71,7 @@ ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
 
         ah_str_t value = ah_str_from(field_value_start, field_value_end - field_value_start);
 
-        ah_err_t err = ah_i_http_hmap_add(hmap, name, value);
+        ah_err_t err = ah_http_hmap_add(hmap, name, value);
         if (err != AH_ENONE) {
             return err;
         }

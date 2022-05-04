@@ -22,9 +22,9 @@
 #define AH_HTTP_IREQ_ERR_REQ_LINE_TOO_LONG          8707u
 #define AH_HTTP_IREQ_ERR_VER_UNSUPPORTED            8708u
 
-#define AH_HTTP_IRES_ERR_HEADERS_TOO_LARGE  8901u
-#define AH_HTTP_IRES_ERR_HEADERS_TOO_MANY   8902u
-#define AH_HTTP_IRES_ERR_INTERNAL           8903u
+#define AH_HTTP_IRES_ERR_ALLOC_FAILED       8901u
+#define AH_HTTP_IRES_ERR_HEADERS_TOO_LARGE  8902u
+#define AH_HTTP_IRES_ERR_HEADERS_TOO_MANY   8903u
 #define AH_HTTP_IRES_ERR_STAT_LINE_TOO_LONG 8904u
 #define AH_HTTP_IRES_ERR_VER_UNSUPPORTED    8905u
 
@@ -222,22 +222,14 @@ ah_inline void* ah_http_server_get_user_data(ah_http_server_t* srv)
     return ah_tcp_listener_get_user_data(&srv->_ln);
 }
 
-// `capacity` must be one of {0, 1, 2, 4, 8, 16, 32, 64, 128 or 256}. If not,
-// every incoming connection will fail with AH_EDOM. Defaults to 16 if 0 is
-// given or if never specified.
-ah_inline void ah_http_server_set_req_header_capacity(ah_http_server_t* srv, size_t capacity)
-{
-    ah_assert_if_debug(srv != NULL);
-    ah_assert_if_debug(capacity != 0u && ((capacity & (capacity - 1u)) == 0u));
-    srv->_req_header_capacity = (uint16_t) capacity;
-}
-
 ah_inline void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data)
 {
     ah_assert_if_debug(srv != NULL);
     ah_tcp_listener_set_user_data(&srv->_ln, user_data);
 }
 
+ah_extern ah_err_t ah_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_header* headers, size_t len);
+ah_extern ah_err_t ah_http_hmap_add(struct ah_http_hmap* hmap, ah_str_t name, ah_str_t value);
 ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, ah_str_t name, bool* has_next);
 ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, ah_str_t name);
 ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter);
