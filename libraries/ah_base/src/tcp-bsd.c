@@ -25,7 +25,7 @@
 #    define SHUT_RDWR SD_BOTH
 #endif
 
-ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
+ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -45,7 +45,7 @@ ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
+ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
 {
     if (conn == NULL || laddr == NULL) {
         return AH_EINVAL;
@@ -56,7 +56,7 @@ ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
     return ah_i_sock_getsockname(conn->_fd, laddr);
 }
 
-ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
+ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
 {
     if (conn == NULL || raddr == NULL) {
         return AH_EINVAL;
@@ -67,7 +67,7 @@ ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
     return ah_i_sock_getpeername(conn->_fd, raddr);
 }
 
-ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled)
+ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -82,7 +82,7 @@ ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled)
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
+ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -97,7 +97,7 @@ ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled)
+ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -112,7 +112,7 @@ ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled)
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
+ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
 {
     if (conn == NULL || (flags & ~AH_TCP_SHUTDOWN_RDWR) != 0u) {
         return AH_EINVAL;
@@ -168,7 +168,7 @@ ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
     return err;
 }
 
-ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
+ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
     if (ln == NULL) {
         return AH_EINVAL;
@@ -192,7 +192,7 @@ ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr)
+ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr)
 {
     if (ln == NULL || laddr == NULL) {
         return AH_EINVAL;
@@ -203,7 +203,7 @@ ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* l
     return ah_i_sock_getsockname(ln->_fd, laddr);
 }
 
-ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled)
+ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled)
 {
     if (ln == NULL) {
         return AH_EINVAL;
@@ -218,7 +218,7 @@ ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled)
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled)
+ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled)
 {
     if (ln == NULL) {
         return AH_EINVAL;
@@ -233,7 +233,7 @@ ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled)
     return AH_ENONE;
 }
 
-ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled)
+ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled)
 {
     if (ln == NULL) {
         return AH_EINVAL;

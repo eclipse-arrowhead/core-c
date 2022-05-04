@@ -80,7 +80,7 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         ah_tcp_shutdown_t shutdown_flags = 0u;
 
-        if (conn->_vtab->on_read_done == NULL) {
+        if (conn->_vtab->on_read_data == NULL) {
             shutdown_flags |= AH_TCP_SHUTDOWN_RD;
         }
         if (conn->_vtab->on_write_done == NULL) {
@@ -169,7 +169,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             goto report_err;
         }
 
-        conn->_vtab->on_read_done(conn, bufs, (size_t) n_bytes_read, AH_ENONE);
+        conn->_vtab->on_read_data(conn, bufs, (size_t) n_bytes_read);
 
         if (!conn->_is_reading) {
             return;
@@ -190,7 +190,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    conn->_vtab->on_read_done(conn, bufs, 0u, err);
+    conn->_vtab->on_read_err(conn, err);
 }
 
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
@@ -378,7 +378,10 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
     if (conn_vtab->on_close == NULL) {
         return AH_EINVAL;
     }
-    if (conn_vtab->on_read_alloc == NULL || conn_vtab->on_read_done == NULL || conn_vtab->on_write_done == NULL) {
+    if (conn_vtab->on_read_alloc == NULL || conn_vtab->on_read_data == NULL || conn_vtab->on_read_err == NULL) {
+        return AH_EINVAL;
+    }
+    if (conn_vtab->on_write_done == NULL) {
         return AH_EINVAL;
     }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {
@@ -433,7 +436,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
         ah_tcp_conn_t* conn = NULL;
         ln->_vtab->on_conn_alloc(ln, &conn);
         if (conn == NULL) {
-            ln->_vtab->on_conn_accept(ln, NULL, NULL, AH_ENOBUFS);
+            ln->_vtab->on_conn_err(ln, AH_ENOBUFS);
             continue;
         }
 
@@ -442,7 +445,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         const int fd = accept(ln->_fd, ah_i_sockaddr_into_bsd(&sockaddr), &socklen);
         if (fd == -1) {
-            ln->_vtab->on_conn_accept(ln, NULL, NULL, errno);
+            ln->_vtab->on_conn_err(ln, errno);
             continue;
         }
 
@@ -458,7 +461,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
             ._fd = fd,
         };
 
-        ln->_vtab->on_conn_accept(ln, conn, &sockaddr, AH_ENONE);
+        ln->_vtab->on_conn_accept(ln, conn, &sockaddr);
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {

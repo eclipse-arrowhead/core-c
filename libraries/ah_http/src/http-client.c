@@ -38,7 +38,8 @@ static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs);
-static void s_on_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_read, ah_err_t err);
+static void s_on_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read);
+static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
@@ -80,7 +81,8 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
         .on_connect = s_on_connect,
         .on_close = s_on_close,
         .on_read_alloc = s_on_read_alloc,
-        .on_read_done = s_on_read_done,
+        .on_read_data = s_on_read_data,
+        .on_read_err = s_on_read_err,
         .on_write_done = s_on_write_done,
     };
 
@@ -168,15 +170,22 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs)
     bufs->length = 1u;
 }
 
-static void s_on_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_read, ah_err_t err)
+static void s_on_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
 
     // TODO: Check state, parse res line, headers or pass on body, respectively. Make sure to handle chunked encoding.
     (void) cln;
     (void) bufs;
-    (void) n_read;
-    (void) err;
+    (void) n_bytes_read;
+}
+
+static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
+{
+    ah_http_client_t* cln = s_upcast_to_client(conn);
+
+    (void) cln;
+    (void) err; // TODO: Handle.
 }
 
 ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, const ah_http_oreq_t* req)

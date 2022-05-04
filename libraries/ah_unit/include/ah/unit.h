@@ -32,6 +32,9 @@
 #define ah_unit_assert_unsigned_eq(unit, a, b)                                                                         \
     ah_i_unit_assert_unsigned_eq(AH_I_UNIT_WRAP(unit), (uintmax_t) (a), (uintmax_t) (b), #a " != " #b)
 
+#define ah_unit_fail(unit, message)      ah_i_unit_assert(AH_I_UNIT_WRAP(unit), false, (message))
+#define ah_unit_failf(unit, format, ...) ah_i_unit_assertf(AH_I_UNIT_WRAP(unit), false, (format), __VA_ARGS__)
+
 #define AH_I_UNIT_WRAP(UNIT)                                                                                           \
     ((struct ah_i_unit) { .external = (UNIT), .file = __FILE__, .line = __LINE__, .func = __func__ })
 

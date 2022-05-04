@@ -17,7 +17,7 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, const 
     if (vtab->on_open == NULL || vtab->on_connect == NULL || vtab->on_close == NULL) {
         return AH_EINVAL;
     }
-    if ((vtab->on_read_alloc == NULL) != (vtab->on_read_done == NULL)) {
+    if ((vtab->on_read_alloc == NULL) != (vtab->on_read_data == NULL) != (vtab->on_read_err == NULL)) {
         return AH_EINVAL;
     }
     if (ah_loop_is_term(loop)) {
@@ -41,7 +41,7 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
     if (vtab->on_open == NULL || vtab->on_listen == NULL || vtab->on_close == NULL) {
         return AH_EINVAL;
     }
-    if (vtab->on_conn_alloc == NULL || vtab->on_conn_accept == NULL) {
+    if (vtab->on_conn_alloc == NULL || vtab->on_conn_accept == NULL || vtab->on_conn_err == NULL) {
         return AH_EINVAL;
     }
     if (ah_loop_is_term(loop)) {
@@ -75,7 +75,6 @@ ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop)
         .listener_open = ah_tcp_listener_open,
         .listener_listen = ah_tcp_listener_listen,
         .listener_close = ah_tcp_listener_close,
-
     };
 
     *trans = (ah_tcp_trans_t) {

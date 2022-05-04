@@ -56,7 +56,8 @@ static void s_on_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listen(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_close(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
-static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
+static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
+static void s_on_conn_err(ah_tcp_listener_t* ln, ah_err_t err);
 
 static ah_http_ireq_err_t s_ireq_err_internal_error_from(ah_err_t err);
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
@@ -93,9 +94,6 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_open != NULL);
     ah_assert_if_debug(vtab->on_listen != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
-    ah_assert_if_debug(vtab->on_client_alloc != NULL);
-    ah_assert_if_debug(vtab->on_client_accept != NULL);
-    ah_assert_if_debug(vtab->on_client_close != NULL);
     ah_assert_if_debug(vtab->on_req_alloc != NULL);
     ah_assert_if_debug(vtab->on_req_line != NULL);
     ah_assert_if_debug(vtab->on_req_headers != NULL);
@@ -111,6 +109,7 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
         .on_close = s_on_close,
         .on_conn_alloc = s_on_conn_alloc,
         .on_conn_accept = s_on_conn_accept,
+        .on_conn_err = s_on_conn_err,
     };
 
     ah_err_t err = trans._vtab->listener_init(&srv->_ln, trans._loop, &s_vtab);
@@ -173,23 +172,27 @@ static void s_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn)
     ah_assert_if_debug(conn != NULL);
 
     ah_http_server_t* srv = s_upcast_to_server(ln);
-    ah_http_client_t* cnt = NULL;
-    srv->_vtab->on_client_alloc(srv, &cnt);
-    if (cnt != NULL) {
-        *conn = &cnt->_conn;
-    }
+    (void) srv;
+    (void) conn; // TODO: Handle.
 }
 
-static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     ah_http_server_t* srv = s_upcast_to_server(ln);
-    ah_http_client_t* cnt = conn != NULL ? s_upcast_to_client(conn) : NULL;
+    ah_http_client_t* cnt = s_upcast_to_client(conn);
 
-    if (conn != NULL && err == AH_ENONE) {
-        err = srv->_trans._vtab->conn_read_start(conn);
-    }
+    ah_err_t err = srv->_trans._vtab->conn_read_start(conn);
 
-    srv->_vtab->on_client_accept(srv, cnt, raddr, err);
+    (void) cnt;
+    (void) raddr;
+    (void) err; // TODO: Handle.
+}
+
+static void s_on_conn_err(ah_tcp_listener_t* ln, ah_err_t err)
+{
+    ah_http_server_t* srv = s_upcast_to_server(ln);
+    (void) srv;
+    (void) err; // TODO: Handle.
 }
 
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)

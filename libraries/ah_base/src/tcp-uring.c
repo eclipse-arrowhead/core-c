@@ -67,7 +67,7 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
         ah_tcp_shutdown_t shutdown_flags = 0u;
 
-        if (conn->_vtab->on_read_done == NULL) {
+        if (conn->_vtab->on_read_data == NULL) {
             shutdown_flags |= AH_TCP_SHUTDOWN_RD;
         }
         if (conn->_vtab->on_write_done == NULL) {
@@ -160,7 +160,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto call_read_cb_with_err_and_return;
     }
 
-    conn->_vtab->on_read_done(conn, conn->_read_bufs, cqe->res, AH_ENONE);
+    conn->_vtab->on_read_data(conn, conn->_read_bufs, cqe->res);
 
     if (!conn->_is_reading) {
         return;
@@ -174,7 +174,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     return;
 
 call_read_cb_with_err_and_return:
-    conn->_vtab->on_read_done(conn, (ah_bufs_t) { 0u }, 0u, err);
+    conn->_vtab->on_read_err(conn, err);
 }
 
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
@@ -345,7 +345,10 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
     if (conn_vtab->on_close == NULL) {
         return AH_EINVAL;
     }
-    if (conn_vtab->on_read_alloc == NULL || conn_vtab->on_read_done == NULL || conn_vtab->on_write_done == NULL) {
+    if (conn_vtab->on_read_alloc == NULL || conn_vtab->on_read_data == NULL || conn_vtab->on_read_err) {
+        return AH_EINVAL;
+    }
+    if (conn_vtab->on_write_done == NULL) {
         return AH_EINVAL;
     }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {
@@ -392,14 +395,14 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_assert_if_debug(ln != NULL);
 
     if (ah_unlikely(cqe->res < 0)) {
-        ln->_vtab->on_conn_accept(ln, NULL, &ln->_raddr, -cqe->res);
+        ln->_vtab->on_conn_err(ln, -cqe->res);
         goto prep_another_accept;
     }
 
     ah_tcp_conn_t* conn = NULL;
     ln->_vtab->on_conn_alloc(ln, &conn);
     if (conn == NULL) {
-        ln->_vtab->on_conn_accept(ln, NULL, &ln->_raddr, AH_ENOBUFS);
+        ln->_vtab->on_conn_err(ln, AH_ENOBUFS);
         goto prep_another_accept;
     }
 

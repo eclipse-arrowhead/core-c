@@ -53,22 +53,24 @@ static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs);
-static void s_on_conn_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read, ah_err_t err);
+static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read);
+static void s_on_conn_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
-static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr,
-    ah_err_t err);
+static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
+static void s_on_listener_conn_err(ah_tcp_listener_t* ln, ah_err_t err);
 
 static const ah_tcp_conn_vtab_t s_conn_vtab = {
     .on_open = s_on_conn_open,
     .on_connect = s_on_conn_connect,
     .on_close = s_on_conn_close,
     .on_read_alloc = s_on_conn_read_alloc,
-    .on_read_done = s_on_conn_read_done,
+    .on_read_data = s_on_conn_read_data,
+    .on_read_err = s_on_conn_read_err,
     .on_write_done = s_on_conn_write_done,
 };
 
@@ -78,6 +80,7 @@ static const ah_tcp_listener_vtab_t s_listener_vtab = {
     .on_close = s_on_listener_close,
     .on_conn_alloc = s_on_listener_conn_alloc,
     .on_conn_accept = s_on_listener_conn_accept,
+    .on_conn_err = s_on_listener_conn_err,
 };
 
 static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err)
@@ -154,15 +157,11 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_bufs_t* bufs)
     user_data->did_call_read_alloc_cb = true;
 }
 
-static void s_on_conn_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read, ah_err_t err)
+static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_bytes_read)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_t* unit = user_data->unit;
-
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
 
     if (!ah_unit_assert(unit, bufs.items != NULL, "bufs.items == NULL")) {
         return;
@@ -182,7 +181,7 @@ static void s_on_conn_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_by
         return;
     }
 
-    err = ah_tcp_conn_close(conn);
+    ah_err_t err = ah_tcp_conn_close(conn);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -192,6 +191,12 @@ static void s_on_conn_read_done(ah_tcp_conn_t* conn, ah_bufs_t bufs, size_t n_by
     user_data->free_buf = &bufs.items[0u];
 
     user_data->did_call_read_done_cb = true;
+}
+
+static void s_on_conn_read_err(ah_tcp_conn_t* conn, ah_err_t err)
+{
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+    ah_unit_failf(user_data->unit, "unexpected read error: %d [%s]", err, ah_strerror(err));
 }
 
 static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err)
@@ -272,20 +277,17 @@ static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
     user_data->did_call_conn_alloc_cb = true;
 }
 
-static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr,
-    ah_err_t err)
+static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
 
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
-        return;
-    }
     ah_unit_assert(user_data->unit, raddr != NULL, "ln_addr == NULL");
 
     ah_tcp_conn_set_user_data(conn, &user_data->accept_user_data);
 
-    ah_buf_init(&user_data->conn_write_buf, (uint8_t*) "Hello, Arrowhead!", 18u);
+    ah_err_t err;
 
+    ah_buf_init(&user_data->conn_write_buf, (uint8_t*) "Hello, Arrowhead!", 18u);
     err = ah_tcp_omsg_init(&user_data->conn_omsg, (ah_bufs_t) { .items = &user_data->conn_write_buf, .length = 1u });
     if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
         return;
@@ -297,6 +299,12 @@ static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
     }
 
     user_data->did_call_conn_accept_cb = true;
+}
+
+static void s_on_listener_conn_err(ah_tcp_listener_t* ln, ah_err_t err)
+{
+    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
+    ah_unit_failf(user_data->unit, "unexpected accept error: %d [%s]", err, ah_strerror(err));
 }
 
 static void s_should_read_and_write_data(ah_unit_t* unit)
@@ -393,7 +401,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     (void) ah_unit_assert(unit, conn_data->did_call_connect_cb, "`conn` s_on_conn_connect() not called");
     (void) ah_unit_assert(unit, conn_data->did_call_close_cb, "`conn` s_on_conn_close() not called");
     (void) ah_unit_assert(unit, conn_data->did_call_read_alloc_cb, "`conn` s_on_conn_read_alloc() not called");
-    (void) ah_unit_assert(unit, conn_data->did_call_read_done_cb, "`conn` s_on_conn_read_done() not called");
+    (void) ah_unit_assert(unit, conn_data->did_call_read_done_cb, "`conn` s_on_conn_read_data() not called");
     (void) ah_unit_assert(unit, !conn_data->did_call_write_done_cb, "`conn` s_on_conn_write_done() was called");
 
     struct s_tcp_listener_user_data* ln_data = &ln_user_data;
@@ -408,7 +416,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     (void) ah_unit_assert(unit, !acc_data->did_call_connect_cb, "`acc` s_on_conn_connect() was called");
     (void) ah_unit_assert(unit, acc_data->did_call_close_cb, "`acc` s_on_conn_close() not called");
     (void) ah_unit_assert(unit, !acc_data->did_call_read_alloc_cb, "`acc` s_on_conn_read_alloc() was called");
-    (void) ah_unit_assert(unit, !acc_data->did_call_read_done_cb, "`acc` s_on_conn_read_done() was called");
+    (void) ah_unit_assert(unit, !acc_data->did_call_read_done_cb, "`acc` s_on_conn_read_data() was called");
     (void) ah_unit_assert(unit, acc_data->did_call_write_done_cb, "`acc` s_on_conn_write_done() not called");
 
     // Release event loop.
