@@ -21,18 +21,6 @@
 #define AH_HTTP_IREQ_ERR_INTERNAL                   8706u
 #define AH_HTTP_IREQ_ERR_REQ_LINE_TOO_LONG          8707u
 
-#define AH_HTTP_IRES_ERR_ALLOC_FAILED       8901u
-#define AH_HTTP_IRES_ERR_BUFFER_OVERFLOW    8902u
-#define AH_HTTP_IRES_ERR_CONTENT_LENGTH_BAD 8903u
-#define AH_HTTP_IRES_ERR_CONTENT_LENGTH_DUP 8904u
-#define AH_HTTP_IRES_ERR_CONTENT_LENGTH_OOB 8905u
-#define AH_HTTP_IRES_ERR_DATA_UNEXPECTED    8906u
-#define AH_HTTP_IRES_ERR_HEAD_TOO_LARGE     8907u
-#define AH_HTTP_IRES_ERR_INVALID_HEADERS    8908u
-#define AH_HTTP_IRES_ERR_INVALID_STAT_LINE  8909u
-#define AH_HTTP_IRES_ERR_TRAILER_TOO_LARGE  8910u
-#define AH_HTTP_IRES_ERR_TRANSPORT_ERROR    8911u
-
 typedef struct ah_http_chunk ah_http_chunk_t;
 typedef struct ah_http_client ah_http_client_t;
 typedef struct ah_http_client_vtab ah_http_client_vtab_t;
@@ -44,7 +32,6 @@ typedef struct ah_http_hmap_value_iter ah_http_hmap_value_iter_t;
 typedef struct ah_http_ireq ah_http_ireq_t;
 typedef struct ah_http_ireq_err ah_http_ireq_err_t;
 typedef struct ah_http_ires ah_http_ires_t;
-typedef struct ah_http_ires_err ah_http_ires_err_t;
 typedef struct ah_http_oreq ah_http_oreq_t;
 typedef struct ah_http_ores ah_http_ores_t;
 typedef struct ah_http_req_line ah_http_req_line_t;
@@ -76,7 +63,7 @@ struct ah_http_client_vtab {
     void (*on_res_headers)(ah_http_client_t* cln, ah_http_ires_t* res);
     void (*on_res_chunk)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_http_chunk_t* chunk);
     void (*on_res_data)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_http_data_t* data);
-    void (*on_res_err)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_http_ires_err_t* err);
+    void (*on_res_err)(ah_http_client_t* cln, ah_http_ires_t* res, ah_err_t err);
     void (*on_res_end)(ah_http_client_t* cln, ah_http_ires_t* res);
 };
 

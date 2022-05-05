@@ -12,57 +12,6 @@
 #include <ah/err.h>
 #include <ah/math.h>
 
-static const ah_http_ires_err_t s_ires_err_alloc_failed = {
-    "memory allocation failed",
-    AH_HTTP_IRES_ERR_ALLOC_FAILED,
-    AH_ENOMEM,
-};
-static const ah_http_ires_err_t s_ires_err_buffer_overflow = {
-    "response buffer overflowed (should be impossible)",
-    AH_HTTP_IRES_ERR_BUFFER_OVERFLOW,
-    AH_EOVERFLOW,
-};
-static const ah_http_ires_err_t s_ires_err_content_length_bad = {
-    "'content-length' value is not a valid integer",
-    AH_HTTP_IRES_ERR_CONTENT_LENGTH_BAD,
-    AH_EILSEQ,
-};
-static const ah_http_ires_err_t s_ires_err_content_length_dup = {
-    "'content-length' specified more than once",
-    AH_HTTP_IRES_ERR_CONTENT_LENGTH_DUP,
-    AH_EEXIST,
-};
-static const ah_http_ires_err_t s_ires_err_content_length_oob = {
-    "'content-length' too large",
-    AH_HTTP_IRES_ERR_CONTENT_LENGTH_OOB,
-    AH_ERANGE,
-};
-static const ah_http_ires_err_t s_ires_err_data_unexpected = {
-    "unexpectedly received data",
-    AH_HTTP_IRES_ERR_DATA_UNEXPECTED,
-    AH_ESTATE,
-};
-static const ah_http_ires_err_t s_ires_err_head_too_large = {
-    "status line and headers too large for allocated head buffer",
-    AH_HTTP_IRES_ERR_HEAD_TOO_LARGE,
-    AH_ENOBUFS,
-};
-static const ah_http_ires_err_t s_ires_err_invalid_headers = {
-    "invalid headers",
-    AH_HTTP_IRES_ERR_INVALID_HEADERS,
-    AH_EILSEQ,
-};
-static const ah_http_ires_err_t s_ires_err_invalid_stat_line = {
-    "invalid status line",
-    AH_HTTP_IRES_ERR_INVALID_STAT_LINE,
-    AH_EILSEQ,
-};
-static const ah_http_ires_err_t s_ires_err_trailer_too_large = {
-    "trailing headers too large for allocated trailer buffer",
-    AH_HTTP_IRES_ERR_TRAILER_TOO_LARGE,
-    AH_ENOBUFS,
-};
-
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
@@ -78,8 +27,6 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     if (cln == NULL || trans._vtab == NULL || trans._loop == NULL || vtab == NULL) {
         return AH_EINVAL;
     }
-
-    (void) s_ires_err_trailer_too_large;
 
     ah_assert_if_debug(trans._vtab->conn_init != NULL);
     ah_assert_if_debug(trans._vtab->conn_open != NULL);
@@ -175,12 +122,12 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
 
-    const ah_http_ires_err_t* ires_err;
+    ah_err_t err;
 
     switch (cln->_istate) {
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING:
-        ires_err = &s_ires_err_data_unexpected;
-        goto close_conn_and_report_ires_err;
+        err = AH_ESTATE;
+        goto close_conn_and_report_err;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START:
         cln->_ires = NULL;
@@ -188,8 +135,8 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         cln->_vtab->on_res_alloc_head(cln, &cln->_ires, buf);
 
         if (cln->_ires == NULL) {
-            ires_err = &s_ires_err_alloc_failed;
-            goto close_conn_and_report_ires_err;
+            err = AH_ENOBUFS;
+            goto close_conn_and_report_err;
         }
 
         cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT;
@@ -200,8 +147,8 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT:
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS:
         if (ah_buf_is_empty(&cln->_ihead_wr)) {
-            ires_err = &s_ires_err_head_too_large;
-            goto close_conn_and_report_ires_err;
+            err = AH_EOVERFLOW;
+            goto close_conn_and_report_err;
         }
         *buf = cln->_ihead_wr;
         return;
@@ -216,9 +163,9 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         ah_unreachable();
     }
 
-close_conn_and_report_ires_err:
+close_conn_and_report_err:
     cln->_trans_vtab->conn_close(conn);
-    cln->_vtab->on_res_err(cln, NULL, ires_err);
+    cln->_vtab->on_res_err(cln, NULL, err);
 }
 
 static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread)
@@ -226,20 +173,19 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     ah_http_client_t* cln = s_upcast_to_client(conn);
 
     ah_err_t err;
-    const ah_http_ires_err_t* ires_err;
 
     switch (cln->_istate) {
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT:
         if (!ah_i_http_buf_has_crlf(buf)) {
             err = ah_buf_shrinkl(&cln->_ihead_wr, nread);
             if (err != AH_ENONE) {
-                ires_err = &s_ires_err_buffer_overflow;
+                err = AH_EDOM;
                 goto close_conn_and_report_ires_err;
             }
             return;
         }
         if (!ah_i_http_parse_stat_line(&cln->_ihead_rd, &cln->_ires->stat_line)) {
-            ires_err = &s_ires_err_invalid_stat_line;
+            err = AH_EILSEQ;
             goto close_conn_and_report_ires_err;
         }
 
@@ -256,13 +202,13 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         if (!ah_i_http_buf_has_crlfx2(buf)) {
             err = ah_buf_shrinkl(&cln->_ihead_wr, nread);
             if (err != AH_ENONE) {
-                ires_err = &s_ires_err_buffer_overflow;
+                err = AH_EDOM;
                 goto close_conn_and_report_ires_err;
             }
             return;
         }
         if (!ah_i_http_parse_headers(&cln->_ihead_rd, &cln->_ires->headers)) {
-            ires_err = &s_ires_err_invalid_headers;
+            err = AH_EILSEQ;
             goto close_conn_and_report_ires_err;
         }
 
@@ -278,37 +224,22 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         }
 
         err = ah_i_http_hmap_get_content_length(&cln->_ires->headers, &cln->_i_n_bytes_expected);
-        switch (err) {
-        case AH_ENONE:
-            if (cln->_i_n_bytes_expected == 0u) {
-                cln->_n_pending_responses -= 1u;
-                if (cln->_n_pending_responses == 0u) {
-                    cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING;
-                }
-                else {
-                    cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START;
-                }
-                break;
-            }
-            cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA;
-            break;
-
-        case AH_EEXIST:
-            ires_err = &s_ires_err_content_length_dup;
+        if (err != AH_ENONE) {
             goto close_conn_and_report_ires_err;
-
-        case AH_EILSEQ:
-            ires_err = &s_ires_err_content_length_bad;
-            goto close_conn_and_report_ires_err;
-
-        case AH_ERANGE:
-            ires_err = &s_ires_err_content_length_oob;
-            goto close_conn_and_report_ires_err;
-
-        default:
-            ah_unreachable();
         }
 
+        if (cln->_i_n_bytes_expected == 0u) {
+            cln->_n_pending_responses -= 1u;
+            if (cln->_n_pending_responses == 0u) {
+                cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING;
+            }
+            else {
+                cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START;
+            }
+        }
+        else {
+            cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA;
+        }
         return;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK:
@@ -326,20 +257,13 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
 close_conn_and_report_ires_err:
     cln->_trans_vtab->conn_close(conn);
-    cln->_vtab->on_res_err(cln, NULL, ires_err);
+    cln->_vtab->on_res_err(cln, NULL, err);
 }
 
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
-
-    if (err == AH_ENOBUFS) {
-        cln->_vtab->on_res_err(cln, NULL, &s_ires_err_alloc_failed);
-        return;
-    }
-
-    ah_http_ires_err_t ires_err = { "unexpected transport error", AH_HTTP_IRES_ERR_TRANSPORT_ERROR, err };
-    cln->_vtab->on_res_err(cln, NULL, &ires_err);
+    cln->_vtab->on_res_err(cln, NULL, err);
 }
 
 ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, const ah_http_oreq_t* req)
