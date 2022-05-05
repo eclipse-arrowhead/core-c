@@ -140,22 +140,22 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         }
 
         cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT;
-        cln->_ihead_rd = *buf;
-        cln->_ihead_wr = cln->_ihead_rd;
+        cln->_i_non_data_buf_rd = *buf;
+        cln->_i_non_data_buf_wr = cln->_i_non_data_buf_rd;
         return;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT:
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS:
-        if (ah_buf_is_empty(&cln->_ihead_wr)) {
+    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK:
+    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_TRAILER:
+        if (ah_buf_is_empty(&cln->_i_non_data_buf_wr)) {
             err = AH_EOVERFLOW;
             goto close_conn_and_report_err;
         }
-        *buf = cln->_ihead_wr;
+        *buf = cln->_i_non_data_buf_wr;
         return;
 
-    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK:
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA:
-    case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_TRAILER:
         cln->_vtab->on_res_alloc_more(cln, buf);
         return;
 
@@ -173,18 +173,19 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     ah_http_client_t* cln = s_upcast_to_client(conn);
 
     ah_err_t err;
+    ah_str_t ext;
 
     switch (cln->_istate) {
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT:
         if (!ah_i_http_buf_has_crlf(buf)) {
-            err = ah_buf_shrinkl(&cln->_ihead_wr, nread);
+            err = ah_buf_shrinkl(&cln->_i_non_data_buf_wr, nread);
             if (err != AH_ENONE) {
                 err = AH_EDOM;
                 goto close_conn_and_report_ires_err;
             }
             return;
         }
-        if (!ah_i_http_parse_stat_line(&cln->_ihead_rd, &cln->_ires->stat_line)) {
+        if (!ah_i_http_parse_stat_line(&cln->_i_non_data_buf_rd, &cln->_ires->stat_line)) {
             err = AH_EILSEQ;
             goto close_conn_and_report_ires_err;
         }
@@ -200,14 +201,14 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS:
         if (!ah_i_http_buf_has_crlfx2(buf)) {
-            err = ah_buf_shrinkl(&cln->_ihead_wr, nread);
+            err = ah_buf_shrinkl(&cln->_i_non_data_buf_wr, nread);
             if (err != AH_ENONE) {
                 err = AH_EDOM;
                 goto close_conn_and_report_ires_err;
             }
             return;
         }
-        if (!ah_i_http_parse_headers(&cln->_ihead_rd, &cln->_ires->headers)) {
+        if (!ah_i_http_parse_headers(&cln->_i_non_data_buf_rd, &cln->_ires->headers)) {
             err = AH_EILSEQ;
             goto close_conn_and_report_ires_err;
         }
@@ -220,7 +221,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
         if (ah_i_http_hmap_is_transfer_encoding_chunked(&cln->_ires->headers)) {
             cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK;
-            return;
+            goto expect_chunk;
         }
 
         err = ah_i_http_hmap_get_content_length(&cln->_ires->headers, &cln->_i_n_bytes_expected);
@@ -236,16 +237,24 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             else {
                 cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START;
             }
+            return;
         }
-        else {
-            cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA;
-        }
-        return;
+
+        cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA;
+        goto expect_data;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK:
+    expect_chunk:
+        err = ah_i_http_parse_chunk(&cln->_i_non_data_buf_rd, &cln->_i_n_bytes_expected, &ext);
+        if (err != AH_ENONE) {
+            // TODO: Shrink non-data buf rd?
+            goto close_conn_and_report_ires_err;
+        }
         return;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA:
+    expect_data:
+        // TODO: If non_buf_rd is not empty, present data immediately and check if we are done.
         return;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_TRAILER:

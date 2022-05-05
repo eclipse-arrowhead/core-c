@@ -7,6 +7,7 @@
 #include "http-parser.h"
 
 #include <ah/err.h>
+#include <ah/math.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
@@ -82,6 +83,85 @@ bool ah_i_http_buf_has_crlfx2(const ah_buf_t* buf)
     }
 
     return false;
+}
+
+ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, size_t* size, ah_str_t* ext)
+{
+    ah_assert_if_debug(src != NULL);
+    ah_assert_if_debug(size != NULL);
+    ah_assert_if_debug(ext != NULL);
+
+    s_reader_t r = s_reader_from_buf(src);
+
+    ah_err_t err;
+
+    size_t size0 = 0u;
+    ah_str_t ext0 = (ah_str_t) { 0u };
+
+    uint8_t* ext_start;
+
+    for (; r._off != r._end; r._off = &r._off[1u]) {
+        const uint8_t ch = r._off[0u];
+
+        size_t inc;
+        if (ch >= '0' && ch <= '9') {
+            inc = ch - '0';
+        }
+        else if (ch >= 'A' && ch <= 'F') {
+            inc = (ch - 'A') + 10u;
+        }
+        else if (ch >= 'a' && ch <= 'f') {
+            inc = (ch - 'a') + 10u;
+        }
+        else if (ch == '\r' && r._off != r._end && r._off[1u] == '\n') {
+            goto finish;
+        }
+        else if (ch == ';') {
+            goto parse_ext;
+        }
+        else {
+            return AH_EILSEQ;
+        }
+
+        err = ah_mul_size(size0, 16u, &size0);
+        if (err != AH_ENONE) {
+            return err;
+        }
+
+        err = ah_add_size(size0, inc, &size0);
+        if (err != AH_ENONE) {
+            return err;
+        }
+    }
+
+    return AH_EEOF;
+
+parse_ext:
+
+    ext_start = r._off;
+
+    for (; r._off != r._end; r._off = &r._off[1u]) {
+        if (r._off[0u] != '\r') {
+            continue;
+        }
+        r._off = &r._off[1u];
+        if (r._off == r._end) {
+            return AH_EEOF;
+        }
+        if (r._off[0u] != '\n') {
+            return AH_EILSEQ;
+        }
+        break;
+    }
+
+    ext0 = ah_str_from(ext_start, &r._end[-2] - ext_start);
+
+finish:
+    (void) ah_buf_init(src, r._off, r._end - r._off);
+    *size = size0;
+    *ext = ext0;
+
+    return AH_ENONE;
 }
 
 ah_err_t ah_i_http_parse_headers(ah_buf_t* src, ah_http_hmap_t* hmap)

@@ -17,9 +17,10 @@
 #define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START 1u
 #define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT  2u
 #define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS        3u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK          4u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA           5u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_TRAILER        6u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA           4u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK          5u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK_DATA     6u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_TRAILER        7u
 
 #define AH_I_HTTP_CLIENT_OSTATE_READY        0u
 #define AH_I_HTTP_CLIENT_OSTATE_SENDING_HEAD 1u
@@ -34,8 +35,8 @@
     const ah_tcp_trans_vtab_t* _trans_vtab;                                                                            \
     const ah_http_client_vtab_t* _vtab;                                                                                \
     ah_http_ires_t* _ires;                                                                                             \
-    ah_buf_t _ihead_rd;                                                                                                \
-    ah_buf_t _ihead_wr;                                                                                                \
+    ah_buf_t _i_non_data_buf_rd;                                                                                       \
+    ah_buf_t _i_non_data_buf_wr;                                                                                       \
     size_t _i_n_bytes_expected;                                                                                        \
     uint8_t _istate;                                                                                                   \
     uint8_t _ostate;                                                                                                   \
