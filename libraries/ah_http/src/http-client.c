@@ -22,6 +22,26 @@ static const ah_http_ires_err_t s_ires_err_buffer_overflow = {
     AH_HTTP_IRES_ERR_BUFFER_OVERFLOW,
     AH_EOVERFLOW,
 };
+static const ah_http_ires_err_t s_ires_err_content_length_bad = {
+    "'content-length' value is not a valid integer",
+    AH_HTTP_IRES_ERR_CONTENT_LENGTH_BAD,
+    AH_EILSEQ,
+};
+static const ah_http_ires_err_t s_ires_err_content_length_dup = {
+    "'content-length' specified more than once",
+    AH_HTTP_IRES_ERR_CONTENT_LENGTH_DUP,
+    AH_EEXIST,
+};
+static const ah_http_ires_err_t s_ires_err_content_length_oob = {
+    "'content-length' too large",
+    AH_HTTP_IRES_ERR_CONTENT_LENGTH_OOB,
+    AH_ERANGE,
+};
+static const ah_http_ires_err_t s_ires_err_data_unexpected = {
+    "unexpectedly received data",
+    AH_HTTP_IRES_ERR_DATA_UNEXPECTED,
+    AH_ESTATE,
+};
 static const ah_http_ires_err_t s_ires_err_head_too_large = {
     "status line and headers too large for allocated head buffer",
     AH_HTTP_IRES_ERR_HEAD_TOO_LARGE,
@@ -159,7 +179,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 
     switch (cln->_istate) {
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING:
-        ires_err = NULL; // TODO.
+        ires_err = &s_ires_err_data_unexpected;
         goto close_conn_and_report_ires_err;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START:
@@ -274,15 +294,15 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             break;
 
         case AH_EEXIST:
-            ires_err = NULL; // TODO.
+            ires_err = &s_ires_err_content_length_dup;
             goto close_conn_and_report_ires_err;
 
         case AH_EILSEQ:
-            ires_err = NULL; // TODO.
+            ires_err = &s_ires_err_content_length_bad;
             goto close_conn_and_report_ires_err;
 
         case AH_ERANGE:
-            ires_err = NULL; // TODO.
+            ires_err = &s_ires_err_content_length_oob;
             goto close_conn_and_report_ires_err;
 
         default:
