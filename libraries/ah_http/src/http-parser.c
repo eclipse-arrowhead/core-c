@@ -11,8 +11,17 @@
 #include <stddef.h>
 #include <string.h>
 
-static bool s_parse_status_code(ah_i_http_reader_t* r, uint16_t* code);
-static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version);
+typedef struct s_reader s_reader_t;
+
+struct s_reader {
+    uint8_t* _off;
+    uint8_t* const _end;
+};
+
+static s_reader_t s_reader_from_buf(ah_buf_t* buf);
+
+static bool s_parse_status_code(s_reader_t* r, uint16_t* code);
+static bool s_parse_version(s_reader_t* r, ah_http_ver_t* version);
 
 static bool s_is_digit(uint8_t ch);
 static bool s_is_ows(uint8_t ch);
@@ -21,11 +30,11 @@ static bool s_is_tchar(uint8_t ch);
 static bool s_is_vchar_obs_text_htab_sp(uint8_t ch);
 static bool s_is_vchar_obs_text(uint8_t ch);
 
-static bool s_skip_ch(ah_i_http_reader_t* r, char ch);
-static bool s_skip_crlf(ah_i_http_reader_t* r);
-static void s_skip_ows(ah_i_http_reader_t* r);
+static bool s_skip_ch(s_reader_t* r, char ch);
+static bool s_skip_crlf(s_reader_t* r);
+static void s_skip_ows(s_reader_t* r);
 
-static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t));
+static ah_str_t s_take_while(s_reader_t* r, bool (*pred)(uint8_t));
 
 bool ah_i_http_buf_has_line_end(const ah_buf_t* buf)
 {
@@ -75,40 +84,42 @@ bool ah_i_http_buf_has_headers_end(const ah_buf_t* buf)
     return false;
 }
 
-ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
+ah_err_t ah_i_http_parse_headers(ah_buf_t* src, ah_http_hmap_t* hmap)
 {
-    ah_assert_if_debug(r != NULL);
+    ah_assert_if_debug(src != NULL);
     ah_assert_if_debug(hmap != NULL);
 
+    s_reader_t r = s_reader_from_buf(src);
+
     for (;;) {
-        if (s_skip_crlf(r)) {
+        if (s_skip_crlf(&r)) {
             return AH_ENONE;
         }
 
         // Read name.
 
-        ah_str_t name = s_take_while(r, s_is_tchar);
-        if (ah_str_get_len(&name) == 0u || !s_skip_ch(r, ':')) {
+        ah_str_t name = s_take_while(&r, s_is_tchar);
+        if (ah_str_get_len(&name) == 0u || !s_skip_ch(&r, ':')) {
             return AH_EILSEQ;
         }
 
         // Read value.
 
-        s_skip_ows(r);
+        s_skip_ows(&r);
 
-        if (r->_off == r->_end || !s_is_vchar_obs_text(r->_off[0u])) {
+        if (r._off == r._end || !s_is_vchar_obs_text(r._off[0u])) {
             return AH_EILSEQ;
         }
 
-        uint8_t* field_value_start = r->_off;
+        uint8_t* field_value_start = r._off;
 
         do {
-            r->_off = &r->_off[1u];
-        } while (s_is_vchar_obs_text_htab_sp(r->_off[0u]));
+            r._off = &r._off[1u];
+        } while (s_is_vchar_obs_text_htab_sp(r._off[0u]));
 
-        uint8_t* field_value_end = r->_off;
+        uint8_t* field_value_end = r._off;
 
-        if (!s_skip_crlf(r)) {
+        if (!s_skip_crlf(&r)) {
             return AH_EILSEQ;
         }
 
@@ -126,29 +137,31 @@ ah_err_t ah_i_http_parse_headers(ah_i_http_reader_t* r, ah_http_hmap_t* hmap)
     }
 }
 
-bool ah_i_http_parse_req_line(ah_i_http_reader_t* r, ah_http_req_line_t* req_line)
+bool ah_i_http_parse_req_line(ah_buf_t* src, ah_http_req_line_t* req_line)
 {
-    ah_assert_if_debug(r != NULL);
+    ah_assert_if_debug(src != NULL);
     ah_assert_if_debug(req_line != NULL);
 
-    req_line->method = s_take_while(r, s_is_tchar);
-    if (ah_str_get_len(&req_line->method) == 0u || !s_skip_ch(r, ' ')) {
+    s_reader_t r = s_reader_from_buf(src);
+
+    req_line->method = s_take_while(&r, s_is_tchar);
+    if (ah_str_get_len(&req_line->method) == 0u || !s_skip_ch(&r, ' ')) {
         return false;
     }
 
-    req_line->target = s_take_while(r, s_is_rchar);
-    if (ah_str_get_len(&req_line->target) == 0u || !s_skip_ch(r, ' ')) {
+    req_line->target = s_take_while(&r, s_is_rchar);
+    if (ah_str_get_len(&req_line->target) == 0u || !s_skip_ch(&r, ' ')) {
         return false;
     }
 
-    if (!s_parse_version(r, &req_line->version) || !s_skip_crlf(r)) {
+    if (!s_parse_version(&r, &req_line->version) || !s_skip_crlf(&r)) {
         return false;
     }
 
     return true;
 }
 
-static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version)
+static bool s_parse_version(s_reader_t* r, ah_http_ver_t* version)
 {
     if (r->_end - r->_off < 8u) {
         return false;
@@ -168,29 +181,31 @@ static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version)
     return true;
 }
 
-bool ah_i_http_parse_stat_line(ah_i_http_reader_t* r, ah_http_stat_line_t* stat_line)
+bool ah_i_http_parse_stat_line(ah_buf_t* src, ah_http_stat_line_t* stat_line)
 {
-    ah_assert_if_debug(r != NULL);
+    ah_assert_if_debug(src != NULL);
     ah_assert_if_debug(stat_line != NULL);
 
-    if (!s_parse_version(r, &stat_line->version) || !s_skip_ch(r, ' ')) {
+    s_reader_t r = s_reader_from_buf(src);
+
+    if (!s_parse_version(&r, &stat_line->version) || !s_skip_ch(&r, ' ')) {
         return false;
     }
 
-    if (!s_parse_status_code(r, &stat_line->code) || !s_skip_ch(r, ' ')) {
+    if (!s_parse_status_code(&r, &stat_line->code) || !s_skip_ch(&r, ' ')) {
         return false;
     }
 
-    stat_line->reason = s_take_while(r, s_is_vchar_obs_text_htab_sp);
+    stat_line->reason = s_take_while(&r, s_is_vchar_obs_text_htab_sp);
 
-    if (!s_skip_crlf(r)) {
+    if (!s_skip_crlf(&r)) {
         return false;
     }
 
     return true;
 }
 
-static bool s_parse_status_code(ah_i_http_reader_t* r, uint16_t* code)
+static bool s_parse_status_code(s_reader_t* r, uint16_t* code)
 {
     if (r->_end - r->_off < 3u) {
         return false;
@@ -204,6 +219,12 @@ static bool s_parse_status_code(ah_i_http_reader_t* r, uint16_t* code)
     r->_off = &r->_off[3u];
 
     return true;
+}
+
+static s_reader_t s_reader_from_buf(ah_buf_t* buf)
+{
+    uint8_t* off = ah_buf_get_base(buf);
+    return (s_reader_t) { off, &off[ah_buf_get_size(buf)] };
 }
 
 static bool s_is_digit(uint8_t ch)
@@ -255,7 +276,7 @@ static bool s_is_vchar_obs_text_htab_sp(uint8_t ch)
     return (ch >= 0x20 && ch != 0x7F) || ch == '\t';
 }
 
-static bool s_skip_ch(ah_i_http_reader_t* r, char ch)
+static bool s_skip_ch(s_reader_t* r, char ch)
 {
     if (r->_off == r->_end || r->_off[0u] != ch) {
         return false;
@@ -266,7 +287,7 @@ static bool s_skip_ch(ah_i_http_reader_t* r, char ch)
     return true;
 }
 
-static bool s_skip_crlf(ah_i_http_reader_t* r)
+static bool s_skip_crlf(s_reader_t* r)
 {
     if ((size_t) (r->_end - r->_off) < 2u) {
         return false;
@@ -280,14 +301,14 @@ static bool s_skip_crlf(ah_i_http_reader_t* r)
     return true;
 }
 
-static void s_skip_ows(ah_i_http_reader_t* r)
+static void s_skip_ows(s_reader_t* r)
 {
     while (r->_off != r->_end && s_is_ows(r->_off[0u])) {
         r->_off = &r->_off[1u];
     }
 }
 
-static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t))
+static ah_str_t s_take_while(s_reader_t* r, bool (*pred)(uint8_t))
 {
     uint8_t* off = r->_off;
 

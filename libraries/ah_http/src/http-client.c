@@ -68,13 +68,14 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_connect != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
     ah_assert_if_debug(vtab->on_req_sent != NULL);
-    ah_assert_if_debug(vtab->on_res_alloc != NULL);
+    ah_assert_if_debug(vtab->on_res_alloc_head != NULL);
+    ah_assert_if_debug(vtab->on_res_alloc_more != NULL);
     ah_assert_if_debug(vtab->on_res_line != NULL);
     ah_assert_if_debug(vtab->on_res_headers != NULL);
+    ah_assert_if_debug(vtab->on_res_chunk != NULL);
+    ah_assert_if_debug(vtab->on_res_data != NULL);
     ah_assert_if_debug(vtab->on_res_err != NULL);
-    ah_assert_if_debug(vtab->on_res_body_alloc != NULL);
-    ah_assert_if_debug(vtab->on_res_body_data != NULL);
-    ah_assert_if_debug(vtab->on_res_body_done != NULL);
+    ah_assert_if_debug(vtab->on_res_end != NULL);
 
     static const ah_tcp_conn_vtab_t s_vtab = {
         .on_open = s_on_open,
@@ -154,7 +155,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START:
         cln->_ires = NULL;
 
-        cln->_vtab->on_res_alloc(cln, &cln->_ires, buf);
+        cln->_vtab->on_res_alloc_head(cln, &cln->_ires, buf);
 
         if (cln->_ires == NULL) {
             ires_err = &s_ires_err_alloc_failed;
@@ -176,7 +177,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         return;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_BODY:
-        cln->_vtab->on_res_body_alloc(cln, buf);
+        cln->_vtab->on_res_alloc_more(cln, buf);
         return;
 
     default:
