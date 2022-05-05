@@ -93,19 +93,18 @@ static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
     evt->_cb = s_on_sock_recv;
     evt->_subject = sock;
 
-    sock->_recv_buf = NULL;
-
+    sock->_recv_buf = (ah_buf_t) { 0u };
     sock->_vtab->on_recv_alloc(sock, &sock->_recv_buf);
 
     if (!sock->_is_open || !sock->_is_receiving) {
         return;
     }
 
-    if (sock->_recv_buf == NULL || ah_buf_get_size(sock->_recv_buf) == 0u) {
+    if (ah_buf_is_empty(&sock->_recv_buf)) {
         return AH_ENOBUFS;
     }
 
-    WSABUF* buffer = ah_i_buf_into_wsabuf(conn->_recv_buf);
+    WSABUF* buffer = ah_i_buf_into_wsabuf(&conn->_recv_buf);
 
     struct sockaddr* from = ah_i_sockaddr_into_bsd(&sock->recv_addr);
     LPINT fromlen = &sock->recv_addr_ln;
@@ -146,8 +145,10 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt)
         raddr = ah_i_sockaddr_from_bsd(sock->_recv_addr);
     }
 
-    sock->_vtab->on_recv_data(sock, sock->_recv_buf, nrecv, raddr);
-    sock->_recv_buf = NULL;
+    sock->_vtab->on_recv_data(sock, &sock->_recv_buf, nrecv, raddr);
+#ifndef NDEBUG
+    sock->_recv_buf = (ah_buf_t) { 0u };
+#endif
 
     if (!sock->_is_open || !sock->_is_receiving) {
         return;

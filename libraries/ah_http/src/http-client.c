@@ -39,7 +39,7 @@ static const ah_http_ires_err_t s_ires_err_ver_unsupported = {
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf);
+static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
 static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
@@ -144,7 +144,7 @@ static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
     cln->_vtab->on_connect(cln, err);
 }
 
-static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf)
+static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
 
@@ -156,13 +156,13 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf)
 
         cln->_vtab->on_res_alloc(cln, &cln->_ires, buf);
 
-        if (cln->_ires == NULL || *buf == NULL) {
+        if (cln->_ires == NULL) {
             ires_err = &s_ires_err_alloc_failed;
             goto stop_reading_and_report_ires_err;
         }
 
         cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT;
-        cln->_ihead_rd = **buf;
+        cln->_ihead_rd = *buf;
         cln->_ihead_wr = cln->_ihead_rd;
         return;
 
@@ -172,7 +172,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf)
             ires_err = &s_ires_err_head_too_large;
             goto stop_reading_and_report_ires_err;
         }
-        *buf = &cln->_ihead_wr;
+        *buf = cln->_ihead_wr;
         return;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_BODY:

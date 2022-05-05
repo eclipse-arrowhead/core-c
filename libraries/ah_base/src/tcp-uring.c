@@ -117,19 +117,18 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_read;
     evt->_subject = conn;
 
-    conn->_recv_buf = NULL;
-
+    conn->_recv_buf = (ah_but_t) { 0u };
     conn->_vtab->on_read_alloc(conn, &conn->_recv_buf);
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return AH_ENONE;
     }
 
-    if (conn->_recv_buf == NULL || ah_buf_get_size(conn->_recv_buf) == 0u) {
+    if (ah_buf_is_empty(&conn->_recv_buf)) {
         return AH_ENOBUFS;
     }
 
-    io_uring_prep_recv(sqe, conn->_fd, ah_buf_get_base(conn->_recv_buf), ah_buf_get_size(conn->_recv_buf), 0);
+    io_uring_prep_recv(sqe, conn->_fd, ah_buf_get_base(&conn->_recv_buf), ah_buf_get_size(&conn->_recv_buf), 0);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -154,8 +153,10 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
-    conn->_vtab->on_read_data(conn, conn->_recv_buf, cqe->res);
-    conn->_recv_buf = NULL;
+    conn->_vtab->on_read_data(conn, &conn->_recv_buf, cqe->res);
+#ifndef NDEBUG
+    conn->_recv_buf = (ah_but_t) { 0u };
+#endif
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;

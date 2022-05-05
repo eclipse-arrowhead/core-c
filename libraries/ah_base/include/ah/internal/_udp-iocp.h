@@ -17,6 +17,6 @@
     DWORD _recv_flags;                                                                                                 \
     SOCKET _fd;                                                                                                        \
     ah_sockaddr_t _recv_addr;                                                                                          \
-    ah_buf_t* _recv_buf;
+    ah_buf_t _recv_buf;
 
 #endif

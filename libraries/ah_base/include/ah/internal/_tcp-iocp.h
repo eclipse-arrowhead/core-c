@@ -18,7 +18,7 @@
 #define AH_I_TCP_CONN_PLATFORM_FIELDS                                                                                  \
     DWORD _recv_flags;                                                                                                 \
     SOCKET _fd;                                                                                                        \
-    ah_buf_t* _recv_buf;                                                                                               \
+    ah_buf_t _recv_buf;                                                                                                \
     LPFN_CONNECTEX _ConnectEx;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS                                                                              \

@@ -134,7 +134,6 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     ah_err_t err;
-    ah_buf_t* buf = NULL;
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -144,31 +143,32 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     size_t n_bytes_left = kev->data;
 
     while (n_bytes_left != 0u) {
+        ah_buf_t buf = (ah_buf_t) { 0u };
+
         conn->_vtab->on_read_alloc(conn, &buf);
 
         if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
             return;
         }
 
-        if (buf == NULL || ah_buf_get_size(buf) == 0u) {
+        if (ah_buf_is_empty(&buf)) {
             err = AH_ENOBUFS;
             goto report_err;
         }
 
-        ssize_t nread = recv(conn->_fd, ah_buf_get_base(buf), ah_buf_get_size(buf), 0u);
+        ssize_t nread = recv(conn->_fd, ah_buf_get_base(&buf), ah_buf_get_size(&buf), 0u);
         if (nread < 0) {
             err = errno;
             goto report_err;
         }
 
-        conn->_vtab->on_read_data(conn, buf, (size_t) nread);
+        conn->_vtab->on_read_data(conn, &buf, (size_t) nread);
 
         if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
             return;
         }
 
         n_bytes_left -= (size_t) nread;
-        buf = NULL;
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0) && kev->fflags != 0u) {

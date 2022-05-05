@@ -55,7 +55,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     ah_err_t err;
-    ah_buf_t* buf = NULL;
+    ah_buf_t buf = (ah_buf_t) { 0u };
     ah_sockaddr_t* raddr = NULL;
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
@@ -78,7 +78,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     struct sockaddr* name = ah_i_sockaddr_into_bsd(&raddr_buf);
     socklen_t namelen = sizeof(raddr_buf);
 
-    ssize_t nread = recvfrom(sock->_fd, ah_buf_get_base(buf), ah_buf_get_size(buf), 0, name, &namelen);
+    ssize_t nread = recvfrom(sock->_fd, ah_buf_get_base(&buf), ah_buf_get_size(&buf), 0, name, &namelen);
     if (nread < 0) {
         err = errno;
         goto report_err;
@@ -93,7 +93,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err;
     }
 
-    sock->_vtab->on_recv_data(sock, buf, nread, raddr);
+    sock->_vtab->on_recv_data(sock, &buf, nread, raddr);
 
     if (!sock->_is_open || !sock->_is_receiving) {
         return;

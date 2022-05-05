@@ -44,7 +44,7 @@ struct s_udp_sock_user_data {
 
 static void s_on_open(ah_udp_sock_t* sock, ah_err_t err);
 static void s_on_close(ah_udp_sock_t* sock, ah_err_t err);
-static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t** buf);
+static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t* buf);
 static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrecv, const ah_sockaddr_t* raddr);
 static void s_on_recv_err(ah_udp_sock_t* sock, const ah_sockaddr_t* raddr, ah_err_t err);
 static void s_on_send_done(ah_udp_sock_t* sock, size_t nsent, const ah_sockaddr_t* raddr, ah_err_t err);
@@ -96,7 +96,7 @@ static void s_on_close(ah_udp_sock_t* sock, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t** buf)
+static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t* buf)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
     if (user_data == NULL) {
@@ -112,7 +112,7 @@ static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t** buf)
         return;
     }
 
-    *buf = user_data->free_buf;
+    *buf = *user_data->free_buf;
     user_data->free_buf = NULL;
 
     user_data->did_call_recv_alloc_cb = true;

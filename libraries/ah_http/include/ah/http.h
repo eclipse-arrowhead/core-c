@@ -62,12 +62,12 @@ struct ah_http_client_vtab {
 
     void (*on_req_sent)(ah_http_client_t* cln, ah_http_oreq_t* req);
 
-    void (*on_res_alloc)(ah_http_client_t* cln, ah_http_ires_t** res, ah_buf_t** buf);
+    void (*on_res_alloc)(ah_http_client_t* cln, ah_http_ires_t** res, ah_buf_t* buf);
     void (*on_res_line)(ah_http_client_t* cln, ah_http_ires_t* res);
     void (*on_res_headers)(ah_http_client_t* cln, ah_http_ires_t* res);
     void (*on_res_err)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_http_ires_err_t* err);
 
-    void (*on_res_body_alloc)(ah_http_client_t* cln, ah_buf_t** buf);
+    void (*on_res_body_alloc)(ah_http_client_t* cln, ah_buf_t* buf);
     void (*on_res_body_data)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_buf_t* buf, size_t rem);
     void (*on_res_body_done)(ah_http_client_t* cln, ah_http_ires_t* res);
 };
@@ -81,12 +81,12 @@ struct ah_http_server_vtab {
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 
-    void (*on_req_alloc)(ah_http_server_t* srv, ah_http_ireq_t** req, ah_buf_t** buf, ah_http_ores_t** res);
+    void (*on_req_alloc)(ah_http_server_t* srv, ah_http_ireq_t** req, ah_buf_t* buf, ah_http_ores_t** res);
     void (*on_req_line)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_headers)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_err)(ah_http_server_t* srv, ah_http_ireq_t* req, const ah_http_ireq_err_t* err, ah_http_ores_t* res);
 
-    void (*on_req_body_alloc)(ah_http_server_t* srv, ah_buf_t** buf, ah_http_ores_t* res);
+    void (*on_req_body_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_ores_t* res);
     void (*on_req_body_data)(ah_http_server_t* srv, ah_http_ireq_t* req, const ah_buf_t* buf, size_t rem,
         ah_http_ores_t* res);
     void (*on_req_body_done)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);

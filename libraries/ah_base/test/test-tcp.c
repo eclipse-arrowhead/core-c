@@ -52,7 +52,7 @@ void test_tcp(ah_unit_t* unit)
 static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf);
+static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
 static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
 static void s_on_conn_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err);
@@ -141,7 +141,7 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf)
+static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
@@ -149,7 +149,7 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf)
         return;
     }
 
-    *buf = user_data->free_buf;
+    *buf = *user_data->free_buf;
     user_data->free_buf = NULL;
 
     user_data->did_call_read_alloc_cb = true;
