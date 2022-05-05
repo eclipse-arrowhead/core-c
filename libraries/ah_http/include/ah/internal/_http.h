@@ -24,7 +24,7 @@
 #define AH_I_HTTP_CLIENT_OSTATE_SENDING_BODY 2u
 
 #define AH_I_HTTP_OBODY_KIND_BUF      1u
-#define AH_I_HTTP_OBODY_KIND_BUFVEC   2u
+#define AH_I_HTTP_OBODY_KIND_BUFS     2u
 #define AH_I_HTTP_OBODY_KIND_CALLBACK 3u
 
 #define AH_I_HTTP_CLIENT_FIELDS                                                                                        \

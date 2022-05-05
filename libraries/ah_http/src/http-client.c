@@ -25,19 +25,9 @@ static const ah_http_ires_err_t s_ires_err_format_invalid = {
     AH_HTTP_IRES_ERR_FORMAT_INVALID,
     AH_EILSEQ,
 };
-static const ah_http_ires_err_t s_ires_err_headers_too_large = {
-    "headers section too large",
-    AH_HTTP_IRES_ERR_HEADERS_TOO_LARGE,
-    AH_ENOBUFS,
-};
-static const ah_http_ires_err_t s_ires_err_headers_too_many = {
-    "too many headers",
-    AH_HTTP_IRES_ERR_HEADERS_TOO_MANY,
-    AH_ENOBUFS,
-};
-static const ah_http_ires_err_t s_ires_err_stat_line_too_long = {
-    "status line too long",
-    AH_HTTP_IRES_ERR_STAT_LINE_TOO_LONG,
+static const ah_http_ires_err_t s_ires_err_head_too_large = {
+    "status line and headers too large for allocated head buffer",
+    AH_HTTP_IRES_ERR_HEAD_TOO_LARGE,
     AH_ENOBUFS,
 };
 static const ah_http_ires_err_t s_ires_err_ver_unsupported = {
@@ -63,9 +53,6 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     }
 
     (void) s_ires_err_format_invalid;
-    (void) s_ires_err_headers_too_large;
-    (void) s_ires_err_headers_too_many;
-    (void) s_ires_err_stat_line_too_long;
     (void) s_ires_err_ver_unsupported;
 
     ah_assert_if_debug(trans._vtab->conn_init != NULL);
@@ -169,7 +156,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf)
 
         cln->_vtab->on_res_alloc(cln, &cln->_ires, buf);
 
-        if (cln->_ires == NULL) {
+        if (cln->_ires == NULL || *buf == NULL) {
             ires_err = &s_ires_err_alloc_failed;
             goto stop_reading_and_report_ires_err;
         }
@@ -180,16 +167,9 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t** buf)
         return;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT:
-        if (ah_buf_is_empty(&cln->_ihead_wr)) {
-            ires_err = &s_ires_err_stat_line_too_long;
-            goto stop_reading_and_report_ires_err;
-        }
-        *buf = &cln->_ihead_wr;
-        return;
-
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS:
         if (ah_buf_is_empty(&cln->_ihead_wr)) {
-            ires_err = &s_ires_err_headers_too_large;
+            ires_err = &s_ires_err_head_too_large;
             goto stop_reading_and_report_ires_err;
         }
         *buf = &cln->_ihead_wr;

@@ -25,9 +25,7 @@
 #define AH_HTTP_IRES_ERR_ALLOC_FAILED       8901u
 #define AH_HTTP_IRES_ERR_BUFFER_OVERFLOW    8902u
 #define AH_HTTP_IRES_ERR_FORMAT_INVALID     8903u
-#define AH_HTTP_IRES_ERR_HEADERS_TOO_LARGE  8904u
-#define AH_HTTP_IRES_ERR_HEADERS_TOO_MANY   8905u
-#define AH_HTTP_IRES_ERR_STAT_LINE_TOO_LONG 8906u
+#define AH_HTTP_IRES_ERR_HEAD_TOO_LARGE     8904u
 #define AH_HTTP_IRES_ERR_TRANSPORT_ERROR    8907u
 #define AH_HTTP_IRES_ERR_VER_UNSUPPORTED    8908u
 
@@ -234,7 +232,7 @@ ah_inline ah_http_obody_t ah_http_obody_buf(ah_buf_t buf)
 
 ah_inline ah_http_obody_t ah_http_obody_bufs(ah_bufs_t bufs)
 {
-    return (ah_http_obody_t) { ._as_bufs._kind = AH_I_HTTP_OBODY_KIND_BUFVEC, ._as_bufs._bufs = bufs };
+    return (ah_http_obody_t) { ._as_bufs._kind = AH_I_HTTP_OBODY_KIND_BUFS, ._as_bufs._bufs = bufs };
 }
 
 ah_inline ah_http_obody_t ah_http_obody_callback(ah_http_obody_cb cb)
