@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/http.h"
+#include "http-hmap.h"
 
 #include <ah/assert.h>
 #include <ah/err.h>
@@ -12,6 +12,7 @@
 
 static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t* hmap, ah_str_t name);
 static uint32_t s_hash_header_name(ah_str_t name);
+static bool s_is_chunked(ah_str_t csv);
 static uint8_t s_to_lower(uint8_t ch);
 
 ah_extern ah_err_t ah_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_header* headers, size_t len)
@@ -197,4 +198,65 @@ ah_extern bool ah_http_hmap_has_csv(ah_http_hmap_t* hmap, ah_str_t name, ah_http
             return true;
         }
     }
+}
+
+bool ah_i_http_hmap_is_transfer_encoding_chunked(ah_http_hmap_t* hmap)
+{
+    return ah_http_hmap_has_csv(hmap, ah_str_from_cstr("transfer-encoding"), s_is_chunked);
+}
+
+static bool s_is_chunked(ah_str_t csv)
+{
+    return ah_str_eq_ignore_case_ascii(csv, ah_str_from_cstr("chunked"));
+}
+
+ah_err_t ah_i_http_hmap_get_content_length(ah_http_hmap_t* hmap, size_t* content_length)
+{
+    bool has_next;
+    const ah_str_t* str = ah_http_hmap_get_value(&cln->_ires->headers, ah_str_from_cstr("content-length"), &has_next);
+
+    if (str == NULL) {
+        if (has_next) {
+            return AH_EEXIST;
+        }
+        *content_length = 0u;
+        return AH_ENONE;
+    }
+
+    ah_err_t err;
+    size_t size = 0u;
+
+    const char* off = ah_str_get_ptr(&str);
+    const char* const end = &off[ah_str_get_len(&str)];
+
+    if (off == end) {
+        return AH_EILSEQ;
+    }
+
+    for (;;) {
+        const char ch = off[0u];
+        if (ch <= '0' || ch >= '9') {
+            return AH_EILSEQ;
+        }
+
+        err = ah_mul_size(size, 10u, &size);
+        if (err != AH_ENONE) {
+            return err;
+        }
+
+        err = ah_add_size(size, ch - '0', &size);
+        if (err != AH_ENONE) {
+            return err;
+        }
+
+        if (off == end) {
+            break;
+        }
+
+        off = &off[1u];
+    }
+
+    *content_length = size;
+
+    return AH_ENONE;
 }

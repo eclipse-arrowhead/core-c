@@ -8,6 +8,7 @@ set(
     include/ah/internal/_http.h
     src/http-client.c
     src/http-hmap.c
+    src/http-hmap.h
     src/http-parser.c
     src/http-parser.h
     src/http-server.c

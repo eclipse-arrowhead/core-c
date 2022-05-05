@@ -38,7 +38,8 @@
     ah_buf_t _ihead_wr;                                                                                                \
     size_t _i_n_bytes_expected;                                                                                        \
     uint8_t _istate;                                                                                                   \
-    uint8_t _ostate;
+    uint8_t _ostate;                                                                                                   \
+    uint16_t _n_pending_responses;
 
 #define AH_I_HTTP_SERVER_FIELDS                                                                                        \
     ah_tcp_listener_t _ln;                                                                                             \

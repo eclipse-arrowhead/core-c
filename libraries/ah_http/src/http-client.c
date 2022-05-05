@@ -6,6 +6,7 @@
 
 #include "ah/http.h"
 
+#include "http-hmap.h"
 #include "http-parser.h"
 
 #include <ah/err.h>
@@ -49,9 +50,6 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
 static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
-
-static bool s_is_chunked(ah_str_t csv);
-static ah_err_t s_str_dec_to_size(ah_str_t str, size_t* size);
 
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 
@@ -105,7 +103,7 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     cln->_vtab = vtab;
 
     cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING;
-    cln->_ostate = AH_I_HTTP_CLIENT_OSTATE_READY;
+    cln->_istate = AH_I_HTTP_CLIENT_OSTATE_READY;
 
     return AH_ENONE;
 }
@@ -231,7 +229,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             return;
         }
 
-        cln->_ostate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS;
+        cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS;
         // fallthrough
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS:
@@ -254,40 +252,41 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             return;
         }
 
-        if (ah_http_hmap_has_csv(&cln->_ires->headers, ah_str_from_cstr("transfer-encoding"), s_is_chunked)) {
-            cln->_ostate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK;
+        if (ah_i_http_hmap_is_transfer_encoding_chunked(&cln->_ires->headers)) {
+            cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK;
             return;
         }
 
-        bool has_next;
-        const ah_str_t* content_length = ah_http_hmap_get_value(&cln->_ires->headers,
-            ah_str_from_cstr("content-length"), &has_next);
-
-        if (content_length == NULL) {
-            if (has_next) {
-                ires_err = NULL; // TODO.
-                goto close_conn_and_report_ires_err;
-            }
-            cln->_i_n_bytes_expected = 0u;
-        }
-        else {
-            err = s_str_dec_to_size(*content_length, &cln->_i_n_bytes_expected);
-            switch (err) {
-            case AH_ENONE:
-                cln->_ostate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA;
+        err = ah_i_http_hmap_get_content_length(&cln->_ires->headers, &cln->_i_n_bytes_expected);
+        switch (err) {
+        case AH_ENONE:
+            if (cln->_i_n_bytes_expected == 0u) {
+                cln->_n_pending_responses -= 1u;
+                if (cln->_n_pending_responses == 0u) {
+                    cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING;
+                }
+                else {
+                    cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START;
+                }
                 break;
-
-            case AH_EILSEQ:
-                ires_err = NULL; // TODO.
-                goto close_conn_and_report_ires_err;
-
-            case AH_ERANGE:
-                ires_err = NULL; // TODO.
-                goto close_conn_and_report_ires_err;
-
-            default:
-                ah_unreachable();
             }
+            cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA;
+            break;
+
+        case AH_EEXIST:
+            ires_err = NULL; // TODO.
+            goto close_conn_and_report_ires_err;
+
+        case AH_EILSEQ:
+            ires_err = NULL; // TODO.
+            goto close_conn_and_report_ires_err;
+
+        case AH_ERANGE:
+            ires_err = NULL; // TODO.
+            goto close_conn_and_report_ires_err;
+
+        default:
+            ah_unreachable();
         }
 
         return;
@@ -310,51 +309,6 @@ close_conn_and_report_ires_err:
     cln->_vtab->on_res_err(cln, NULL, ires_err);
 }
 
-static bool s_is_chunked(ah_str_t csv)
-{
-    return ah_str_eq_ignore_case_ascii(csv, ah_str_from_cstr("chunked"));
-}
-
-static ah_err_t s_str_dec_to_size(ah_str_t str, size_t* size)
-{
-    ah_err_t err;
-    size_t size0 = 0u;
-
-    const char* off = ah_str_get_ptr(&str);
-    const char* const end = &off[ah_str_get_len(&str)];
-
-    if (off == end) {
-        return AH_EILSEQ;
-    }
-
-    for (;;) {
-        const char ch = off[0u];
-        if (ch <= '0' || ch >= '9') {
-            return AH_EILSEQ;
-        }
-
-        err = ah_mul_size(size0, 10u, &size0);
-        if (err != AH_ENONE) {
-            return err;
-        }
-
-        err = ah_add_size(size0, ch - '0', &size0);
-        if (err != AH_ENONE) {
-            return err;
-        }
-
-        if (off == end) {
-            break;
-        }
-
-        off = &off[1u];
-    }
-
-    *size = size0;
-
-    return AH_ENONE;
-}
-
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
@@ -374,12 +328,15 @@ ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, const ah_http_o
         return AH_EINVAL;
     }
 
-    ah_err_t err = ah_tcp_conn_read_start(&cln->_conn);
+    // TODO: Send message.
 
-    (void) err;
-    (void) cln;
-    (void) req;
-    return AH_EOPNOTSUPP; // TODO: Implement.
+    if (cln->_n_pending_responses == 0u) {
+        ah_assert_if_debug(cln->_istate == AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING);
+        cln->_istate = AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START;
+    }
+    cln->_n_pending_responses += 1u; // TODO: Check overflow.
+
+    return AH_EOPNOTSUPP; // TODO: Change to AH_ENONE once implemented.
 }
 
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)

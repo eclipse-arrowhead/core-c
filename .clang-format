@@ -2,6 +2,7 @@ AlignAfterOpenBracket: DontAlign
 AlignArrayOfStructures: Left
 AlignConsecutiveBitFields: Consecutive
 AlignConsecutiveMacros: Consecutive
+AlignOperands: false
 AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: false
 AllowShortBlocksOnASingleLine: Empty
@@ -19,18 +20,19 @@ BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: false
 BreakBeforeBraces: Custom
+BreakBeforeTernaryOperators: true
 ColumnLimit: 120
 ContinuationIndentWidth: 4
 DerivePointerAlignment: false
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:    '^"[^"]*"$'
+  - Regex: '^"[^"]*"$'
     Priority: 1
-  - Regex:    '^<windows\.h>$'
+  - Regex: '^<windows\.h>$'
     Priority: 2
-  - Regex:    '^<winsock2\.h>$'
+  - Regex: '^<winsock2\.h>$'
     Priority: 3
-  - Regex:    '^<[^>]*>$'
+  - Regex: '^<[^>]*>$'
     Priority: 4
 IncludeIsMainRegex: '(-[0-9a-z]+)?$'
 IndentPPDirectives: AfterHash
