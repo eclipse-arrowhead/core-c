@@ -20,14 +20,14 @@
 #define AH_HTTP_IREQ_ERR_HOST_UNSPECIFIED           8705u
 #define AH_HTTP_IREQ_ERR_INTERNAL                   8706u
 #define AH_HTTP_IREQ_ERR_REQ_LINE_TOO_LONG          8707u
-#define AH_HTTP_IREQ_ERR_VER_UNSUPPORTED            8708u
 
-#define AH_HTTP_IRES_ERR_ALLOC_FAILED    8901u
-#define AH_HTTP_IRES_ERR_BUFFER_OVERFLOW 8902u
-#define AH_HTTP_IRES_ERR_FORMAT_INVALID  8903u
-#define AH_HTTP_IRES_ERR_HEAD_TOO_LARGE  8904u
-#define AH_HTTP_IRES_ERR_TRANSPORT_ERROR 8907u
-#define AH_HTTP_IRES_ERR_VER_UNSUPPORTED 8908u
+#define AH_HTTP_IRES_ERR_ALLOC_FAILED        8901u
+#define AH_HTTP_IRES_ERR_BUFFER_OVERFLOW     8902u
+#define AH_HTTP_IRES_ERR_HEAD_TOO_LARGE      8903u
+#define AH_HTTP_IRES_ERR_INVALID_HEADERS     8904u
+#define AH_HTTP_IRES_ERR_INVALID_STAT_LINE   8905u
+#define AH_HTTP_IRES_ERR_TRAILER_TOO_LARGE   8906u
+#define AH_HTTP_IRES_ERR_TRANSPORT_ERROR     8907u
 
 typedef struct ah_http_chunk ah_http_chunk_t;
 typedef struct ah_http_client ah_http_client_t;
@@ -51,6 +51,7 @@ typedef struct ah_http_ver ah_http_ver_t;
 
 typedef union ah_http_obody ah_http_obody_t;
 
+typedef bool (*ah_http_hmap_csv_pred_cb)(ah_str_t);
 typedef void (*ah_http_obody_cb)(ah_bufs_t*);
 
 struct ah_http_client {
@@ -236,8 +237,10 @@ ah_inline void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_da
 ah_extern ah_err_t ah_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_header* headers, size_t len);
 ah_extern ah_err_t ah_http_hmap_add(struct ah_http_hmap* hmap, ah_str_t name, ah_str_t value);
 ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, ah_str_t name, bool* has_next);
-ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, ah_str_t name);
-ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter);
+ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_iter(const ah_http_hmap_t* headers, ah_str_t name);
+ah_extern ah_str_t ah_http_hmap_next_csv(ah_http_hmap_value_iter_t* iter);
+ah_extern const ah_str_t* ah_http_hmap_next_fiv(ah_http_hmap_value_iter_t* iter);
+ah_extern bool ah_http_hmap_has_csv(ah_http_hmap_t* hmap, ah_str_t name, ah_http_hmap_csv_pred_cb pred);
 
 ah_inline ah_http_obody_t ah_http_obody_buf(ah_buf_t buf)
 {

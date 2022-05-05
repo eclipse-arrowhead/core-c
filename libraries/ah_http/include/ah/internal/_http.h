@@ -17,7 +17,9 @@
 #define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START 1u
 #define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT  2u
 #define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS        3u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_BODY           4u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK          4u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA           5u
+#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_TRAILER        6u
 
 #define AH_I_HTTP_CLIENT_OSTATE_READY        0u
 #define AH_I_HTTP_CLIENT_OSTATE_SENDING_HEAD 1u
@@ -34,6 +36,7 @@
     ah_http_ires_t* _ires;                                                                                             \
     ah_buf_t _ihead_rd;                                                                                                \
     ah_buf_t _ihead_wr;                                                                                                \
+    size_t _i_n_bytes_expected;                                                                                        \
     uint8_t _istate;                                                                                                   \
     uint8_t _ostate;
 
@@ -47,7 +50,9 @@
     uint16_t _count;                                                                                                   \
     struct ah_i_http_hmap_header* _headers;
 
-#define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS const struct ah_i_http_hmap_header* _header;
+#define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS                                                                               \
+    const struct ah_i_http_hmap_header* _header;                                                                       \
+    size_t _value_off;
 
 #define AH_I_HTTP_OBODY_FIELDS                                                                                         \
     struct ah_i_http_obody_any _as_any;                                                                                \

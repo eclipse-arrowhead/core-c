@@ -23,7 +23,7 @@ union ah_str {
     AH_I_STR_FIELDS
 };
 
-ah_inline ah_str_t ah_str_from(void* str, size_t len)
+ah_inline ah_str_t ah_str_from(const void* str, size_t len)
 {
     ah_assert_if_debug(str != NULL || len == 0u);
 
@@ -39,7 +39,8 @@ ah_inline ah_str_t ah_str_from(void* str, size_t len)
     return res;
 }
 
-ah_inline ah_str_t ah_str_from_buf(ah_buf_t buf) {
+ah_inline ah_str_t ah_str_from_buf(ah_buf_t buf)
+{
     return ah_str_from(ah_buf_get_base(&buf), ah_buf_get_size(&buf));
 }
 
@@ -62,7 +63,7 @@ ah_inline size_t ah_str_get_len(const ah_str_t* str)
     return str->_as_any._len;
 }
 
-ah_inline char* ah_str_get_ptr(ah_str_t* str)
+ah_inline const char* ah_str_get_ptr(const ah_str_t* str)
 {
     ah_assert_if_debug(str != NULL);
     return ah_str_is_inlined(str) ? str->_as_inl._buf : str->_as_ptr._ptr;

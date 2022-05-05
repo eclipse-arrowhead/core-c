@@ -9,10 +9,11 @@
 
 #include "ah/http.h"
 
-bool ah_i_http_buf_has_line_end(const ah_buf_t* buf);
-bool ah_i_http_buf_has_headers_end(const ah_buf_t* buf);
+bool ah_i_http_buf_has_crlf(const ah_buf_t* buf);
+bool ah_i_http_buf_has_crlfx2(const ah_buf_t* buf);
 
 ah_err_t ah_i_http_parse_headers(ah_buf_t* src, ah_http_hmap_t* hmap);
+
 bool ah_i_http_parse_req_line(ah_buf_t* src, ah_http_req_line_t* req_line);
 bool ah_i_http_parse_stat_line(ah_buf_t* src, ah_http_stat_line_t* stat_line);
 

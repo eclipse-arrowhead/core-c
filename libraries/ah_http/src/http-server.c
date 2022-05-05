@@ -45,12 +45,6 @@ static const ah_http_ireq_err_t s_ireq_err_req_line_too_long = {
     400,
     AH_ENOBUFS,
 };
-static const ah_http_ireq_err_t s_ireq_err_ver_unsupported = {
-    "HTTP version not supported",
-    AH_HTTP_IREQ_ERR_VER_UNSUPPORTED,
-    505,
-    AH_ENOBUFS,
-};
 
 static void s_on_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listen(ah_tcp_listener_t* ln, ah_err_t err);
@@ -75,7 +69,6 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     (void) s_ireq_err_host_respecified;
     (void) s_ireq_err_host_unspecified;
     (void) s_ireq_err_req_line_too_long;
-    (void) s_ireq_err_ver_unsupported;
     (void) s_ireq_err_internal_error_from;
 
     ah_assert_if_debug(trans._vtab->conn_init != NULL);

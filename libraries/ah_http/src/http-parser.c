@@ -36,7 +36,7 @@ static void s_skip_ows(s_reader_t* r);
 
 static ah_str_t s_take_while(s_reader_t* r, bool (*pred)(uint8_t));
 
-bool ah_i_http_buf_has_line_end(const ah_buf_t* buf)
+bool ah_i_http_buf_has_crlf(const ah_buf_t* buf)
 {
     ah_assert_if_debug(buf != NULL);
 
@@ -60,7 +60,7 @@ bool ah_i_http_buf_has_line_end(const ah_buf_t* buf)
     return false;
 }
 
-bool ah_i_http_buf_has_headers_end(const ah_buf_t* buf)
+bool ah_i_http_buf_has_crlfx2(const ah_buf_t* buf)
 {
     ah_assert_if_debug(buf != NULL);
 
@@ -158,6 +158,8 @@ bool ah_i_http_parse_req_line(ah_buf_t* src, ah_http_req_line_t* req_line)
         return false;
     }
 
+    (void) ah_buf_init(src, r._off, r._end - r._off);
+
     return true;
 }
 
@@ -201,6 +203,8 @@ bool ah_i_http_parse_stat_line(ah_buf_t* src, ah_http_stat_line_t* stat_line)
     if (!s_skip_crlf(&r)) {
         return false;
     }
+
+    (void) ah_buf_init(src, r._off, r._end - r._off);
 
     return true;
 }

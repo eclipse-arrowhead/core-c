@@ -124,7 +124,7 @@ static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t*
     return NULL;
 }
 
-ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t* headers, ah_str_t name)
+ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_iter(const ah_http_hmap_t* headers, ah_str_t name)
 {
     ah_assert_if_debug(headers != NULL);
 
@@ -133,7 +133,46 @@ ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_values(const ah_http_hmap_t
     return iter;
 }
 
-ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter)
+ah_extern ah_str_t ah_http_hmap_next_csv(ah_http_hmap_value_iter_t* iter)
+{
+    ah_assert_if_debug(iter != NULL);
+
+    if (iter->_header == NULL) {
+        return (ah_str_t) { 0u };
+    }
+
+    const ah_str_t* value = &iter->_header->_value;
+
+    const char* csv_ptr;
+    size_t csv_len;
+
+    const char* off = ah_str_get_ptr(value);
+    const char* const end = &off[ah_str_get_len(value)];
+
+    for (off = &off[iter->_value_off]; off < end; off = &off[1u]) {
+        const char ch = *off;
+        if (ch == '\t' || ch == ' ' || ch == ',') {
+            continue;
+        }
+        csv_ptr = off;
+        break;
+    }
+
+    for (;; off = &off[1u]) {
+        if (off == end) {
+            iter->_header = iter->_header->_next_with_same_name;
+            break;
+        }
+        if (*off != ',') {
+            break;
+        }
+    }
+    csv_len = end - off;
+
+    return ah_str_from(csv_ptr, csv_len);
+}
+
+ah_extern const ah_str_t* ah_http_hmap_next_fiv(ah_http_hmap_value_iter_t* iter)
 {
     ah_assert_if_debug(iter != NULL);
 
@@ -144,4 +183,18 @@ ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* ite
     const ah_str_t* value = &iter->_header->_value;
     iter->_header = iter->_header->_next_with_same_name;
     return value;
+}
+
+ah_extern bool ah_http_hmap_has_csv(ah_http_hmap_t* hmap, ah_str_t name, ah_http_hmap_csv_pred_cb pred)
+{
+    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_iter(hmap, name);
+    for (;;) {
+        ah_str_t csv = ah_http_hmap_next_csv(&iter);
+        if (ah_str_get_len(&csv) == 0u) {
+            return false;
+        }
+        if (pred(csv)) {
+            return true;
+        }
+    }
 }
