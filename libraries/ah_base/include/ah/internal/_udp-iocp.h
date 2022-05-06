@@ -11,12 +11,14 @@
 
 #include <mswsock.h>
 
-#define AH_I_UDP_OMSG_PLATFORM_FIELDS WSAMSG _wsamsg;
-#define AH_I_UDP_SOCK_PLATFORM_FIELDS                                                                                  \
-    int _recv_addr_len;                                                                                                \
-    DWORD _recv_flags;                                                                                                 \
-    SOCKET _fd;                                                                                                        \
-    ah_sockaddr_t _recv_addr;                                                                                          \
-    ah_buf_t _recv_buf;
+#define AH_I_UDP_OMSG_PLATFORM_FIELDS \
+ WSAMSG _wsamsg;
+
+#define AH_I_UDP_SOCK_PLATFORM_FIELDS \
+ int _recv_addr_len;                  \
+ DWORD _recv_flags;                   \
+ SOCKET _fd;                          \
+ ah_sockaddr_t _recv_addr;            \
+ ah_buf_t _recv_buf;
 
 #endif

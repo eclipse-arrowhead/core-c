@@ -9,13 +9,16 @@
 
 #include <stddef.h>
 
-#define AH_I_STR_FIELDS                                                                                                \
-    struct ah_i_str_any _as_any;                                                                                       \
-    struct ah_i_str_ptr _as_ptr;                                                                                       \
-    struct ah_i_str_inl _as_inl;
+#define AH_I_STR_FIELDS       \
+ struct ah_i_str_any _as_any; \
+ struct ah_i_str_ptr _as_ptr; \
+ struct ah_i_str_inl _as_inl;
 
-#define AH_I_STR_COMMON_FIELDS size_t _len;
-#define AH_I_STR_INL_BUF_SIZE  sizeof(char*)
+#define AH_I_STR_COMMON_FIELDS \
+ size_t _len;
+
+#define AH_I_STR_INL_BUF_SIZE \
+ sizeof(char*)
 
 struct ah_i_str_any {
     AH_I_STR_COMMON_FIELDS

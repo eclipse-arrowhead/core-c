@@ -11,9 +11,9 @@
 #include <string.h>
 
 #ifdef _MSC_VER
-#    pragma warning(disable : 4996)
-#    define popen  _popen
-#    define pclose _pclose
+# pragma warning(disable : 4996)
+# define popen  _popen
+# define pclose _pclose
 #endif
 
 int main(const int argc, const char** argv)

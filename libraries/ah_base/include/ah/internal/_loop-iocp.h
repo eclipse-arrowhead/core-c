@@ -14,13 +14,13 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#define AH_I_LOOP_PLATFORM_FIELDS                                                                                      \
-    HANDLE _iocp_handle;                                                                                               \
-    struct ah_i_loop_task_queue _task_queue;
+#define AH_I_LOOP_PLATFORM_FIELDS \
+ HANDLE _iocp_handle;             \
+ struct ah_i_loop_task_queue _task_queue;
 
-#define AH_I_LOOP_EVT_PLATFORM_FIELDS                                                                                  \
-    void (*_cb)(ah_i_loop_evt_t*);                                                                                     \
-    OVERLAPPED _overlapped;
+#define AH_I_LOOP_EVT_PLATFORM_FIELDS \
+ void (*_cb)(ah_i_loop_evt_t*);       \
+ OVERLAPPED _overlapped;
 
 struct ah_i_loop_task_entry {
     ah_time_t _baseline;

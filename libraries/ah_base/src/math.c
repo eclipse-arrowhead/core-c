@@ -10,8 +10,8 @@
 #include "ah/intrin.h"
 
 #if AH_IS_WIN32
-#    define ENABLE_INTSAFE_SIGNED_FUNCTIONS
-#    include <intsafe.h>
+# define ENABLE_INTSAFE_SIGNED_FUNCTIONS
+# include <intsafe.h>
 #endif
 
 ah_extern ah_err_t ah_add_int64(const int64_t a, const int64_t b, int64_t* result)

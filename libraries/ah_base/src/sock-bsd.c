@@ -11,17 +11,17 @@
 #include "ah/loop.h"
 
 #if AH_IS_DARWIN
-#    include <fcntl.h>
+# include <fcntl.h>
 #elif AH_IS_WIN32
-#    include <ws2ipdef.h>
+# include <ws2ipdef.h>
 #endif
 
 #if AH_HAS_POSIX
-#    include <unistd.h>
+# include <unistd.h>
 #endif
 
 #if AH_IS_WIN32
-#    define close closesocket
+# define close closesocket
 #endif
 
 ah_extern ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
@@ -128,11 +128,11 @@ ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* lad
     }
     else {
         sockfamily = AH_SOCKFAMILY_DEFAULT;
-#    if AH_SOCKFAMILY_DEFAULT == AH_SOCKFAMILY_IPV6
+# if AH_SOCKFAMILY_DEFAULT == AH_SOCKFAMILY_IPV6
         laddr = (ah_sockaddr_t*) &ah_sockaddr_ipv6_wildcard;
-#    else
+# else
         laddr = (ah_sockaddr_t*) &ah_sockaddr_ipv4_wildcard;
-#    endif
+# endif
     }
 #else
     const int sockfamily = laddr != NULL ? laddr->as_any.family : AH_SOCKFAMILY_DEFAULT;

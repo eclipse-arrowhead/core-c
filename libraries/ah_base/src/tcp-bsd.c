@@ -13,16 +13,16 @@
 #include <stddef.h>
 
 #if AH_HAS_POSIX
-#    include <netinet/tcp.h>
-#    include <sys/socket.h>
+# include <netinet/tcp.h>
+# include <sys/socket.h>
 #elif AH_IS_WIN32
-#    include <winsock2.h>
+# include <winsock2.h>
 #endif
 
 #if AH_IS_WIN32
-#    define SHUT_RD   SD_RECEIVE
-#    define SHUT_WR   SD_SEND
-#    define SHUT_RDWR SD_BOTH
+# define SHUT_RD   SD_RECEIVE
+# define SHUT_WR   SD_SEND
+# define SHUT_RDWR SD_BOTH
 #endif
 
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
@@ -124,7 +124,7 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t f
         return AH_ESTATE;
     }
 
-#if SHUT_RD == (AH_TCP_SHUTDOWN_RD - 1) && SHUT_WR == (AH_TCP_SHUTDOWN_WR - 1)                                         \
+#if SHUT_RD == (AH_TCP_SHUTDOWN_RD - 1) && SHUT_WR == (AH_TCP_SHUTDOWN_WR - 1) \
     && SHUT_RDWR == (AH_TCP_SHUTDOWN_RDWR - 1)
 
     const int how = ((int) flags) - 1;

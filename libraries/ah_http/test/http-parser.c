@@ -34,11 +34,12 @@ static void s_should_parse_headers(ah_unit_t* unit)
         return;
     }
 
-    ah_buf_t buf = s_buf_from("Accept: application/json, application/cbor\r\n"
-                              "Content-Type: application/json; charset=utf-8\r\n"
-                              "Content-Length:   143  \r\n"
-                              "Host:  192.168.4.44:44444 \r\n"
-                              "\r\n");
+    ah_buf_t buf = s_buf_from(
+        "Accept: application/json, application/cbor\r\n"
+        "Content-Type: application/json; charset=utf-8\r\n"
+        "Content-Length:   143  \r\n"
+        "Host:  192.168.4.44:44444 \r\n"
+        "\r\n");
 
     err = ah_i_http_parse_headers(&buf, &headers);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {

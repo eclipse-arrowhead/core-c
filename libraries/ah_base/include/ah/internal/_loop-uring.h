@@ -11,8 +11,11 @@
 
 #include <liburing.h>
 
-#define AH_I_LOOP_PLATFORM_FIELDS     struct io_uring _uring;
-#define AH_I_LOOP_EVT_PLATFORM_FIELDS void (*_cb)(ah_i_loop_evt_t*, struct io_uring_cqe*);
+#define AH_I_LOOP_PLATFORM_FIELDS \
+ struct io_uring _uring;
+
+#define AH_I_LOOP_EVT_PLATFORM_FIELDS \
+ void (*_cb)(ah_i_loop_evt_t*, struct io_uring_cqe*);
 
 // All error codes returned by this function are safe to ignore.
 //

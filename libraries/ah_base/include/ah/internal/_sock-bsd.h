@@ -16,15 +16,16 @@
 #include "../defs.h"
 
 #if AH_HAS_POSIX
-#    include <netinet/in.h>
+# include <netinet/in.h>
 #elif AH_IS_WIN32
-#    define WIN32_LEAN_AND_MEAN
-#    include <windows.h>
-#    include <winsock2.h>
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
+
+# include <winsock2.h>
 #endif
 
 #ifdef SIN6_LEN
-#    define AH_I_SOCKADDR_HAS_SIZE 1
+# define AH_I_SOCKADDR_HAS_SIZE 1
 #endif
 
 #define AH_I_SOCKFAMILY_IPV4 AF_INET

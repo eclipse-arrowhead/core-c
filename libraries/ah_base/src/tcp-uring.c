@@ -356,7 +356,8 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
 
     ah_err_t err;
 
-    int backlog_int = (backlog == 0u ? 16 : backlog <= SOMAXCONN ? (int) backlog : SOMAXCONN);
+    int backlog_int = (backlog == 0u ? 16 : backlog <= SOMAXCONN ? (int) backlog
+                                                                 : SOMAXCONN);
     if (listen(ln->_fd, backlog_int) != 0) {
         err = errno;
         ln->_vtab->on_listen(ln, err);

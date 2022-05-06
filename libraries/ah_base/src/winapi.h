@@ -11,6 +11,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
 #include <winsock2.h>
 
 ah_err_t ah_i_winapi_get_wsa_fn(SOCKET fd, GUID* guid, void** fn);

@@ -8,7 +8,7 @@
 #include "ah/unit.h"
 
 #if AH_HAS_BSD_SOCKETS && AH_IS_WIN32
-#    include <ws2ipdef.h>
+# include <ws2ipdef.h>
 #endif
 
 #if AH_HAS_BSD_SOCKETS
@@ -27,17 +27,17 @@ void test_sock(ah_unit_t* unit)
 #if AH_HAS_BSD_SOCKETS
 static void s_should_use_same_data_layout_as_platform_sockaddr(ah_unit_t* unit)
 {
-#    define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)                                          \
-        ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2));                            \
-        ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
+# define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)            \
+  ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2)); \
+  ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
 
-#    if AH_I_SOCKADDR_HAS_SIZE
+# if AH_I_SOCKADDR_HAS_SIZE
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_any_t, size, struct sockaddr, sa_len);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, size, struct sockaddr_in, sin_len);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, size, struct sockaddr_in6, sin6_len);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv4_t, size, struct sockaddr_in, sin_len);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, size, struct sockaddr_in6, sin6_len);
-#    endif
+# endif
 
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_any_t, family, struct sockaddr, sa_family);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ip_t, family, struct sockaddr_in, sin_family);
@@ -55,6 +55,6 @@ static void s_should_use_same_data_layout_as_platform_sockaddr(ah_unit_t* unit)
 
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, zone_id, struct sockaddr_in6, sin6_scope_id);
 
-#    undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
+# undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
 }
 #endif

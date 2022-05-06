@@ -12,11 +12,11 @@
 #include "../time.h"
 
 #if AH_USE_IOCP
-#    include "_loop-iocp.h"
+# include "_loop-iocp.h"
 #elif AH_USE_KQUEUE
-#    include "_loop-kqueue.h"
+# include "_loop-kqueue.h"
 #elif AH_USE_URING
-#    include "_loop-uring.h"
+# include "_loop-uring.h"
 #endif
 
 #define AH_I_LOOP_STATE_INITIAL     0x01
@@ -28,17 +28,17 @@
 #define AH_I_LOOP_EVT_PAGE_SIZE     8192
 #define AH_I_LOOP_EVT_PAGE_CAPACITY ((AH_I_LOOP_EVT_PAGE_SIZE / sizeof(ah_i_loop_evt_t)) - 1)
 
-#define AH_I_LOOP_FIELDS                                                                                               \
-    ah_alloc_cb _alloc_cb;                                                                                             \
-                                                                                                                       \
-    struct ah_i_loop_evt_page* _evt_page_list;                                                                         \
-    struct ah_i_loop_evt* _evt_free_list;                                                                              \
-                                                                                                                       \
-    ah_time_t _now;                                                                                                    \
-    ah_err_t _pending_err;                                                                                             \
-    int _state;                                                                                                        \
-                                                                                                                       \
-    AH_I_LOOP_PLATFORM_FIELDS
+#define AH_I_LOOP_FIELDS                    \
+ ah_alloc_cb _alloc_cb;                     \
+                                            \
+ struct ah_i_loop_evt_page* _evt_page_list; \
+ struct ah_i_loop_evt* _evt_free_list;      \
+                                            \
+ ah_time_t _now;                            \
+ ah_err_t _pending_err;                     \
+ int _state;                                \
+                                            \
+ AH_I_LOOP_PLATFORM_FIELDS
 
 struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS

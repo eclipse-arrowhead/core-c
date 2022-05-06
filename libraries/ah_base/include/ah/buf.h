@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 struct ah_buf {
-
     // Will always have two fields: `_base` and `_size`. Their order and types
     // will vary, however, with the targeted platform. Use ah_buf_init() to
     // update and ah_buf_get_base() and ah_buf_get_size() to query.

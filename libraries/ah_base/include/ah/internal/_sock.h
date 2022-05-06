@@ -10,19 +10,19 @@
 #include "../defs.h"
 
 #if AH_HAS_BSD_SOCKETS
-#    include "_sock-bsd.h"
+# include "_sock-bsd.h"
 #endif
 
 #ifndef AH_I_SOCKADDR_HAS_SIZE
-#    define AH_I_SOCKADDR_HAS_SIZE 0
+# define AH_I_SOCKADDR_HAS_SIZE 0
 #endif
 
 #if AH_I_SOCKADDR_HAS_SIZE
-#    define AH_I_SOCKADDR_PREAMBLE_IPV4 sizeof(ah_sockaddr_ipv4_t),
-#    define AH_I_SOCKADDR_PREAMBLE_IPV6 sizeof(ah_sockaddr_ipv6_t),
+# define AH_I_SOCKADDR_PREAMBLE_IPV4 sizeof(ah_sockaddr_ipv4_t),
+# define AH_I_SOCKADDR_PREAMBLE_IPV6 sizeof(ah_sockaddr_ipv6_t),
 #else
-#    define AH_I_SOCKADDR_PREAMBLE_IPV4
-#    define AH_I_SOCKADDR_PREAMBLE_IPV6
+# define AH_I_SOCKADDR_PREAMBLE_IPV4
+# define AH_I_SOCKADDR_PREAMBLE_IPV6
 #endif
 
 #endif

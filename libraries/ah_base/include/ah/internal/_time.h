@@ -10,11 +10,11 @@
 #include "../defs.h"
 
 #if AH_USE_URING
-#    include "_time-uring.h"
+# include "_time-uring.h"
 #elif AH_IS_DARWIN
-#    include "_time-darwin.h"
+# include "_time-darwin.h"
 #elif AH_IS_WIN32
-#    include "_time-win32.h"
+# include "_time-win32.h"
 #endif
 
 #define AH_I_TIME_FIELDS AH_I_TIME_PLATFORM_FIELDS

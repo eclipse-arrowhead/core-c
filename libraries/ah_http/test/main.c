@@ -6,7 +6,6 @@
 
 #include <ah/lib.h>
 #include <ah/unit.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -15,9 +14,10 @@ void test_http_parser(ah_unit_t* unit);
 
 int main(void)
 {
-    (void) printf("Arrowhead HTTP C Library Unit Tests\n"
-                  "- Source Commit: %s\n"
-                  "- Platform:      %s\n",
+    (void) printf(
+        "Arrowhead HTTP C Library Unit Tests\n"
+        "- Source Commit: %s\n"
+        "- Platform:      %s\n",
         ah_lib_commit_str(), ah_lib_platform_str());
 
     struct ah_unit unit = { 0 };

@@ -11,9 +11,9 @@
 
 #include <stddef.h>
 
-#define AH_I_BUF_PLATFORM_FIELDS                                                                                       \
-    uint8_t* _base;                                                                                                    \
-    size_t _size;
+#define AH_I_BUF_PLATFORM_FIELDS \
+ uint8_t* _base;                 \
+ size_t _size;
 
 struct iovec;
 

@@ -66,12 +66,12 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
     }
 
     OVERLAPPED_ENTRY entries[S_COMPLETION_ENTRY_BUFFER_SIZE];
-    ULONG num_entries_removed;
+    ULONG n_removed;
 
     do {
         loop->_now = ah_time_now();
 
-        DWORD timeout_in_ms;
+        DWORD timeout_ms;
         {
             ah_time_t* poll_baseline = time;
             ah_time_t* task_baseline = s_task_queue_peek_at_baseline(&loop->_task_queue);
@@ -101,35 +101,34 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
             ah_timediff_t timeout = poll_timeout < task_timeout ? poll_timeout : task_timeout;
 
             if (timeout == AH_TIMEDIFF_MAX) {
-                timeout_in_ms = INFINITE;
+                timeout_ms = INFINITE;
             }
             else if (timeout < 0u) {
-                timeout_in_ms = 0;
+                timeout_ms = 0;
             }
             else {
                 ah_timediff_t tmp = timeout / 1000000;
                 if (((uintmax_t) tmp) > ((uintmax_t) MAXDWORD)) {
-                    timeout_in_ms = INFINITE - 1u;
+                    timeout_ms = INFINITE - 1u;
                 }
                 else {
-                    timeout_in_ms = (DWORD) tmp;
+                    timeout_ms = (DWORD) tmp;
                 }
             }
         }
 
-        if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries, S_COMPLETION_ENTRY_BUFFER_SIZE,
-                &num_entries_removed, timeout_in_ms, false))
-        {
+        if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries,
+                S_COMPLETION_ENTRY_BUFFER_SIZE, &n_removed, timeout_ms, false)) {
             err = GetLastError();
             if (err != WAIT_TIMEOUT) {
                 return err;
             }
-            num_entries_removed = 0u;
+            n_removed = 0u;
         }
 
         loop->_now = ah_time_now();
 
-        for (ULONG i = 0u; i < num_entries_removed; i += 1u) {
+        for (ULONG i = 0u; i < n_removed; i += 1u) {
             OVERLAPPED_ENTRY* overlapped_entry = &entries[i];
             ah_i_loop_evt_t* evt = CONTAINING_RECORD(overlapped_entry->lpOverlapped, ah_i_loop_evt_t, _overlapped);
 
@@ -147,7 +146,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
             }
             ah_i_task_execute_scheduled(task);
         }
-    } while (num_entries_removed == S_COMPLETION_ENTRY_BUFFER_SIZE);
+    } while (n_removed == S_COMPLETION_ENTRY_BUFFER_SIZE);
 
     return AH_ENONE;
 }

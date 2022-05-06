@@ -12,7 +12,7 @@
 #include "ah/unit.h"
 
 #if AH_IS_WIN32
-#    include <ws2ipdef.h>
+# include <ws2ipdef.h>
 #endif
 
 static void s_should_send_and_receive_data(ah_unit_t* unit);
@@ -307,9 +307,9 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 #if AH_HAS_BSD_SOCKETS
 static void s_should_use_same_data_layout_as_platform_mreq(ah_unit_t* unit)
 {
-#    define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)                                          \
-        ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2));                            \
-        ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
+# define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)            \
+  ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2)); \
+  ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
 
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_udp_group_ipv4_t, group_addr, struct ip_mreq, imr_multiaddr);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_udp_group_ipv4_t, interface_addr, struct ip_mreq, imr_interface);
@@ -323,6 +323,6 @@ static void s_should_use_same_data_layout_as_platform_mreq(ah_unit_t* unit)
     ah_unit_assert(unit, sizeof(ah_udp_group_ipv6_t) >= sizeof(struct ipv6_mreq),
         "ah_udp_group_ipv4_t seems to be missing fields");
 
-#    undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
+# undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
 }
 #endif

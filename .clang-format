@@ -1,27 +1,34 @@
 AlignAfterOpenBracket: DontAlign
 AlignArrayOfStructures: Left
+AlignConsecutiveAssignments: None
 AlignConsecutiveBitFields: Consecutive
 AlignConsecutiveMacros: Consecutive
-AlignOperands: false
+AlignOperands: DontAlign
 AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: false
 AllowShortBlocksOnASingleLine: Empty
-AllowShortFunctionsOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: true
+AlwaysBreakAfterReturnType: None
 BasedOnStyle: WebKit
 BraceWrapping:
   AfterCaseLabel: false
-  AfterControlStatement: MultiLine
+  AfterControlStatement: Never
   AfterEnum: false
   AfterFunction: true
   AfterStruct: false
   AfterUnion: false
   BeforeElse: true
   BeforeWhile: false
+  IndentBraces: false
   SplitEmptyFunction: false
   SplitEmptyRecord: false
+BreakBeforeBinaryOperators: All
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
-ColumnLimit: 120
+ColumnLimit: 0
 ContinuationIndentWidth: 4
 DerivePointerAlignment: false
 IncludeBlocks: Regroup
@@ -35,11 +42,25 @@ IncludeCategories:
   - Regex: '^<[^>]*>$'
     Priority: 4
 IncludeIsMainRegex: '(-[0-9a-z]+)?$'
+IndentCaseLabels: false
 IndentPPDirectives: AfterHash
 IndentWidth: 4
+KeepEmptyLinesAtTheStartOfBlocks: false
 Language: Cpp
 MaxEmptyLinesToKeep: 1
 PenaltyBreakAssignment: 1000
 PointerAlignment: Left
+PPIndentWidth: 1
+ReflowComments: false
 SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInCStyleCastParentheses: false
 SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+TabWidth: 4
+UseTab: Never

@@ -21,9 +21,10 @@ void test_udp(ah_unit_t* unit);
 
 int main(void)
 {
-    (void) printf("Arrowhead Base C Library Unit Tests\n"
-                  "- Source Commit: %s\n"
-                  "- Platform:      %s\n",
+    (void) printf(
+        "Arrowhead Base C Library Unit Tests\n"
+        "- Source Commit: %s\n"
+        "- Platform:      %s\n",
         ah_lib_commit_str(), ah_lib_platform_str());
 
     struct ah_unit unit = { 0 };

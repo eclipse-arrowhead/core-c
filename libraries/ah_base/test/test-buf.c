@@ -8,9 +8,9 @@
 #include "ah/unit.h"
 
 #if AH_IS_WIN32
-#    include <winsock2.h>
+# include <winsock2.h>
 #elif AH_HAS_POSIX
-#    include <sys/uio.h>
+# include <sys/uio.h>
 #endif
 
 static void s_should_use_same_data_layout_as_platform_variant(ah_unit_t* unit);
@@ -22,10 +22,9 @@ void test_buf(ah_unit_t* unit)
 
 static void s_should_use_same_data_layout_as_platform_variant(ah_unit_t* unit)
 {
-
-#define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)                                              \
-    ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2));                                \
-    ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
+#define S_ASSERT_FIELD_OFFSET_SIZE_EQ(UNIT, TYPE1, FIELD1, TYPE2, FIELD2)            \
+ ah_unit_assert_unsigned_eq(UNIT, offsetof(TYPE1, FIELD1), offsetof(TYPE2, FIELD2)); \
+ ah_unit_assert_unsigned_eq(UNIT, sizeof((TYPE1) { 0 }.FIELD1), sizeof((TYPE2) { 0 }.FIELD2))
 
 #if AH_IS_WIN32
 

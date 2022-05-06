@@ -11,7 +11,7 @@
 #include "ah/loop.h"
 
 #if AH_IS_WIN32
-#    include <ws2ipdef.h>
+# include <ws2ipdef.h>
 #endif
 
 ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr)

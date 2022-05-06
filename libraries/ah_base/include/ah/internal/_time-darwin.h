@@ -7,6 +7,7 @@
 #ifndef AH_INTERNAL_DARWIN_TIME_H_
 #define AH_INTERNAL_DARWIN_TIME_H_
 
-#define AH_I_TIME_PLATFORM_FIELDS uint64_t _mach_absolute_time;
+#define AH_I_TIME_PLATFORM_FIELDS \
+ uint64_t _mach_absolute_time;
 
 #endif

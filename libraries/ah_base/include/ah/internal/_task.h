@@ -10,19 +10,19 @@
 #include "../defs.h"
 
 #if AH_USE_IOCP
-#    include "_task-iocp.h"
+# include "_task-iocp.h"
 #elif AH_USE_KQUEUE
-#    include "_task-kqueue.h"
+# include "_task-kqueue.h"
 #elif AH_USE_URING
-#    include "_task-uring.h"
+# include "_task-uring.h"
 #endif
 
-#define AH_I_TASK_FIELDS                                                                                               \
-    ah_task_state_t _state;                                                                                            \
-    ah_task_cb _cb;                                                                                                    \
-    ah_loop_t* _loop;                                                                                                  \
-    void* _user_data;                                                                                                  \
-    AH_I_TASK_PLATFORM_FIELDS
+#define AH_I_TASK_FIELDS \
+ ah_task_state_t _state; \
+ ah_task_cb _cb;         \
+ ah_loop_t* _loop;       \
+ void* _user_data;       \
+ AH_I_TASK_PLATFORM_FIELDS
 
 ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task);
 ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baseline);

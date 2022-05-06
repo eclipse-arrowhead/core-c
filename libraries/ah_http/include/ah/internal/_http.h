@@ -30,39 +30,40 @@
 #define AH_I_HTTP_OBODY_KIND_BUFS     2u
 #define AH_I_HTTP_OBODY_KIND_CALLBACK 3u
 
-#define AH_I_HTTP_CLIENT_FIELDS                                                                                        \
-    ah_tcp_conn_t _conn;                                                                                               \
-    const ah_tcp_trans_vtab_t* _trans_vtab;                                                                            \
-    const ah_http_client_vtab_t* _vtab;                                                                                \
-    ah_http_ires_t* _ires;                                                                                             \
-    ah_buf_t _i_non_data_buf_rd;                                                                                       \
-    ah_buf_t _i_non_data_buf_wr;                                                                                       \
-    size_t _i_n_bytes_expected;                                                                                        \
-    uint8_t _istate;                                                                                                   \
-    uint8_t _ostate;                                                                                                   \
-    uint16_t _n_pending_responses;
+#define AH_I_HTTP_CLIENT_FIELDS          \
+ ah_tcp_conn_t _conn;                    \
+ const ah_tcp_trans_vtab_t* _trans_vtab; \
+ const ah_http_client_vtab_t* _vtab;     \
+ ah_http_ires_t* _ires;                  \
+ ah_buf_t _i_non_data_buf_rd;            \
+ ah_buf_t _i_non_data_buf_wr;            \
+ size_t _i_n_bytes_expected;             \
+ uint8_t _istate;                        \
+ uint8_t _ostate;                        \
+ uint16_t _n_pending_responses;
 
-#define AH_I_HTTP_SERVER_FIELDS                                                                                        \
-    ah_tcp_listener_t _ln;                                                                                             \
-    const ah_tcp_trans_vtab_t* _trans_vtab;                                                                            \
-    const ah_http_server_vtab_t* _vtab;
+#define AH_I_HTTP_SERVER_FIELDS          \
+ ah_tcp_listener_t _ln;                  \
+ const ah_tcp_trans_vtab_t* _trans_vtab; \
+ const ah_http_server_vtab_t* _vtab;
 
-#define AH_I_HTTP_HMAP_FIELDS                                                                                          \
-    uint16_t _mask;                                                                                                    \
-    uint16_t _count;                                                                                                   \
-    struct ah_i_http_hmap_header* _headers;
+#define AH_I_HTTP_HMAP_FIELDS \
+ uint16_t _mask;              \
+ uint16_t _count;             \
+ struct ah_i_http_hmap_header* _headers;
 
-#define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS                                                                               \
-    const struct ah_i_http_hmap_header* _header;                                                                       \
-    size_t _value_off;
+#define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS      \
+ const struct ah_i_http_hmap_header* _header; \
+ size_t _value_off;
 
-#define AH_I_HTTP_OBODY_FIELDS                                                                                         \
-    struct ah_i_http_obody_any _as_any;                                                                                \
-    struct ah_i_http_obody_buf _as_buf;                                                                                \
-    struct ah_i_http_obody_bufs _as_bufs;                                                                              \
-    struct ah_i_http_obody_callback _as_callback;
+#define AH_I_HTTP_OBODY_FIELDS         \
+ struct ah_i_http_obody_any _as_any;   \
+ struct ah_i_http_obody_buf _as_buf;   \
+ struct ah_i_http_obody_bufs _as_bufs; \
+ struct ah_i_http_obody_callback _as_callback;
 
-#define AH_I_HTTP_OBODY_COMMON int _kind;
+#define AH_I_HTTP_OBODY_COMMON \
+ int _kind;
 
 struct ah_i_http_obody_any {
     AH_I_HTTP_OBODY_COMMON

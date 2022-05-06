@@ -10,9 +10,9 @@
 #include "../defs.h"
 
 #if AH_HAS_POSIX
-#    include "_buf-posix.h"
+# include "_buf-posix.h"
 #elif AH_IS_WIN32
-#    include "_buf-win32.h"
+# include "_buf-win32.h"
 #endif
 
 #define AH_I_BUF_FIELDS AH_I_BUF_PLATFORM_FIELDS

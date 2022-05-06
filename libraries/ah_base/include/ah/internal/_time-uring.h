@@ -9,6 +9,7 @@
 
 #include <linux/time_types.h>
 
-#define AH_I_TIME_PLATFORM_FIELDS struct __kernel_timespec _timespec;
+#define AH_I_TIME_PLATFORM_FIELDS \
+ struct __kernel_timespec _timespec;
 
 #endif

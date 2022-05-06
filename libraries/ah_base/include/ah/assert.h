@@ -13,9 +13,9 @@
 #define ah_assert(expr) (ah_likely((expr)) ? ((void) 0) : ah_abortf("%s:%d " #expr "\n", __FILE__, __LINE__))
 
 #ifndef NDEBUG
-#    define ah_assert_if_debug(expr) ah_assert(expr)
+# define ah_assert_if_debug(expr) ah_assert(expr)
 #else
-#    define ah_assert_if_debug(expr) ((void) 0)
+# define ah_assert_if_debug(expr) ((void) 0)
 #endif
 
 #endif
