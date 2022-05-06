@@ -27,15 +27,14 @@
 #define AH_I_TCP_LISTENER_STATE_OPEN      1u
 #define AH_I_TCP_LISTENER_STATE_LISTENING 2u
 
-#define AH_I_TCP_CONN_FIELDS        \
- ah_loop_t* _loop;                  \
- const ah_tcp_conn_vtab_t* _vtab;   \
- ah_tcp_omsg_t* _write_queue_head;  \
- ah_tcp_omsg_t* _write_queue_end;   \
- void* _trans_data;                 \
- void* _user_data;                  \
- ah_tcp_shutdown_t _shutdown_flags; \
- uint8_t _state;                    \
+#define AH_I_TCP_CONN_FIELDS             \
+ ah_loop_t* _loop;                       \
+ const ah_tcp_conn_vtab_t* _vtab;        \
+ struct ah_i_tcp_omsg_queue _omsg_queue; \
+ void* _trans_data;                      \
+ void* _user_data;                       \
+ ah_tcp_shutdown_t _shutdown_flags;      \
+ uint8_t _state;                         \
  AH_I_TCP_CONN_PLATFORM_FIELDS
 
 #define AH_I_TCP_LISTENER_FIELDS       \
@@ -56,6 +55,16 @@
  const ah_tcp_trans_vtab_t* _vtab; \
  void* _data;
 
+struct ah_i_tcp_omsg_queue {
+    ah_tcp_omsg_t* _head;
+    ah_tcp_omsg_t* _end;
+};
+
 void ah_i_tcp_listener_force_close_with_err(ah_tcp_listener_t* ln, ah_err_t err);
+
+bool ah_i_tcp_omsg_queue_is_empty(struct ah_i_tcp_omsg_queue* queue);
+bool ah_i_tcp_omsg_queue_is_empty_then_add(struct ah_i_tcp_omsg_queue* queue, ah_tcp_omsg_t* omsg);
+ah_tcp_omsg_t* ah_i_tcp_omsg_queue_peek_unsafe(struct ah_i_tcp_omsg_queue* queue);
+void ah_i_tcp_omsg_queue_remove_unsafe(struct ah_i_tcp_omsg_queue* queue);
 
 #endif

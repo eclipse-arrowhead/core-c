@@ -17,7 +17,7 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, const 
     if (vtab->on_open == NULL || vtab->on_connect == NULL || vtab->on_close == NULL) {
         return AH_EINVAL;
     }
-    if ((vtab->on_read_alloc == NULL) != (vtab->on_read_data == NULL) != (vtab->on_read_err == NULL)) {
+    if (((vtab->on_read_alloc == NULL) != (vtab->on_read_data == NULL)) != (vtab->on_read_err == NULL)) {
         return AH_EINVAL;
     }
     if (ah_loop_is_term(loop)) {
@@ -82,4 +82,57 @@ ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop)
         ._loop = loop,
         ._data = NULL,
     };
+}
+
+bool ah_i_tcp_omsg_queue_is_empty(struct ah_i_tcp_omsg_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    return queue->_head == NULL;
+}
+
+bool ah_i_tcp_omsg_queue_is_empty_then_add(struct ah_i_tcp_omsg_queue* queue, ah_tcp_omsg_t* omsg)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(omsg != NULL);
+
+    omsg->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_head = omsg;
+        queue->_end = omsg;
+        return true;
+    }
+
+    queue->_end->_next = omsg;
+    queue->_end = omsg;
+
+    return false;
+}
+
+ah_tcp_omsg_t* ah_i_tcp_omsg_queue_peek_unsafe(struct ah_i_tcp_omsg_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(queue->_head != NULL);
+
+    return queue->_head;
+}
+
+void ah_i_tcp_omsg_queue_remove_unsafe(struct ah_i_tcp_omsg_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(queue->_head != NULL);
+    ah_assert_if_debug(queue->_end != NULL);
+
+    ah_tcp_omsg_t* omsg = queue->_head;
+    queue->_head = omsg->_next;
+
+#ifndef NDEBUG
+
+    omsg->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_end = NULL;
+    }
+
+#endif
 }

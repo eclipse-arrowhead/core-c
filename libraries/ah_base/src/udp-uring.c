@@ -26,12 +26,12 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
         return AH_ESTATE;
     }
 
+    sock->_is_receiving = true;
+
     ah_err_t err = s_prep_sock_recv(sock);
     if (err != AH_ENONE) {
         return err;
     }
-
-    sock->_is_receiving = true;
 
     return AH_ENONE;
 }
@@ -51,7 +51,7 @@ static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
     evt->_cb = s_on_sock_recv;
     evt->_subject = sock;
 
-    sock->_recv_buf = (ah_but_t) { 0u };
+    sock->_recv_buf = (ah_buf_t) { 0u };
     sock->_vtab->on_recv_alloc(sock, &sock->_recv_buf);
 
     if (!sock->_is_open || !sock->_is_receiving) {
@@ -59,6 +59,7 @@ static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
     }
 
     if (ah_buf_is_empty(&sock->_recv_buf)) {
+        sock->_is_receiving = false;
         return AH_ENOBUFS;
     }
 
@@ -99,7 +100,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         raddr = ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name);
     }
 
-    sock->_vtab->on_recv_data(sock, ah_i_buf_from_iovec(&sock->_recv_buf), cqe->res, raddr);
+    sock->_vtab->on_recv_data(sock, &sock->_recv_buf, cqe->res, raddr);
 #ifndef NDEBUG
     sock->_recv_buf = (ah_buf_t) { 0u };
 #endif

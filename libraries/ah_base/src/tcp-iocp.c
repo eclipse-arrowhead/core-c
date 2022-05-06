@@ -144,12 +144,12 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
         return AH_ESTATE;
     }
 
+    conn->_state = AH_I_TCP_CONN_STATE_READING;
+
     ah_err_t err = s_prep_conn_read(conn);
     if (err != AH_ENONE) {
         return err;
     }
-
-    conn->_state = AH_I_TCP_CONN_STATE_READING;
 
     return AH_ENONE;
 }
@@ -176,6 +176,7 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
     }
 
     if (ah_buf_is_empty(&conn->_recv_buf)) {
+        conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
         return AH_ENOBUFS;
     }
 
@@ -255,16 +256,11 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
         return AH_ESTATE;
     }
 
-    if (conn->_write_queue_head != NULL) {
-        conn->_write_queue_end->_next = omsg;
-        conn->_write_queue_end = omsg;
-        return AH_ENONE;
+    if (ah_i_tcp_omsg_queue_is_empty_then_add(&conn->_omsg_queue, omsg)) {
+        return s_prep_conn_write(conn);
     }
 
-    conn->_write_queue_head = omsg;
-    conn->_write_queue_end = omsg;
-
-    return s_prep_conn_write(conn);
+    return AH_ENONE;
 }
 
 static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
@@ -279,8 +275,7 @@ static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_write;
     evt->_subject = conn;
 
-    ah_tcp_omsg_t* omsg = conn->_write_queue_head;
-    ah_assert_if_debug(omsg != NULL);
+    ah_tcp_omsg_t* omsg = ah_i_tcp_omsg_queue_peek_unsafe(&conn->_omsg_queue);
 
     int res = WSASend(conn->_fd, omsg->_buffers, omsg->_buffer_count, NULL, 0u, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
@@ -299,7 +294,6 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt)
 
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
-    ah_assert_if_debug(conn->_write_queue_head != NULL);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
@@ -307,9 +301,9 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt)
 
     ah_err_t err;
 
-    DWORD n_bytes_transferred;
+    DWORD nsent;
     DWORD flags;
-    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
+    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &nsent, false, &flags)) {
         err = WSAGetLastError();
     }
     else {
@@ -317,13 +311,13 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt)
     }
 
 report_err_and_prep_next:
-    conn->_write_queue_head = conn->_write_queue_head->_next;
+    ah_i_tcp_omsg_queue_remove_unsafe(&conn->_omsg_queue);
     conn->_vtab->on_write_done(conn, err);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
     }
-    if (conn->_write_queue_head == NULL) {
+    if (ah_i_tcp_omsg_queue_is_empty(&conn->_omsg_queue)) {
         return;
     }
 

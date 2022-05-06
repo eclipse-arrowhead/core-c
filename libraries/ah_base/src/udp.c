@@ -17,7 +17,7 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, const 
     if (vtab->on_open == NULL || vtab->on_close == NULL) {
         return AH_EINVAL;
     }
-    if ((vtab->on_recv_alloc == NULL) != (vtab->on_recv_data == NULL) != (vtab->on_recv_err == NULL)) {
+    if (((vtab->on_recv_alloc == NULL) != (vtab->on_recv_data == NULL)) != (vtab->on_recv_err == NULL)) {
         return AH_EINVAL;
     }
     if (ah_loop_is_term(loop)) {

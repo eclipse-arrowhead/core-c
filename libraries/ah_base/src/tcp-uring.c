@@ -92,12 +92,12 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
         return AH_ESTATE;
     }
 
+    conn->_state = AH_I_TCP_CONN_STATE_READING;
+
     ah_err_t err = s_prep_conn_read(conn);
     if (err != AH_ENONE) {
         return err;
     }
-
-    conn->_state = AH_I_TCP_CONN_STATE_READING;
 
     return AH_ENONE;
 }
@@ -117,7 +117,7 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_read;
     evt->_subject = conn;
 
-    conn->_recv_buf = (ah_but_t) { 0u };
+    conn->_recv_buf = (ah_buf_t) { 0u };
     conn->_vtab->on_read_alloc(conn, &conn->_recv_buf);
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
@@ -125,6 +125,7 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
     }
 
     if (ah_buf_is_empty(&conn->_recv_buf)) {
+        conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
         return AH_ENOBUFS;
     }
 
@@ -155,7 +156,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     conn->_vtab->on_read_data(conn, &conn->_recv_buf, cqe->res);
 #ifndef NDEBUG
-    conn->_recv_buf = (ah_but_t) { 0u };
+    conn->_recv_buf = (ah_buf_t) { 0u };
 #endif
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
@@ -196,16 +197,11 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
         return AH_ESTATE;
     }
 
-    if (conn->_write_queue_head != NULL) {
-        conn->_write_queue_end->_next = omsg;
-        conn->_write_queue_end = omsg;
-        return AH_ENONE;
+    if (ah_i_tcp_omsg_queue_is_empty_then_add(&conn->_omsg_queue, omsg)) {
+        return s_prep_conn_write(conn);
     }
 
-    conn->_write_queue_head = omsg;
-    conn->_write_queue_end = omsg;
-
-    return s_prep_conn_write(conn);
+    return AH_ENONE;
 }
 
 static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
@@ -221,7 +217,7 @@ static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_write;
     evt->_subject = conn;
 
-    ah_tcp_omsg_t* omsg = conn->_write_queue_head;
+    ah_tcp_omsg_t* omsg = ah_i_tcp_omsg_queue_peek_unsafe(&conn->_omsg_queue);
 
     io_uring_prep_writev(sqe, conn->_fd, omsg->_iov, omsg->_iovcnt, 0u);
     io_uring_sqe_set_data(sqe, evt);
@@ -236,7 +232,6 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
-    ah_assert_if_debug(conn->_write_queue_head != NULL);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
@@ -252,13 +247,13 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     }
 
 report_err_and_prep_next:
-    conn->_write_queue_head = conn->_write_queue_head->_next;
+    ah_i_tcp_omsg_queue_remove_unsafe(&conn->_omsg_queue);
     conn->_vtab->on_write_done(conn, err);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
     }
-    if (conn->_write_queue_head == NULL) {
+    if (ah_i_tcp_omsg_queue_is_empty(&conn->_omsg_queue)) {
         return;
     }
 
@@ -344,7 +339,7 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
     if (conn_vtab->on_close == NULL) {
         return AH_EINVAL;
     }
-    if (conn_vtab->on_read_alloc == NULL || conn_vtab->on_read_data == NULL || conn_vtab->on_read_err) {
+    if (conn_vtab->on_read_alloc == NULL || conn_vtab->on_read_data == NULL || conn_vtab->on_read_err == NULL) {
         return AH_EINVAL;
     }
     if (conn_vtab->on_write_done == NULL) {
@@ -413,7 +408,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         ._fd = cqe->res,
     };
 
-    ln->_vtab->on_conn_accept(ln, conn, &ln->_raddr, AH_ENONE);
+    ln->_vtab->on_conn_accept(ln, conn, &ln->_raddr);
 
     ah_err_t err;
     ah_i_loop_evt_t* evt0;

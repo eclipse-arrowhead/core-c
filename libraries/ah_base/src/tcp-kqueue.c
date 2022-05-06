@@ -214,18 +214,8 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
         return AH_ESTATE;
     }
 
-    if (conn->_write_queue_head != NULL) {
-        conn->_write_queue_end->_next = omsg;
-        conn->_write_queue_end = omsg;
-        return AH_ENONE;
-    }
-
-    conn->_write_queue_head = omsg;
-    conn->_write_queue_end = omsg;
-
-    ah_err_t err = s_prep_conn_write(conn);
-    if (err != AH_ENONE) {
-        return err;
+    if (ah_i_tcp_omsg_queue_is_empty_then_add(&conn->_omsg_queue, omsg)) {
+        return s_prep_conn_write(conn);
     }
 
     return AH_ENONE;
@@ -258,7 +248,6 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
-    ah_assert_if_debug(conn->_write_queue_head != NULL);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
@@ -266,7 +255,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     ah_err_t err;
 
-    ah_tcp_omsg_t* omsg = conn->_write_queue_head;
+    ah_tcp_omsg_t* omsg = ah_i_tcp_omsg_queue_peek_unsafe(&conn->_omsg_queue);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -307,20 +296,22 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     // We're done! Dequeue the current write and schedule the next one, if any.
-    conn->_write_queue_head = omsg->_next;
     err = AH_ENONE;
 
 report_err_and_prep_next:
+    ah_i_tcp_omsg_queue_remove_unsafe(&conn->_omsg_queue);
     conn->_vtab->on_write_done(conn, err);
 
-    if (conn->_write_queue_head == NULL) {
+    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
+        return;
+    }
+    if (ah_i_tcp_omsg_queue_is_empty(&conn->_omsg_queue)) {
         return;
     }
 
 prep_next:
     err = s_prep_conn_write(conn);
     if (err != AH_ENONE) {
-        conn->_write_queue_head = conn->_write_queue_head->_next;
         goto report_err_and_prep_next;
     }
 }

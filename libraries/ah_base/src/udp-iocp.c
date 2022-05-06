@@ -69,12 +69,12 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
         return AH_ESTATE;
     }
 
+    sock->_is_receiving = true;
+
     ah_err_t err = s_prep_sock_recv(sock);
     if (err != AH_ENONE) {
         return err;
     }
-
-    sock->_is_receiving = true;
 
     return AH_ENONE;
 }
@@ -101,6 +101,7 @@ static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
     }
 
     if (ah_buf_is_empty(&sock->_recv_buf)) {
+        sock->_is_receiving = false;
         return AH_ENOBUFS;
     }
 
