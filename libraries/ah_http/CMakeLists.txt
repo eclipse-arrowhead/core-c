@@ -22,8 +22,10 @@ target_link_libraries(ah_http PRIVATE ah_base)
 set(
     TEST_FILES
     test/main.c
+    test/test-http-client.c
     test/test-http-hmap.c
     test/test-http-parser.c
+    test/test-http-server.c
 )
 
 add_executable(ah_http_tests ${TEST_FILES})

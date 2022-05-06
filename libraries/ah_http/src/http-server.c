@@ -46,9 +46,6 @@ static const ah_http_ireq_err_t s_ireq_err_req_line_too_long = {
     AH_ENOBUFS,
 };
 
-static void s_on_open(ah_tcp_listener_t* ln, ah_err_t err);
-static void s_on_listen(ah_tcp_listener_t* ln, ah_err_t err);
-static void s_on_close(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
 static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 static void s_on_conn_err(ah_tcp_listener_t* ln, ah_err_t err);
@@ -97,10 +94,10 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_req_end != NULL);
     ah_assert_if_debug(vtab->on_res_sent != NULL);
 
-    static const ah_tcp_listener_vtab_t s_vtab = {
-        .on_open = s_on_open,
-        .on_listen = s_on_listen,
-        .on_close = s_on_close,
+    const ah_tcp_listener_vtab_t s_vtab = {
+        .on_open = (void (*)(ah_tcp_listener_t*, ah_err_t)) srv->_vtab->on_open,
+        .on_listen = (void (*)(ah_tcp_listener_t*, ah_err_t)) srv->_vtab->on_listen,
+        .on_close = (void (*)(ah_tcp_listener_t*, ah_err_t)) srv->_vtab->on_close,
         .on_conn_alloc = s_on_conn_alloc,
         .on_conn_accept = s_on_conn_accept,
         .on_conn_err = s_on_conn_err,
@@ -126,12 +123,6 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
     return srv->_trans_vtab->listener_open(&srv->_ln, laddr);
 }
 
-static void s_on_open(ah_tcp_listener_t* ln, ah_err_t err)
-{
-    ah_http_server_t* srv = s_upcast_to_server(ln);
-    srv->_vtab->on_open(srv, err);
-}
-
 static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln)
 {
     ah_assert_if_debug(ln != NULL);
@@ -153,12 +144,6 @@ ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog
         return AH_EINVAL;
     }
     return srv->_trans_vtab->listener_listen(&srv->_ln, backlog, NULL); // TODO: conn vtab.
-}
-
-static void s_on_listen(ah_tcp_listener_t* ln, ah_err_t err)
-{
-    ah_http_server_t* srv = s_upcast_to_server(ln);
-    srv->_vtab->on_listen(srv, err);
 }
 
 static void s_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn)
@@ -221,12 +206,6 @@ ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
         return AH_EINVAL;
     }
     return srv->_trans_vtab->listener_close(&srv->_ln);
-}
-
-static void s_on_close(ah_tcp_listener_t* ln, ah_err_t err)
-{
-    ah_http_server_t* srv = s_upcast_to_server(ln);
-    srv->_vtab->on_close(srv, err);
 }
 
 static ah_http_ireq_err_t s_ireq_err_internal_error_from(ah_err_t err)

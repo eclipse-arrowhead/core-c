@@ -12,9 +12,6 @@
 #include <ah/err.h>
 #include <ah/math.h>
 
-static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
 static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err);
@@ -50,10 +47,10 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_res_err != NULL);
     ah_assert_if_debug(vtab->on_res_end != NULL);
 
-    static const ah_tcp_conn_vtab_t s_vtab = {
-        .on_open = s_on_open,
-        .on_connect = s_on_connect,
-        .on_close = s_on_close,
+    const ah_tcp_conn_vtab_t s_vtab = {
+        .on_open = (void (*)(ah_tcp_conn_t*, ah_err_t)) cln->_vtab->on_open,
+        .on_connect = (void (*)(ah_tcp_conn_t*, ah_err_t)) cln->_vtab->on_connect,
+        .on_close = (void (*)(ah_tcp_conn_t*, ah_err_t)) cln->_vtab->on_close,
         .on_read_alloc = s_on_read_alloc,
         .on_read_data = s_on_read_data,
         .on_read_err = s_on_read_err,
@@ -83,12 +80,6 @@ ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_
     return cln->_trans_vtab->conn_open(&cln->_conn, laddr);
 }
 
-static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err)
-{
-    ah_http_client_t* cln = s_upcast_to_client(conn);
-    cln->_vtab->on_open(cln, err);
-}
-
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
@@ -112,12 +103,6 @@ ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockad
     return cln->_trans_vtab->conn_connect(&cln->_conn, raddr);
 }
 
-static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
-{
-    ah_http_client_t* cln = s_upcast_to_client(conn);
-    cln->_vtab->on_connect(cln, err);
-}
-
 static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
@@ -134,6 +119,9 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 
         cln->_vtab->on_res_alloc_head(cln, &cln->_ires, buf);
 
+        if (ah_buf_is_empty(buf)) {
+            return;
+        }
         if (cln->_ires == NULL) {
             err = AH_ENOBUFS;
             goto close_conn_and_report_err;
@@ -308,10 +296,4 @@ ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln)
         return AH_EINVAL;
     }
     return cln->_trans_vtab->conn_close(&cln->_conn);
-}
-
-static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
-{
-    ah_http_client_t* cln = s_upcast_to_client(conn);
-    cln->_vtab->on_close(cln, err);
 }
