@@ -173,7 +173,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     ah_http_client_t* cln = s_upcast_to_client(conn);
 
     ah_err_t err;
-    ah_str_t ext;
+    ah_http_chunk_t chunk;
 
     switch (cln->_istate) {
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT:
@@ -245,11 +245,12 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK:
     expect_chunk:
-        err = ah_i_http_parse_chunk(&cln->_i_non_data_buf_rd, &cln->_i_n_bytes_expected, &ext);
+        err = ah_i_http_parse_chunk(&cln->_i_non_data_buf_rd, &chunk);
         if (err != AH_ENONE) {
             // TODO: Shrink non-data buf rd?
             goto close_conn_and_report_ires_err;
         }
+        cln->_i_n_bytes_expected = chunk.size;
         return;
 
     case AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA:

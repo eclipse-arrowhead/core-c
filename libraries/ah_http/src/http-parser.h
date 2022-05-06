@@ -12,7 +12,7 @@
 bool ah_i_http_buf_has_crlf(const ah_buf_t* buf);
 bool ah_i_http_buf_has_crlfx2(const ah_buf_t* buf);
 
-ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, size_t* size, ah_str_t* ext);
+ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, ah_http_chunk_t* chunk);
 ah_err_t ah_i_http_parse_headers(ah_buf_t* src, ah_http_hmap_t* hmap);
 
 bool ah_i_http_parse_req_line(ah_buf_t* src, ah_http_req_line_t* req_line);

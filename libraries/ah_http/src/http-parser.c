@@ -85,18 +85,17 @@ bool ah_i_http_buf_has_crlfx2(const ah_buf_t* buf)
     return false;
 }
 
-ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, size_t* size, ah_str_t* ext)
+ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, ah_http_chunk_t* chunk)
 {
     ah_assert_if_debug(src != NULL);
-    ah_assert_if_debug(size != NULL);
-    ah_assert_if_debug(ext != NULL);
+    ah_assert_if_debug(chunk != NULL);
 
     s_reader_t r = s_reader_from_buf(src);
 
     ah_err_t err;
 
-    size_t size0 = 0u;
-    ah_str_t ext0 = (ah_str_t) { 0u };
+    size_t size = 0u;
+    ah_str_t ext = (ah_str_t) { 0u };
 
     uint8_t* ext_start;
 
@@ -123,12 +122,12 @@ ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, size_t* size, ah_str_t* ext)
             return AH_EILSEQ;
         }
 
-        err = ah_mul_size(size0, 16u, &size0);
+        err = ah_mul_size(size, 16u, &size);
         if (err != AH_ENONE) {
             return err;
         }
 
-        err = ah_add_size(size0, inc, &size0);
+        err = ah_add_size(size, inc, &size);
         if (err != AH_ENONE) {
             return err;
         }
@@ -154,12 +153,14 @@ parse_ext:
         break;
     }
 
-    ext0 = ah_str_from(ext_start, &r._end[-2] - ext_start);
+    ext = ah_str_from(ext_start, &r._end[-2] - ext_start);
 
 finish:
     (void) ah_buf_init(src, r._off, r._end - r._off);
-    *size = size0;
-    *ext = ext0;
+    *chunk = (ah_http_chunk_t) {
+        .size = size,
+        .ext = ext,
+    };
 
     return AH_ENONE;
 }
