@@ -29,6 +29,12 @@ ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size)
     return AH_ENONE;
 }
 
+ah_extern ah_buf_t ah_buf_from(uint8_t* base, uint32_t size)
+{
+    ah_assert_if_debug(base != NULL || size == 0u);
+    return (ah_buf_t) { size, base };
+}
+
 ah_extern void ah_i_bufs_from_wsabufs(ah_bufs_t* bufs, WSABUF* buffers, ULONG buffer_count)
 {
     ah_assert_if_debug(bufs != NULL && buffers != NULL);

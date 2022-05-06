@@ -162,6 +162,11 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             goto report_err;
         }
 
+        if (ah_unlikely(ah_buf_get_size(&buf) < (size_t) nread)) {
+            err = AH_EDOM;
+            goto report_err;
+        }
+
         conn->_vtab->on_read_data(conn, &buf, (size_t) nread);
 
         if (conn->_state != AH_I_TCP_CONN_STATE_READING) {

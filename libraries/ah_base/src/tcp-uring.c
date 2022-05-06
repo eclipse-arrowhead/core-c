@@ -154,6 +154,11 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
+    if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) < (size_t) cqe->res)) {
+        err = AH_EDOM;
+        goto report_err;
+    }
+
     conn->_vtab->on_read_data(conn, &conn->_recv_buf, cqe->res);
 #ifndef NDEBUG
     conn->_recv_buf = (ah_buf_t) { 0u };

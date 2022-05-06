@@ -9,7 +9,7 @@
 
 #include "ah/http.h"
 
-bool ah_i_http_hmap_is_transfer_encoding_chunked(ah_http_hmap_t* hmap);
+ah_err_t ah_i_http_hmap_is_transfer_encoding_chunked(ah_http_hmap_t* hmap, bool* is_chunked);
 ah_err_t ah_i_http_hmap_get_content_length(ah_http_hmap_t* hmap, size_t* content_length);
 
 #endif

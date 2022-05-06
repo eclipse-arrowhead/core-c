@@ -9,13 +9,21 @@
 
 #include "ah/http.h"
 
-bool ah_i_http_buf_has_crlf(const ah_buf_t* buf);
-bool ah_i_http_buf_has_crlfx2(const ah_buf_t* buf);
+typedef struct ah_i_http_reader ah_i_http_reader_t;
 
-ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, ah_http_chunk_t* chunk);
-ah_err_t ah_i_http_parse_headers(ah_buf_t* src, ah_http_hmap_t* hmap);
+struct ah_i_http_reader {
+    const uint8_t* _off;
+    const uint8_t* const _end;
+};
 
-bool ah_i_http_parse_req_line(ah_buf_t* src, ah_http_req_line_t* req_line);
-bool ah_i_http_parse_stat_line(ah_buf_t* src, ah_http_stat_line_t* stat_line);
+ah_i_http_reader_t ah_i_http_reader_from(const ah_buf_t* buf, size_t limit);
+void ah_i_http_reader_into_buf(const ah_i_http_reader_t* r, ah_buf_t* buf);
+
+ah_err_t ah_i_http_skip_until_after_line_end(ah_buf_t* src, size_t* size);
+ah_err_t ah_i_http_skip_until_after_headers_end(ah_buf_t* src, size_t* size);
+ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, size_t* size, ah_http_chunk_t* chunk);
+ah_err_t ah_i_http_parse_headers(ah_buf_t* src, size_t* size, ah_http_hmap_t* hmap);
+ah_err_t ah_i_http_parse_req_line(ah_buf_t* src, size_t* size, ah_http_req_line_t* req_line);
+ah_err_t ah_i_http_parse_stat_line(ah_buf_t* src, size_t* size, ah_http_stat_line_t* stat_line);
 
 #endif

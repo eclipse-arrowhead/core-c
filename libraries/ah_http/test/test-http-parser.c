@@ -33,7 +33,7 @@ static void s_should_parse_chunks(ah_unit_t* unit)
     ah_http_chunk_t chunk;
 
     buf = s_buf_from("FEBA9810\r\n");
-    err = ah_i_http_parse_chunk(&buf, &chunk);
+    err = ah_i_http_parse_chunk(&buf, NULL, &chunk);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -41,7 +41,7 @@ static void s_should_parse_chunks(ah_unit_t* unit)
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr(""), chunk.ext);
 
     buf = s_buf_from("AABBC;key0=val0;key1=val1\r\n");
-    err = ah_i_http_parse_chunk(&buf, &chunk);
+    err = ah_i_http_parse_chunk(&buf, NULL, &chunk);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -49,7 +49,7 @@ static void s_should_parse_chunks(ah_unit_t* unit)
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr(";key0=val0;key1=val1"), chunk.ext);
 
     buf = s_buf_from("10;key0=\" val0 \";key1=\"\tval1\t\"\r\n");
-    err = ah_i_http_parse_chunk(&buf, &chunk);
+    err = ah_i_http_parse_chunk(&buf, NULL, &chunk);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -74,7 +74,7 @@ static void s_should_parse_headers(ah_unit_t* unit)
         "Host:  192.168.4.44:44444 \r\n"
         "\r\n");
 
-    err = ah_i_http_parse_headers(&buf, &headers);
+    err = ah_i_http_parse_headers(&buf, NULL, &headers);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -142,7 +142,7 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
     ah_http_req_line_t req_line;
 
     buf = s_buf_from("GET /things/132 HTTP/1.1\r\n");
-    res = ah_i_http_parse_req_line(&buf, &req_line);
+    res = ah_i_http_parse_req_line(&buf, NULL, &req_line);
     if (!ah_unit_assert(unit, res, "parse failed unexpectedly")) {
         return;
     }
@@ -152,7 +152,7 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
     (void) ah_unit_assert_unsigned_eq(unit, 1u, req_line.version.minor);
 
     buf = s_buf_from("OPTIONS * HTTP/1.0\r\n");
-    res = ah_i_http_parse_req_line(&buf, &req_line);
+    res = ah_i_http_parse_req_line(&buf, NULL, &req_line);
     if (!ah_unit_assert(unit, res, "parse failed unexpectedly")) {
         return;
     }
@@ -162,7 +162,7 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
     (void) ah_unit_assert_unsigned_eq(unit, 0u, req_line.version.minor);
 
     buf = s_buf_from("CONNECT [::1]:44444 HTTP/1.1\r\n");
-    res = ah_i_http_parse_req_line(&buf, &req_line);
+    res = ah_i_http_parse_req_line(&buf, NULL, &req_line);
     if (!ah_unit_assert(unit, res, "parse failed unexpectedly")) {
         return;
     }
@@ -179,7 +179,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     ah_http_stat_line_t stat_line;
 
     buf = s_buf_from("HTTP/1.1 200 OK\r\n");
-    res = ah_i_http_parse_stat_line(&buf, &stat_line);
+    res = ah_i_http_parse_stat_line(&buf, NULL, &stat_line);
     if (!ah_unit_assert(unit, res, "parse failed unexpectedly")) {
         return;
     }
@@ -189,7 +189,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr("OK"), stat_line.reason);
 
     buf = s_buf_from("HTTP/1.0 201 \r\n");
-    res = ah_i_http_parse_stat_line(&buf, &stat_line);
+    res = ah_i_http_parse_stat_line(&buf, NULL, &stat_line);
     if (!ah_unit_assert(unit, res, "parse failed unexpectedly")) {
         return;
     }
@@ -199,7 +199,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_str_eq(unit, ah_str_from_cstr(""), stat_line.reason);
 
     buf = s_buf_from("HTTP/1.1 500 Internal server errör \r\n");
-    res = ah_i_http_parse_stat_line(&buf, &stat_line);
+    res = ah_i_http_parse_stat_line(&buf, NULL, &stat_line);
     if (!ah_unit_assert(unit, res, "parse failed unexpectedly")) {
         return;
     }

@@ -90,7 +90,6 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_req_headers != NULL);
     ah_assert_if_debug(vtab->on_req_chunk != NULL);
     ah_assert_if_debug(vtab->on_req_data != NULL);
-    ah_assert_if_debug(vtab->on_req_err != NULL);
     ah_assert_if_debug(vtab->on_req_end != NULL);
     ah_assert_if_debug(vtab->on_res_sent != NULL);
 

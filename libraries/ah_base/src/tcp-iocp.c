@@ -210,7 +210,12 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
     DWORD flags;
     if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &nread, false, &flags)) {
         err = WSAGetLastError();
-        goto handle_err;
+        goto report_err;
+    }
+
+    if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) < (size_t) nread)) {
+        err = AH_EDOM;
+        goto report_err;
     }
 
     conn->_vtab->on_read_data(conn, &conn->_recv_buf, (size_t) nread);
@@ -224,12 +229,12 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
 
     err = s_prep_conn_read(conn);
     if (err != AH_ENONE) {
-        goto handle_err;
+        goto report_err;
     }
 
     return;
 
-handle_err:
+report_err:
     conn->_vtab->on_read_err(conn, err);
 }
 
@@ -397,7 +402,7 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
                                                                      : SOMAXCONN);
         if (listen(ln->_fd, backlog_int) != 0) {
             err = WSAGetLastError();
-            goto handle_err;
+            goto report_err;
         }
         ln->_is_listening = true;
     }
@@ -415,7 +420,7 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
         ln->_state = AH_I_TCP_LISTENER_STATE_OPEN;
     }
 
-handle_err:
+report_err:
     ln->_vtab->on_listen(ln, err);
 
     return AH_ENONE;
@@ -442,7 +447,7 @@ static ah_err_t s_prep_listener_accept(ah_tcp_listener_t* ln)
     ah_i_sockfd_t accept_fd;
     err = ah_i_sock_open(ln->_loop, ln->_sockfamily, SOCK_STREAM, &accept_fd);
     if (err != AH_ENONE) {
-        goto dealloc_evt_and_report_err;
+        goto dealloc_evt_and_return_err;
     }
 
     const SOCKET fd = ln->_fd;
@@ -452,7 +457,7 @@ static ah_err_t s_prep_listener_accept(ah_tcp_listener_t* ln)
     if (!ln->_AcceptEx(fd, accept_fd, ln->_accept_buffer, 0u, addr_size, addr_size, &b, &evt->_overlapped)) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {
-            goto close_accept_fd_dealloc_evt_and_report_err;
+            goto close_accept_fd_dealloc_evt_and_return_err;
         }
     }
 
@@ -460,10 +465,10 @@ static ah_err_t s_prep_listener_accept(ah_tcp_listener_t* ln)
 
     return AH_ENONE;
 
-close_accept_fd_dealloc_evt_and_report_err:
+close_accept_fd_dealloc_evt_and_return_err:
     (void) closesocket(accept_fd);
 
-dealloc_evt_and_report_err:
+dealloc_evt_and_return_err:
     ah_i_loop_evt_dealloc(ln->_loop, evt);
 
     return err;
@@ -486,14 +491,14 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt)
     DWORD flags;
     if (!WSAGetOverlappedResult(ln->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
         err = WSAGetLastError();
-        goto handle_err;
+        goto close_accept_fd_and_report_err;
     }
 
     ah_tcp_conn_t* conn = NULL;
     ln->_vtab->on_conn_alloc(ln, &conn);
     if (conn == NULL) {
         err = AH_ENOBUFS;
-        goto handle_err;
+        goto close_accept_fd_and_report_err;
     }
 
     *conn = (ah_tcp_conn_t) {
@@ -531,7 +536,7 @@ prep_another_accept:
 
     return;
 
-handle_err:
+close_accept_fd_and_report_err:
     (void) closesocket(ln->_accept_fd);
 
 #ifndef NDEBUG

@@ -32,6 +32,9 @@ struct ah_bufs {
 // * AH_EDOM [Win32] - `size` is too large to be representable by `buf`.
 ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size);
 
+// Note that `size` is 32-bit, in contrast to the `size` of `ah_buf_init`.
+ah_extern ah_buf_t ah_buf_from(uint8_t* base, uint32_t size);
+
 ah_inline uint8_t* ah_buf_get_base(ah_buf_t* buf)
 {
     ah_assert_if_debug(buf != NULL);
@@ -55,7 +58,5 @@ ah_inline bool ah_buf_is_empty(const ah_buf_t* buf)
     ah_assert_if_debug(buf != NULL);
     return buf->_base == NULL || buf->_size == 0u;
 }
-
-ah_extern ah_err_t ah_buf_shrinkl(ah_buf_t* buf, size_t size);
 
 #endif

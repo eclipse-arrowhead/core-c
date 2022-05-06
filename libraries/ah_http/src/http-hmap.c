@@ -13,7 +13,6 @@
 
 static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t* hmap, ah_str_t name);
 static uint32_t s_hash_header_name(ah_str_t name);
-static bool s_is_chunked(ah_str_t csv);
 static uint8_t s_to_lower(uint8_t ch);
 
 ah_extern ah_err_t ah_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_header* headers, size_t len)
@@ -85,24 +84,24 @@ static uint8_t s_to_lower(uint8_t ch)
     return ch >= 'A' && ch <= 'Z' ? (ch | 0x20) : ch;
 }
 
-ah_extern const ah_str_t* ah_http_hmap_get_value(const ah_http_hmap_t* headers, ah_str_t name, bool* has_next)
+ah_extern ah_err_t ah_http_hmap_get_value(const ah_http_hmap_t* hmap, ah_str_t name, ah_str_t* value)
 {
-    ah_assert_if_debug(headers != NULL);
-    ah_assert_if_debug(has_next != NULL);
+    ah_assert_if_debug(hmap != NULL);
 
-    struct ah_i_http_hmap_header* header = s_find_header_by_name(headers, name);
+    struct ah_i_http_hmap_header* header = s_find_header_by_name(hmap, name);
     if (header == NULL) {
-        *has_next = false;
-        return NULL;
+        return AH_ESRCH;
     }
 
     if (header->_next_with_same_name != NULL) {
-        *has_next = true;
-        return NULL;
+        return AH_EDUP;
     }
 
-    *has_next = false;
-    return &header->_value;
+    if (value != NULL) {
+        *value = header->_value;
+    }
+
+    return AH_ENONE;
 }
 
 static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t* hmap, ah_str_t name)
@@ -201,34 +200,54 @@ ah_extern bool ah_http_hmap_has_csv(ah_http_hmap_t* hmap, ah_str_t name, ah_http
     }
 }
 
-bool ah_i_http_hmap_is_transfer_encoding_chunked(ah_http_hmap_t* hmap)
+ah_err_t ah_i_http_hmap_is_transfer_encoding_chunked(ah_http_hmap_t* hmap, bool* is_chunked)
 {
-    return ah_http_hmap_has_csv(hmap, ah_str_from_cstr("transfer-encoding"), s_is_chunked);
-}
+    const ah_str_t transfer_encoding = ah_str_from_cstr("transfer-encoding");
+    const ah_str_t chunked = ah_str_from_cstr("chunked");
 
-static bool s_is_chunked(ah_str_t csv)
-{
-    return ah_str_eq_ignore_case_ascii(csv, ah_str_from_cstr("chunked"));
+    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_iter(hmap, transfer_encoding);
+    for (;;) {
+        ah_str_t csv = ah_http_hmap_next_csv(&iter);
+        if (ah_str_get_len(&csv) == 0u) {
+            *is_chunked = false;
+            return AH_ENONE;
+        }
+        if (ah_str_eq_ignore_case_ascii(chunked, csv)) {
+            // It is an error for the `chunked` transfer-encoding to not be the
+            // last stated such encoding. See
+            // https://www.rfc-editor.org/rfc/rfc7230#section-3.3.3.
+            csv = ah_http_hmap_next_csv(&iter);
+            if (ah_str_get_len(&csv) != 0u) {
+                *is_chunked = false;
+                return AH_EINVAL;
+            }
+            *is_chunked = true;
+            return AH_ENONE;
+        }
+    }
 }
 
 ah_err_t ah_i_http_hmap_get_content_length(ah_http_hmap_t* hmap, size_t* content_length)
 {
-    bool has_next;
-    const ah_str_t* str = ah_http_hmap_get_value(hmap, ah_str_from_cstr("content-length"), &has_next);
+    ah_str_t str;
+    ah_err_t err = ah_http_hmap_get_value(hmap, ah_str_from_cstr("content-length"), &str);
 
-    if (str == NULL) {
-        if (has_next) {
-            return AH_EEXIST;
-        }
+    switch (err) {
+    case AH_ENONE:
+        break;
+
+    case AH_ESRCH:
         *content_length = 0u;
         return AH_ENONE;
+
+    default:
+        return err;
     }
 
-    ah_err_t err;
     size_t size = 0u;
 
-    const char* off = ah_str_get_ptr(str);
-    const char* const end = &off[ah_str_get_len(str)];
+    const char* off = ah_str_get_ptr(&str);
+    const char* const end = &off[ah_str_get_len(&str)];
 
     if (off == end) {
         return AH_EILSEQ;

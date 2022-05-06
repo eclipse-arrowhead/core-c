@@ -56,6 +56,7 @@
 #endif
 
 #define AH_I_ERR_MAP(E)                                                                               \
+ E(DUP, 5403, "duplicate exists")                                                                     \
  E(EOF, 5401, "unexpected end of stream")                                                             \
  E(STATE, 5402, "state invalid")                                                                      \
                                                                                                       \
@@ -136,7 +137,7 @@
  E(SHUTDOWN, AH_I_ERR_ONE_OF(ESHUTDOWN, WSAESHUTDOWN), "has shut down")                               \
  E(SOCKTNOSUPPORT, AH_I_ERR_ONE_OF(ESOCKTNOSUPPORT, WSAESOCKTNOSUPPORT), "socket type not supported") \
  E(SPIPE, AH_I_ERR_ONE_OF(ESPIPE, 5538), "broken pipe")                                               \
- E(SRCH, AH_I_ERR_ONE_OF(ESRCH, 5539), "no such process")                                             \
+ E(SRCH, AH_I_ERR_ONE_OF(ESRCH, 5539), "not found")                                                   \
  E(STALE, AH_I_ERR_ONE_OF(ESTALE, WSAESTALE), "stale")                                                \
  E(TIME, AH_I_ERR_ONE_OF(ETIME, 5540), "timeout")                                                     \
  E(TIMEDOUT, AH_I_ERR_ONE_OF(ETIMEDOUT, WSAETIMEDOUT), "timed out")                                   \

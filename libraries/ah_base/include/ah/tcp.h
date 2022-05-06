@@ -100,10 +100,24 @@ ah_inline void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
     return conn->_user_data;
 }
 
-ah_inline bool ah_tcp_conn_is_closed(ah_tcp_conn_t* conn)
+ah_inline bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
     return conn->_state == AH_I_TCP_CONN_STATE_CLOSED;
+}
+
+ah_inline bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
+        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) == 0u;
+}
+
+ah_inline bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
+        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) == 0u;
 }
 
 ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled);
