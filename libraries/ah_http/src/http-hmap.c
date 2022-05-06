@@ -8,6 +8,7 @@
 
 #include <ah/assert.h>
 #include <ah/err.h>
+#include <ah/math.h>
 #include <string.h>
 
 static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t* hmap, ah_str_t name);
@@ -213,7 +214,7 @@ static bool s_is_chunked(ah_str_t csv)
 ah_err_t ah_i_http_hmap_get_content_length(ah_http_hmap_t* hmap, size_t* content_length)
 {
     bool has_next;
-    const ah_str_t* str = ah_http_hmap_get_value(&cln->_ires->headers, ah_str_from_cstr("content-length"), &has_next);
+    const ah_str_t* str = ah_http_hmap_get_value(hmap, ah_str_from_cstr("content-length"), &has_next);
 
     if (str == NULL) {
         if (has_next) {
@@ -226,8 +227,8 @@ ah_err_t ah_i_http_hmap_get_content_length(ah_http_hmap_t* hmap, size_t* content
     ah_err_t err;
     size_t size = 0u;
 
-    const char* off = ah_str_get_ptr(&str);
-    const char* const end = &off[ah_str_get_len(&str)];
+    const char* off = ah_str_get_ptr(str);
+    const char* const end = &off[ah_str_get_len(str)];
 
     if (off == end) {
         return AH_EILSEQ;

@@ -1,5 +1,5 @@
 AlignAfterOpenBracket: DontAlign
-AlignArrayOfStructures: Left
+AlignArrayOfStructures: None
 AlignConsecutiveAssignments: None
 AlignConsecutiveBitFields: Consecutive
 AlignConsecutiveMacros: Consecutive
