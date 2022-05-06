@@ -63,7 +63,6 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct a
         return err;
     }
 
-    const int state = loop->_state;
     loop->_now = ah_time_now();
 
     struct io_uring_cqe* cqe;
@@ -114,7 +113,7 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct a
             return err;
         }
 
-        if (ah_unlikely(loop->_state != state)) {
+        if (ah_unlikely(loop->_state != AH_I_LOOP_STATE_RUNNING)) {
             break;
         }
 

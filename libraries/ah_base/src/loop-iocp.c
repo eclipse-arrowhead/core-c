@@ -136,6 +136,10 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
                 evt->_cb(evt);
             }
 
+            if (ah_unlikely(loop->_state != AH_I_LOOP_STATE_RUNNING)) {
+                return AH_ENONE;
+            }
+
             ah_i_loop_evt_dealloc(loop, evt);
         }
 
@@ -145,6 +149,10 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
                 break;
             }
             ah_i_task_execute_scheduled(task);
+
+            if (ah_unlikely(loop->_state != AH_I_LOOP_STATE_RUNNING)) {
+                return AH_ENONE;
+            }
         }
     } while (n_removed == S_COMPLETION_ENTRY_BUFFER_SIZE);
 

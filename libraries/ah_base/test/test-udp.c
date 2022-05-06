@@ -33,6 +33,8 @@ struct s_udp_sock_user_data {
 
     ah_udp_omsg_t* send_omsg;
 
+    size_t* close_call_counter;
+
     bool did_call_open_cb;
     bool did_call_close_cb;
     bool did_call_recv_alloc_cb;
@@ -89,8 +91,24 @@ static void s_on_close(ah_udp_sock_t* sock, ah_err_t err)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
 
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    ah_unit_t* unit = user_data->unit;
+
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
+    }
+
+    (*user_data->close_call_counter) += 1u;
+
+    if (*user_data->close_call_counter == 2u) {
+        ah_loop_t* loop = ah_udp_sock_get_loop(sock);
+        if (!ah_unit_assert(unit, loop != NULL, "loop == NULL")) {
+            return;
+        }
+
+        err = ah_loop_term(loop);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
     }
 
     user_data->did_call_close_cb = true;
@@ -202,6 +220,9 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
         return;
     }
 
+    // Setup close counter, which we use to decide when to terminate `loop`.
+    size_t close_call_counter = 0u;
+
     // Setup and open receiver socket.
 
     uint8_t free_buf_base[24] = { 0u };
@@ -213,6 +234,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     struct s_udp_sock_user_data recv_sock_user_data = {
         .free_buf = &free_buf,
+        .close_call_counter = &close_call_counter,
         .unit = unit,
     };
 
@@ -250,6 +272,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     struct s_udp_sock_user_data send_sock_user_data = {
         .send_omsg = &send_omsg,
+        .close_call_counter = &close_call_counter,
         .unit = unit,
     };
 
@@ -273,7 +296,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     // Submit issued events for execution.
 
     struct ah_time deadline;
-    err = ah_time_add(ah_time_now(), 10 * AH_TIMEDIFF_MS, &deadline);
+    err = ah_time_add(ah_time_now(), 1000 * AH_TIMEDIFF_MS, &deadline);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -298,10 +321,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     ah_unit_assert(unit, !send_data->did_call_recv_done_cb, "`send` s_on_sock_send_done() was called");
     ah_unit_assert(unit, send_data->did_call_send_done_cb, "`send` s_on_sock_send_done() not called");
 
-    // Release event loops.
-
-    err = ah_loop_term(&loop);
-    ah_unit_assert_err_eq(unit, AH_ENONE, err);
+    ah_unit_assert(unit, ah_loop_is_term(&loop), "`loop` never terminated");
 }
 
 #if AH_HAS_BSD_SOCKETS

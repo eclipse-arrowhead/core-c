@@ -17,6 +17,8 @@ struct s_tcp_conn_user_data {
     const ah_sockaddr_t* ln_addr;
     ah_tcp_listener_t* ln;
 
+    size_t* close_call_counter;
+
     bool did_call_open_cb;
     bool did_call_connect_cb;
     bool did_call_close_cb;
@@ -134,8 +136,24 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    ah_unit_t* unit = user_data->unit;
+
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
+    }
+
+    (*user_data->close_call_counter) += 1u;
+
+    if (*user_data->close_call_counter == 2u) {
+        ah_loop_t* loop = ah_tcp_conn_get_loop(conn);
+        if (!ah_unit_assert(unit, loop != NULL, "loop == NULL")) {
+            return;
+        }
+
+        err = ah_loop_term(loop);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
     }
 
     user_data->did_call_close_cb = true;
@@ -304,6 +322,8 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     // Setup user data.
 
+    size_t close_call_counter = 0u;
+
     uint8_t free_buf_base[24] = { 0u };
     ah_buf_t free_buf;
     err = ah_buf_init(&free_buf, free_buf_base, sizeof(free_buf_base));
@@ -313,12 +333,16 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     struct s_tcp_conn_user_data conn_user_data = {
         .free_buf = &free_buf,
+        .close_call_counter = &close_call_counter,
         .unit = unit,
     };
 
     struct s_tcp_listener_user_data ln_user_data = {
         .free_conn = &(ah_tcp_conn_t) { 0u },
-        .accept_user_data = (struct s_tcp_conn_user_data) { .unit = unit },
+        .accept_user_data = (struct s_tcp_conn_user_data) {
+            .close_call_counter = &close_call_counter,
+            .unit = unit,
+        },
         .unit = unit,
     };
 
@@ -376,7 +400,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Submit issued events for execution.
 
     ah_time_t deadline;
-    err = ah_time_add(ah_time_now(), 10 * AH_TIMEDIFF_MS, &deadline);
+    err = ah_time_add(ah_time_now(), 1 * AH_TIMEDIFF_S, &deadline);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -410,8 +434,5 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     (void) ah_unit_assert(unit, !acc_data->did_call_read_done_cb, "`acc` s_on_conn_read_data() was called");
     (void) ah_unit_assert(unit, acc_data->did_call_write_done_cb, "`acc` s_on_conn_write_done() not called");
 
-    // Release event loop.
-
-    err = ah_loop_term(&loop);
-    ah_unit_assert_err_eq(unit, AH_ENONE, err);
+    ah_unit_assert(unit, ah_loop_is_term(&loop), "`loop` never terminated");
 }
