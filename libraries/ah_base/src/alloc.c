@@ -11,35 +11,25 @@
 
 #include <string.h>
 
-ah_extern void ah_dealloc(ah_alloc_cb alloc_cb, void* ptr)
+ah_extern void ah_dealloc(ah_alloc_cb a, void* ptr)
 {
-    if (alloc_cb != NULL && ptr != NULL) {
-        (void) alloc_cb(ptr, 0u);
+    if (a != NULL && ptr != NULL) {
+        (void) a(ptr, 0u);
     }
 }
 
-ah_extern void* ah_malloc(ah_alloc_cb alloc_cb, size_t size)
+ah_extern void* ah_malloc(ah_alloc_cb a, size_t size)
 {
-    if (alloc_cb == NULL || size == 0u) {
+    if (a == NULL || size == 0u) {
         return NULL;
     }
 
-    return alloc_cb(NULL, size);
+    return a(NULL, size);
 }
 
-ah_extern void* ah_malloc_zeroed(ah_alloc_cb alloc_cb, size_t size)
+ah_extern void* ah_malloc_array(ah_alloc_cb a, size_t array_length, size_t item_size)
 {
-    void* pointer = ah_malloc(alloc_cb, size);
-    if (pointer == NULL) {
-        return NULL;
-    }
-
-    return memset(pointer, 0, size);
-}
-
-ah_extern void* ah_malloc_array(ah_alloc_cb alloc_cb, size_t array_length, size_t item_size)
-{
-    if (alloc_cb == NULL) {
+    if (a == NULL) {
         return NULL;
     }
 
@@ -51,29 +41,12 @@ ah_extern void* ah_malloc_array(ah_alloc_cb alloc_cb, size_t array_length, size_
         return NULL;
     }
 
-    return alloc_cb(NULL, total_size);
+    return a(NULL, total_size);
 }
 
-ah_extern void* ah_calloc(ah_alloc_cb alloc_cb, size_t array_length, size_t item_size)
+ah_extern void* ah_realloc_array(ah_alloc_cb a, void* ptr, size_t new_array_length, size_t item_size)
 {
-    if (alloc_cb == NULL) {
-        return NULL;
-    }
-
-    size_t total_size;
-    if (ah_mul_size(array_length, item_size, &total_size) != AH_ENONE) {
-        return NULL;
-    }
-    if (total_size == 0u) {
-        return NULL;
-    }
-
-    return ah_malloc_zeroed(alloc_cb, total_size);
-}
-
-ah_extern void* ah_realloc_array(ah_alloc_cb alloc_cb, void* ptr, size_t new_array_length, size_t item_size)
-{
-    if (alloc_cb == NULL || ptr == NULL) {
+    if (a == NULL || ptr == NULL) {
         return NULL;
     }
 
@@ -82,25 +55,12 @@ ah_extern void* ah_realloc_array(ah_alloc_cb alloc_cb, void* ptr, size_t new_arr
         return NULL;
     }
 
-    return alloc_cb(ptr, total_size);
+    return a(ptr, total_size);
 }
 
-ah_extern void* ah_realloc_array_zero_expansion(ah_alloc_cb alloc_cb, void* ptr, size_t old_array_length,
-    size_t new_array_length, size_t item_size)
+ah_extern void* ah_realloc_array_larger(ah_alloc_cb a, void* ptr, size_t* array_length, size_t item_size)
 {
-    void* new_ptr = ah_realloc_array(alloc_cb, ptr, new_array_length, item_size);
-
-    if (new_ptr != NULL && old_array_length < new_array_length) {
-        char* ptr_to_zero_region = &((char*) ptr)[old_array_length * item_size];
-        (void) memset(ptr_to_zero_region, 0, (new_array_length - old_array_length) * item_size);
-    }
-
-    return new_ptr;
-}
-
-ah_extern void* ah_realloc_array_larger(ah_alloc_cb alloc_cb, void* ptr, size_t* array_length, size_t item_size)
-{
-    if (alloc_cb == NULL || ptr == NULL || array_length == NULL || item_size == 0u) {
+    if (a == NULL || ptr == NULL || array_length == NULL || item_size == 0u) {
         return NULL;
     }
 
@@ -117,7 +77,7 @@ ah_extern void* ah_realloc_array_larger(ah_alloc_cb alloc_cb, void* ptr, size_t*
         return NULL;
     }
 
-    void* new_ptr = alloc_cb(ptr, total_size);
+    void* new_ptr = a(ptr, total_size);
 
     if (new_ptr != NULL) {
         *array_length = new_array_length;
