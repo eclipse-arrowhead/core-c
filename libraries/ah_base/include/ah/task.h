@@ -12,13 +12,6 @@
 
 #include <stddef.h>
 
-#define AH_TASK_STATE_INITIAL   0u
-#define AH_TASK_STATE_SCHEDULED 1u
-#define AH_TASK_STATE_EXECUTED  2u
-#define AH_TASK_STATE_CANCELED  3u
-
-typedef unsigned ah_task_state_t;
-
 typedef void (*ah_task_cb)(ah_task_t* task, ah_err_t err);
 
 struct ah_task {
@@ -40,12 +33,6 @@ ah_inline ah_loop_t* ah_task_get_loop(const ah_task_t* task)
     return task->_loop;
 }
 
-ah_inline ah_task_state_t ah_task_get_state(const ah_task_t* task)
-{
-    ah_assert_if_debug(task != NULL);
-    return task->_state;
-}
-
 ah_inline void ah_task_set_user_data(ah_task_t* task, void* user_data)
 {
     ah_assert_if_debug(task != NULL);
@@ -55,7 +42,7 @@ ah_inline void ah_task_set_user_data(ah_task_t* task, void* user_data)
 ah_extern void ah_task_cancel(ah_task_t* task);
 
 // Error codes:
-// * AH_EDOM    - [Darwin] `baseline` is too for into the future to be representable by the underlying event queue.
+// * AH_EDOM    - [Darwin] `baseline` is too far into the future to be representable by the underlying event queue.
 // * AH_EINVAL  - `task` is NULL.
 // * AH_ENOBUFS - [Darwin, Linux] `task` event loop has no more slots available in its event queue and could not flush it to make more slots available.
 // * AH_ENOMEM  - [Darwin, Linux, Win32] `task` event loop failed to allocate heap memory via its configured allocator callback.

@@ -18,7 +18,7 @@ static void s_on_execution(ah_i_loop_evt_t* evt, struct kevent* kev);
 ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
-    ah_assert_if_debug(task->_state == AH_TASK_STATE_SCHEDULED);
+    ah_assert_if_debug(task->_state == AH_I_TASK_STATE_SCHEDULED);
 
     struct kevent* kev;
 
@@ -29,7 +29,7 @@ ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
         return;
     }
 
-    if (ah_unlikely(task->_state == AH_TASK_STATE_CANCELED)) {
+    if (ah_unlikely(task->_state == AH_I_TASK_STATE_CANCELED)) {
         return;
     }
 
@@ -86,12 +86,12 @@ static void s_on_execution(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_task_t* task = evt->_subject;
     ah_assert_if_debug(task != NULL);
 
-    if (task->_state == AH_TASK_STATE_CANCELED) {
+    if (task->_state == AH_I_TASK_STATE_CANCELED) {
         return;
     }
 
     ah_err_t err = (kev->flags & EV_ERROR) != 0 ? (kev->flags & EV_ERROR) : AH_ENONE;
 
-    task->_state = AH_TASK_STATE_EXECUTED;
+    task->_state = AH_I_TASK_STATE_EXECUTED;
     task->_cb(task, err);
 }

@@ -17,8 +17,13 @@
 # include "_task-uring.h"
 #endif
 
+#define AH_I_TASK_STATE_INITIAL   0u
+#define AH_I_TASK_STATE_SCHEDULED 1u
+#define AH_I_TASK_STATE_EXECUTED  2u
+#define AH_I_TASK_STATE_CANCELED  3u
+
 #define AH_I_TASK_FIELDS \
- ah_task_state_t _state; \
+ unsigned _state;        \
  ah_task_cb _cb;         \
  ah_loop_t* _loop;       \
  void* _user_data;       \

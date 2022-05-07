@@ -18,7 +18,7 @@ ah_extern void ah_task_init(ah_task_t* task, ah_loop_t* loop, ah_task_cb cb)
     *task = (ah_task_t) {
         ._loop = loop,
         ._cb = cb,
-        ._state = AH_TASK_STATE_INITIAL,
+        ._state = AH_I_TASK_STATE_INITIAL,
     };
 }
 
@@ -26,9 +26,9 @@ ah_extern void ah_task_cancel(ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
 
-    if (task->_state == AH_TASK_STATE_SCHEDULED) {
+    if (task->_state == AH_I_TASK_STATE_SCHEDULED) {
         ah_i_task_cancel_scheduled(task);
-        task->_state = AH_TASK_STATE_CANCELED;
+        task->_state = AH_I_TASK_STATE_CANCELED;
         task->_cb(task, AH_ECANCELED);
     }
 }
@@ -38,7 +38,7 @@ ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline)
     if (task == NULL) {
         return AH_EINVAL;
     }
-    if (task->_state == AH_TASK_STATE_SCHEDULED) {
+    if (task->_state == AH_I_TASK_STATE_SCHEDULED) {
         return AH_ESTATE;
     }
 
@@ -47,7 +47,7 @@ ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline)
         return err;
     }
 
-    task->_state = AH_TASK_STATE_SCHEDULED;
+    task->_state = AH_I_TASK_STATE_SCHEDULED;
 
     return AH_ENONE;
 }
@@ -56,9 +56,9 @@ ah_extern void ah_task_term(ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
 
-    if (task->_state == AH_TASK_STATE_SCHEDULED) {
+    if (task->_state == AH_I_TASK_STATE_SCHEDULED) {
         ah_i_task_cancel_scheduled(task);
-        task->_state = AH_TASK_STATE_CANCELED;
+        task->_state = AH_I_TASK_STATE_CANCELED;
     }
 #ifndef NDEBUG
     *task = (ah_task_t) { 0 };
