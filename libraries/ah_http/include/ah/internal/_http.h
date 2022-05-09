@@ -13,19 +13,6 @@
 #include <ah/tcp.h>
 #include <stddef.h>
 
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_NOTHING        0u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_START 1u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_RES_LINE_CONT  2u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_HEADERS        3u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_DATA           4u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK_START    5u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_CHUNK_DATA     6u
-#define AH_I_HTTP_CLIENT_ISTATE_EXPECTING_TRAILER        7u
-
-#define AH_I_HTTP_CLIENT_OSTATE_READY        0u
-#define AH_I_HTTP_CLIENT_OSTATE_SENDING_HEAD 1u
-#define AH_I_HTTP_CLIENT_OSTATE_SENDING_BODY 2u
-
 #define AH_I_HTTP_OBODY_KIND_BUF      1u
 #define AH_I_HTTP_OBODY_KIND_BUFS     2u
 #define AH_I_HTTP_OBODY_KIND_CALLBACK 3u
@@ -34,13 +21,13 @@
  ah_tcp_conn_t _conn;                    \
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_client_vtab_t* _vtab;     \
- ah_http_ires_t* _ires;                  \
+ size_t _i_n_bytes_expected;             \
  ah_buf_t _i_non_data_buf_rd;            \
  ah_buf_t _i_non_data_buf_wr;            \
- size_t _i_n_bytes_expected;             \
- uint8_t _istate;                        \
- uint8_t _ostate;                        \
- uint16_t _n_pending_responses;
+ ah_http_ires_t* _i_res;                 \
+ uint8_t _i_state;                       \
+ uint8_t _o_state;                       \
+ uint8_t _n_pending_responses;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \
