@@ -30,7 +30,7 @@ static void s_should_parse_chunks(ah_unit_t* unit)
 {
     ah_err_t err;
     ah_buf_t buf;
-    ah_http_chunk_t chunk;
+    ah_http_chunk_line_t chunk;
 
     buf = s_buf_from("FEBA9810\r\n");
     err = ah_i_http_parse_chunk(&buf, NULL, &chunk);
@@ -62,7 +62,7 @@ static void s_should_parse_headers(ah_unit_t* unit)
     ah_err_t err;
 
     ah_http_hmap_t headers;
-    err = ah_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 4u);
+    err = ah_i_http_hmap_init(&headers, (struct ah_i_http_hmap_header[4u]) { 0u }, 4u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

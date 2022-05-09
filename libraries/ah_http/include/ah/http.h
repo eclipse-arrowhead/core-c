@@ -21,7 +21,7 @@
 #define AH_HTTP_IREQ_ERR_INTERNAL                   8706u
 #define AH_HTTP_IREQ_ERR_REQ_LINE_TOO_LONG          8707u
 
-typedef struct ah_http_chunk ah_http_chunk_t;
+typedef struct ah_http_chunk_line ah_http_chunk_line_t;
 typedef struct ah_http_client ah_http_client_t;
 typedef struct ah_http_client_vtab ah_http_client_vtab_t;
 typedef struct ah_http_header ah_http_header_t;
@@ -55,22 +55,22 @@ struct ah_http_client_vtab {
 
     void (*on_req_sent)(ah_http_client_t* cln, ah_http_oreq_t* req);
 
-    // A memory block provided to `buf` must not be deallocated or reused until
-    // `on_res_end` is called with the same `cln`.
-    void (*on_res_alloc_head)(ah_http_client_t* cln, ah_http_ires_t** res, ah_buf_t* buf);
+    // If `min_size` is larger than zero, any memory block provided to `buf`
+    // must not be deallocated or reused until `on_res_end` is called with the
+    // same `cln`. If `min_size` is zero, however, the memory block may be
+    // reused the next time this function is called with the same `cln`.
+    // Providing a memory region of a size less than or equals to `min_size`
+    // bytes via buf causes the client to fail with `AH_ENOBUFS`.
+    void (*on_res_alloc)(ah_http_client_t* cln, ah_buf_t* buf, size_t min_size);
 
-    // A memory block provided to `buf` must not be freed until the same `cln`
-    // is provided to another call of either this function or `on_res_end`. By
-    // implication, it is safe to reuse the same memory block every time this
-    // function is called with the same `cln`.
-    void (*on_res_alloc_more)(ah_http_client_t* cln, ah_buf_t* buf);
-
-    void (*on_res_line)(ah_http_client_t* cln, ah_http_ires_t* res);
+    void (*on_res_stat_line)(ah_http_client_t* cln, ah_http_ires_t* res);
     void (*on_res_headers)(ah_http_client_t* cln, ah_http_ires_t* res);
-    void (*on_res_chunk)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_http_chunk_t* chunk);
 
-    // `rbuf` will refer to a subsection of a memory block provided either via
-    // `on_res_alloc_head` or `on_res_alloc_more`, only exposing payload data.
+    // If NULL, all chunk line extensions are ignored.
+    void (*on_res_chunk_line)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_http_chunk_line_t* chunk_line);
+
+    // `rbuf` will refer to a subsection of a memory block provided via
+    // `on_res_alloc`, only exposing payload data.
     void (*on_res_data)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_buf_t* rbuf);
 
     void (*on_res_end)(ah_http_client_t* cln, ah_http_ires_t* res, ah_err_t err);
@@ -85,22 +85,20 @@ struct ah_http_server_vtab {
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 
-    // A memory block provided to `buf` must not be deallocated or reused until
-    // `on_req_end` is called with the same `srv`.
-    void (*on_req_alloc_head)(ah_http_server_t* srv, ah_http_ireq_t** req, ah_buf_t* buf, ah_http_ores_t** res);
-
-    // A memory block provided to `buf` must not be freed until the same `srv`
-    // is provided to another call of either this function or `on_req_end`. By
-    // implication, it is safe to reuse the same memory block every time this
-    // function is called with the same `srv`.
-    void (*on_req_alloc_more)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_ores_t* res);
+    // If `min_size` is larger than zero, any memory block provided to `buf`
+    // must not be deallocated or reused until `on_req_end` is called with the
+    // same `srv`. If `min_size` is zero, however, the memory block may be
+    // reused the next time this function is called with the same `srv`.
+    // Providing a memory region of a size less than or equals to `min_size`
+    // bytes via buf causes the client to fail with `AH_ENOBUFS`.
+    void (*on_req_alloc)(ah_http_server_t* srv, ah_buf_t* buf, size_t min_size);
 
     void (*on_req_line)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
     void (*on_req_headers)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
-    void (*on_req_chunk)(ah_http_client_t* cln, ah_http_ireq_t* req, const ah_http_chunk_t* chunk, ah_http_ores_t* res);
+    void (*on_req_chunk)(ah_http_client_t* cln, ah_http_ireq_t* req, const ah_http_chunk_line_t* chunk, ah_http_ores_t* res);
 
-    // `rbuf` will refer to a subsection of a memory block provided either via
-    // `on_req_alloc_head` or `on_req_alloc_more`, only exposing payload data.
+    // `rbuf` will refer to a subsection of a memory block provided via
+    // `on_req_alloc`, only exposing payload data.
     void (*on_req_data)(ah_http_server_t* srv, ah_http_ireq_t* req, const ah_buf_t* rbuf, ah_http_ores_t* res);
 
     void (*on_req_end)(ah_http_server_t* srv, ah_http_ireq_t* req, const ah_http_ireq_err_t* err, ah_http_ores_t* res);
@@ -152,12 +150,6 @@ struct ah_http_ires {
     void* user_data;
 };
 
-struct ah_http_ires_err {
-    const char* msg;
-    uint16_t code;
-    ah_err_t err;
-};
-
 struct ah_http_header {
     char* name;
     ah_str_t value;
@@ -185,7 +177,7 @@ struct ah_http_ores {
     void* user_data;
 };
 
-struct ah_http_chunk {
+struct ah_http_chunk_line {
     size_t size;
     ah_str_t ext;
 };
@@ -238,7 +230,6 @@ ah_inline void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_da
     ah_tcp_listener_set_user_data(&srv->_ln, user_data);
 }
 
-ah_extern ah_err_t ah_http_hmap_init(struct ah_http_hmap* hmap, struct ah_i_http_hmap_header* headers, size_t len);
 ah_extern ah_err_t ah_http_hmap_add(struct ah_http_hmap* hmap, ah_str_t name, ah_str_t value);
 ah_extern ah_err_t ah_http_hmap_get_value(const ah_http_hmap_t* hmap, ah_str_t name, ah_str_t* value);
 ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_iter(const ah_http_hmap_t* headers, ah_str_t name);

@@ -12,11 +12,35 @@
 #include <stddef.h>
 #include <string.h>
 
-static ah_i_http_reader_t s_reader_from_buf_and_size(ah_buf_t* buf, size_t size);
-static void s_reader_into_buf_and_size(ah_i_http_reader_t* r, ah_buf_t* buf, size_t* size);
+void ah_i_http_parser_init(ah_i_http_parser_t* parser, const uint8_t* base, unsigned long size)
+{
+    ah_assert_if_debug(parser != NULL);
+    *parser = (ah_i_http_parser_t) { base, base, &base[size] };
+}
 
-static bool s_parse_status_code(ah_i_http_reader_t* r, uint16_t* code);
-static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version);
+ah_err_t ah_i_http_parser_migrate_to(ah_i_http_parser_t* parser, ah_buf_t* buf)
+{
+    ah_assert_if_debug(parser != NULL);
+    ah_assert_if_debug(buf != NULL);
+
+    ah_assert_if_debug(parser->_end >= parser->_off);
+    size_t rem = parser->_end - parser->_off;
+
+    if (rem > ah_buf_get_size(buf)) {
+        return AH_ENOBUFS;
+    }
+
+    (void) memcpy(ah_buf_get_base(buf), parser->_off, rem);
+
+    ah_err_t err = ah_buf_init(buf, )
+}
+
+/*
+static ah_i_http_parser_t s_reader_from_buf_and_size(ah_buf_t* buf, size_t size);
+static void s_reader_into_buf_and_size(ah_i_http_parser_t* r, ah_buf_t* buf, size_t* size);
+
+static bool s_parse_status_code(ah_i_http_parser_t* r, uint16_t* code);
+static bool s_parse_version(ah_i_http_parser_t* r, ah_http_ver_t* version);
 
 static bool s_is_digit(uint8_t ch);
 static bool s_is_ows(uint8_t ch);
@@ -25,13 +49,13 @@ static bool s_is_tchar(uint8_t ch);
 static bool s_is_vchar_obs_text_htab_sp(uint8_t ch);
 static bool s_is_vchar_obs_text(uint8_t ch);
 
-static bool s_skip_ch(ah_i_http_reader_t* r, char ch);
-static bool s_skip_crlf(ah_i_http_reader_t* r);
-static void s_skip_ows(ah_i_http_reader_t* r);
+static bool s_skip_ch(ah_i_http_parser_t* r, char ch);
+static bool s_skip_crlf(ah_i_http_parser_t* r);
+static void s_skip_ows(ah_i_http_parser_t* r);
 
-static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t));
+static ah_str_t s_take_while(ah_i_http_parser_t* r, bool (*pred)(uint8_t));
 
-ah_i_http_reader_t ah_i_http_reader_from(const ah_buf_t* buf, size_t limit)
+ah_i_http_parser_t ah_i_http_parser_from(const ah_buf_t* buf, size_t limit)
 {
     ah_assert_if_debug(buf != NULL);
     ah_assert_if_debug(ah_buf_get_size(buf) >= limit);
@@ -39,14 +63,14 @@ ah_i_http_reader_t ah_i_http_reader_from(const ah_buf_t* buf, size_t limit)
     const uint8_t* off = ah_buf_get_base_const(buf);
     const uint8_t* const end = &off[limit];
 
-    return (ah_i_http_reader_t) { off, end };
+    return (ah_i_http_parser_t) { off, end };
 }
 
-void ah_i_http_reader_into_buf(const ah_i_http_reader_t* r, ah_buf_t* buf) {
+void ah_i_http_reader_into_buf(const ah_i_http_parser_t* r, ah_buf_t* buf) {
     ah_assert_if_debug(r != NULL);
     ah_assert_if_debug(buf != NULL);
 
-    ah_buf_from(r->_off, r->_end - r->_off);
+    ah_buf_from(r->_off_rd, r->_end - r->_off_rd);
 }
 
 ah_err_t ah_i_http_skip_until_after_line_end(ah_buf_t* src, size_t* size)
@@ -232,7 +256,7 @@ ah_err_t ah_i_http_parse_headers(ah_buf_t* src, size_t* size, ah_http_hmap_t* hm
     ah_assert_if_debug(src != NULL);
     ah_assert_if_debug(hmap != NULL);
 
-    ah_i_http_reader_t r = s_reader_from_buf_and_size(src, 0);
+    ah_i_http_parser_t r = s_reader_from_buf_and_size(src, 0);
 
     for (;;) {
         if (s_skip_crlf(&r)) {
@@ -250,17 +274,17 @@ ah_err_t ah_i_http_parse_headers(ah_buf_t* src, size_t* size, ah_http_hmap_t* hm
 
         s_skip_ows(&r);
 
-        if (r._off == r._end || !s_is_vchar_obs_text(r._off[0u])) {
+        if (r._off_rd == r._end || !s_is_vchar_obs_text(r._off_rd[0u])) {
             return AH_EILSEQ;
         }
 
-        uint8_t* field_value_start = r._off;
+        uint8_t* field_value_start = r._off_rd;
 
         do {
-            r._off = &r._off[1u];
-        } while (s_is_vchar_obs_text_htab_sp(r._off[0u]));
+            r._off_rd = &r._off_rd[1u];
+        } while (s_is_vchar_obs_text_htab_sp(r._off_rd[0u]));
 
-        uint8_t* field_value_end = r._off;
+        uint8_t* field_value_end = r._off_rd;
 
         if (!s_skip_crlf(&r)) {
             return AH_EILSEQ;
@@ -285,7 +309,7 @@ ah_err_t ah_i_http_parse_req_line(ah_buf_t* src, size_t* size, ah_http_req_line_
     ah_assert_if_debug(src != NULL);
     ah_assert_if_debug(req_line != NULL);
 
-    ah_i_http_reader_t r = s_reader_from_buf_and_size(src, 0);
+    ah_i_http_parser_t r = s_reader_from_buf_and_size(src, 0);
 
     req_line->method = s_take_while(&r, s_is_tchar);
     if (ah_str_get_len(&req_line->method) == 0u || !s_skip_ch(&r, ' ')) {
@@ -301,27 +325,27 @@ ah_err_t ah_i_http_parse_req_line(ah_buf_t* src, size_t* size, ah_http_req_line_
         return false;
     }
 
-    (void) ah_buf_init(src, r._off, r._end - r._off);
+    (void) ah_buf_init(src, r._off_rd, r._end - r._off_rd);
 
     return true;
 }
 
-static bool s_parse_version(ah_i_http_reader_t* r, ah_http_ver_t* version)
+static bool s_parse_version(ah_i_http_parser_t* r, ah_http_ver_t* version)
 {
-    if (r->_end - r->_off < 8u) {
+    if (r->_end - r->_off_rd < 8u) {
         return false;
     }
-    if (memcmp(r->_off, "HTTP/", 5u) != 0) {
+    if (memcmp(r->_off_rd, "HTTP/", 5u) != 0) {
         return false;
     }
-    if (!s_is_digit(r->_off[5u]) || r->_off[6u] != '.' || !s_is_digit(r->_off[7u])) {
+    if (!s_is_digit(r->_off_rd[5u]) || r->_off_rd[6u] != '.' || !s_is_digit(r->_off_rd[7u])) {
         return false;
     }
 
-    version->major = r->_off[5u] - '0';
-    version->minor = r->_off[7u] - '0';
+    version->major = r->_off_rd[5u] - '0';
+    version->minor = r->_off_rd[7u] - '0';
 
-    r->_off = &r->_off[8u];
+    r->_off_rd = &r->_off_rd[8u];
 
     return true;
 }
@@ -331,7 +355,7 @@ ah_err_t ah_i_http_parse_stat_line(ah_buf_t* src, size_t* size, ah_http_stat_lin
     ah_assert_if_debug(src != NULL);
     ah_assert_if_debug(stat_line != NULL);
 
-    ah_i_http_reader_t r = s_reader_from_buf_and_size(src, 0);
+    ah_i_http_parser_t r = s_reader_from_buf_and_size(src, 0);
 
     if (!s_parse_version(&r, &stat_line->version) || !s_skip_ch(&r, ' ')) {
         return false;
@@ -347,37 +371,37 @@ ah_err_t ah_i_http_parse_stat_line(ah_buf_t* src, size_t* size, ah_http_stat_lin
         return false;
     }
 
-    (void) ah_buf_init(src, r._off, r._end - r._off);
+    (void) ah_buf_init(src, r._off_rd, r._end - r._off_rd);
 
     return true;
 }
 
-static bool s_parse_status_code(ah_i_http_reader_t* r, uint16_t* code)
+static bool s_parse_status_code(ah_i_http_parser_t* r, uint16_t* code)
 {
-    if (r->_end - r->_off < 3u) {
+    if (r->_end - r->_off_rd < 3u) {
         return false;
     }
-    if (!s_is_digit(r->_off[0u]) || !s_is_digit(r->_off[1u]) || !s_is_digit(r->_off[2u])) {
+    if (!s_is_digit(r->_off_rd[0u]) || !s_is_digit(r->_off_rd[1u]) || !s_is_digit(r->_off_rd[2u])) {
         return false;
     }
 
-    *code = ((r->_off[0u] - '0') * 100) + ((r->_off[1u] - '0') * 10) + (r->_off[2u] - '0');
+    *code = ((r->_off_rd[0u] - '0') * 100) + ((r->_off_rd[1u] - '0') * 10) + (r->_off_rd[2u] - '0');
 
-    r->_off = &r->_off[3u];
+    r->_off_rd = &r->_off_rd[3u];
 
     return true;
 }
 
-static ah_i_http_reader_t s_reader_from_buf_and_size(ah_buf_t* buf, size_t size)
+static ah_i_http_parser_t s_reader_from_buf_and_size(ah_buf_t* buf, size_t size)
 {
     ah_assert_if_debug(buf != NULL);
     ah_assert_if_debug(ah_buf_get_size(buf) >= size);
 
     uint8_t* off = ah_buf_get_base(buf);
-    return (ah_i_http_reader_t) { off, &off[size] };
+    return (ah_i_http_parser_t) { off, &off[size] };
 }
 
-static void s_reader_into_buf_and_size(ah_i_http_reader_t* r, ah_buf_t* buf, size_t* size)
+static void s_reader_into_buf_and_size(ah_i_http_parser_t* r, ah_buf_t* buf, size_t* size)
 {
     ah_assert_if_debug(r != NULL);
     ah_assert_if_debug(buf != NULL);
@@ -385,7 +409,7 @@ static void s_reader_into_buf_and_size(ah_i_http_reader_t* r, ah_buf_t* buf, siz
 
 
 
-    (void) ah_buf_init(buf, r->_off, r->_end - r->_off);
+    (void) ah_buf_init(buf, r->_off_rd, r->_end - r->_off_rd);
 }
 
 static bool s_is_digit(uint8_t ch)
@@ -437,41 +461,41 @@ static bool s_is_vchar_obs_text_htab_sp(uint8_t ch)
     return (ch >= 0x20 && ch != 0x7F) || ch == '\t';
 }
 
-static bool s_skip_ch(ah_i_http_reader_t* r, char ch)
+static bool s_skip_ch(ah_i_http_parser_t* r, char ch)
 {
-    if (r->_off == r->_end || r->_off[0u] != ch) {
+    if (r->_off_rd == r->_end || r->_off_rd[0u] != ch) {
         return false;
     }
 
-    r->_off = &r->_off[1u];
+    r->_off_rd = &r->_off_rd[1u];
 
     return true;
 }
 
-static bool s_skip_crlf(ah_i_http_reader_t* r)
+static bool s_skip_crlf(ah_i_http_parser_t* r)
 {
-    if ((size_t) (r->_end - r->_off) < 2u) {
+    if ((size_t) (r->_end - r->_off_rd) < 2u) {
         return false;
     }
-    if (memcmp(r->_off, (uint8_t[]) { '\r', '\n' }, 2u) != 0) {
+    if (memcmp(r->_off_rd, (uint8_t[]) { '\r', '\n' }, 2u) != 0) {
         return false;
     }
 
-    r->_off = &r->_off[2u];
+    r->_off_rd = &r->_off_rd[2u];
 
     return true;
 }
 
-static void s_skip_ows(ah_i_http_reader_t* r)
+static void s_skip_ows(ah_i_http_parser_t* r)
 {
-    while (r->_off != r->_end && s_is_ows(r->_off[0u])) {
-        r->_off = &r->_off[1u];
+    while (r->_off_rd != r->_end && s_is_ows(r->_off_rd[0u])) {
+        r->_off_rd = &r->_off_rd[1u];
     }
 }
 
-static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t))
+static ah_str_t s_take_while(ah_i_http_parser_t* r, bool (*pred)(uint8_t))
 {
-    uint8_t* off = r->_off;
+    uint8_t* off = r->_off_rd;
 
     for (; off != r->_end; off = &off[1u]) {
         if (!pred(off[0u])) {
@@ -479,10 +503,11 @@ static ah_str_t s_take_while(ah_i_http_reader_t* r, bool (*pred)(uint8_t))
         }
     }
 
-    uint8_t* ptr = r->_off;
-    size_t len = (size_t) (off - r->_off);
+    uint8_t* ptr = r->_off_rd;
+    size_t len = (size_t) (off - r->_off_rd);
 
-    r->_off = off;
+    r->_off_rd = off;
 
     return ah_str_from(ptr, len);
 }
+*/

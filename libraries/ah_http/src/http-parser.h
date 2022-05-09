@@ -9,21 +9,37 @@
 
 #include "ah/http.h"
 
-typedef struct ah_i_http_reader ah_i_http_reader_t;
+typedef struct ah_i_http_parser ah_i_http_parser_t;
 
-struct ah_i_http_reader {
-    const uint8_t* _off;
-    const uint8_t* const _end;
-};
+void ah_i_http_parser_init(ah_i_http_parser_t* parser, const uint8_t* base, unsigned long size);
 
-ah_i_http_reader_t ah_i_http_reader_from(const ah_buf_t* buf, size_t limit);
-void ah_i_http_reader_into_buf(const ah_i_http_reader_t* r, ah_buf_t* buf);
+static inline bool ah_i_http_parser_is_writable(ah_i_http_parser_t* parser)
+{
+    ah_assert_if_debug(parser != NULL);
+    return parser->_limit < parser->_end;
+}
 
-ah_err_t ah_i_http_skip_until_after_line_end(ah_buf_t* src, size_t* size);
-ah_err_t ah_i_http_skip_until_after_headers_end(ah_buf_t* src, size_t* size);
-ah_err_t ah_i_http_parse_chunk(ah_buf_t* src, size_t* size, ah_http_chunk_t* chunk);
-ah_err_t ah_i_http_parse_headers(ah_buf_t* src, size_t* size, ah_http_hmap_t* hmap);
-ah_err_t ah_i_http_parse_req_line(ah_buf_t* src, size_t* size, ah_http_req_line_t* req_line);
-ah_err_t ah_i_http_parse_stat_line(ah_buf_t* src, size_t* size, ah_http_stat_line_t* stat_line);
+static inline size_t ah_i_http_parser_not_yet_parsed_size(ah_i_http_parser_t* parser)
+{
+    ah_assert_if_debug(parser != NULL);
+    return (size_t) (parser->_limit - parser->_off);
+}
+
+// Error codes:
+// * AH_EOVERFLOW - `buf` is not large enough to contain the not yet parsed
+//                  bytes in `parser` and one additional byte.
+ah_err_t ah_i_http_parser_migrate_to(ah_i_http_parser_t* parser, ah_buf_t* buf);
+
+void ah_i_http_parser_get_writable_buf(const ah_i_http_parser_t* parser, ah_buf_t* buf);
+
+// Error codes common to the below three functions:
+// * AH_EILSEQ - `buf` contains an illegal byte sequence at `parser` offset.
+// * AH_EAGAIN - Parsing not complete, use ah_i_http_parser_migrate_to() to move
+//               any unparsed bytes to a new buffer, add more incoming bytes to
+//               that buffer and then call the below function again with it. The
+//               same `parser` must, of course, be used with each call.
+ah_err_t ah_i_http_parse_res_line(ah_i_http_parser_t* parser, const ah_buf_t* buf, size_t limit);
+ah_err_t ah_i_http_parse_headers(ah_i_http_parser_t* parser, const ah_buf_t* buf, size_t limit);
+ah_err_t ah_i_http_parse_chunk_line(ah_i_http_parser_t* parser, const ah_buf_t* buf, size_t limit);
 
 #endif

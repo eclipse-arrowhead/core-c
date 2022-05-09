@@ -13,14 +13,20 @@
 #include <ah/math.h>
 
 // Input (response) states.
-#define S_I_STATE_EXPECTING_NOTHING        0u
-#define S_I_STATE_EXPECTING_RES_LINE_START 1u
-#define S_I_STATE_EXPECTING_RES_LINE_CONT  2u
-#define S_I_STATE_EXPECTING_HEADERS        3u
-#define S_I_STATE_EXPECTING_DATA           4u
-#define S_I_STATE_EXPECTING_CHUNK_START    5u
-#define S_I_STATE_EXPECTING_CHUNK_DATA     6u
-#define S_I_STATE_EXPECTING_TRAILER        7u
+#define S_I_STATE_EXPECTING_NOTHING              0u
+#define S_I_STATE_EXPECTING_RESPONSE             1u
+#define S_I_STATE_EXPECTING_STAT_LINE            2u
+#define S_I_STATE_EXPECTING_HEADERS_HEADER_NAME  3u
+#define S_I_STATE_EXPECTING_HEADERS_HEADER_VALUE 4u
+#define S_I_STATE_EXPECTING_HEADERS_HEADER_CRLF  5u
+#define S_I_STATE_EXPECTING_HEADERS_CRLF         6u
+#define S_I_STATE_EXPECTING_DATA                 7u
+#define S_I_STATE_EXPECTING_CHUNK_LINE           8u
+#define S_I_STATE_EXPECTING_CHUNK_DATA           9u
+#define S_I_STATE_EXPECTING_TRAILER_HEADER_NAME  10u
+#define S_I_STATE_EXPECTING_TRAILER_HEADER_VALUE 11u
+#define S_I_STATE_EXPECTING_TRAILER_HEADER_CRLF  12u
+#define S_I_STATE_EXPECTING_TRAILER_CRLF         13u
 
 // Output (request) states.
 #define S_O_STATE_READY        0u
@@ -33,11 +39,11 @@ static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_read_chunk_data(ah_http_client_t* cln, const ah_buf_t* buf, size_t nread);
-static ah_err_t s_read_chunk_start(ah_http_client_t* cln, ah_i_http_reader_t r);
+static ah_err_t s_read_chunk_start(ah_http_client_t* cln, ah_i_http_parser_t r);
 static void s_read_data(ah_http_client_t* cln, const ah_buf_t* buf, size_t nread);
-static ah_err_t s_read_headers(ah_http_client_t* cln, ah_i_http_reader_t r);
-static ah_err_t s_read_res_line(ah_http_client_t* cln, ah_i_http_reader_t r);
-static ah_err_t s_read_trailer(ah_http_client_t* cln, ah_i_http_reader_t r);
+static ah_err_t s_read_headers(ah_http_client_t* cln, ah_i_http_parser_t r);
+static ah_err_t s_read_res_line(ah_http_client_t* cln, ah_i_http_parser_t r);
+static ah_err_t s_read_trailer(ah_http_client_t* cln, ah_i_http_parser_t r);
 
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 
@@ -60,11 +66,10 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_connect != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
     ah_assert_if_debug(vtab->on_req_sent != NULL);
-    ah_assert_if_debug(vtab->on_res_alloc_head != NULL);
-    ah_assert_if_debug(vtab->on_res_alloc_more != NULL);
-    ah_assert_if_debug(vtab->on_res_line != NULL);
+    ah_assert_if_debug(vtab->on_res_alloc != NULL);
+    ah_assert_if_debug(vtab->on_res_stat_line != NULL);
     ah_assert_if_debug(vtab->on_res_headers != NULL);
-    ah_assert_if_debug(vtab->on_res_chunk != NULL);
+    ah_assert_if_debug(vtab->on_res_chunk_line != NULL);
     ah_assert_if_debug(vtab->on_res_data != NULL);
     ah_assert_if_debug(vtab->on_res_end != NULL);
 
@@ -131,43 +136,67 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
     ah_err_t err;
 
     switch (cln->_i_state) {
-    case S_I_STATE_EXPECTING_NOTHING:
+    case S_I_STATE_EXPECTING_NOTHING: {
         err = AH_ESTATE;
         goto close_conn_and_report_err;
+    }
 
-    case S_I_STATE_EXPECTING_RES_LINE_START:
-        cln->_i_res = NULL;
+    case S_I_STATE_EXPECTING_RESPONSE: {
+        ah_assert_if_debug(cln->_i_hmap_size_log2 <= 8u);
 
-        cln->_vtab->on_res_alloc_head(cln, &cln->_i_res, buf);
+        const size_t ires_size = sizeof(ah_http_ires_t);
+        const size_t hmap_size = sizeof(struct ah_i_http_hmap_header) << cln->_i_hmap_size_log2;
+        const size_t preamble_size = ires_size + hmap_size;
 
-        if (ah_buf_is_empty(buf)) {
-            return;
-        }
-        if (cln->_i_res == NULL) {
+        cln->_vtab->on_res_alloc(cln, buf, preamble_size);
+        if (ah_buf_get_size(buf) <= preamble_size) {
             err = AH_ENOBUFS;
             goto close_conn_and_report_err;
         }
 
-        cln->_i_state = S_I_STATE_EXPECTING_RES_LINE_CONT;
-        cln->_i_non_data_buf_rd = *buf;
-        cln->_i_non_data_buf_wr = *buf;
-        return;
+        uint8_t* base = ah_buf_get_base(buf);
 
-    case S_I_STATE_EXPECTING_RES_LINE_CONT:
-    case S_I_STATE_EXPECTING_HEADERS:
-    case S_I_STATE_EXPECTING_CHUNK_START:
-    case S_I_STATE_EXPECTING_TRAILER:
-        if (ah_buf_is_empty(&cln->_i_non_data_buf_wr)) {
-            err = AH_EOVERFLOW;
-            goto close_conn_and_report_err;
-        }
-        *buf = cln->_i_non_data_buf_wr;
+        cln->_i_res = (void*) &base[0u];
+        ah_i_http_hmap_init(&cln->_i_res->headers, (void*) &base[ires_size], 1u << cln->_i_hmap_size_log2);
+        ah_i_http_parser_init(&cln->_i_parser, &base[preamble_size], ah_buf_get_size(buf) - preamble_size);
         return;
+    }
+
+    case S_I_STATE_EXPECTING_STAT_LINE:
+    case S_I_STATE_EXPECTING_HEADERS_HEADER_NAME:
+    case S_I_STATE_EXPECTING_HEADERS_HEADER_VALUE:
+    case S_I_STATE_EXPECTING_HEADERS_HEADER_CRLF:
+    case S_I_STATE_EXPECTING_HEADERS_CRLF:
+    case S_I_STATE_EXPECTING_CHUNK_LINE:
+    case S_I_STATE_EXPECTING_TRAILER_HEADER_NAME:
+    case S_I_STATE_EXPECTING_TRAILER_HEADER_VALUE:
+    case S_I_STATE_EXPECTING_TRAILER_HEADER_CRLF:
+    case S_I_STATE_EXPECTING_TRAILER_CRLF: {
+        if (ah_i_http_parser_is_writable(&cln->_i_parser)) {
+            ah_i_http_parser_get_writable_buf(&cln->_i_parser, buf);
+        }
+        else {
+            const size_t min_size = ah_i_http_parser_not_yet_parsed_size(&cln->_i_parser);
+
+            cln->_vtab->on_res_alloc(cln, buf, min_size);
+            if (ah_buf_get_size(buf) <= min_size) {
+                err = AH_ENOBUFS;
+                goto close_conn_and_report_err;
+            }
+
+            err = ah_i_http_parser_migrate_to(&cln->_i_parser, buf);
+            if (err != AH_ENONE) {
+                goto close_conn_and_report_err;
+            }
+        }
+        return;
+    }
 
     case S_I_STATE_EXPECTING_DATA:
-    case S_I_STATE_EXPECTING_CHUNK_DATA:
-        cln->_vtab->on_res_alloc_more(cln, buf);
+    case S_I_STATE_EXPECTING_CHUNK_DATA: {
+        cln->_vtab->on_res_alloc(cln, buf, 0u);
         return;
+    }
 
     default:
         ah_unreachable();
@@ -184,121 +213,105 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
     ah_err_t err;
 
-    switch (cln->_i_state) {
-    case S_I_STATE_EXPECTING_NOTHING:
-    case S_I_STATE_EXPECTING_RES_LINE_START:
-        err = AH_ESTATE;
+    err = ah_i_http_parser_set_readable_size(&cln->_i_parser, buf, nread);
+    if (err != AH_ENONE) {
         goto close_conn_and_report_err;
-
-    case S_I_STATE_EXPECTING_RES_LINE_CONT:
-        err = s_read_res_line(cln, ah_i_http_reader_from(buf, nread));
-        break;
-
-    case S_I_STATE_EXPECTING_HEADERS:
-        err = s_read_headers(cln, ah_i_http_reader_from(buf, nread));
-        break;
-
-    case S_I_STATE_EXPECTING_DATA:
-        s_read_data(cln, buf, nread);
-        return;
-
-    case S_I_STATE_EXPECTING_CHUNK_START:
-        err = s_read_chunk_start(cln, ah_i_http_reader_from(buf, nread));
-        break;
-
-    case S_I_STATE_EXPECTING_CHUNK_DATA:
-        s_read_chunk_data(cln, buf, nread);
-        return;
-
-    case S_I_STATE_EXPECTING_TRAILER:
-        err = s_read_trailer(cln, ah_i_http_reader_from(buf, nread));
-        break;
-
-    default:
-        ah_unreachable();
     }
 
-    if (err == AH_ENONE) {
+    switch (cln->_i_state) {
+    case S_I_STATE_EXPECTING_NOTHING: {
+    expect_nothing:
+
+        if (ah_i_http_parser_not_yet_parsed_size(&cln->_i_parser) != 0) {
+            err = AH_ESTATE;
+            goto close_conn_and_report_err;
+        }
         return;
     }
 
-    /*
-    ah_i_http_reader_t r = ah_i_http_reader_from(buf, nread);
+    case S_I_STATE_EXPECTING_RESPONSE: {
+    expect_response:
 
+        ah_assert_if_debug(cln->_n_pending_responses > 0u);
+        cln->_n_pending_responses -= 1u;
 
-    ah_http_chunk_t chunk;
-    ah_http_data_t data;
-    ah_buf_t data_buf;
-    bool is_chunked;
+        ah_i_http_hmap_reset(&cln->_i_res->headers);
 
-    switch (cln->_i_state) {
-    case S_I_STATE_EXPECTING_NOTHING:
-    case S_I_STATE_EXPECTING_RES_LINE_START:
-        err = AH_ESTATE;
-        goto close_conn_and_report_err;
+        cln->_i_state = S_I_STATE_EXPECTING_HEADERS_HEADER_NAME;
+        goto expect_stat_line;
+    }
 
-    case S_I_STATE_EXPECTING_RES_LINE_CONT:
-        ah_assert_if_debug(ah_buf_get_base_const(buf) == ah_buf_get_base(&cln->_i_non_data_buf_wr));
+    case S_I_STATE_EXPECTING_STAT_LINE: {
+    expect_stat_line:
 
-        err = ah_i_http_skip_until_after_line_end(&cln->_i_non_data_buf_wr, NULL);
-        switch (err) {
-        case AH_ENONE:
+        err = ah_i_http_parse_res_line(&cln->_i_parser);
+        if (err != AH_ENONE) {
             break;
-
-        case AH_EAGAIN:
-            return;
-
-        case AH_EILSEQ:
-            goto close_conn_and_report_err;
-
-        default:
-            ah_unreachable();
         }
 
-        if (!ah_i_http_parse_stat_line(&cln->_i_non_data_buf_rd, NULL, &cln->_i_res->stat_line)) {
-            err = AH_EILSEQ;
-            goto close_conn_and_report_err;
-        }
-
-        cln->_vtab->on_res_line(cln, cln->_i_res);
-
+        cln->_vtab->on_res_stat_line(cln, cln->_i_res);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
 
-        cln->_i_state = S_I_STATE_EXPECTING_HEADERS;
-        goto expect_headers;
+        cln->_i_state = S_I_STATE_EXPECTING_HEADERS_HEADER_NAME;
+        goto expect_headers_header_name;
+    }
 
-    case S_I_STATE_EXPECTING_HEADERS:
-        ah_assert_if_debug(ah_buf_get_base_const(buf) == ah_buf_get_base(&cln->_i_non_data_buf_wr));
+    case S_I_STATE_EXPECTING_HEADERS_HEADER_NAME: {
+    expect_headers_header_name:
 
-    expect_headers:
-        err = ah_i_http_skip_until_after_headers_end(&cln->_i_non_data_buf_wr, NULL);
-        switch (err) {
-        case AH_ENONE:
+        err = ah_i_http_parse_header_name(&cln->_i_parser);
+        if (err != AH_ENONE) {
+            if (err == AH_ESRCH) {
+                cln->_i_state = S_I_STATE_EXPECTING_HEADERS_CRLF;
+                goto expect_headers_crlf;
+            }
             break;
-
-        case AH_EAGAIN:
-            return;
-
-        case AH_EILSEQ:
-            goto close_conn_and_report_err;
-
-        default:
-            ah_unreachable();
         }
 
-        if (!ah_i_http_parse_headers(&cln->_i_non_data_buf_rd, NULL, &cln->_i_res->headers)) {
-            err = AH_EILSEQ;
-            goto close_conn_and_report_err;
+        cln->_i_state = S_I_STATE_EXPECTING_HEADERS_HEADER_VALUE;
+        goto expect_headers_header_value;
+    }
+
+    case S_I_STATE_EXPECTING_HEADERS_HEADER_VALUE: {
+    expect_headers_header_value:
+
+        err = ah_i_http_parse_header_value(&cln->_i_parser);
+        if (err != AH_ENONE) {
+            break;
+        }
+
+        cln->_i_state = S_I_STATE_EXPECTING_HEADERS_HEADER_CRLF;
+        goto expect_headers_header_crlf;
+    }
+
+    case S_I_STATE_EXPECTING_HEADERS_HEADER_CRLF: {
+    expect_headers_header_crlf:
+
+        err = ah_i_http_skip_crlf(&cln->_i_parser);
+        if (err != AH_ENONE) {
+            break;
+        }
+
+        cln->_i_state = S_I_STATE_EXPECTING_HEADERS_HEADER_NAME;
+        goto expect_headers_header_name;
+    }
+
+    case S_I_STATE_EXPECTING_HEADERS_CRLF: {
+    expect_headers_crlf:
+
+        err = ah_i_http_skip_crlf(&cln->_i_parser);
+        if (err != AH_ENONE) {
+            break;
         }
 
         cln->_vtab->on_res_headers(cln, cln->_i_res);
-
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
 
+        bool is_chunked;
         err = ah_i_http_hmap_is_transfer_encoding_chunked(&cln->_i_res->headers, &is_chunked);
         if (err != AH_ENONE) {
             goto close_conn_and_report_err;
@@ -310,8 +323,8 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
                 err = AH_EBADMSG;
                 goto close_conn_and_report_err;
             }
-            cln->_i_state = S_I_STATE_EXPECTING_CHUNK_START;
-            goto expect_chunk;
+            cln->_i_state = S_I_STATE_EXPECTING_CHUNK_LINE;
+            goto expect_chunk_line_size;
         }
 
         err = ah_i_http_hmap_get_content_length(&cln->_i_res->headers, &cln->_i_n_bytes_expected);
@@ -320,203 +333,184 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         }
 
         if (cln->_i_n_bytes_expected == 0u) {
-            cln->_n_pending_responses -= 1u;
-            if (cln->_n_pending_responses == 0u) {
-                cln->_i_state = S_I_STATE_EXPECTING_NOTHING;
-            }
-            else {
-                cln->_i_state = S_I_STATE_EXPECTING_RES_LINE_START;
-            }
-            return;
+            goto response_end;
         }
 
         cln->_i_state = S_I_STATE_EXPECTING_DATA;
-
-        if (ah_buf_is_empty(&cln->_i_non_data_buf_rd)) {
-            return;
-        }
-        data_buf = cln->_i_non_data_buf_rd;
         goto expect_data;
+    }
 
-    case S_I_STATE_EXPECTING_CHUNK_START:
-        ah_assert_if_debug(ah_buf_get_base_const(buf) == ah_buf_get_base(&cln->_i_non_data_buf_wr));
-
-    expect_chunk:
-        err = ah_i_http_skip_until_after_line_end(&cln->_i_non_data_buf_wr, NULL);
-        switch (err) {
-        case AH_ENONE:
-            break;
-
-        case AH_EAGAIN:
-            return;
-
-        case AH_EILSEQ:
-            goto close_conn_and_report_err;
-
-        default:
-            ah_unreachable();
-        }
-
-        err = ah_i_http_parse_chunk(&cln->_i_non_data_buf_rd, NULL, &chunk);
-        if (err != AH_ENONE) {
-            goto close_conn_and_report_err;
-        }
-        cln->_i_n_bytes_expected = chunk.size;
-        cln->_i_state = S_I_STATE_EXPECTING_DATA;
-
-        if (ah_buf_is_empty(&cln->_i_non_data_buf_rd)) {
-            return;
-        }
-        data_buf = cln->_i_non_data_buf_rd;
-        goto expect_data;
-
-    case S_I_STATE_EXPECTING_DATA:
-        data_buf = *buf;
+    case S_I_STATE_EXPECTING_DATA: {
+        ah_buf_t readable_buf;
 
     expect_data:
-        cln->_vtab->on_res_data(cln, cln->_i_res, NULL); // TODO.
-        return;
+        ah_i_http_parser_get_readable_buf(&cln->_i_parser, &readable_buf);
 
-    case S_I_STATE_EXPECTING_TRAILER:
+        size_t readable_buf_size = ah_buf_get_size(&readable_buf);
+        if (cln->_i_n_bytes_expected < readable_buf_size) {
+            err = ah_buf_init(&readable_buf, ah_buf_get_base(&readable_buf), cln->_i_n_bytes_expected);
+            if (err != AH_ENONE) {
+                goto close_conn_and_report_err;
+            }
+            cln->_i_n_bytes_expected = 0u;
+        }
+        else {
+            cln->_i_n_bytes_expected -= readable_buf_size;
+        }
+
+        cln->_vtab->on_res_data(cln, cln->_i_res, &readable_buf);
+        if (!ah_tcp_conn_is_readable(&cln->_conn)) {
+            return;
+        }
+
+        if (cln->_i_n_bytes_expected == 0u) {
+            goto response_end;
+        }
+
         return;
+    }
+
+    case S_I_STATE_EXPECTING_CHUNK_LINE: {
+        ah_http_chunk_line_t chunk_line;
+
+    expect_chunk_line:
+
+        err = ah_i_http_parse_chunk_line(&cln->_i_parser, &chunk_line);
+        if (err != AH_ENONE) {
+            break;
+        }
+
+        if (cln->_vtab->on_res_chunk_line != NULL) {
+            cln->_vtab->on_res_chunk_line(cln, cln->_i_res, &chunk_line);
+            if (!ah_tcp_conn_is_readable(&cln->_conn)) {
+                return;
+            }
+        }
+
+        if (chunk_line.size == 0u) {
+            ah_assert_if_debug(cln->_i_n_bytes_expected == 0u);
+            cln->_i_state = S_I_STATE_EXPECTING_TRAILER_HEADER_NAME;
+            goto expect_trailer_header_name;
+        }
+
+        cln->_i_n_bytes_expected = chunk_line.size;
+        cln->_i_state = S_I_STATE_EXPECTING_CHUNK_DATA;
+        goto expect_chunk_data;
+    }
+
+    case S_I_STATE_EXPECTING_CHUNK_DATA: {
+        ah_buf_t readable_buf;
+
+    expect_chunk_data:
+
+        ah_i_http_parser_get_readable_buf(&cln->_i_parser, &readable_buf);
+
+        size_t readable_buf_size = ah_buf_get_size(&readable_buf);
+        if (cln->_i_n_bytes_expected < readable_buf_size) {
+            err = ah_buf_init(&readable_buf, ah_buf_get_base(&readable_buf), cln->_i_n_bytes_expected);
+            if (err != AH_ENONE) {
+                goto close_conn_and_report_err;
+            }
+            cln->_i_n_bytes_expected = 0u;
+        }
+        else {
+            cln->_i_n_bytes_expected -= readable_buf_size;
+        }
+
+        cln->_vtab->on_res_data(cln, cln->_i_res, &readable_buf);
+        if (!ah_tcp_conn_is_readable(&cln->_conn)) {
+            return;
+        }
+
+        if (cln->_i_n_bytes_expected == 0u) {
+            cln->_i_state = S_I_STATE_EXPECTING_CHUNK_LINE;
+            goto expect_chunk_line;
+        }
+
+        return;
+    }
+
+    case S_I_STATE_EXPECTING_TRAILER_HEADER_NAME: {
+    expect_trailer_header_name:
+
+        err = ah_i_http_parse_header_name(&cln->_i_parser);
+        if (err != AH_ENONE) {
+            if (err == AH_ESRCH) {
+                cln->_i_state = S_I_STATE_EXPECTING_TRAILER_CRLF;
+                goto expect_trailer_crlf;
+            }
+            break;
+        }
+
+        cln->_i_state = S_I_STATE_EXPECTING_TRAILER_HEADER_VALUE;
+        goto expect_trailer_header_value;
+    }
+
+    case S_I_STATE_EXPECTING_TRAILER_HEADER_VALUE: {
+    expect_trailer_header_value:
+
+        err = ah_i_http_parse_header_value(&cln->_i_parser);
+        if (err != AH_ENONE) {
+            break;
+        }
+
+        cln->_i_state = S_I_STATE_EXPECTING_TRAILER_HEADER_CRLF;
+        goto expect_trailer_header_crlf;
+    }
+
+    case S_I_STATE_EXPECTING_TRAILER_HEADER_CRLF: {
+    expect_trailer_header_crlf:
+
+        err = ah_i_http_skip_crlf(&cln->_i_parser);
+        if (err != AH_ENONE) {
+            break;
+        }
+
+        cln->_i_state = S_I_STATE_EXPECTING_TRAILER_HEADER_NAME;
+        goto expect_trailer_header_name;
+    }
+
+    case S_I_STATE_EXPECTING_TRAILER_CRLF: {
+    expect_trailer_crlf:
+
+        err = ah_i_http_skip_crlf(&cln->_i_parser);
+        if (err != AH_ENONE) {
+            break;
+        }
+
+        cln->_vtab->on_res_headers(cln, cln->_i_res);
+        if (!ah_tcp_conn_is_readable(&cln->_conn)) {
+            return;
+        }
+
+        goto response_end;
+    }
 
     default:
         ah_unreachable();
     }
-*/
+
+    if (err == AH_ENONE || err == AH_EAGAIN) {
+        return;
+    }
+
+response_end:
+    cln->_vtab->on_res_end(cln, cln->_i_res, AH_ENONE);
+    if (!ah_tcp_conn_is_readable(&cln->_conn)) {
+        return;
+    }
+
+    if (cln->_n_pending_responses == 0u) {
+        cln->_i_state = S_I_STATE_EXPECTING_NOTHING;
+        goto expect_nothing;
+    }
+
+    cln->_i_state = S_I_STATE_EXPECTING_RESPONSE;
+    goto expect_response;
+
 close_conn_and_report_err:
     cln->_trans_vtab->conn_close(conn);
     cln->_vtab->on_res_end(cln, NULL, err);
-}
-
-static ah_err_t s_read_res_line(ah_http_client_t* cln, ah_i_http_reader_t r)
-{
-    ah_err_t err;
-
-    err = ah_i_http_skip_until_after_line_end(&cln->_i_non_data_buf_wr, NULL);
-    if (err != AH_ENONE) {
-        return err != AH_EAGAIN ? err : AH_ENONE;
-    }
-
-    err = ah_i_http_parse_stat_line(&cln->_i_non_data_buf_rd, NULL, &cln->_i_res->stat_line);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    cln->_vtab->on_res_line(cln, cln->_i_res);
-
-    if (!ah_tcp_conn_is_readable(&cln->_conn)) {
-        return AH_ENONE;
-    }
-
-    cln->_i_state = S_I_STATE_EXPECTING_HEADERS;
-    return s_read_headers(cln, r);
-}
-
-static ah_err_t s_read_headers(ah_http_client_t* cln, ah_i_http_reader_t r)
-{
-    ah_err_t err;
-
-    err = ah_i_http_skip_until_after_headers_end(&cln->_i_non_data_buf_wr, NULL);
-    if (err != AH_ENONE) {
-        return err != AH_EAGAIN ? err : AH_ENONE;
-    }
-
-    err = ah_i_http_parse_headers(&cln->_i_non_data_buf_rd, NULL, &cln->_i_res->headers);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    cln->_vtab->on_res_headers(cln, cln->_i_res);
-
-    if (!ah_tcp_conn_is_readable(&cln->_conn)) {
-        return AH_ENONE;
-    }
-
-    bool is_chunked;
-    err = ah_i_http_hmap_is_transfer_encoding_chunked(&cln->_i_res->headers, &is_chunked);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    if (is_chunked) {
-        err = ah_http_hmap_get_value(&cln->_i_res->headers, ah_str_from_cstr("content-length"), NULL);
-        if (err != AH_ESRCH) {
-            return AH_EBADMSG;
-        }
-
-        cln->_i_state = S_I_STATE_EXPECTING_CHUNK_START;
-        return s_read_chunk_start(cln, r);
-    }
-
-    err = ah_i_http_hmap_get_content_length(&cln->_i_res->headers, &cln->_i_n_bytes_expected);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    if (cln->_i_n_bytes_expected == 0u) {
-        cln->_n_pending_responses -= 1u;
-        cln->_i_state = cln->_n_pending_responses == 0u
-            ? S_I_STATE_EXPECTING_NOTHING
-            : S_I_STATE_EXPECTING_RES_LINE_START;
-        return AH_ENONE;
-    }
-
-    cln->_i_state = S_I_STATE_EXPECTING_DATA;
-
-    if (ah_i_http_reader_is_empty(&r)) {
-        return AH_ENONE;
-    }
-
-    return ah
-}
-
-static void s_read_data(ah_http_client_t* cln, const ah_buf_t* buf, size_t nread)
-{
-    ah_assert_if_debug(cln != NULL);
-    ah_assert_if_debug(buf != NULL);
-    ah_assert_if_debug(ah_buf_get_size(buf) >= nread);
-
-    size_t npresented = nread;
-
-    if (npresented > cln->_i_n_bytes_expected) {
-        npresented = cln->_i_n_bytes_expected;
-    }
-    cln->_i_n_bytes_expected -= npresented;
-
-    ah_buf_t buf_rd = { buf->_base, npresented };
-
-    cln->_vtab->on_res_data(cln, cln->_i_res, &buf_rd);
-
-    if (cln->_i_n_bytes_expected == 0u) {
-        cln->_n_pending_responses -= 1u;
-        cln->_i_state = cln->_n_pending_responses == 0u
-            ? S_I_STATE_EXPECTING_NOTHING
-            : S_I_STATE_EXPECTING_RES_LINE_START;
-
-        if (npresented < nread) {
-
-        }
-    }
-}
-
-static void s_read_chunk_data(ah_http_client_t* cln, const ah_buf_t* buf, size_t nread)
-{
-    ah_assert_if_debug(cln != NULL);
-    ah_assert_if_debug(buf != NULL);
-    ah_assert_if_debug(ah_buf_get_size(buf) >= nread);
-
-    ah_buf_t buf_rd = { buf->_base, nread };
-
-    cln->_vtab->on_res_data(cln, cln->_i_res, &buf_rd);
-}
-
-static ah_err_t s_read_chunk_start(ah_http_client_t* cln, ah_i_http_reader_t r)
-{
-}
-
-static ah_err_t s_read_trailer(ah_http_client_t* cln, ah_i_http_reader_t r)
-{
 }
 
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
@@ -535,7 +529,7 @@ ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, const ah_http_o
 
     if (cln->_n_pending_responses == 0u) {
         ah_assert_if_debug(cln->_i_state == S_I_STATE_EXPECTING_NOTHING);
-        cln->_i_state = S_I_STATE_EXPECTING_RES_LINE_START;
+        cln->_i_state = S_I_STATE_EXPECTING_RESPONSE;
     }
     cln->_n_pending_responses += 1u; // TODO: Check overflow.
 

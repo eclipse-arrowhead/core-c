@@ -22,9 +22,9 @@
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_client_vtab_t* _vtab;     \
  size_t _i_n_bytes_expected;             \
- ah_buf_t _i_non_data_buf_rd;            \
- ah_buf_t _i_non_data_buf_wr;            \
+ struct ah_i_http_parser _i_parser;      \
  ah_http_ires_t* _i_res;                 \
+ uint8_t _i_hmap_size_log2;              \
  uint8_t _i_state;                       \
  uint8_t _o_state;                       \
  uint8_t _n_pending_responses;
@@ -75,6 +75,37 @@ struct ah_i_http_hmap_header {
     ah_str_t _name;
     ah_str_t _value;
     struct ah_i_http_hmap_header* _next_with_same_name;
+};
+
+// The following data layout is used by an HTTP parser. The block of numbers
+// represents the block of memory that is being parsed. The arrows above it show
+// where the struct pointers point into that memory. The dotted region
+// indicators below the memory denote what memory is generally readable,
+// generally writable and remains to be parsed.
+//
+//                        _off       _limit                   _end
+//                          |           |                       |
+//                          V           V                       V
+//              +---+---+---+---+---+---+---+---+---+---+---+---+
+// Memory block | 1 | 7 | 3 | 2 | 4 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
+//              +---+---+---+---+---+---+---+---+---+---+---+---+
+//               :.....................: :.....................:
+//                          :                       :
+//                   Readable bytes           Writable bytes
+//                           :.........:
+//                                :
+//                       Not yet parsed bytes
+//
+// The _off and _limit pointers are updated as the memory region is parsed and
+// filled with more received data, respectively. If the not yet parsed region
+// does not contain a complete grammatical unit (such as a header name/value
+// pair) and does not have room for more received bytes, those not yet parsed
+// bytes must be copied over into a new memory buffer before parsing can
+// continue.
+struct ah_i_http_parser {
+    const uint8_t* _off;
+    const uint8_t* _limit;
+    const uint8_t* _end;
 };
 
 #endif
