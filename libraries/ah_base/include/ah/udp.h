@@ -29,8 +29,8 @@ union ah_udp_group {
     ah_udp_group_ipv6_t as_ipv6;
 };
 
-struct ah_udp_omsg {
-    AH_I_UDP_OMSG_FIELDS
+struct ah_udp_obufs {
+    AH_I_UDP_OBUFS_FIELDS
 };
 
 struct ah_udp_sock {
@@ -59,19 +59,19 @@ struct ah_udp_trans_vtab {
     ah_err_t (*sock_open)(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
     ah_err_t (*sock_recv_start)(ah_udp_sock_t* sock);
     ah_err_t (*sock_recv_stop)(ah_udp_sock_t* sock);
-    ah_err_t (*sock_send)(ah_udp_sock_t* sock, ah_udp_omsg_t* omsg);
+    ah_err_t (*sock_send)(ah_udp_sock_t* sock, ah_udp_obufs_t* obufs);
     ah_err_t (*sock_close)(ah_udp_sock_t* sock);
 };
 
-ah_extern ah_err_t ah_udp_omsg_init(ah_udp_omsg_t* omsg, ah_bufs_t bufs, ah_sockaddr_t* raddr);
-ah_extern ah_sockaddr_t* ah_udp_omsg_get_raddr(ah_udp_omsg_t* omsg);
-ah_extern ah_bufs_t ah_udp_omsg_get_bufs(ah_udp_omsg_t* omsg);
+ah_extern ah_err_t ah_udp_obufs_init(ah_udp_obufs_t* obufs, ah_bufs_t bufs, ah_sockaddr_t* raddr);
+ah_extern ah_sockaddr_t* ah_udp_obufs_get_raddr(ah_udp_obufs_t* obufs);
+ah_extern ah_bufs_t ah_udp_obufs_get_bufs(ah_udp_obufs_t* obufs);
 
 ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, const ah_udp_sock_vtab_t* vtab);
 ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
-ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_omsg_t* omsg);
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_obufs_t* obufs);
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
 
 ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_t* laddr);

@@ -133,9 +133,9 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_omsg_t* omsg)
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_obufs_t* obufs)
 {
-    if (sock == NULL || omsg == NULL) {
+    if (sock == NULL || obufs == NULL) {
         return AH_EINVAL;
     }
     if (!sock->_is_open || sock->_vtab->on_send_done == NULL) {
@@ -143,13 +143,13 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_omsg_t* omsg)
     }
 
     if (sock->_send_queue_head != NULL) {
-        sock->_send_queue_end->_next = omsg;
-        sock->_send_queue_end = omsg;
+        sock->_send_queue_end->_next = obufs;
+        sock->_send_queue_end = obufs;
         return AH_ENONE;
     }
 
-    sock->_send_queue_head = omsg;
-    sock->_send_queue_end = omsg;
+    sock->_send_queue_head = obufs;
+    sock->_send_queue_end = obufs;
 
     return s_prep_sock_send(sock);
 }
@@ -167,9 +167,9 @@ static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
     evt->_cb = s_on_sock_send;
     evt->_subject = sock;
 
-    ah_udp_omsg_t* omsg = sock->_send_queue_head;
+    ah_udp_obufs_t* obufs = sock->_send_queue_head;
 
-    io_uring_prep_sendmsg(sqe, sock->_fd, &omsg->_msghdr, 0u);
+    io_uring_prep_sendmsg(sqe, sock->_fd, &obufs->_msghdr, 0u);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -195,11 +195,11 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         n_bytes_sent = cqe->res;
     }
 
-    ah_udp_omsg_t* omsg = sock->_send_queue_head;
-    sock->_send_queue_head = omsg->_next;
+    ah_udp_obufs_t* obufs = sock->_send_queue_head;
+    sock->_send_queue_head = obufs->_next;
 
 report_err_and_prep_next:
-    sock->_vtab->on_send_done(sock, n_bytes_sent, ah_i_sockaddr_const_from_bsd(omsg->_msghdr.msg_name), err);
+    sock->_vtab->on_send_done(sock, n_bytes_sent, ah_i_sockaddr_const_from_bsd(obufs->_msghdr.msg_name), err);
 
     if (sock->_send_queue_head == NULL) {
         return;
@@ -207,8 +207,8 @@ report_err_and_prep_next:
 
     err = s_prep_sock_send(sock);
     if (err != AH_ENONE) {
-        omsg = sock->_send_queue_head;
-        sock->_send_queue_head = omsg->_next;
+        obufs = sock->_send_queue_head;
+        sock->_send_queue_head = obufs->_next;
         goto report_err_and_prep_next;
     }
 }

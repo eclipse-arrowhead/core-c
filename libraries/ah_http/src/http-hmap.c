@@ -106,7 +106,7 @@ static struct ah_i_http_hmap_header* s_find_header_by_name(const ah_http_hmap_t*
     return NULL;
 }
 
-ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_iter(const ah_http_hmap_t* headers, ah_str_t name)
+ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_value_iter(const ah_http_hmap_t* headers, const char* name)
 {
     ah_assert_if_debug(headers != NULL);
 
@@ -154,7 +154,7 @@ ah_extern ah_str_t ah_http_hmap_next_csv(ah_http_hmap_value_iter_t* iter)
     return ah_str_from(csv_ptr, csv_len);
 }
 
-ah_extern const ah_str_t* ah_http_hmap_next_fiv(ah_http_hmap_value_iter_t* iter)
+ah_extern const ah_str_t* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter)
 {
     ah_assert_if_debug(iter != NULL);
 
@@ -169,7 +169,7 @@ ah_extern const ah_str_t* ah_http_hmap_next_fiv(ah_http_hmap_value_iter_t* iter)
 
 ah_extern bool ah_http_hmap_has_csv(ah_http_hmap_t* hmap, ah_str_t name, ah_http_hmap_csv_pred_cb pred)
 {
-    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_iter(hmap, name);
+    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_value_iter(hmap, name);
     for (;;) {
         ah_str_t csv = ah_http_hmap_next_csv(&iter);
         if (ah_str_get_len(&csv) == 0u) {
@@ -200,7 +200,7 @@ ah_err_t ah_i_http_hmap_is_transfer_encoding_chunked(ah_http_hmap_t* hmap, bool*
     const ah_str_t transfer_encoding = ah_str_from_cstr("transfer-encoding");
     const ah_str_t chunked = ah_str_from_cstr("chunked");
 
-    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_iter(hmap, transfer_encoding);
+    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_value_iter(hmap, transfer_encoding);
     for (;;) {
         ah_str_t csv = ah_http_hmap_next_csv(&iter);
         if (ah_str_get_len(&csv) == 0u) {

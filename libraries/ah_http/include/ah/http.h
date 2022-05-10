@@ -9,17 +9,20 @@
 
 #include "internal/_http.h"
 
+#include <ah/alloc.h>
 #include <ah/buf.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #define AH_HTTP_IREQ_ERR_CONTENT_LENGTH_RESPECIFIED 8701u
 #define AH_HTTP_IREQ_ERR_HEADERS_TOO_LARGE          8702u
-#define AH_HTTP_IREQ_ERR_HEADERS_TOO_MANY           8703u
 #define AH_HTTP_IREQ_ERR_HOST_RESPECIFIED           8704u
 #define AH_HTTP_IREQ_ERR_HOST_UNSPECIFIED           8705u
 #define AH_HTTP_IREQ_ERR_INTERNAL                   8706u
 #define AH_HTTP_IREQ_ERR_REQ_LINE_TOO_LONG          8707u
+
+#define AH_HTTP_VERSION_1_0 ((ah_http_ver_t) { 1u, 0u })
+#define AH_HTTP_VERSION_1_1 ((ah_http_ver_t) { 1u, 1u })
 
 typedef struct ah_http_chunk_line ah_http_chunk_line_t;
 typedef struct ah_http_client ah_http_client_t;
@@ -28,9 +31,7 @@ typedef struct ah_http_header ah_http_header_t;
 typedef struct ah_http_hlist ah_http_hlist_t;
 typedef struct ah_http_hmap ah_http_hmap_t;
 typedef struct ah_http_hmap_value_iter ah_http_hmap_value_iter_t;
-typedef struct ah_http_ireq ah_http_ireq_t;
 typedef struct ah_http_ireq_err ah_http_ireq_err_t;
-typedef struct ah_http_ires ah_http_ires_t;
 typedef struct ah_http_oreq ah_http_oreq_t;
 typedef struct ah_http_ores ah_http_ores_t;
 typedef struct ah_http_req_line ah_http_req_line_t;
@@ -41,8 +42,7 @@ typedef struct ah_http_ver ah_http_ver_t;
 
 typedef union ah_http_obody ah_http_obody_t;
 
-typedef bool (*ah_http_hmap_csv_pred_cb)(ah_str_t);
-typedef void (*ah_http_obody_cb)(ah_bufs_t*);
+typedef void (*ah_http_obody_cb)(void* user_data, ah_bufs_t*);
 
 struct ah_http_client {
     AH_I_HTTP_CLIENT_FIELDS
@@ -55,25 +55,12 @@ struct ah_http_client_vtab {
 
     void (*on_req_sent)(ah_http_client_t* cln, ah_http_oreq_t* req);
 
-    // If `min_size` is larger than zero, any memory block provided to `buf`
-    // must not be deallocated or reused until `on_res_end` is called with the
-    // same `cln`. If `min_size` is zero, however, the memory block may be
-    // reused the next time this function is called with the same `cln`.
-    // Providing a memory region of a size less than or equals to `min_size`
-    // bytes via buf causes the client to fail with `AH_ENOBUFS`.
-    void (*on_res_alloc)(ah_http_client_t* cln, ah_buf_t* buf, size_t min_size);
-
-    void (*on_res_stat_line)(ah_http_client_t* cln, ah_http_ires_t* res);
-    void (*on_res_headers)(ah_http_client_t* cln, ah_http_ires_t* res);
-
-    // If NULL, all chunk line extensions are ignored.
-    void (*on_res_chunk_line)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_http_chunk_line_t* chunk_line);
-
-    // `rbuf` will refer to a subsection of a memory block provided via
-    // `on_res_alloc`, only exposing payload data.
-    void (*on_res_data)(ah_http_client_t* cln, ah_http_ires_t* res, const ah_buf_t* rbuf);
-
-    void (*on_res_end)(ah_http_client_t* cln, ah_http_ires_t* res, ah_err_t err);
+    void (*on_res_alloc)(ah_http_client_t* cln, ah_http_oreq_t* req, ah_buf_t* buf);
+    void (*on_res_stat_line)(ah_http_client_t* cln, ah_http_oreq_t* req, const ah_http_stat_line_t* stat_line);
+    void (*on_res_header)(ah_http_client_t* cln, ah_http_oreq_t* req, const char* name, const char* value);
+    void (*on_res_chunk)(ah_http_client_t* cln, ah_http_oreq_t* req, size_t size, const char* ext);
+    void (*on_res_data)(ah_http_client_t* cln, ah_http_oreq_t* req, const ah_buf_t* rbuf);
+    void (*on_end)(ah_http_client_t* cln, ah_http_oreq_t* req, ah_err_t err);
 };
 
 struct ah_http_server {
@@ -85,23 +72,12 @@ struct ah_http_server_vtab {
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 
-    // If `min_size` is larger than zero, any memory block provided to `buf`
-    // must not be deallocated or reused until `on_req_end` is called with the
-    // same `srv`. If `min_size` is zero, however, the memory block may be
-    // reused the next time this function is called with the same `srv`.
-    // Providing a memory region of a size less than or equals to `min_size`
-    // bytes via buf causes the client to fail with `AH_ENOBUFS`.
-    void (*on_req_alloc)(ah_http_server_t* srv, ah_buf_t* buf, size_t min_size);
-
-    void (*on_req_line)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
-    void (*on_req_headers)(ah_http_server_t* srv, ah_http_ireq_t* req, ah_http_ores_t* res);
-    void (*on_req_chunk)(ah_http_client_t* cln, ah_http_ireq_t* req, const ah_http_chunk_line_t* chunk, ah_http_ores_t* res);
-
-    // `rbuf` will refer to a subsection of a memory block provided via
-    // `on_req_alloc`, only exposing payload data.
-    void (*on_req_data)(ah_http_server_t* srv, ah_http_ireq_t* req, const ah_buf_t* rbuf, ah_http_ores_t* res);
-
-    void (*on_req_end)(ah_http_server_t* srv, ah_http_ireq_t* req, const ah_http_ireq_err_t* err, ah_http_ores_t* res);
+    void (*on_req_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_ores_t* res);
+    void (*on_req_line)(ah_http_server_t* srv, const ah_http_req_line_t* req_line, ah_http_ores_t* res);
+    void (*on_req_header)(ah_http_server_t* srv, const char* name, const char* value, ah_http_ores_t* res);
+    void (*on_req_chunk)(ah_http_server_t* srv, size_t size, const char* ext, ah_http_ores_t* res);
+    void (*on_req_data)(ah_http_server_t* srv, const ah_buf_t* rbuf, ah_http_ores_t* res);
+    void (*on_req_end)(ah_http_server_t* srv, const ah_http_ireq_err_t* err, ah_http_ores_t* res);
 
     void (*on_res_sent)(ah_http_server_t* srv, ah_http_ores_t* res, ah_err_t err);
 };
@@ -112,15 +88,15 @@ struct ah_http_ver {
 };
 
 struct ah_http_req_line {
-    ah_str_t method;
-    ah_str_t target;
+    const char* method;
+    const char* target;
     ah_http_ver_t version;
 };
 
 struct ah_http_stat_line {
     ah_http_ver_t version;
     uint16_t code;
-    ah_str_t reason;
+    const char* reason;
 };
 
 struct ah_http_hmap {
@@ -131,12 +107,6 @@ struct ah_http_hmap_value_iter {
     AH_I_HTTP_HMAP_VALUE_ITER_FIELDS
 };
 
-struct ah_http_ireq {
-    ah_http_req_line_t req_line;
-    ah_http_hmap_t headers;
-    void* user_data;
-};
-
 struct ah_http_ireq_err {
     const char* msg;
     uint16_t code;
@@ -144,15 +114,9 @@ struct ah_http_ireq_err {
     ah_err_t err;
 };
 
-struct ah_http_ires {
-    ah_http_stat_line_t stat_line;
-    ah_http_hmap_t headers;
-    void* user_data;
-};
-
 struct ah_http_header {
-    char* name;
-    ah_str_t value;
+    const char* name;
+    const char* value;
 };
 
 struct ah_http_hlist {
@@ -167,7 +131,9 @@ struct ah_http_oreq {
     ah_http_req_line_t req_line;
     ah_http_hlist_t headers;
     ah_http_obody_t body;
-    void* user_data; // Will be passed on to the corresponding ah_http_ires_t.
+    void* user_data;
+
+    AH_I_HTTP_OREQ_FIELDS
 };
 
 struct ah_http_ores {
@@ -175,11 +141,8 @@ struct ah_http_ores {
     ah_http_hlist_t headers;
     ah_http_obody_t body;
     void* user_data;
-};
 
-struct ah_http_chunk_line {
-    size_t size;
-    ah_str_t ext;
+    AH_I_HTTP_ORES_FIELDS
 };
 
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab);
@@ -230,12 +193,10 @@ ah_inline void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_da
     ah_tcp_listener_set_user_data(&srv->_ln, user_data);
 }
 
-ah_extern ah_err_t ah_http_hmap_add(struct ah_http_hmap* hmap, ah_str_t name, ah_str_t value);
-ah_extern ah_err_t ah_http_hmap_get_value(const ah_http_hmap_t* hmap, ah_str_t name, ah_str_t* value);
-ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_iter(const ah_http_hmap_t* headers, ah_str_t name);
-ah_extern ah_str_t ah_http_hmap_next_csv(ah_http_hmap_value_iter_t* iter);
-ah_extern const ah_str_t* ah_http_hmap_next_fiv(ah_http_hmap_value_iter_t* iter);
-ah_extern bool ah_http_hmap_has_csv(ah_http_hmap_t* hmap, ah_str_t name, ah_http_hmap_csv_pred_cb pred);
+ah_extern ah_err_t ah_http_hmap_add(struct ah_http_hmap* hmap, const char* name, const char* value);
+ah_extern ah_err_t ah_http_hmap_get_value(const ah_http_hmap_t* hmap, const char* name, const char** value);
+ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_value_iter(const ah_http_hmap_t* headers, const char* name);
+ah_extern const char* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter);
 
 ah_inline ah_http_obody_t ah_http_obody_buf(ah_buf_t buf)
 {
@@ -247,23 +208,19 @@ ah_inline ah_http_obody_t ah_http_obody_bufs(ah_bufs_t bufs)
     return (ah_http_obody_t) { ._as_bufs._kind = AH_I_HTTP_OBODY_KIND_BUFS, ._as_bufs._bufs = bufs };
 }
 
-ah_inline ah_http_obody_t ah_http_obody_callback(ah_http_obody_cb cb)
+ah_inline ah_http_obody_t ah_http_obody_callback(void* user_data, ah_http_obody_cb cb)
 {
-    return (ah_http_obody_t) { ._as_callback._kind = AH_I_HTTP_OBODY_KIND_CALLBACK, ._as_callback._cb = cb };
+    return (ah_http_obody_t) {
+        ._as_callback._kind = AH_I_HTTP_OBODY_KIND_CALLBACK,
+        ._as_callback._cb = cb,
+        ._as_callback._user_data = user_data,
+    };
 }
 
 ah_inline ah_http_obody_t ah_http_obody_cstr(char* cstr)
 {
     ah_buf_t buf;
     ah_err_t err = ah_buf_init(&buf, (uint8_t*) cstr, strlen(cstr));
-    ah_assert(err == 0);
-    return ah_http_obody_buf(buf);
-}
-
-ah_inline ah_http_obody_t ah_http_obody_str(ah_str_t str)
-{
-    ah_buf_t buf;
-    ah_err_t err = ah_buf_init(&buf, (uint8_t*) ah_str_get_ptr(&str), ah_str_get_len(&str));
     ah_assert(err == 0);
     return ah_http_obody_buf(buf);
 }

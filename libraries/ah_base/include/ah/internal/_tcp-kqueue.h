@@ -15,7 +15,7 @@
  int _fd;                                 \
  struct ah_i_loop_evt* _listen_evt;
 
-#define AH_I_TCP_OMSG_PLATFORM_FIELDS \
+#define AH_I_TCP_OBUFS_PLATFORM_FIELDS \
  struct iovec* _iov;                  \
  int _iovcnt;
 

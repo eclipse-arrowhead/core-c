@@ -52,8 +52,8 @@ struct ah_tcp_listener_vtab {
     void (*on_conn_err)(ah_tcp_listener_t* ln, ah_err_t);
 };
 
-struct ah_tcp_omsg {
-    AH_I_TCP_OMSG_FIELDS
+struct ah_tcp_obufs {
+    AH_I_TCP_OBUFS_FIELDS
 };
 
 struct ah_tcp_trans {
@@ -66,7 +66,7 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*conn_connect)(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
     ah_err_t (*conn_read_start)(ah_tcp_conn_t* conn);
     ah_err_t (*conn_read_stop)(ah_tcp_conn_t* conn);
-    ah_err_t (*conn_write)(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg); // May modify ah_bufs_t items in omsg.
+    ah_err_t (*conn_write)(ah_tcp_conn_t* conn, ah_tcp_obufs_t* obufs); // May modify ah_bufs_t items in obufs.
     ah_err_t (*conn_shutdown)(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
     ah_err_t (*conn_close)(ah_tcp_conn_t* conn);
 
@@ -81,7 +81,7 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg); // May modify ah_bufs_t items in omsg.
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_obufs_t* obufs); // May modify ah_bufs_t items in obufs.
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 
@@ -165,8 +165,8 @@ ah_inline void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_d
     ln->_user_data = user_data;
 }
 
-ah_extern ah_err_t ah_tcp_omsg_init(ah_tcp_omsg_t* omsg, ah_bufs_t bufs);
-ah_extern ah_bufs_t ah_tcp_omsg_get_bufs(ah_tcp_omsg_t* omsg);
+ah_extern ah_err_t ah_tcp_obufs_init(ah_tcp_obufs_t* obufs, ah_bufs_t bufs);
+ah_extern ah_bufs_t ah_tcp_obufs_unwrap(ah_tcp_obufs_t* obufs);
 
 ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop);
 

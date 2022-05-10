@@ -108,26 +108,26 @@ static void s_should_add_same_header_name_multiple_times(ah_unit_t* unit)
 
     // Get headers.
 
-    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_iter(&headers, ah_str_from_cstr("Set-Cookie"));
+    ah_http_hmap_value_iter_t iter = ah_http_hmap_get_value_iter(&headers, ah_str_from_cstr("Set-Cookie"));
 
     const ah_str_t* value;
 
-    value = ah_http_hmap_next_fiv(&iter);
+    value = ah_http_hmap_next_value(&iter);
     if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("munchy"), *value)) {
         return;
     }
 
-    value = ah_http_hmap_next_fiv(&iter);
+    value = ah_http_hmap_next_value(&iter);
     if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("crispy"), *value)) {
         return;
     }
 
-    value = ah_http_hmap_next_fiv(&iter);
+    value = ah_http_hmap_next_value(&iter);
     if (!ah_unit_assert_str_eq(unit, ah_str_from_cstr("sweet"), *value)) {
         return;
     }
 
-    value = ah_http_hmap_next_fiv(&iter);
+    value = ah_http_hmap_next_value(&iter);
     if (!ah_unit_assert(unit, value == NULL, "expected value to be NULL")) {
         return;
     }

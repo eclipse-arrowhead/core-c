@@ -90,6 +90,7 @@
 typedef int ah_err_t;
 
 typedef struct ah_buf ah_buf_t;
+typedef struct ah_buf_rw ah_buf_rw_t;
 typedef struct ah_bufs ah_bufs_t;
 typedef struct ah_ipaddr_v4 ah_ipaddr_v4_t;
 typedef struct ah_ipaddr_v6 ah_ipaddr_v6_t;
@@ -104,20 +105,19 @@ typedef struct ah_tcp_conn ah_tcp_conn_t;
 typedef struct ah_tcp_conn_vtab ah_tcp_conn_vtab_t;
 typedef struct ah_tcp_listener ah_tcp_listener_t;
 typedef struct ah_tcp_listener_vtab ah_tcp_listener_vtab_t;
-typedef struct ah_tcp_omsg ah_tcp_omsg_t;
+typedef struct ah_tcp_obufs ah_tcp_obufs_t;
 typedef struct ah_tcp_trans ah_tcp_trans_t;
 typedef struct ah_tcp_trans_vtab ah_tcp_trans_vtab_t;
 typedef struct ah_time ah_time_t;
 typedef struct ah_udp_group_ipv4 ah_udp_group_ipv4_t;
 typedef struct ah_udp_group_ipv6 ah_udp_group_ipv6_t;
-typedef struct ah_udp_omsg ah_udp_omsg_t;
+typedef struct ah_udp_obufs ah_udp_obufs_t;
 typedef struct ah_udp_sock ah_udp_sock_t;
 typedef struct ah_udp_sock_vtab ah_udp_sock_vtab_t;
 typedef struct ah_udp_trans ah_udp_trans_t;
 typedef struct ah_udp_trans_vtab ah_udp_trans_vtab_t;
 
 typedef union ah_sockaddr ah_sockaddr_t;
-typedef union ah_str ah_str_t;
 typedef union ah_udp_group ah_udp_group_t;
 
 typedef struct ah_i_loop_evt ah_i_loop_evt_t;

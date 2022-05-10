@@ -193,16 +193,16 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_obufs_t* obufs)
 {
-    if (conn == NULL || omsg == NULL) {
+    if (conn == NULL || obufs == NULL) {
         return AH_EINVAL;
     }
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return AH_ESTATE;
     }
 
-    if (ah_i_tcp_omsg_queue_is_empty_then_add(&conn->_omsg_queue, omsg)) {
+    if (ah_i_tcp_obufs_queue_is_empty_then_add(&conn->_obufs_queue, obufs)) {
         return s_prep_conn_write(conn);
     }
 
@@ -222,9 +222,9 @@ static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_write;
     evt->_subject = conn;
 
-    ah_tcp_omsg_t* omsg = ah_i_tcp_omsg_queue_peek_unsafe(&conn->_omsg_queue);
+    ah_tcp_obufs_t* obufs = ah_i_tcp_obufs_queue_peek_unsafe(&conn->_obufs_queue);
 
-    io_uring_prep_writev(sqe, conn->_fd, omsg->_iov, omsg->_iovcnt, 0u);
+    io_uring_prep_writev(sqe, conn->_fd, obufs->_iov, obufs->_iovcnt, 0u);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -252,13 +252,13 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     }
 
 report_err_and_prep_next:
-    ah_i_tcp_omsg_queue_remove_unsafe(&conn->_omsg_queue);
+    ah_i_tcp_obufs_queue_remove_unsafe(&conn->_obufs_queue);
     conn->_vtab->on_write_done(conn, err);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
     }
-    if (ah_i_tcp_omsg_queue_is_empty(&conn->_omsg_queue)) {
+    if (ah_i_tcp_obufs_queue_is_empty(&conn->_obufs_queue)) {
         return;
     }
 

@@ -8,7 +8,6 @@
 #define AH_INTERNAL_UNIT_H_
 
 #include <ah/defs.h>
-#include <ah/str.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -28,7 +27,6 @@ bool ah_i_unit_assert_enum_eq(struct ah_i_unit unit, int a, int b, const char* (
 bool ah_i_unit_assert_err_eq(struct ah_i_unit unit, ah_err_t a, ah_err_t b, const char* message);
 bool ah_i_unit_assert_mem_eq(struct ah_i_unit unit, const void* a, const void* b, size_t size, const char* message);
 bool ah_i_unit_assert_signed_eq(struct ah_i_unit unit, intmax_t a, intmax_t b, const char* message);
-bool ah_i_unit_assert_str_eq(struct ah_i_unit unit, ah_str_t a, ah_str_t b, const char* message);
 bool ah_i_unit_assert_unsigned_eq(struct ah_i_unit unit, uintmax_t a, uintmax_t b, const char* message);
 
 #endif

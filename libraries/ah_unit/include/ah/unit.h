@@ -30,9 +30,6 @@
 #define ah_unit_assert_signed_eq(unit, a, b) \
  ah_i_unit_assert_signed_eq(AH_I_UNIT_WRAP(unit), (intmax_t) (a), (intmax_t) (b), #a " != " #b)
 
-#define ah_unit_assert_str_eq(unit, a, b) \
- ah_i_unit_assert_str_eq(AH_I_UNIT_WRAP(unit), (a), (b), #a " != " #b)
-
 #define ah_unit_assert_unsigned_eq(unit, a, b) \
  ah_i_unit_assert_unsigned_eq(AH_I_UNIT_WRAP(unit), (uintmax_t) (a), (uintmax_t) (b), #a " != " #b)
 

@@ -9,7 +9,6 @@
 
 #include <ah/buf.h>
 #include <ah/defs.h>
-#include <ah/str.h>
 #include <ah/tcp.h>
 #include <stddef.h>
 
@@ -21,13 +20,11 @@
  ah_tcp_conn_t _conn;                    \
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_client_vtab_t* _vtab;     \
- size_t _i_n_bytes_expected;             \
- struct ah_i_http_parser _i_parser;      \
- ah_http_ires_t* _i_res;                 \
- uint8_t _i_hmap_size_log2;              \
- uint8_t _i_state;                       \
- uint8_t _o_state;                       \
- uint8_t _n_pending_responses;
+ struct ah_i_http_oreq_queue _req_queue; \
+ ah_buf_rw_t _res_buf_rw;                \
+ size_t _n_expected_bytes;               \
+ uint16_t _n_expected_responses;         \
+ uint16_t _state;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \
@@ -49,8 +46,20 @@
  struct ah_i_http_obody_bufs _as_bufs; \
  struct ah_i_http_obody_callback _as_callback;
 
+#define AH_I_HTTP_OREQ_FIELDS \
+ ah_http_oreq_t* _next;
+
+#define AH_I_HTTP_ORES_FIELDS \
+ ah_http_ores_t* _next;
+
 #define AH_I_HTTP_OBODY_COMMON \
  int _kind;
+
+struct ah_i_http_hmap_header {
+    const char* _name;
+    const char* _value;
+    struct ah_i_http_hmap_header* _next_with_same_name;
+};
 
 struct ah_i_http_obody_any {
     AH_I_HTTP_OBODY_COMMON
@@ -68,44 +77,13 @@ struct ah_i_http_obody_bufs {
 
 struct ah_i_http_obody_callback {
     AH_I_HTTP_OBODY_COMMON
-    void (*_cb)(ah_bufs_t* bufs);
+    void (*_cb)(void* user_data, ah_bufs_t* bufs);
+    void* _user_data;
 };
 
-struct ah_i_http_hmap_header {
-    ah_str_t _name;
-    ah_str_t _value;
-    struct ah_i_http_hmap_header* _next_with_same_name;
-};
-
-// The following data layout is used by an HTTP parser. The block of numbers
-// represents the block of memory that is being parsed. The arrows above it show
-// where the struct pointers point into that memory. The dotted region
-// indicators below the memory denote what memory is generally readable,
-// generally writable and remains to be parsed.
-//
-//                        _off       _limit                   _end
-//                          |           |                       |
-//                          V           V                       V
-//              +---+---+---+---+---+---+---+---+---+---+---+---+
-// Memory block | 1 | 7 | 3 | 2 | 4 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
-//              +---+---+---+---+---+---+---+---+---+---+---+---+
-//               :.....................: :.....................:
-//                          :                       :
-//                   Readable bytes           Writable bytes
-//                           :.........:
-//                                :
-//                       Not yet parsed bytes
-//
-// The _off and _limit pointers are updated as the memory region is parsed and
-// filled with more received data, respectively. If the not yet parsed region
-// does not contain a complete grammatical unit (such as a header name/value
-// pair) and does not have room for more received bytes, those not yet parsed
-// bytes must be copied over into a new memory buffer before parsing can
-// continue.
-struct ah_i_http_parser {
-    const uint8_t* _off;
-    const uint8_t* _limit;
-    const uint8_t* _end;
+struct ah_i_http_oreq_queue {
+    struct ah_http_oreq* _head;
+    struct ah_http_oreq* _end;
 };
 
 #endif

@@ -208,31 +208,6 @@ bool ah_i_unit_assert_signed_eq(struct ah_i_unit unit, intmax_t a, intmax_t b, c
     return false;
 }
 
-bool ah_i_unit_assert_str_eq(struct ah_i_unit unit, ah_str_t a, ah_str_t b, const char* message)
-{
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
-
-    unit.external->assertion_count += 1;
-
-    if (ah_str_eq(a, b)) {
-        return true;
-    }
-
-    unit.external->fail_count += 1;
-
-    int a_len = ah_str_get_len(&a) > INT_MAX ? INT_MAX : (int) ah_str_get_len(&a);
-    int b_len = ah_str_get_len(&b) > INT_MAX ? INT_MAX : (int) ah_str_get_len(&b);
-
-    (void) printf("FAIL %s (%s:%d) %s\n\t%s\"%*.s\" != %s\"%*.s\"\n", unit.func, unit.file, unit.line, message,
-        a_len == INT_MAX ? "(truncated) " : "", a_len, ah_str_get_ptr(&a), b_len == INT_MAX ? "(truncated) " : "", b_len,
-        ah_str_get_ptr(&b));
-
-    return false;
-}
-
 bool ah_i_unit_assert_unsigned_eq(struct ah_i_unit unit, uintmax_t a, uintmax_t b, const char* message)
 {
     if (unit.external == NULL) {

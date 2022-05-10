@@ -210,16 +210,16 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_omsg_t* omsg)
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_obufs_t* obufs)
 {
-    if (conn == NULL || omsg == NULL) {
+    if (conn == NULL || obufs == NULL) {
         return AH_EINVAL;
     }
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return AH_ESTATE;
     }
 
-    if (ah_i_tcp_omsg_queue_is_empty_then_add(&conn->_omsg_queue, omsg)) {
+    if (ah_i_tcp_obufs_queue_is_empty_then_add(&conn->_obufs_queue, obufs)) {
         return s_prep_conn_write(conn);
     }
 
@@ -260,7 +260,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     ah_err_t err;
 
-    ah_tcp_omsg_t* omsg = ah_i_tcp_omsg_queue_peek_unsafe(&conn->_omsg_queue);
+    ah_tcp_obufs_t* obufs = ah_i_tcp_obufs_queue_peek_unsafe(&conn->_obufs_queue);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -273,7 +273,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err_and_prep_next;
     }
 
-    ssize_t res = writev(conn->_fd, omsg->_iov, omsg->_iovcnt);
+    ssize_t res = writev(conn->_fd, obufs->_iov, obufs->_iovcnt);
     if (ah_unlikely(res < 0)) {
         err = errno;
         goto report_err_and_prep_next;
@@ -281,8 +281,8 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     // If more remains to be written but no output buffer space is available,
     // adjust current write buffers and schedule another writing.
-    for (int i = 0; i < omsg->_iovcnt; i += 1) {
-        struct iovec* iov = &omsg->_iov[i];
+    for (int i = 0; i < obufs->_iovcnt; i += 1) {
+        struct iovec* iov = &obufs->_iov[i];
 
         if (((size_t) res) >= iov->iov_len) {
             res -= (ssize_t) iov->iov_len;
@@ -291,8 +291,8 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         // There is more, adjust current write buffers and reschedule.
 
-        omsg->_iov = &omsg->_iov[i];
-        omsg->_iovcnt -= i;
+        obufs->_iov = &obufs->_iov[i];
+        obufs->_iovcnt -= i;
 
         iov->iov_base = &((uint8_t*) iov->iov_base)[(size_t) res];
         iov->iov_len -= (size_t) res;
@@ -304,13 +304,13 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
     err = AH_ENONE;
 
 report_err_and_prep_next:
-    ah_i_tcp_omsg_queue_remove_unsafe(&conn->_omsg_queue);
+    ah_i_tcp_obufs_queue_remove_unsafe(&conn->_obufs_queue);
     conn->_vtab->on_write_done(conn, err);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
     }
-    if (ah_i_tcp_omsg_queue_is_empty(&conn->_omsg_queue)) {
+    if (ah_i_tcp_obufs_queue_is_empty(&conn->_obufs_queue)) {
         return;
     }
 

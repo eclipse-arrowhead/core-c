@@ -14,7 +14,6 @@ set(
     include/ah/err.h
     include/ah/internal/_loop.h
     include/ah/internal/_sock.h
-    include/ah/internal/_str.h
     include/ah/internal/_task.h
     include/ah/internal/_tcp.h
     include/ah/internal/_time.h
@@ -25,7 +24,6 @@ set(
     include/ah/loop.h
     include/ah/math.h
     include/ah/sock.h
-    include/ah/str.h
     include/ah/task.h
     include/ah/tcp.h
     include/ah/time.h
@@ -37,11 +35,10 @@ set(
     src/loop.c
     src/math.c
     src/sock.c
-    src/str.c
     src/task.c
     src/tcp.c
     src/udp.c
-)
+    src/buf.c)
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     list(

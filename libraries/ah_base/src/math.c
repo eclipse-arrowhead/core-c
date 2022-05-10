@@ -14,239 +14,103 @@
 # include <intsafe.h>
 #endif
 
-ah_extern ah_err_t ah_add_int64(const int64_t a, const int64_t b, int64_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-
-    int64_t tmp;
-
 #if defined(ah_p_add_overflow)
-    if (ah_p_add_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
+# define S_ADD_INT32(a, b, result)  ah_p_add_overflow(a, b, result)
+# define S_ADD_INT64(a, b, result)  ah_p_add_overflow(a, b, result)
+# define S_ADD_UINT32(a, b, result) ah_p_add_overflow(a, b, result)
+# define S_ADD_UINT64(a, b, result) ah_p_add_overflow(a, b, result)
 #elif AH_IS_WIN32
-    if (FAILED(Int64Add(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
+# define S_ADD_INT32(a, b, result)  FAILED(Int32Add(a, b, result))
+# define S_ADD_INT64(a, b, result)  FAILED(Int64Add(a, b, result))
+# define S_ADD_UINT32(a, b, result) FAILED(UInt32Add(a, b, result))
+# define S_ADD_UINT64(a, b, result) FAILED(UInt64Add(a, b, result))
 #endif
-
-    *result = tmp;
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_div_int64(const int64_t a, const int64_t b, int64_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-    if (b == 0) {
-        return AH_EDOM;
-    }
-    if (a == INT64_MIN && b == -1) {
-        return AH_ERANGE;
-    }
-    *result = a / b;
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_mul_int64(const int64_t a, const int64_t b, int64_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-
-    int64_t tmp;
 
 #if defined(ah_p_mul_overflow)
-    if (ah_p_mul_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
+# define S_MUL_INT32(a, b, result)  ah_p_mul_overflow(a, b, result)
+# define S_MUL_INT64(a, b, result)  ah_p_mul_overflow(a, b, result)
+# define S_MUL_UINT32(a, b, result) ah_p_mul_overflow(a, b, result)
+# define S_MUL_UINT64(a, b, result) ah_p_mul_overflow(a, b, result)
 #elif AH_IS_WIN32
-    if (FAILED(Int64Mult(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
+# define S_MUL_INT32(a, b, result)  FAILED(Int32Mult(a, b, result))
+# define S_MUL_INT64(a, b, result)  FAILED(Int64Mult(a, b, result))
+# define S_MUL_UINT32(a, b, result) FAILED(UInt32Mult(a, b, result))
+# define S_MUL_UINT64(a, b, result) FAILED(UInt64Mult(a, b, result))
 #endif
-
-    *result = tmp;
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_sub_int64(const int64_t a, const int64_t b, int64_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-
-    int64_t tmp;
 
 #if defined(ah_p_sub_overflow)
-    if (ah_p_sub_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
+# define S_SUB_INT32(a, b, result)  ah_p_sub_overflow(a, b, result)
+# define S_SUB_INT64(a, b, result)  ah_p_sub_overflow(a, b, result)
+# define S_SUB_UINT32(a, b, result) ah_p_sub_overflow(a, b, result)
+# define S_SUB_UINT64(a, b, result) ah_p_sub_overflow(a, b, result)
 #elif AH_IS_WIN32
-    if (FAILED(Int64Sub(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
+# define S_SUB_INT32(a, b, result)  FAILED(Int32Sub(a, b, result))
+# define S_SUB_INT64(a, b, result)  FAILED(Int64Sub(a, b, result))
+# define S_SUB_UINT32(a, b, result) FAILED(UInt32Sub(a, b, result))
+# define S_SUB_UINT64(a, b, result) FAILED(UInt64Sub(a, b, result))
 #endif
 
-    *result = tmp;
-    return AH_ENONE;
-}
+#define S_GEN(NAME, TYPE, FN)                                      \
+ ah_extern ah_err_t NAME(const TYPE a, const TYPE b, TYPE* result) \
+ {                                                                 \
+  if (result == NULL) {                                            \
+   return AH_EINVAL;                                               \
+  }                                                                \
+                                                                   \
+  TYPE tmp;                                                        \
+  if (FN(a, b, &tmp)) {                                            \
+   return AH_ERANGE;                                               \
+  }                                                                \
+  *result = tmp;                                                   \
+                                                                   \
+  return AH_ENONE;                                                 \
+ }
 
-ah_extern ah_err_t ah_add_size(const size_t a, const size_t b, size_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
+#define S_GEN_DIV_SIGNED(NAME, TYPE, TYPE_MIN)                     \
+ ah_extern ah_err_t NAME(const TYPE a, const TYPE b, TYPE* result) \
+ {                                                                 \
+  if (result == NULL) {                                            \
+   return AH_EINVAL;                                               \
+  }                                                                \
+  if (b == 0) {                                                    \
+   return AH_EDOM;                                                 \
+  }                                                                \
+  if (a == TYPE_MIN && b == -1) {                                  \
+   return AH_ERANGE;                                               \
+  }                                                                \
+  *result = a / b;                                                 \
+  return AH_ENONE;                                                 \
+ }
 
-    size_t tmp;
+#define S_GEN_DIV_UNSIGNED(NAME, TYPE)                             \
+ ah_extern ah_err_t NAME(const TYPE a, const TYPE b, TYPE* result) \
+ {                                                                 \
+  if (result == NULL) {                                            \
+   return AH_EINVAL;                                               \
+  }                                                                \
+  if (b == 0) {                                                    \
+   return AH_EDOM;                                                 \
+  }                                                                \
+  *result = a / b;                                                 \
+  return AH_ENONE;                                                 \
+ }
 
-#if defined(ah_p_add_overflow)
-    if (ah_p_add_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
-#elif AH_IS_WIN32
-    if (FAILED(SizeTAdd(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
-#endif
+S_GEN(ah_add_int32, int32_t, S_ADD_INT32)
+S_GEN_DIV_SIGNED(ah_div_int32, int32_t, INT32_MIN)
+S_GEN(ah_mul_int32, int32_t, S_MUL_INT32)
+S_GEN(ah_sub_int32, int32_t, S_SUB_INT32)
 
-    *result = tmp;
-    return AH_ENONE;
-}
+S_GEN(ah_add_int64, int64_t, S_ADD_INT64)
+S_GEN_DIV_SIGNED(ah_div_int64, int64_t, INT64_MIN)
+S_GEN(ah_mul_int64, int64_t, S_MUL_INT64)
+S_GEN(ah_sub_int64, int64_t, S_SUB_INT64)
 
-ah_extern ah_err_t ah_div_size(const size_t a, const size_t b, size_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-    if (b == 0) {
-        return AH_EDOM;
-    }
-    *result = a / b;
-    return AH_ENONE;
-}
+S_GEN(ah_add_uint32, uint32_t, S_ADD_UINT32)
+S_GEN_DIV_UNSIGNED(ah_div_uint32, uint32_t)
+S_GEN(ah_mul_uint32, uint32_t, S_MUL_UINT32)
+S_GEN(ah_sub_uint32, uint32_t, S_SUB_UINT32)
 
-ah_extern ah_err_t ah_mul_size(const size_t a, const size_t b, size_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-
-    size_t tmp;
-
-#if defined(ah_p_mul_overflow)
-    if (ah_p_mul_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
-#elif AH_IS_WIN32
-    if (FAILED(SizeTMult(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
-#endif
-
-    *result = tmp;
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_sub_size(const size_t a, const size_t b, size_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-
-    size_t tmp;
-
-#if defined(ah_p_sub_overflow)
-    if (ah_p_sub_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
-#elif AH_IS_WIN32
-    if (FAILED(SizeTSub(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
-#endif
-
-    *result = tmp;
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_add_uint64(const uint64_t a, const uint64_t b, uint64_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-
-    uint64_t tmp;
-
-#if defined(ah_p_add_overflow)
-    if (ah_p_add_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
-#elif AH_IS_WIN32
-    if (FAILED(UInt64Add(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
-#endif
-
-    *result = tmp;
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_div_uint64(const uint64_t a, const uint64_t b, uint64_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-    if (b == 0) {
-        return AH_EDOM;
-    }
-    *result = a / b;
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_mul_uint64(const uint64_t a, const uint64_t b, uint64_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-
-    uint64_t tmp;
-
-#if defined(ah_p_mul_overflow)
-    if (ah_p_mul_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
-#elif AH_IS_WIN32
-    if (FAILED(UInt64Mult(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
-#endif
-
-    *result = tmp;
-    return AH_ENONE;
-}
-
-ah_extern ah_err_t ah_sub_uint64(const uint64_t a, const uint64_t b, uint64_t* result)
-{
-    if (result == NULL) {
-        return AH_EINVAL;
-    }
-
-    uint64_t tmp;
-
-#if defined(ah_p_sub_overflow)
-    if (ah_p_sub_overflow(a, b, &tmp)) {
-        return AH_ERANGE;
-    }
-#elif AH_IS_WIN32
-    if (FAILED(UInt64Sub(a, b, &tmp))) {
-        return AH_ERANGE;
-    }
-#endif
-
-    *result = tmp;
-    return AH_ENONE;
-}
+S_GEN(ah_add_uint64, uint64_t, S_ADD_UINT64)
+S_GEN_DIV_UNSIGNED(ah_div_uint64, uint64_t)
+S_GEN(ah_mul_uint64, uint64_t, S_MUL_UINT64)
+S_GEN(ah_sub_uint64, uint64_t, S_SUB_UINT64)

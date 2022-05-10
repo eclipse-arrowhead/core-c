@@ -8,9 +8,9 @@
 
 #include "ah/err.h"
 
-ah_extern ah_err_t ah_tcp_omsg_init(ah_tcp_omsg_t* omsg, ah_bufs_t bufs)
+ah_extern ah_err_t ah_tcp_obufs_init(ah_tcp_obufs_t* obufs, ah_bufs_t bufs)
 {
-    if (omsg == NULL || (bufs.items == NULL && bufs.length != 0u)) {
+    if (obufs == NULL || (bufs.items == NULL && bufs.length != 0u)) {
         return AH_EINVAL;
     }
 
@@ -22,7 +22,7 @@ ah_extern ah_err_t ah_tcp_omsg_init(ah_tcp_omsg_t* omsg, ah_bufs_t bufs)
         return err;
     }
 
-    *omsg = (ah_tcp_omsg_t) {
+    *obufs = (ah_tcp_obufs_t) {
         ._next = NULL,
         ._iov = iov,
         ._iovcnt = iovcnt,
@@ -31,12 +31,12 @@ ah_extern ah_err_t ah_tcp_omsg_init(ah_tcp_omsg_t* omsg, ah_bufs_t bufs)
     return AH_ENONE;
 }
 
-ah_extern ah_bufs_t ah_tcp_omsg_get_bufs(ah_tcp_omsg_t* omsg)
+ah_extern ah_bufs_t ah_tcp_obufs_unwrap(ah_tcp_obufs_t* obufs)
 {
-    ah_assert_if_debug(omsg != NULL);
+    ah_assert_if_debug(obufs != NULL);
 
     ah_bufs_t bufs;
-    ah_i_bufs_from_iovec(&bufs, omsg->_iov, omsg->_iovcnt);
+    ah_i_bufs_from_iovec(&bufs, obufs->_iov, obufs->_iovcnt);
 
     return bufs;
 }
