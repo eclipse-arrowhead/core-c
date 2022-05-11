@@ -6,9 +6,8 @@ set(
     SOURCE_FILES
     include/ah/http.h
     include/ah/internal/_http.h
+    src/http-body.c
     src/http-client.c
-    src/http-hmap.c
-    src/http-hmap.h
     src/http-parser.c
     src/http-parser.h
     src/http-server.c
@@ -23,7 +22,6 @@ set(
     TEST_FILES
     test/main.c
     test/test-http-client.c
-    test/test-http-hmap.c
     test/test-http-parser.c
     test/test-http-server.c
 )

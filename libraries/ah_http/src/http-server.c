@@ -9,48 +9,10 @@
 #include <ah/err.h>
 #include <ah/math.h>
 
-static const ah_http_ireq_err_t s_ireq_err_content_length_respecified = {
-    "'content-length' already specified",
-    AH_HTTP_IREQ_ERR_CONTENT_LENGTH_RESPECIFIED,
-    400,
-    AH_EILSEQ,
-};
-static const ah_http_ireq_err_t s_ireq_err_headers_too_large = {
-    "headers section too large",
-    AH_HTTP_IREQ_ERR_HEADERS_TOO_LARGE,
-    431,
-    AH_ENOBUFS,
-};
-static const ah_http_ireq_err_t s_ireq_err_headers_too_many = {
-    "too many headers",
-    AH_HTTP_IREQ_ERR_HEADERS_TOO_MANY,
-    400,
-    AH_ENOBUFS,
-};
-static const ah_http_ireq_err_t s_ireq_err_host_respecified = {
-    "'host' already specified",
-    AH_HTTP_IREQ_ERR_HOST_RESPECIFIED,
-    400,
-    AH_EILSEQ,
-};
-static const ah_http_ireq_err_t s_ireq_err_host_unspecified = {
-    "'host' not specified",
-    AH_HTTP_IREQ_ERR_HOST_UNSPECIFIED,
-    400,
-    AH_EILSEQ,
-};
-static const ah_http_ireq_err_t s_ireq_err_req_line_too_long = {
-    "request line too long",
-    AH_HTTP_IREQ_ERR_REQ_LINE_TOO_LONG,
-    400,
-    AH_ENOBUFS,
-};
-
 static void s_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
 static void s_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 static void s_on_conn_err(ah_tcp_listener_t* ln, ah_err_t err);
 
-static ah_http_ireq_err_t s_ireq_err_internal_error_from(ah_err_t err);
 static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln);
 
@@ -59,14 +21,6 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     if (srv == NULL || trans._vtab == NULL || trans._loop == NULL || vtab == NULL) {
         return AH_EINVAL;
     }
-
-    (void) s_ireq_err_content_length_respecified;
-    (void) s_ireq_err_headers_too_large;
-    (void) s_ireq_err_headers_too_many;
-    (void) s_ireq_err_host_respecified;
-    (void) s_ireq_err_host_unspecified;
-    (void) s_ireq_err_req_line_too_long;
-    (void) s_ireq_err_internal_error_from;
 
     ah_assert_if_debug(trans._vtab->conn_init != NULL);
     ah_assert_if_debug(trans._vtab->conn_open != NULL);
@@ -87,7 +41,6 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_req_alloc != NULL);
     ah_assert_if_debug(vtab->on_req_line != NULL);
     ah_assert_if_debug(vtab->on_req_header != NULL);
-    ah_assert_if_debug(vtab->on_req_chunk != NULL);
     ah_assert_if_debug(vtab->on_req_data != NULL);
     ah_assert_if_debug(vtab->on_req_end != NULL);
     ah_assert_if_debug(vtab->on_res_sent != NULL);
@@ -187,7 +140,7 @@ static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)
     return cln;
 }
 
-ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_ores_t* res)
+ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_res_t* res)
 {
     if (srv == NULL || res == NULL) {
         return AH_EINVAL;
@@ -195,6 +148,28 @@ ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_o
 
     (void) srv;
     (void) res;
+    return AH_EOPNOTSUPP; // TODO: Implement.
+}
+
+ah_extern ah_err_t ah_http_server_send_chunk(ah_http_server_t* srv, ah_http_chunk_line_t chunk, ah_bufs_t bufs)
+{
+    (void) srv;
+    (void) chunk;
+    (void) bufs;
+    return AH_EOPNOTSUPP; // TODO: Implement.
+}
+
+ah_extern ah_err_t ah_http_server_send_data(ah_http_server_t* srv, ah_bufs_t bufs)
+{
+    (void) srv;
+    (void) bufs;
+    return AH_EOPNOTSUPP; // TODO: Implement.
+}
+
+ah_extern ah_err_t ah_http_server_send_trailer(ah_http_server_t* srv, ah_http_header_t* headers)
+{
+    (void) srv;
+    (void) headers;
     return AH_EOPNOTSUPP; // TODO: Implement.
 }
 
@@ -206,7 +181,23 @@ ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
     return srv->_trans_vtab->listener_close(&srv->_ln);
 }
 
-static ah_http_ireq_err_t s_ireq_err_internal_error_from(ah_err_t err)
+ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv)
 {
-    return (ah_http_ireq_err_t) { "internal server error", AH_HTTP_IREQ_ERR_INTERNAL, 500, err };
+    ah_assert_if_debug(srv != NULL);
+
+    return &srv->_ln;
+}
+
+ah_extern void* ah_http_server_get_user_data(ah_http_server_t* srv)
+{
+    ah_assert_if_debug(srv != NULL);
+
+    return ah_tcp_listener_get_user_data(&srv->_ln);
+}
+
+ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data)
+{
+    ah_assert_if_debug(srv != NULL);
+
+    ah_tcp_listener_set_user_data(&srv->_ln, user_data);
 }

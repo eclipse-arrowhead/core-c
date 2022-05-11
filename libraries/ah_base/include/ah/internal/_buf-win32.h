@@ -12,6 +12,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#define AH_I_BUF_PLATFORM_SIZE_MAX ULONG_MAX
+
 #define AH_I_BUF_PLATFORM_FIELDS \
  ULONG _size;                    \
  uint8_t* _base;

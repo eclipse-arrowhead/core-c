@@ -12,78 +12,70 @@
 #include <ah/tcp.h>
 #include <stddef.h>
 
-#define AH_I_HTTP_OBODY_KIND_BUF      1u
-#define AH_I_HTTP_OBODY_KIND_BUFS     2u
-#define AH_I_HTTP_OBODY_KIND_CALLBACK 3u
+#define AH_I_HTTP_BODY_KIND_BUF      1u
+#define AH_I_HTTP_BODY_KIND_BUFS     2u
+#define AH_I_HTTP_BODY_KIND_CB       3u
+#define AH_I_HTTP_BODY_KIND_OVERRIDE 4u
 
 #define AH_I_HTTP_CLIENT_FIELDS          \
  ah_tcp_conn_t _conn;                    \
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_client_vtab_t* _vtab;     \
- struct ah_i_http_oreq_queue _req_queue; \
+ struct ah_i_http_req_queue _req_queue;  \
  ah_buf_rw_t _res_buf_rw;                \
- size_t _n_expected_bytes;               \
- uint16_t _n_expected_responses;         \
- uint16_t _state;
+ size_t _res_n_expected_bytes;           \
+ uint8_t _res_state;                     \
+ uint8_t _req_state;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \
  const ah_tcp_trans_vtab_t* _trans_vtab; \
- const ah_http_server_vtab_t* _vtab;
+ const ah_http_server_vtab_t* _vtab;     \
+ struct ah_i_http_res_queue _res_queue;
 
-#define AH_I_HTTP_HMAP_FIELDS \
- uint16_t _mask;              \
- uint16_t _count;             \
- struct ah_i_http_hmap_header* _headers;
+#define AH_I_HTTP_BODY_FIELDS         \
+ struct ah_i_http_body_any _as_any;   \
+ struct ah_i_http_body_buf _as_buf;   \
+ struct ah_i_http_body_bufs _as_bufs; \
+ struct ah_i_http_body_cb _as_cb;
 
-#define AH_I_HTTP_HMAP_VALUE_ITER_FIELDS      \
- const struct ah_i_http_hmap_header* _header; \
- size_t _value_off;
+#define AH_I_HTTP_REQ_FIELDS \
+ ah_http_req_t* _next;
 
-#define AH_I_HTTP_OBODY_FIELDS         \
- struct ah_i_http_obody_any _as_any;   \
- struct ah_i_http_obody_buf _as_buf;   \
- struct ah_i_http_obody_bufs _as_bufs; \
- struct ah_i_http_obody_callback _as_callback;
-
-#define AH_I_HTTP_OREQ_FIELDS \
- ah_http_oreq_t* _next;
-
-#define AH_I_HTTP_ORES_FIELDS \
- ah_http_ores_t* _next;
+#define AH_I_HTTP_RES_FIELDS \
+ ah_http_res_t* _next;
 
 #define AH_I_HTTP_OBODY_COMMON \
  int _kind;
 
-struct ah_i_http_hmap_header {
-    const char* _name;
-    const char* _value;
-    struct ah_i_http_hmap_header* _next_with_same_name;
-};
-
-struct ah_i_http_obody_any {
+struct ah_i_http_body_any {
     AH_I_HTTP_OBODY_COMMON
 };
 
-struct ah_i_http_obody_buf {
+struct ah_i_http_body_buf {
     AH_I_HTTP_OBODY_COMMON
     ah_buf_t _buf;
 };
 
-struct ah_i_http_obody_bufs {
+struct ah_i_http_body_bufs {
     AH_I_HTTP_OBODY_COMMON
     ah_bufs_t _bufs;
 };
 
-struct ah_i_http_obody_callback {
+struct ah_i_http_body_cb {
     AH_I_HTTP_OBODY_COMMON
     void (*_cb)(void* user_data, ah_bufs_t* bufs);
     void* _user_data;
 };
 
-struct ah_i_http_oreq_queue {
-    struct ah_http_oreq* _head;
-    struct ah_http_oreq* _end;
+struct ah_i_http_res_queue {
+    struct ah_http_res* _head;
+    struct ah_http_res* _end;
+};
+
+struct ah_i_http_req_queue {
+    struct ah_http_req* _head;
+    struct ah_http_req* _end;
 };
 
 #endif

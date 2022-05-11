@@ -10,6 +10,9 @@
 #include "../defs.h"
 
 #include <stddef.h>
+#include <stdint.h>
+
+#define AH_I_BUF_PLATFORM_SIZE_MAX SIZE_MAX
 
 #define AH_I_BUF_PLATFORM_FIELDS \
  uint8_t* _base;                 \

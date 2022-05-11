@@ -15,6 +15,8 @@
 # include "_buf-win32.h"
 #endif
 
+#define AH_I_BUF_SIZE_MAX AH_I_BUF_PLATFORM_SIZE_MAX
+
 #define AH_I_BUF_FIELDS AH_I_BUF_PLATFORM_FIELDS
 
 #endif
