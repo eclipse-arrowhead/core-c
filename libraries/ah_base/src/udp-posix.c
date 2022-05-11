@@ -6,6 +6,7 @@
 
 #include "ah/udp.h"
 
+#include "ah/assert.h"
 #include "ah/err.h"
 
 ah_extern ah_err_t ah_udp_obufs_init(ah_udp_obufs_t* obufs, ah_bufs_t bufs, ah_sockaddr_t* raddr)

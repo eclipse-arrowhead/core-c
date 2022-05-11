@@ -6,6 +6,7 @@
 
 #include "ah/tcp.h"
 
+#include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
 
@@ -33,6 +34,50 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, const 
     return AH_ENONE;
 }
 
+ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+
+    return conn->_loop;
+}
+
+ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+
+    return conn->_user_data;
+}
+
+ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+
+    return conn->_state == AH_I_TCP_CONN_STATE_CLOSED;
+}
+
+ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+
+    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
+        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) == 0u;
+}
+
+ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+
+    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
+        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) == 0u;
+}
+
+ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
+{
+    ah_assert_if_debug(conn != NULL);
+
+    conn->_user_data = user_data;
+}
+
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, const ah_tcp_listener_vtab_t* vtab)
 {
     if (ln == NULL || loop == NULL || vtab == NULL) {
@@ -55,6 +100,34 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
     };
 
     return AH_ENONE;
+}
+
+ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln)
+{
+    ah_assert_if_debug(ln != NULL);
+
+    return ln->_loop;
+}
+
+ah_extern void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln)
+{
+    ah_assert_if_debug(ln != NULL);
+
+    return ln->_user_data;
+}
+
+ah_extern bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln)
+{
+    ah_assert_if_debug(ln != NULL);
+
+    return ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED;
+}
+
+ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data)
+{
+    ah_assert_if_debug(ln != NULL);
+
+    ln->_user_data = user_data;
 }
 
 ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop)

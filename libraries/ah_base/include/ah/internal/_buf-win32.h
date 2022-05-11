@@ -18,7 +18,7 @@
 
 typedef struct _WSABUF WSABUF;
 
-ah_inline WSABUF* ah_i_buf_into_wsabuf(ah_buf_t* buf)
+static inline WSABUF* ah_i_buf_into_wsabuf(ah_buf_t* buf)
 {
     return (WSABUF*) buf;
 }

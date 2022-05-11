@@ -30,15 +30,18 @@ set(
     include/ah/udp.h
     src/abort.c
     src/alloc.c
+    src/buf.c
     src/err.c
+    src/ip.c
     src/lib.c
     src/loop.c
     src/math.c
     src/sock.c
     src/task.c
     src/tcp.c
+    src/time.c
     src/udp.c
-    src/buf.c)
+)
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     list(

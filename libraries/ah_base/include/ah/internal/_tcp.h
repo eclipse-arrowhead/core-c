@@ -27,14 +27,14 @@
 #define AH_I_TCP_LISTENER_STATE_OPEN      1u
 #define AH_I_TCP_LISTENER_STATE_LISTENING 2u
 
-#define AH_I_TCP_CONN_FIELDS             \
- ah_loop_t* _loop;                       \
- const ah_tcp_conn_vtab_t* _vtab;        \
+#define AH_I_TCP_CONN_FIELDS               \
+ ah_loop_t* _loop;                         \
+ const ah_tcp_conn_vtab_t* _vtab;          \
  struct ah_i_tcp_obufs_queue _obufs_queue; \
- void* _trans_data;                      \
- void* _user_data;                       \
- ah_tcp_shutdown_t _shutdown_flags;      \
- uint8_t _state;                         \
+ void* _trans_data;                        \
+ void* _user_data;                         \
+ ah_tcp_shutdown_t _shutdown_flags;        \
+ uint8_t _state;                           \
  AH_I_TCP_CONN_PLATFORM_FIELDS
 
 #define AH_I_TCP_LISTENER_FIELDS       \

@@ -6,6 +6,7 @@
 
 #include "ah/udp.h"
 
+#include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
 
@@ -30,6 +31,27 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, const 
     };
 
     return AH_ENONE;
+}
+
+ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock)
+{
+    ah_assert_if_debug(sock != NULL);
+
+    return sock->_loop;
+}
+
+ah_extern void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock)
+{
+    ah_assert_if_debug(sock != NULL);
+
+    return sock->_user_data;
+}
+
+ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
+{
+    ah_assert_if_debug(sock != NULL);
+
+    sock->_user_data = user_data;
 }
 
 ah_extern void ah_udp_trans_init(ah_udp_trans_t* trans, ah_loop_t* loop)

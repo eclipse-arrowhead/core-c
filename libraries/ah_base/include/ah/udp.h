@@ -7,7 +7,6 @@
 #ifndef AH_UDP_H_
 #define AH_UDP_H_
 
-#include "assert.h"
 #include "buf.h"
 #include "internal/_udp.h"
 #include "sock.h"
@@ -73,32 +72,14 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_obufs_t* obufs);
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
-
 ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_t* laddr);
-
-ah_inline ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock)
-{
-    ah_assert_if_debug(sock != NULL);
-    return sock->_loop;
-}
-
-ah_inline void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock)
-{
-    ah_assert_if_debug(sock != NULL);
-    return sock->_user_data;
-}
-
+ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock);
+ah_extern void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
 ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool is_enabled);
 ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enabled);
 ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
-
-ah_inline void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
-{
-    ah_assert_if_debug(sock != NULL);
-    sock->_user_data = user_data;
-}
-
+ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data);
 ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 

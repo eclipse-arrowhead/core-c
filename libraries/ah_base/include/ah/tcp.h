@@ -7,12 +7,12 @@
 #ifndef AH_TCP_H_
 #define AH_TCP_H_
 
-#include "assert.h"
 #include "buf.h"
 #include "internal/_tcp.h"
-#include "sock.h"
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #define AH_TCP_SHUTDOWN_RD   1u
 #define AH_TCP_SHUTDOWN_WR   2u
@@ -84,86 +84,30 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_obufs_t* obufs); // May modify ah_bufs_t items in obufs.
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
-
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr);
-
-ah_inline ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
-{
-    ah_assert_if_debug(conn != NULL);
-    return conn->_loop;
-}
-
-ah_inline void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
-{
-    ah_assert_if_debug(conn != NULL);
-    return conn->_user_data;
-}
-
-ah_inline bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn)
-{
-    ah_assert_if_debug(conn != NULL);
-    return conn->_state == AH_I_TCP_CONN_STATE_CLOSED;
-}
-
-ah_inline bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
-{
-    ah_assert_if_debug(conn != NULL);
-    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
-        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) == 0u;
-}
-
-ah_inline bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
-{
-    ah_assert_if_debug(conn != NULL);
-    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
-        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) == 0u;
-}
-
+ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
+ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn);
+ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn);
+ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn);
+ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
-
-ah_inline void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
-{
-    ah_assert_if_debug(conn != NULL);
-    conn->_user_data = user_data;
-}
+ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, const ah_tcp_listener_vtab_t* vtab);
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_vtab_t* conn_vtab);
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
-
 ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr);
-
-ah_inline ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln)
-{
-    ah_assert_if_debug(ln != NULL);
-    return ln->_loop;
-}
-
-ah_inline void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln)
-{
-    ah_assert_if_debug(ln != NULL);
-    return ln->_user_data;
-}
-
-ah_inline bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln)
-{
-    ah_assert_if_debug(ln != NULL);
-    return ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED;
-}
-
+ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln);
+ah_extern void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln);
+ah_extern bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln);
 ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled);
 ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled);
 ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled);
-
-ah_inline void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data)
-{
-    ah_assert_if_debug(ln != NULL);
-    ln->_user_data = user_data;
-}
+ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data);
 
 ah_extern ah_err_t ah_tcp_obufs_init(ah_tcp_obufs_t* obufs, ah_bufs_t bufs);
 ah_extern ah_bufs_t ah_tcp_obufs_unwrap(ah_tcp_obufs_t* obufs);

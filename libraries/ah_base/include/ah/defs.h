@@ -67,24 +67,16 @@
 # define AH_VIA_MSVC 0
 #endif
 
-#if AH_VIA_MSVC && !AH_IS_WIN32
-# error "MSVC must only be used to compile for the Windows platform."
-#endif
-
 #if (-1 & 3) != 3
 # error "Only computer architectures with two's complement signed integers are supported for this library."
 #endif
 
 #if AH_VIA_CLANG || AH_VIA_GCC
 # define ah_extern   __attribute__((visibility("default"), unused))
-# define ah_inline   static inline __attribute__((unused))
 # define ah_noreturn __attribute__((noreturn))
-# define ah_unused   __attribute__((unused))
 #elif AH_VIA_MSVC
 # define ah_extern   __declspec(dllexport)
-# define ah_inline   static inline
 # define ah_noreturn __declspec(noreturn)
-# define ah_unused
 #endif
 
 typedef int ah_err_t;

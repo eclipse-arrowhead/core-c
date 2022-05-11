@@ -48,10 +48,10 @@ ah_extern bool ah_sockaddr_is_ip_wildcard(const ah_sockaddr_t* sockaddr)
 
     switch (sockaddr->as_any.family) {
     case AH_SOCKFAMILY_IPV4:
-        return ah_ipaddr_v4_is_wildcard(sockaddr->as_ipv4.ipaddr);
+        return ah_ipaddr_v4_is_wildcard(&sockaddr->as_ipv4.ipaddr);
 
     case AH_SOCKFAMILY_IPV6:
-        return ah_ipaddr_v6_is_wildcard(sockaddr->as_ipv6.ipaddr);
+        return ah_ipaddr_v6_is_wildcard(&sockaddr->as_ipv6.ipaddr);
 
     default:
         return false;

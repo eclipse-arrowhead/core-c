@@ -41,22 +41,22 @@ typedef int ah_i_socklen_t;
 
 ah_extern ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr);
 
-ah_inline ah_sockaddr_t* ah_i_sockaddr_from_bsd(struct sockaddr* sockaddr)
+static inline ah_sockaddr_t* ah_i_sockaddr_from_bsd(struct sockaddr* sockaddr)
 {
     return (ah_sockaddr_t*) sockaddr;
 }
 
-ah_inline const ah_sockaddr_t* ah_i_sockaddr_const_from_bsd(const struct sockaddr* sockaddr)
+static inline const ah_sockaddr_t* ah_i_sockaddr_const_from_bsd(const struct sockaddr* sockaddr)
 {
     return (const ah_sockaddr_t*) sockaddr;
 }
 
-ah_inline struct sockaddr* ah_i_sockaddr_into_bsd(ah_sockaddr_t* sockaddr)
+static inline struct sockaddr* ah_i_sockaddr_into_bsd(ah_sockaddr_t* sockaddr)
 {
     return (struct sockaddr*) sockaddr;
 }
 
-ah_inline const struct sockaddr* ah_i_sockaddr_const_into_bsd(const ah_sockaddr_t* sockaddr)
+static inline const struct sockaddr* ah_i_sockaddr_const_into_bsd(const ah_sockaddr_t* sockaddr)
 {
     return (const struct sockaddr*) sockaddr;
 }

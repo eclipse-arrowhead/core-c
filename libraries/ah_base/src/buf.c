@@ -6,9 +6,39 @@
 
 #include "ah/buf.h"
 
+#include "ah/assert.h"
+
 #include <string.h>
 
-ah_extern void ah_buf_rw_init_for_writing(ah_buf_rw_t* rw, ah_buf_t* buf)
+ah_extern uint8_t* ah_buf_get_base(ah_buf_t* buf)
+{
+    ah_assert_if_debug(buf != NULL);
+
+    return (uint8_t*) buf->_base;
+}
+
+ah_extern const uint8_t* ah_buf_get_base_const(const ah_buf_t* buf)
+{
+    ah_assert_if_debug(buf != NULL);
+
+    return (const uint8_t*) buf->_base;
+}
+
+ah_extern size_t ah_buf_get_size(const ah_buf_t* buf)
+{
+    ah_assert_if_debug(buf != NULL);
+
+    return (size_t) buf->_size;
+}
+
+ah_extern bool ah_buf_is_empty(const ah_buf_t* buf)
+{
+    ah_assert_if_debug(buf != NULL);
+
+    return buf->_base == NULL || buf->_size == 0u;
+}
+
+ah_extern void ah_buf_rw_init_for_writing_to(ah_buf_rw_t* rw, ah_buf_t* buf)
 {
     ah_assert_if_debug(rw != NULL);
     ah_assert_if_debug(buf != NULL);
@@ -23,7 +53,7 @@ ah_extern void ah_buf_rw_init_for_writing(ah_buf_rw_t* rw, ah_buf_t* buf)
     };
 }
 
-ah_extern void ah_buf_rw_init_for_reading(ah_buf_rw_t* rw, const ah_buf_t* buf)
+ah_extern void ah_buf_rw_init_for_reading_from(ah_buf_rw_t* rw, const ah_buf_t* buf)
 {
     ah_assert_if_debug(rw != NULL);
     ah_assert_if_debug(buf != NULL);
@@ -36,6 +66,42 @@ ah_extern void ah_buf_rw_init_for_reading(ah_buf_rw_t* rw, const ah_buf_t* buf)
         .wr = (uint8_t*) end,
         .end = end,
     };
+}
+
+ah_extern void ah_buf_rw_get_readable_as_buf(const ah_buf_rw_t* rw, ah_buf_t* buf)
+{
+    ah_assert_if_debug(rw != NULL);
+    ah_assert_if_debug(buf != NULL);
+
+    *buf = (ah_buf_t) {
+        ._base = (uint8_t*) rw->rd,
+        ._size = (size_t) (rw->wr - rw->rd),
+    };
+}
+
+ah_extern size_t ah_buf_rw_get_readable_size(const ah_buf_rw_t* rw)
+{
+    ah_assert_if_debug(rw != NULL);
+
+    return (size_t) (rw->wr - rw->rd);
+}
+
+ah_extern void ah_buf_rw_get_writable_as_buf(const ah_buf_rw_t* rw, ah_buf_t* buf)
+{
+    ah_assert_if_debug(rw != NULL);
+    ah_assert_if_debug(buf != NULL);
+
+    *buf = (ah_buf_t) {
+        ._base = (uint8_t*) rw->wr,
+        ._size = (size_t) (rw->end - rw->wr),
+    };
+}
+
+ah_extern size_t ah_buf_rw_get_writable_size(const ah_buf_rw_t* rw)
+{
+    ah_assert_if_debug(rw != NULL);
+
+    return (size_t) (rw->end - rw->wr);
 }
 
 ah_extern bool ah_buf_rw_copy1(ah_buf_rw_t* src, ah_buf_rw_t* dst)

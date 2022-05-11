@@ -10,9 +10,11 @@
 #include "internal/_http.h"
 
 #include <ah/alloc.h>
+#include <ah/assert.h>
 #include <ah/buf.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #define AH_HTTP_IREQ_ERR_CONTENT_LENGTH_RESPECIFIED 8701u
 #define AH_HTTP_IREQ_ERR_HEADERS_TOO_LARGE          8702u
@@ -58,6 +60,7 @@ struct ah_http_client_vtab {
     void (*on_res_alloc)(ah_http_client_t* cln, ah_http_oreq_t* req, ah_buf_t* buf);
     void (*on_res_stat_line)(ah_http_client_t* cln, ah_http_oreq_t* req, const ah_http_stat_line_t* stat_line);
     void (*on_res_header)(ah_http_client_t* cln, ah_http_oreq_t* req, const char* name, const char* value);
+    void (*on_res_headers)(ah_http_client_t* cln, ah_http_oreq_t* req);
     void (*on_res_chunk)(ah_http_client_t* cln, ah_http_oreq_t* req, size_t size, const char* ext);
     void (*on_res_data)(ah_http_client_t* cln, ah_http_oreq_t* req, const ah_buf_t* rbuf);
     void (*on_end)(ah_http_client_t* cln, ah_http_oreq_t* req, ah_err_t err);
@@ -151,19 +154,19 @@ ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockad
 ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, const ah_http_oreq_t* req);
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
 
-ah_inline ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln)
+static inline ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
     return &cln->_conn;
 }
 
-ah_inline void* ah_http_client_get_user_data(ah_http_client_t* cln)
+static inline void* ah_http_client_get_user_data(ah_http_client_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
     return ah_tcp_conn_get_user_data(&cln->_conn);
 }
 
-ah_inline void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data)
+static inline void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data)
 {
     ah_assert_if_debug(cln != NULL);
     ah_tcp_conn_set_user_data(&cln->_conn, user_data);
@@ -175,19 +178,19 @@ ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog
 ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_ores_t* res);
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
 
-ah_inline ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv)
+static inline ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv)
 {
     ah_assert_if_debug(srv != NULL);
     return &srv->_ln;
 }
 
-ah_inline void* ah_http_server_get_user_data(ah_http_server_t* srv)
+static inline void* ah_http_server_get_user_data(ah_http_server_t* srv)
 {
     ah_assert_if_debug(srv != NULL);
     return ah_tcp_listener_get_user_data(&srv->_ln);
 }
 
-ah_inline void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data)
+static inline void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data)
 {
     ah_assert_if_debug(srv != NULL);
     ah_tcp_listener_set_user_data(&srv->_ln, user_data);
@@ -198,17 +201,17 @@ ah_extern ah_err_t ah_http_hmap_get_value(const ah_http_hmap_t* hmap, const char
 ah_extern ah_http_hmap_value_iter_t ah_http_hmap_get_value_iter(const ah_http_hmap_t* headers, const char* name);
 ah_extern const char* ah_http_hmap_next_value(ah_http_hmap_value_iter_t* iter);
 
-ah_inline ah_http_obody_t ah_http_obody_buf(ah_buf_t buf)
+static inline ah_http_obody_t ah_http_obody_buf(ah_buf_t buf)
 {
     return (ah_http_obody_t) { ._as_buf._kind = AH_I_HTTP_OBODY_KIND_BUF, ._as_buf._buf = buf };
 }
 
-ah_inline ah_http_obody_t ah_http_obody_bufs(ah_bufs_t bufs)
+static inline ah_http_obody_t ah_http_obody_bufs(ah_bufs_t bufs)
 {
     return (ah_http_obody_t) { ._as_bufs._kind = AH_I_HTTP_OBODY_KIND_BUFS, ._as_bufs._bufs = bufs };
 }
 
-ah_inline ah_http_obody_t ah_http_obody_callback(void* user_data, ah_http_obody_cb cb)
+static inline ah_http_obody_t ah_http_obody_callback(void* user_data, ah_http_obody_cb cb)
 {
     return (ah_http_obody_t) {
         ._as_callback._kind = AH_I_HTTP_OBODY_KIND_CALLBACK,
@@ -217,7 +220,7 @@ ah_inline ah_http_obody_t ah_http_obody_callback(void* user_data, ah_http_obody_
     };
 }
 
-ah_inline ah_http_obody_t ah_http_obody_cstr(char* cstr)
+static inline ah_http_obody_t ah_http_obody_cstr(char* cstr)
 {
     ah_buf_t buf;
     ah_err_t err = ah_buf_init(&buf, (uint8_t*) cstr, strlen(cstr));

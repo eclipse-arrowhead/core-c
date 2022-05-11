@@ -17,12 +17,12 @@
 
 struct iovec;
 
-ah_inline struct iovec* ah_i_buf_into_iovec(ah_buf_t* buf)
+static inline struct iovec* ah_i_buf_into_iovec(ah_buf_t* buf)
 {
     return (struct iovec*) buf;
 }
 
-ah_inline ah_buf_t* ah_i_buf_from_iovec(struct iovec* iovec)
+static inline ah_buf_t* ah_i_buf_from_iovec(struct iovec* iovec)
 {
     return (ah_buf_t*) iovec;
 }

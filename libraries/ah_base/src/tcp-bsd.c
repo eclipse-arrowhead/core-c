@@ -9,6 +9,7 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "ah/sock.h"
 
 #include <stddef.h>
 
