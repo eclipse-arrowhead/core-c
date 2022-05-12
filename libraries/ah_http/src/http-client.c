@@ -21,11 +21,6 @@
 #define S_RES_STATE_CHUNK_DATA 0x20
 #define S_RES_STATE_TRAILER    0x40
 
-// Output (request) states.
-#define S_O_STATE_READY        0u
-#define S_O_STATE_SENDING_HEAD 1u
-#define S_O_STATE_SENDING_BODY 2u
-
 #define S_RES_STATE_IS_REUSING_BUF_RW(STATE) \
  (((STATE) & (S_RES_STATE_STAT_LINE | S_RES_STATE_HEADERS | S_RES_STATE_CHUNK_LINE | S_RES_STATE_TRAILER)) != 0u)
 
@@ -91,7 +86,6 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     cln->_vtab = vtab;
 
     cln->_res_state = S_RES_STATE_INIT;
-    cln->_res_state = S_O_STATE_READY;
 
     return AH_ENONE;
 }
@@ -469,6 +463,8 @@ void s_prep_write_req(ah_http_client_t* cln)
 try_next:
     req = s_req_queue_get_head(&cln->_req_queue);
 
+    cln->_keep_alive = req->req_line.version.minor != 0u;
+
     cln->_vtab->on_alloc(cln, req, &req->_head_buf);
     if (ah_buf_is_empty(&req->_head_buf)) {
         err = AH_ENOBUFS;
@@ -551,6 +547,7 @@ headers_end:
     if (err != AH_ENONE) {
         goto report_err_and_try_next;
     }
+    req->_n_pending_tcp_msgs = 1u;
 
     // Send message with body, if any.
     if (content_length != 0u) {
@@ -558,6 +555,7 @@ headers_end:
         if (err != AH_ENONE) {
             goto report_err_and_try_next;
         }
+        req->_n_pending_tcp_msgs += 1u;
     }
 
     return;
@@ -565,7 +563,9 @@ headers_end:
 report_err_and_try_next:
     s_req_queue_remove_unsafe(&cln->_req_queue);
     cln->_vtab->on_req_sent(cln, req, err);
-
+    if (!ah_tcp_conn_is_writable(&cln->_conn)) {
+        return;
+    }
     if (s_req_queue_is_empty(&cln->_req_queue)) {
         return;
     }
@@ -576,9 +576,28 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
 
-    // TODO: Check state, report if sending is complete or failed.
-    (void) cln;
-    (void) err;
+    ah_http_req_t* req = s_req_queue_get_head(&cln->_req_queue);
+
+    if (err != AH_ENONE) {
+        goto report_err_and_prep_next;
+    }
+
+    ah_assert_if_debug(req->_n_pending_tcp_msgs > 0u);
+    req->_n_pending_tcp_msgs -= 1u;
+    if (req->_n_pending_tcp_msgs != 0u) {
+        return;
+    }
+
+report_err_and_prep_next:
+    s_req_queue_remove_unsafe(&cln->_req_queue);
+    cln->_vtab->on_req_sent(cln, req, err);
+    if (!ah_tcp_conn_is_writable(&cln->_conn)) {
+        return;
+    }
+    if (s_req_queue_is_empty(&cln->_req_queue)) {
+        return;
+    }
+    s_prep_write_req(cln);
 }
 
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_line_t chunk, ah_bufs_t bufs)

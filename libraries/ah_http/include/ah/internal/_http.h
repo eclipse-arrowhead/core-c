@@ -26,7 +26,6 @@
  ah_buf_rw_t _res_buf_rw;                \
  size_t _res_n_expected_bytes;           \
  uint8_t _res_state;                     \
- uint8_t _req_state;                     \
  bool _keep_alive;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
@@ -44,7 +43,8 @@
  ah_http_req_t* _next;       \
  ah_buf_t _head_buf;         \
  ah_tcp_msg_t _head_msg;     \
- ah_tcp_msg_t _body_msg;
+ ah_tcp_msg_t _body_msg;     \
+ unsigned _n_pending_tcp_msgs;
 
 #define AH_I_HTTP_RES_FIELDS \
  ah_http_res_t* _next;

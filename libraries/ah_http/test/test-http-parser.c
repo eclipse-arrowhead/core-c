@@ -63,7 +63,7 @@ static ah_buf_rw_t s_buf_rw_from(char* str, void* writable_memory, size_t writab
     ah_assert_if_debug(str != NULL);
 
     const size_t len = strlen(str);
-    ah_assert_if_debug(len < writable_memory_size);
+    ah_assert(len < writable_memory_size);
 
     uint8_t* off = (uint8_t*) strncpy(writable_memory, str, len + 1u);
     uint8_t* end = &off[len];
