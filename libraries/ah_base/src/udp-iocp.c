@@ -207,7 +207,7 @@ static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
     evt->_cb = s_on_sock_send;
     evt->_subject = sock;
 
-    ah_udp_msg_t* msg = ah_i_udp_msg_queue_peek(&sock->_msg_queue);
+    ah_udp_msg_t* msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
 
     int res = WSASendMsg(sock->_fd, &msg->_wsamsg, 0u, NULL, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
@@ -242,7 +242,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt)
     ah_udp_msg_t* msg;
 
 report_err_and_prep_next:
-    msg = ah_i_udp_msg_queue_peek(&sock->_msg_queue);
+    msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
     ah_i_udp_msg_queue_remove_unsafe(&sock->_msg_queue);
 
     sock->_vtab->on_send_done(sock, n_bytes_sent, ah_i_sockaddr_from_bsd(msg->_wsamsg.name), err);

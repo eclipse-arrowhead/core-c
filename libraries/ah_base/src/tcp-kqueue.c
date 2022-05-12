@@ -261,7 +261,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     ah_err_t err;
 
-    ah_tcp_msg_t* msg = ah_i_tcp_msg_queue_peek(&conn->_msg_queue);
+    ah_tcp_msg_t* msg = ah_i_tcp_msg_queue_get_head(&conn->_msg_queue);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;

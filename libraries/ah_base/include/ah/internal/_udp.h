@@ -47,7 +47,7 @@ struct ah_i_udp_msg_queue {
 
 bool ah_i_udp_msg_queue_is_empty(struct ah_i_udp_msg_queue* queue);
 bool ah_i_udp_msg_queue_is_empty_then_add(struct ah_i_udp_msg_queue* queue, ah_udp_msg_t* msg);
-ah_udp_msg_t* ah_i_udp_msg_queue_peek(struct ah_i_udp_msg_queue* queue);
+ah_udp_msg_t* ah_i_udp_msg_queue_get_head(struct ah_i_udp_msg_queue* queue);
 void ah_i_udp_msg_queue_remove_unsafe(struct ah_i_udp_msg_queue* queue);
 
 #endif

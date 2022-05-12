@@ -39,11 +39,11 @@ struct ah_http_client_vtab {
     void (*on_connect)(ah_http_client_t* cln, ah_err_t err);
     void (*on_close)(ah_http_client_t* cln, ah_err_t err);
 
-    void (*on_req_sent)(ah_http_client_t* cln, ah_http_req_t* req, ah_err_t err);
-
     // It is safe to provide `buf` with the same memory block every time this
     // function is called with the same `cln`.
-    void (*on_res_alloc)(ah_http_client_t* cln, ah_http_req_t* req, ah_buf_t* buf);
+    void (*on_alloc)(ah_http_client_t* cln, ah_http_req_t* req, ah_buf_t* buf);
+
+    void (*on_req_sent)(ah_http_client_t* cln, ah_http_req_t* req, ah_err_t err);
 
     void (*on_res_stat_line)(ah_http_client_t* cln, ah_http_req_t* req, const ah_http_stat_line_t* stat_line);
     void (*on_res_header)(ah_http_client_t* cln, ah_http_req_t* req, ah_http_header_t header);
@@ -64,7 +64,7 @@ struct ah_http_server_vtab {
 
     // It is safe to provide `buf` with the same memory block every time this
     // function is called with the same `srv`.
-    void (*on_req_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_res_t* res);
+    void (*on_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_res_t* res);
 
     void (*on_req_line)(ah_http_server_t* srv, const ah_http_req_line_t* req_line, ah_http_res_t* res);
     void (*on_req_header)(ah_http_server_t* srv, ah_http_header_t header, ah_http_res_t* res);
@@ -152,9 +152,9 @@ ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv);
 ah_extern void* ah_http_server_get_user_data(ah_http_server_t* srv);
 ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data);
 
+ah_extern ah_http_body_t ah_http_body_empty();
 ah_extern ah_http_body_t ah_http_body_from_buf(ah_buf_t buf);
 ah_extern ah_http_body_t ah_http_body_from_bufs(ah_bufs_t bufs);
-ah_extern ah_http_body_t ah_http_body_from_cb(void (*cb)(void*, ah_bufs_t*), void* user_data);
 ah_extern ah_http_body_t ah_http_body_from_cstr(char* cstr);
 ah_extern ah_http_body_t ah_http_body_override(void); // Enables use of *_send_{chunk,data,trailer} functions.
 

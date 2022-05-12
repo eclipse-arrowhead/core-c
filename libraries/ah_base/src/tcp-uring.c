@@ -222,7 +222,7 @@ static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_write;
     evt->_subject = conn;
 
-    ah_tcp_msg_t* msg = ah_i_tcp_msg_queue_peek_unsafe(&conn->_msg_queue);
+    ah_tcp_msg_t* msg = ah_i_tcp_msg_queue_get_head(&conn->_msg_queue);
 
     io_uring_prep_writev(sqe, conn->_fd, msg->_iov, msg->_iovcnt, 0u);
     io_uring_sqe_set_data(sqe, evt);

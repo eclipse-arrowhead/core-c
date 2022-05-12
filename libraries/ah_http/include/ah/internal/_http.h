@@ -12,10 +12,10 @@
 #include <ah/tcp.h>
 #include <stddef.h>
 
-#define AH_I_HTTP_BODY_KIND_BUF      1u
-#define AH_I_HTTP_BODY_KIND_BUFS     2u
-#define AH_I_HTTP_BODY_KIND_CB       3u
-#define AH_I_HTTP_BODY_KIND_OVERRIDE 4u
+#define AH_I_HTTP_BODY_KIND_EMPTY    0u
+#define AH_I_HTTP_BODY_KIND_OVERRIDE 1u
+#define AH_I_HTTP_BODY_KIND_BUF      2u
+#define AH_I_HTTP_BODY_KIND_BUFS     3u
 
 #define AH_I_HTTP_CLIENT_FIELDS          \
  ah_tcp_conn_t _conn;                    \
@@ -35,14 +35,16 @@
  const ah_http_server_vtab_t* _vtab;     \
  struct ah_i_http_res_queue _res_queue;
 
-#define AH_I_HTTP_BODY_FIELDS         \
- struct ah_i_http_body_any _as_any;   \
- struct ah_i_http_body_buf _as_buf;   \
- struct ah_i_http_body_bufs _as_bufs; \
- struct ah_i_http_body_cb _as_cb;
+#define AH_I_HTTP_BODY_FIELDS       \
+ struct ah_i_http_body_any _as_any; \
+ struct ah_i_http_body_buf _as_buf; \
+ struct ah_i_http_body_bufs _as_bufs;
 
 #define AH_I_HTTP_REQ_FIELDS \
- ah_http_req_t* _next;
+ ah_http_req_t* _next;       \
+ ah_buf_t _head_buf;         \
+ ah_tcp_msg_t _head_msg;     \
+ ah_tcp_msg_t _body_msg;
 
 #define AH_I_HTTP_RES_FIELDS \
  ah_http_res_t* _next;
@@ -62,12 +64,6 @@ struct ah_i_http_body_buf {
 struct ah_i_http_body_bufs {
     AH_I_HTTP_OBODY_COMMON
     ah_bufs_t _bufs;
-};
-
-struct ah_i_http_body_cb {
-    AH_I_HTTP_OBODY_COMMON
-    void (*_cb)(void* user_data, ah_bufs_t* bufs);
-    void* _user_data;
 };
 
 struct ah_i_http_res_queue {

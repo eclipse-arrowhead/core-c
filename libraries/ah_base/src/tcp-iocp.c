@@ -280,7 +280,7 @@ static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_write;
     evt->_subject = conn;
 
-    ah_tcp_msg_t* msg = ah_i_tcp_msg_queue_peek_unsafe(&conn->_msg_queue);
+    ah_tcp_msg_t* msg = ah_i_tcp_msg_queue_get_head(&conn->_msg_queue);
 
     int res = WSASend(conn->_fd, msg->_buffers, msg->_buffer_count, NULL, 0u, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {

@@ -182,7 +182,7 @@ bool ah_i_tcp_msg_queue_is_empty_then_add(struct ah_i_tcp_msg_queue* queue, ah_t
     return false;
 }
 
-ah_tcp_msg_t* ah_i_tcp_msg_queue_peek(struct ah_i_tcp_msg_queue* queue)
+ah_tcp_msg_t* ah_i_tcp_msg_queue_get_head(struct ah_i_tcp_msg_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
     ah_assert_if_debug(queue->_head != NULL);

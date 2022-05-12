@@ -39,7 +39,7 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_open != NULL);
     ah_assert_if_debug(vtab->on_listen != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
-    ah_assert_if_debug(vtab->on_req_alloc != NULL);
+    ah_assert_if_debug(vtab->on_alloc != NULL);
     ah_assert_if_debug(vtab->on_req_line != NULL);
     ah_assert_if_debug(vtab->on_req_header != NULL);
     ah_assert_if_debug(vtab->on_req_data != NULL);

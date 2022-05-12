@@ -244,7 +244,22 @@ ah_extern bool ah_buf_rw_skipn(ah_buf_rw_t* rw, size_t size)
     return true;
 }
 
-ah_extern bool ah_buf_rw_write1(ah_buf_rw_t* rw, uint8_t byte)
+ah_extern bool ah_buf_rw_write(ah_buf_rw_t* rw, uint8_t* src, size_t size)
+{
+    ah_assert_if_debug(rw != NULL);
+    ah_assert_if_debug(src != NULL);
+
+    if (ah_unlikely((size_t) (rw->end - rw->wr) < size)) {
+        return false;
+    }
+
+    memcpy(rw->wr, src, size);
+    rw->wr = &rw->wr[size];
+
+    return true;
+}
+
+ah_extern bool ah_buf_rw_write_byte(ah_buf_rw_t* rw, uint8_t byte)
 {
     ah_assert_if_debug(rw != NULL);
 
@@ -258,19 +273,51 @@ ah_extern bool ah_buf_rw_write1(ah_buf_rw_t* rw, uint8_t byte)
     return true;
 }
 
-ah_extern bool ah_buf_rw_writen(ah_buf_rw_t* rw, uint8_t* src, size_t size)
+ah_extern bool ah_buf_rw_write_cstr(ah_buf_rw_t* rw, const char* cstr)
 {
     ah_assert_if_debug(rw != NULL);
-    ah_assert_if_debug(src != NULL);
 
-    if (ah_unlikely((size_t) (rw->end - rw->wr) < size)) {
-        return false;
+    const uint8_t* c = (const uint8_t*) cstr;
+    uint8_t* wr = rw->wr;
+
+    while (wr != rw->end) {
+        if (c[0u] == '\0') {
+            rw->wr = wr;
+            return true;
+        }
+
+        wr[0u] = c[0u];
+
+        wr = &wr[1u];
+        c = &c[1u];
     }
 
-    memcpy(rw->wr, src, size);
-    rw->wr = &rw->wr[size];
+    return false;
+}
 
-    return true;
+ah_extern bool ah_buf_rw_write_size(ah_buf_rw_t* rw, size_t size)
+{
+    ah_assert_if_debug(rw != NULL);
+
+    if (size == 0u)  {
+        return ah_buf_rw_write_byte(rw, '0');
+    }
+
+    uint8_t buf[20]; // Large enough to hold all UINT64_MAX digits.
+    uint8_t* off = &buf[sizeof(buf) - 1u];
+    const uint8_t* end = off;
+
+    size_t s = size;
+    for (;;) {
+        off[0u] = '0' + (s % 10);
+        s /= 10;
+        if (s == 0u) {
+            break;
+        }
+        off = &off[-1];
+    }
+
+    return ah_buf_rw_write(rw, off, (size_t) (end - off));
 }
 
 ah_extern bool ah_buf_rw_juke1(ah_buf_rw_t* rw)

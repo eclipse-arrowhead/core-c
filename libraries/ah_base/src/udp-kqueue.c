@@ -181,7 +181,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_err_t err;
     ssize_t res = 0;
 
-    ah_udp_msg_t* msg = ah_i_udp_msg_queue_peek(&sock->_msg_queue);
+    ah_udp_msg_t* msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
