@@ -32,7 +32,7 @@ struct s_tcp_conn_user_data {
 struct s_tcp_listener_user_data {
     ah_tcp_conn_t* free_conn;
     struct s_tcp_conn_user_data accept_user_data;
-    ah_tcp_obufs_t conn_obufs;
+    ah_tcp_msg_t conn_msg;
     ah_buf_t conn_write_buf;
 
     bool did_call_open_cb;
@@ -297,12 +297,12 @@ static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
     ah_err_t err;
 
     ah_buf_init(&user_data->conn_write_buf, (uint8_t*) "Hello, Arrowhead!", 18u);
-    err = ah_tcp_obufs_init(&user_data->conn_obufs, (ah_bufs_t) { .items = &user_data->conn_write_buf, .length = 1u });
+    err = ah_tcp_msg_init(&user_data->conn_msg, (ah_bufs_t) { .items = &user_data->conn_write_buf, .length = 1u });
     if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
         return;
     }
 
-    err = ah_tcp_conn_write(conn, &user_data->conn_obufs);
+    err = ah_tcp_conn_write(conn, &user_data->conn_msg);
     if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
         return;
     }

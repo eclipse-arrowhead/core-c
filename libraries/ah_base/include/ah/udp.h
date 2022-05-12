@@ -28,6 +28,7 @@ union ah_udp_group {
     ah_udp_group_ipv6_t as_ipv6;
 };
 
+// An outgoing UDP message.
 struct ah_udp_msg {
     AH_I_UDP_OBUFS_FIELDS
 };

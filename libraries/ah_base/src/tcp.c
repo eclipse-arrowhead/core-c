@@ -157,32 +157,32 @@ ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop)
     };
 }
 
-bool ah_i_tcp_obufs_queue_is_empty(struct ah_i_tcp_obufs_queue* queue)
+bool ah_i_tcp_msg_queue_is_empty(struct ah_i_tcp_msg_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
     return queue->_head == NULL;
 }
 
-bool ah_i_tcp_obufs_queue_is_empty_then_add(struct ah_i_tcp_obufs_queue* queue, ah_tcp_obufs_t* obufs)
+bool ah_i_tcp_msg_queue_is_empty_then_add(struct ah_i_tcp_msg_queue* queue, ah_tcp_msg_t* msg)
 {
     ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(obufs != NULL);
+    ah_assert_if_debug(msg != NULL);
 
-    obufs->_next = NULL;
+    msg->_next = NULL;
 
     if (queue->_head == NULL) {
-        queue->_head = obufs;
-        queue->_end = obufs;
+        queue->_head = msg;
+        queue->_end = msg;
         return true;
     }
 
-    queue->_end->_next = obufs;
-    queue->_end = obufs;
+    queue->_end->_next = msg;
+    queue->_end = msg;
 
     return false;
 }
 
-ah_tcp_obufs_t* ah_i_tcp_obufs_queue_peek_unsafe(struct ah_i_tcp_obufs_queue* queue)
+ah_tcp_msg_t* ah_i_tcp_msg_queue_peek_unsafe(struct ah_i_tcp_msg_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
     ah_assert_if_debug(queue->_head != NULL);
@@ -190,18 +190,18 @@ ah_tcp_obufs_t* ah_i_tcp_obufs_queue_peek_unsafe(struct ah_i_tcp_obufs_queue* qu
     return queue->_head;
 }
 
-void ah_i_tcp_obufs_queue_remove_unsafe(struct ah_i_tcp_obufs_queue* queue)
+void ah_i_tcp_msg_queue_remove_unsafe(struct ah_i_tcp_msg_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
     ah_assert_if_debug(queue->_head != NULL);
     ah_assert_if_debug(queue->_end != NULL);
 
-    ah_tcp_obufs_t* obufs = queue->_head;
-    queue->_head = obufs->_next;
+    ah_tcp_msg_t* msg = queue->_head;
+    queue->_head = msg->_next;
 
 #ifndef NDEBUG
 
-    obufs->_next = NULL;
+    msg->_next = NULL;
 
     if (queue->_head == NULL) {
         queue->_end = NULL;

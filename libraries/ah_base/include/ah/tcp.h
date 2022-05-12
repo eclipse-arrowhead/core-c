@@ -52,7 +52,8 @@ struct ah_tcp_listener_vtab {
     void (*on_conn_err)(ah_tcp_listener_t* ln, ah_err_t);
 };
 
-struct ah_tcp_obufs {
+// An outgoing TCP message.
+struct ah_tcp_msg {
     AH_I_TCP_OBUFS_FIELDS
 };
 
@@ -66,7 +67,7 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*conn_connect)(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
     ah_err_t (*conn_read_start)(ah_tcp_conn_t* conn);
     ah_err_t (*conn_read_stop)(ah_tcp_conn_t* conn);
-    ah_err_t (*conn_write)(ah_tcp_conn_t* conn, ah_tcp_obufs_t* obufs); // May modify ah_bufs_t items in obufs.
+    ah_err_t (*conn_write)(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg); // May modify ah_bufs_t items in msg.
     ah_err_t (*conn_shutdown)(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
     ah_err_t (*conn_close)(ah_tcp_conn_t* conn);
 
@@ -81,7 +82,7 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_obufs_t* obufs); // May modify ah_bufs_t items in obufs.
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg); // May modify ah_bufs_t items in msg.
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
@@ -109,8 +110,8 @@ ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_en
 ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled);
 ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data);
 
-ah_extern ah_err_t ah_tcp_obufs_init(ah_tcp_obufs_t* obufs, ah_bufs_t bufs);
-ah_extern ah_bufs_t ah_tcp_obufs_unwrap(ah_tcp_obufs_t* obufs);
+ah_extern ah_err_t ah_tcp_msg_init(ah_tcp_msg_t* msg, ah_bufs_t bufs);
+ah_extern ah_bufs_t ah_tcp_msg_unwrap(ah_tcp_msg_t* msg);
 
 ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop);
 

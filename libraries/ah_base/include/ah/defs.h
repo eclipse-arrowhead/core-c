@@ -97,7 +97,7 @@ typedef struct ah_tcp_conn ah_tcp_conn_t;
 typedef struct ah_tcp_conn_vtab ah_tcp_conn_vtab_t;
 typedef struct ah_tcp_listener ah_tcp_listener_t;
 typedef struct ah_tcp_listener_vtab ah_tcp_listener_vtab_t;
-typedef struct ah_tcp_obufs ah_tcp_obufs_t;
+typedef struct ah_tcp_msg ah_tcp_msg_t;
 typedef struct ah_tcp_trans ah_tcp_trans_t;
 typedef struct ah_tcp_trans_vtab ah_tcp_trans_vtab_t;
 typedef struct ah_time ah_time_t;

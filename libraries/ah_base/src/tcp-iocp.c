@@ -23,9 +23,9 @@ static ah_err_t s_prep_listener_accept(ah_tcp_listener_t* ln);
 static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn);
 static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn);
 
-ah_extern ah_err_t ah_tcp_obufs_init(ah_tcp_obufs_t* obufs, ah_bufs_t bufs)
+ah_extern ah_err_t ah_tcp_msg_init(ah_tcp_msg_t* msg, ah_bufs_t bufs)
 {
-    if (obufs == NULL || (bufs.items == NULL && bufs.length != 0u)) {
+    if (msg == NULL || (bufs.items == NULL && bufs.length != 0u)) {
         return AH_EINVAL;
     }
 
@@ -37,7 +37,7 @@ ah_extern ah_err_t ah_tcp_obufs_init(ah_tcp_obufs_t* obufs, ah_bufs_t bufs)
         return err;
     }
 
-    *obufs = (ah_tcp_obufs_t) {
+    *msg = (ah_tcp_msg_t) {
         ._next = NULL,
         ._buffers = buffers,
         ._buffer_count = buffer_count,
@@ -46,12 +46,12 @@ ah_extern ah_err_t ah_tcp_obufs_init(ah_tcp_obufs_t* obufs, ah_bufs_t bufs)
     return AH_ENONE;
 }
 
-ah_extern ah_bufs_t ah_tcp_obufs_unwrap(ah_tcp_obufs_t* obufs)
+ah_extern ah_bufs_t ah_tcp_msg_unwrap(ah_tcp_msg_t* msg)
 {
-    ah_assert_if_debug(obufs != NULL);
+    ah_assert_if_debug(msg != NULL);
 
     ah_bufs_t bufs;
-    ah_i_bufs_from_wsabufs(&bufs, obufs->_buffers, obufs->_buffer_count);
+    ah_i_bufs_from_wsabufs(&bufs, msg->_buffers, msg->_buffer_count);
 
     return bufs;
 }
@@ -252,16 +252,16 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_obufs_t* obufs)
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
-    if (conn == NULL || obufs == NULL) {
+    if (conn == NULL || msg == NULL) {
         return AH_EINVAL;
     }
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return AH_ESTATE;
     }
 
-    if (ah_i_tcp_obufs_queue_is_empty_then_add(&conn->_obufs_queue, obufs)) {
+    if (ah_i_tcp_msg_queue_is_empty_then_add(&conn->_msg_queue, msg)) {
         return s_prep_conn_write(conn);
     }
 
@@ -280,9 +280,9 @@ static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_write;
     evt->_subject = conn;
 
-    ah_tcp_obufs_t* obufs = ah_i_tcp_obufs_queue_peek_unsafe(&conn->_obufs_queue);
+    ah_tcp_msg_t* msg = ah_i_tcp_msg_queue_peek_unsafe(&conn->_msg_queue);
 
-    int res = WSASend(conn->_fd, obufs->_buffers, obufs->_buffer_count, NULL, 0u, &evt->_overlapped, NULL);
+    int res = WSASend(conn->_fd, msg->_buffers, msg->_buffer_count, NULL, 0u, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err == WSA_IO_PENDING) {
@@ -316,13 +316,13 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt)
     }
 
 report_err_and_prep_next:
-    ah_i_tcp_obufs_queue_remove_unsafe(&conn->_obufs_queue);
+    ah_i_tcp_msg_queue_remove_unsafe(&conn->_msg_queue);
     conn->_vtab->on_write_done(conn, err);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
     }
-    if (ah_i_tcp_obufs_queue_is_empty(&conn->_obufs_queue)) {
+    if (ah_i_tcp_msg_queue_is_empty(&conn->_msg_queue)) {
         return;
     }
 
