@@ -103,7 +103,7 @@ typedef struct ah_tcp_trans_vtab ah_tcp_trans_vtab_t;
 typedef struct ah_time ah_time_t;
 typedef struct ah_udp_group_ipv4 ah_udp_group_ipv4_t;
 typedef struct ah_udp_group_ipv6 ah_udp_group_ipv6_t;
-typedef struct ah_udp_obufs ah_udp_obufs_t;
+typedef struct ah_udp_msg ah_udp_msg_t;
 typedef struct ah_udp_sock ah_udp_sock_t;
 typedef struct ah_udp_sock_vtab ah_udp_sock_vtab_t;
 typedef struct ah_udp_trans ah_udp_trans_t;

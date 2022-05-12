@@ -31,7 +31,7 @@ void test_udp(ah_unit_t* unit)
 struct s_udp_sock_user_data {
     ah_buf_t* free_buf;
 
-    ah_udp_obufs_t* send_obufs;
+    ah_udp_msg_t* send_obufs;
 
     size_t* close_call_counter;
 
@@ -267,8 +267,8 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     ah_bufs_t send_bufs = { .items = &send_buf, .length = 1u };
 
-    ah_udp_obufs_t send_obufs;
-    ah_udp_obufs_init(&send_obufs, send_bufs, &recv_addr);
+    ah_udp_msg_t send_obufs;
+    ah_udp_msg_init(&send_obufs, send_bufs, &recv_addr);
 
     struct s_udp_sock_user_data send_sock_user_data = {
         .send_obufs = &send_obufs,

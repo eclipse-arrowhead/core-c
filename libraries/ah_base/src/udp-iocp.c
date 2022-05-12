@@ -19,9 +19,9 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt);
 static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock);
 static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock);
 
-ah_extern ah_err_t ah_udp_obufs_init(ah_udp_obufs_t* obufs, ah_bufs_t bufs, ah_sockaddr_t* raddr)
+ah_extern ah_err_t ah_udp_msg_init(ah_udp_msg_t* msg, ah_bufs_t bufs, ah_sockaddr_t* raddr)
 {
-    if (obufs == NULL || (bufs.items == NULL && bufs.length != 0u) || raddr == NULL) {
+    if (msg == NULL || (bufs.items == NULL && bufs.length != 0u) || raddr == NULL) {
         return AH_EINVAL;
     }
 
@@ -33,7 +33,7 @@ ah_extern ah_err_t ah_udp_obufs_init(ah_udp_obufs_t* obufs, ah_bufs_t bufs, ah_s
         return err;
     }
 
-    *obufs = (ah_udp_obufs_t) {
+    *msg = (ah_udp_msg_t) {
         ._next = NULL,
         ._wsamsg.name = ah_i_sockaddr_into_bsd(raddr),
         ._wsamsg.namelen = ah_i_sockaddr_get_size(raddr),
@@ -44,18 +44,18 @@ ah_extern ah_err_t ah_udp_obufs_init(ah_udp_obufs_t* obufs, ah_bufs_t bufs, ah_s
     return AH_ENONE;
 }
 
-ah_extern ah_sockaddr_t* ah_udp_obufs_get_raddr(ah_udp_obufs_t* obufs)
+ah_extern ah_sockaddr_t* ah_udp_msg_get_raddr(ah_udp_msg_t* msg)
 {
-    ah_assert_if_debug(obufs != NULL);
-    return ah_i_sockaddr_from_bsd(obufs->_wsamsg.name);
+    ah_assert_if_debug(msg != NULL);
+    return ah_i_sockaddr_from_bsd(msg->_wsamsg.name);
 }
 
-ah_extern ah_bufs_t ah_udp_obufs_get_bufs(ah_udp_obufs_t* obufs)
+ah_extern ah_bufs_t ah_udp_msg_get_bufs(ah_udp_msg_t* msg)
 {
-    ah_assert_if_debug(obufs != NULL);
+    ah_assert_if_debug(msg != NULL);
 
     ah_bufs_t bufs;
-    ah_i_bufs_from_wsabufs(&bufs, obufs->_wsamsg.lpBuffers, obufs->_wsamsg.dwBufferCount);
+    ah_i_bufs_from_wsabufs(&bufs, msg->_wsamsg.lpBuffers, msg->_wsamsg.dwBufferCount);
 
     return bufs;
 }
@@ -179,7 +179,7 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_obufs_t* obufs)
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* obufs)
 {
     if (sock == NULL || obufs == NULL) {
         return AH_EINVAL;
@@ -212,7 +212,7 @@ static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
     evt->_cb = s_on_sock_send;
     evt->_subject = sock;
 
-    ah_udp_obufs_t* obufs = sock->_send_queue_head;
+    ah_udp_msg_t* obufs = sock->_send_queue_head;
 
     int res = WSASendMsg(sock->_fd, &obufs->_wsamsg, 0u, NULL, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
@@ -244,7 +244,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt)
         n_bytes_sent = 0u;
     }
 
-    ah_udp_obufs_t* obufs = sock->_send_queue_head;
+    ah_udp_msg_t* obufs = sock->_send_queue_head;
     sock->_send_queue_head = obufs->_next;
 
 report_err_and_prep_next:

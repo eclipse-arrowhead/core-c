@@ -9,9 +9,9 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 
-ah_extern ah_err_t ah_udp_obufs_init(ah_udp_obufs_t* obufs, ah_bufs_t bufs, ah_sockaddr_t* raddr)
+ah_extern ah_err_t ah_udp_msg_init(ah_udp_msg_t* msg, ah_bufs_t bufs, ah_sockaddr_t* raddr)
 {
-    if (obufs == NULL || (bufs.items == NULL && bufs.length != 0u) || raddr == NULL) {
+    if (msg == NULL || (bufs.items == NULL && bufs.length != 0u) || raddr == NULL) {
         return AH_EINVAL;
     }
 
@@ -23,7 +23,7 @@ ah_extern ah_err_t ah_udp_obufs_init(ah_udp_obufs_t* obufs, ah_bufs_t bufs, ah_s
         return err;
     }
 
-    *obufs = (ah_udp_obufs_t) {
+    *msg = (ah_udp_msg_t) {
         ._next = NULL,
         ._msghdr.msg_name = ah_i_sockaddr_into_bsd(raddr),
         ._msghdr.msg_namelen = ah_i_sockaddr_get_size(raddr),
@@ -34,18 +34,18 @@ ah_extern ah_err_t ah_udp_obufs_init(ah_udp_obufs_t* obufs, ah_bufs_t bufs, ah_s
     return AH_ENONE;
 }
 
-ah_extern ah_sockaddr_t* ah_udp_obufs_get_raddr(ah_udp_obufs_t* obufs)
+ah_extern ah_sockaddr_t* ah_udp_msg_get_raddr(ah_udp_msg_t* msg)
 {
-    ah_assert_if_debug(obufs != NULL);
-    return ah_i_sockaddr_from_bsd(obufs->_msghdr.msg_name);
+    ah_assert_if_debug(msg != NULL);
+    return ah_i_sockaddr_from_bsd(msg->_msghdr.msg_name);
 }
 
-ah_extern ah_bufs_t ah_udp_obufs_get_bufs(ah_udp_obufs_t* obufs)
+ah_extern ah_bufs_t ah_udp_msg_get_bufs(ah_udp_msg_t* msg)
 {
-    ah_assert_if_debug(obufs != NULL);
+    ah_assert_if_debug(msg != NULL);
 
     ah_bufs_t bufs;
-    ah_i_bufs_from_iovec(&bufs, obufs->_msghdr.msg_iov, obufs->_msghdr.msg_iovlen);
+    ah_i_bufs_from_iovec(&bufs, msg->_msghdr.msg_iov, msg->_msghdr.msg_iovlen);
 
     return bufs;
 }

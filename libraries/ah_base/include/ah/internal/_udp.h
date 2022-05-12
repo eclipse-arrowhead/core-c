@@ -18,14 +18,14 @@
 #endif
 
 #define AH_I_UDP_OBUFS_FIELDS \
- ah_udp_obufs_t* _next;       \
+ ah_udp_msg_t* _next;       \
  AH_I_UDP_OBUFS_PLATFORM_FIELDS
 
 #define AH_I_UDP_SOCK_FIELDS      \
  ah_loop_t* _loop;                \
  const ah_udp_sock_vtab_t* _vtab; \
- ah_udp_obufs_t* _send_queue_head; \
- ah_udp_obufs_t* _send_queue_end;  \
+ ah_udp_msg_t* _send_queue_head; \
+ ah_udp_msg_t* _send_queue_end;  \
  void* _trans_data;               \
  void* _user_data;                \
  bool _is_ipv6;                   \

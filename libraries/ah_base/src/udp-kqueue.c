@@ -132,9 +132,9 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_obufs_t* obufs)
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
 {
-    if (sock == NULL || obufs == NULL) {
+    if (sock == NULL || msg == NULL) {
         return AH_EINVAL;
     }
     if (!sock->_is_open || sock->_vtab->on_send_done == NULL) {
@@ -142,13 +142,13 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_obufs_t* obufs)
     }
 
     if (sock->_send_queue_head != NULL) {
-        sock->_send_queue_end->_next = obufs;
-        sock->_send_queue_end = obufs;
+        sock->_send_queue_end->_next = msg;
+        sock->_send_queue_end = msg;
         return AH_ENONE;
     }
 
-    sock->_send_queue_head = obufs;
-    sock->_send_queue_end = obufs;
+    sock->_send_queue_head = msg;
+    sock->_send_queue_end = msg;
 
     return s_prep_sock_send(sock);
 }
@@ -187,8 +187,8 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_err_t err;
     ssize_t res = 0;
 
-    ah_udp_obufs_t* obufs = sock->_send_queue_head;
-    sock->_send_queue_head = obufs->_next;
+    ah_udp_msg_t* msg = sock->_send_queue_head;
+    sock->_send_queue_head = msg->_next;
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -200,7 +200,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err_and_prep_next;
     }
 
-    res = sendmsg(sock->_fd, &obufs->_msghdr, 0);
+    res = sendmsg(sock->_fd, &msg->_msghdr, 0);
     if (ah_unlikely(res < 0)) {
         err = errno;
         res = 0;
@@ -210,7 +210,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     err = AH_ENONE;
 
 report_err_and_prep_next:
-    sock->_vtab->on_send_done(sock, (size_t) res, ah_i_sockaddr_const_from_bsd(obufs->_msghdr.msg_name), err);
+    sock->_vtab->on_send_done(sock, (size_t) res, ah_i_sockaddr_const_from_bsd(msg->_msghdr.msg_name), err);
 
     if (sock->_send_queue_head == NULL) {
         return;
