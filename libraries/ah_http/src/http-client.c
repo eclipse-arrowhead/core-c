@@ -214,6 +214,13 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             }
 
             if (header.name == NULL) {
+                if (cln->_vtab->on_res_headers != NULL) {
+                    cln->_vtab->on_res_headers(cln, cln->_req_queue._head);
+                    if (!ah_tcp_conn_is_readable(&cln->_conn)) {
+                        return;
+                    }
+                }
+
                 if (has_transfer_encoding_chunked_been_seen) {
                     if (content_length != 0u) {
                         err = AH_EBADMSG;
