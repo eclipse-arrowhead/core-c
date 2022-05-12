@@ -30,7 +30,7 @@ union ah_udp_group {
 
 // An outgoing UDP message.
 struct ah_udp_msg {
-    AH_I_UDP_OBUFS_FIELDS
+    AH_I_UDP_MSG_FIELDS
 };
 
 struct ah_udp_sock {

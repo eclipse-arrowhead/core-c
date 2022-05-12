@@ -19,7 +19,7 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* la
     if (sock == NULL || sock->_loop == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_is_open) {
+    if (sock->_state != AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
     }
 
@@ -27,7 +27,7 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* la
 
     if (err == AH_ENONE) {
         sock->_is_ipv6 = (laddr != NULL ? laddr->as_any.family : AH_SOCKFAMILY_DEFAULT) == AH_SOCKFAMILY_IPV6;
-        sock->_is_open = true;
+        sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
     }
 
     sock->_vtab->on_open(sock, err);
@@ -40,7 +40,7 @@ ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_
     if (sock == NULL || laddr == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open) {
+    if (sock->_state == AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
     }
     return ah_i_sock_getsockname(sock->_fd, laddr);
@@ -51,7 +51,7 @@ ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open) {
+    if (sock->_state == AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
     }
 
@@ -80,7 +80,7 @@ ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool 
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open) {
+    if (sock->_state == AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
     }
 
@@ -109,7 +109,7 @@ ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enable
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open) {
+    if (sock->_state == AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
@@ -124,7 +124,7 @@ ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open) {
+    if (sock->_state == AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
     }
 
@@ -153,7 +153,7 @@ ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* g
     if (sock == NULL || group == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open) {
+    if (sock->_state == AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
     }
 
@@ -181,7 +181,7 @@ ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* 
     if (sock == NULL || group == NULL) {
         return AH_EINVAL;
     }
-    if (!sock->_is_open) {
+    if (sock->_state == AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
     }
 

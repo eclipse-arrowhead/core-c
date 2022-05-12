@@ -27,14 +27,14 @@
 #define AH_I_TCP_LISTENER_STATE_OPEN      1u
 #define AH_I_TCP_LISTENER_STATE_LISTENING 2u
 
-#define AH_I_TCP_CONN_FIELDS               \
- ah_loop_t* _loop;                         \
- const ah_tcp_conn_vtab_t* _vtab;          \
+#define AH_I_TCP_CONN_FIELDS           \
+ ah_loop_t* _loop;                     \
+ const ah_tcp_conn_vtab_t* _vtab;      \
  struct ah_i_tcp_msg_queue _msg_queue; \
- void* _trans_data;                        \
- void* _user_data;                         \
- ah_tcp_shutdown_t _shutdown_flags;        \
- uint8_t _state;                           \
+ void* _trans_data;                    \
+ void* _user_data;                     \
+ ah_tcp_shutdown_t _shutdown_flags;    \
+ uint8_t _state;                       \
  AH_I_TCP_CONN_PLATFORM_FIELDS
 
 #define AH_I_TCP_LISTENER_FIELDS       \
@@ -46,9 +46,9 @@
  uint8_t _state;                       \
  AH_I_TCP_LISTENER_PLATFORM_FIELDS
 
-#define AH_I_TCP_OBUFS_FIELDS \
+#define AH_I_TCP_MSG_FIELDS \
  ah_tcp_msg_t* _next;       \
- AH_I_TCP_OBUFS_PLATFORM_FIELDS
+ AH_I_TCP_MSG_PLATFORM_FIELDS
 
 #define AH_I_TCP_TRANS_FIELDS      \
  ah_loop_t* _loop;                 \
@@ -64,7 +64,7 @@ void ah_i_tcp_listener_force_close_with_err(ah_tcp_listener_t* ln, ah_err_t err)
 
 bool ah_i_tcp_msg_queue_is_empty(struct ah_i_tcp_msg_queue* queue);
 bool ah_i_tcp_msg_queue_is_empty_then_add(struct ah_i_tcp_msg_queue* queue, ah_tcp_msg_t* msg);
-ah_tcp_msg_t* ah_i_tcp_msg_queue_peek_unsafe(struct ah_i_tcp_msg_queue* queue);
+ah_tcp_msg_t* ah_i_tcp_msg_queue_peek(struct ah_i_tcp_msg_queue* queue);
 void ah_i_tcp_msg_queue_remove_unsafe(struct ah_i_tcp_msg_queue* queue);
 
 #endif

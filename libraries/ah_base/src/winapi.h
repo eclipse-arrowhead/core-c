@@ -4,8 +4,8 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef SRC_WIN32_WINAPI_H_
-#define SRC_WIN32_WINAPI_H_
+#ifndef SRC_WINAPI_H_
+#define SRC_WINAPI_H_
 
 #include "ah/defs.h"
 

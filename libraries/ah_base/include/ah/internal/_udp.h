@@ -17,25 +17,37 @@
 # include "_udp-uring.h"
 #endif
 
-#define AH_I_UDP_OBUFS_FIELDS \
- ah_udp_msg_t* _next;       \
- AH_I_UDP_OBUFS_PLATFORM_FIELDS
+#define AH_I_UDP_SOCK_STATE_CLOSED    0u
+#define AH_I_UDP_SOCK_STATE_OPEN      1u // Sends allowed.
+#define AH_I_UDP_SOCK_STATE_RECEIVING 2u // Sends allowed.
 
-#define AH_I_UDP_SOCK_FIELDS      \
- ah_loop_t* _loop;                \
- const ah_udp_sock_vtab_t* _vtab; \
- ah_udp_msg_t* _send_queue_head; \
- ah_udp_msg_t* _send_queue_end;  \
- void* _trans_data;               \
- void* _user_data;                \
- bool _is_ipv6;                   \
- bool _is_open;                   \
- bool _is_receiving;              \
+#define AH_I_UDP_MSG_FIELDS \
+ ah_udp_msg_t* _next;       \
+ AH_I_UDP_MSG_PLATFORM_FIELDS
+
+#define AH_I_UDP_SOCK_FIELDS           \
+ ah_loop_t* _loop;                     \
+ const ah_udp_sock_vtab_t* _vtab;      \
+ struct ah_i_udp_msg_queue _msg_queue; \
+ void* _trans_data;                    \
+ void* _user_data;                     \
+ bool _is_ipv6;                        \
+ uint8_t _state;                       \
  AH_I_UDP_SOCK_PLATFORM_FIELDS
 
 #define AH_I_UDP_TRANS_FIELDS      \
  ah_loop_t* _loop;                 \
  const ah_udp_trans_vtab_t* _vtab; \
  void* _trans_data;
+
+struct ah_i_udp_msg_queue {
+    ah_udp_msg_t* _head;
+    ah_udp_msg_t* _end;
+};
+
+bool ah_i_udp_msg_queue_is_empty(struct ah_i_udp_msg_queue* queue);
+bool ah_i_udp_msg_queue_is_empty_then_add(struct ah_i_udp_msg_queue* queue, ah_udp_msg_t* msg);
+ah_udp_msg_t* ah_i_udp_msg_queue_peek(struct ah_i_udp_msg_queue* queue);
+void ah_i_udp_msg_queue_remove_unsafe(struct ah_i_udp_msg_queue* queue);
 
 #endif

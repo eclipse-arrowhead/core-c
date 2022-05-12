@@ -54,7 +54,7 @@ struct ah_tcp_listener_vtab {
 
 // An outgoing TCP message.
 struct ah_tcp_msg {
-    AH_I_TCP_OBUFS_FIELDS
+    AH_I_TCP_MSG_FIELDS
 };
 
 struct ah_tcp_trans {

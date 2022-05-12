@@ -30,8 +30,8 @@
  LPFN_ACCEPTEX _AcceptEx;                                   \
  LPFN_GETACCEPTEXSOCKADDRS _GetAcceptExSockaddrs;
 
-#define AH_I_TCP_OBUFS_PLATFORM_FIELDS \
- WSABUF* _buffers;                    \
+#define AH_I_TCP_MSG_PLATFORM_FIELDS \
+ WSABUF* _buffers;                   \
  ULONG _buffer_count;
 
 #endif
