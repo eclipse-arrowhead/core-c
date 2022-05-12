@@ -19,13 +19,15 @@
 
 #define AH_I_HTTP_CLIENT_FIELDS          \
  ah_tcp_conn_t _conn;                    \
+ const ah_sockaddr_t* _raddr;            \
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_client_vtab_t* _vtab;     \
  struct ah_i_http_req_queue _req_queue;  \
  ah_buf_rw_t _res_buf_rw;                \
  size_t _res_n_expected_bytes;           \
  uint8_t _res_state;                     \
- uint8_t _req_state;
+ uint8_t _req_state;                     \
+ bool _keep_alive;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \

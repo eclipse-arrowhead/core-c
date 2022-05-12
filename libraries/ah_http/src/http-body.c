@@ -1,8 +1,12 @@
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// http://www.eclipse.org/legal/epl-2.0.
 //
-// Created by Emanuel Palm on 2022-05-11.
-//
+// SPDX-License-Identifier: EPL-2.0
 
 #include "ah/http.h"
+
+#include <ah/assert.h>
 
 ah_extern ah_http_body_t ah_http_body_from_buf(ah_buf_t buf)
 {

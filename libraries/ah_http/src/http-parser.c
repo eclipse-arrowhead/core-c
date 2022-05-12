@@ -4,8 +4,11 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
+#include "ah/http.h"
+
 #include "http-parser.h"
 
+#include <ah/assert.h>
 #include <ah/err.h>
 #include <ah/math.h>
 #include <stdbool.h>
@@ -27,6 +30,7 @@ static ah_err_t s_skip_crlf(ah_buf_rw_t* rw);
 static void s_skip_ows(ah_buf_rw_t* rw);
 
 static const char* s_take_while(ah_buf_rw_t* rw, bool (*pred)(uint8_t));
+static uint8_t s_to_lower_ascii(uint8_t ch);
 
 ah_err_t ah_i_http_parse_chunk_line(ah_buf_rw_t* rw, ah_http_chunk_line_t* chunk_line)
 {
@@ -311,6 +315,126 @@ static ah_err_t s_parse_status_code(ah_buf_rw_t* rw, uint16_t* code)
     return AH_ENONE;
 }
 
+ah_err_t ah_i_http_header_name_eq(const char* expected_lowercase, const char* actual)
+{
+    ah_assert_if_debug(expected_lowercase != NULL);
+    ah_assert_if_debug(actual != NULL);
+
+    const uint8_t* a = (const uint8_t*) expected_lowercase;
+    const uint8_t* b = (const uint8_t*) actual;
+
+    while (a[0u] == s_to_lower_ascii(*b)) {
+        if (a[0u] == '\0') {
+            return true;
+        }
+        a = &a[1u];
+        b = &b[1u];
+    }
+
+    return false;
+}
+
+ah_err_t ah_i_http_header_value_has_csv(const char* value, const char* csv_lowercase, const char** rest)
+{
+    ah_assert_if_debug(value != NULL);
+
+    const uint8_t* v = (const uint8_t*) value;
+    const uint8_t* c;
+
+    // For each Comma-Separated Value (CSV).
+    for (;;) {
+        if (v[0u] == '\0') {
+            return AH_ESRCH;
+        }
+
+        // Did we find it?
+        c = (const uint8_t*) csv_lowercase;
+        if (s_to_lower_ascii(v[0u]) == c[0u]) {
+            for (;;) {
+                if (c[0u] == '\0') {
+                    // We did!
+                    if (rest != NULL) {
+                        *rest = (const char*) v;
+                    }
+                    return AH_ENONE;
+                }
+                v = &v[1u];
+                c = &c[1u];
+                if (s_to_lower_ascii(v[0u]) != c[0u]) {
+                    break; // Nope.
+                }
+            }
+        }
+
+        // Skip until next CSV.
+        for (;;) {
+            if (v[0u] == ',') {
+                break;
+            }
+            if (v[0u] == '"') { // Commas within double quotes do not count.
+                do {
+                    v = &v[1u];
+                    if (v[0u] == '\0') {
+                        return AH_ESRCH;
+                    }
+                    if (v[0u] == '\\') { // Double quotes may be escaped.
+                        v = &v[1u];
+                        if (v[0u] == '\0') {
+                            return AH_ESRCH;
+                        }
+                    }
+                } while (v[0u] != '"');
+            }
+            v = &v[1u];
+            if (v[0u] == '\0') {
+                return AH_ESRCH;
+            }
+        }
+
+        // Skip any optional white-space.
+        while (v[0u] == '\t' || v[0u] == ' ') {
+            v = &v[1u];
+            if (v[0u] == '\0') {
+                return AH_ESRCH;
+            }
+        }
+    }
+}
+
+ah_err_t ah_i_http_header_value_to_size(const char* value, size_t* size)
+{
+    ah_assert_if_debug(value != NULL);
+
+    ah_err_t err;
+
+    size_t size0;
+    for (;;) {
+        const char ch = value[0u];
+        if (ch <= '0' || ch >= '9') {
+            if (ch == '\0') {
+                break;
+            }
+            return AH_EILSEQ;
+        }
+
+        err = ah_mul_size(size0, 10u, &size0);
+        if (err != AH_ENONE) {
+            return err;
+        }
+
+        err = ah_add_size(size0, ch - '0', &size0);
+        if (err != AH_ENONE) {
+            return err;
+        }
+
+        value = &value[1u];
+    }
+
+    *size = size0;
+
+    return AH_ENONE;
+}
+
 static bool s_is_digit(uint8_t ch)
 {
     return ch >= '0' && ch <= '9';
@@ -408,4 +532,9 @@ static const char* s_take_while(ah_buf_rw_t* rw, bool (*pred)(uint8_t))
     }
 
     return str;
+}
+
+static uint8_t s_to_lower_ascii(uint8_t ch)
+{
+    return (ch >= 'A' && ch <= 'Z') ? (ch | 0x20) : ch;
 }

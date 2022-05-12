@@ -9,9 +9,6 @@
 
 #include "internal/_http.h"
 
-#include <ah/alloc.h>
-#include <ah/assert.h>
-#include <ah/buf.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -42,7 +39,7 @@ struct ah_http_client_vtab {
     void (*on_connect)(ah_http_client_t* cln, ah_err_t err);
     void (*on_close)(ah_http_client_t* cln, ah_err_t err);
 
-    void (*on_req_sent)(ah_http_client_t* cln, ah_http_req_t* req);
+    void (*on_req_sent)(ah_http_client_t* cln, ah_http_req_t* req, ah_err_t err);
 
     // It is safe to provide `buf` with the same memory block every time this
     // function is called with the same `cln`.
@@ -134,7 +131,7 @@ struct ah_http_res {
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab);
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
-ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, const ah_http_req_t* req);
+ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, ah_http_req_t* req);
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_line_t chunk, ah_bufs_t bufs);
 ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_bufs_t bufs);
 ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_header_t* headers);

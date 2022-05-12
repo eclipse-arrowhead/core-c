@@ -14,4 +14,8 @@ ah_err_t ah_i_http_parse_header(ah_buf_rw_t* rw, ah_http_header_t* header);
 ah_err_t ah_i_http_parse_req_line(ah_buf_rw_t* rw, ah_http_req_line_t* req_line);
 ah_err_t ah_i_http_parse_stat_line(ah_buf_rw_t* rw, ah_http_stat_line_t* stat_line);
 
+ah_err_t ah_i_http_header_name_eq(const char* expected_lowercase, const char* actual);
+ah_err_t ah_i_http_header_value_has_csv(const char* value, const char* csv_lowercase, const char** rest);
+ah_err_t ah_i_http_header_value_to_size(const char* value, size_t* size);
+
 #endif

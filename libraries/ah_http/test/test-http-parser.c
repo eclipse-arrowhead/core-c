@@ -7,6 +7,7 @@
 #include "../src/http-parser.h"
 #include "ah/http.h"
 
+#include <ah/assert.h>
 #include <ah/err.h>
 #include <ah/unit.h>
 
