@@ -40,7 +40,9 @@ static ah_http_req_t* s_req_queue_get_head(struct ah_i_http_req_queue* queue);
 static ah_http_req_t* s_req_queue_peek(struct ah_i_http_req_queue* queue);
 static void s_req_queue_remove_unsafe(struct ah_i_http_req_queue* queue);
 
-void s_prep_write_req(ah_http_client_t* cln);
+static void s_prep_write_req(ah_http_client_t* cln);
+static ah_err_t s_realloc_res_rw(ah_http_client_t* cln);
+
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
 {
     if (cln == NULL || trans._vtab == NULL || trans._loop == NULL || vtab == NULL) {
@@ -129,7 +131,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
     ah_err_t err;
 
     if (S_RES_STATE_IS_REUSING_BUF_RW(cln->_res_state)) {
-        ah_buf_rw_get_writable_as_buf(&cln->_res_buf_rw, buf);
+        ah_buf_rw_get_writable_as_buf(&cln->_res_rw, buf);
         return;
     }
 
@@ -139,16 +141,16 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         goto close_conn_and_report_err;
     }
 
-    cln->_vtab->on_alloc(cln, req, buf);
+    cln->_vtab->on_alloc(cln, req, buf, true);
     if (!ah_tcp_conn_is_readable(&cln->_conn)) {
         return;
     }
-    if (ah_buf_get_size(buf) == 0u) {
+    if (ah_buf_is_empty(buf)) {
         err = AH_ENOBUFS;
         goto close_conn_and_report_err;
     }
 
-    ah_buf_rw_init_for_writing_to(&cln->_res_buf_rw, buf);
+    ah_buf_rw_init_for_writing_to(&cln->_res_rw, buf);
 
     return;
 
@@ -178,10 +180,10 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
     ah_err_t err;
 
-    ah_assert_if_debug(cln->_res_buf_rw.wr == ah_buf_get_base_const(buf));
+    ah_assert_if_debug(cln->_res_rw.wr == ah_buf_get_base_const(buf));
     (void) buf;
 
-    if (!ah_buf_rw_juken(&cln->_res_buf_rw, nread)) {
+    if (!ah_buf_rw_juken(&cln->_res_rw, nread)) {
         err = AH_EDOM;
         goto close_conn_and_report_err;
     }
@@ -195,6 +197,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
         ah_http_req_t* req = s_req_queue_get_head(&cln->_req_queue);
         cln->_keep_alive = req->req_line.version.minor != 0u;
+        cln->_prohibit_realloc = false;
 
         cln->_res_state = S_RES_STATE_STAT_LINE;
         goto state_stat_line;
@@ -203,9 +206,12 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     state_stat_line:
     case S_RES_STATE_STAT_LINE: {
         ah_http_stat_line_t stat_line;
-        err = ah_i_http_parse_stat_line(&cln->_res_buf_rw, &stat_line);
+        err = ah_i_http_parse_stat_line(&cln->_res_rw, &stat_line);
         if (err != AH_ENONE) {
-            break;
+            if (err == AH_EEOF) {
+                err = AH_EOVERFLOW; // Current buffer not large enough to hold status line.
+            }
+            goto close_conn_and_report_err;
         }
 
         cln->_vtab->on_res_stat_line(cln, s_req_queue_get_head(&cln->_req_queue), &stat_line);
@@ -228,8 +234,11 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
         for (;;) {
             ah_http_header_t header;
-            err = ah_i_http_parse_header(&cln->_res_buf_rw, &header);
+            err = ah_i_http_parse_header(&cln->_res_rw, &header);
             if (err != AH_ENONE) {
+                if (err == AH_EEOF) {
+                    err = AH_EOVERFLOW; // Current buffer not large enough to hold all headers.
+                }
                 goto close_conn_and_report_err;
             }
 
@@ -322,10 +331,23 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     case S_RES_STATE_CHUNK_LINE: {
         ah_http_chunk_line_t chunk_line;
 
-        err = ah_i_http_parse_chunk_line(&cln->_res_buf_rw, &chunk_line);
+        err = ah_i_http_parse_chunk_line(&cln->_res_rw, &chunk_line);
         if (err != AH_ENONE) {
-            break;
+            if (err != AH_EEOF) {
+                goto close_conn_and_report_err;
+            }
+            if (cln->_prohibit_realloc) {
+                err = AH_EOVERFLOW; // Newly allocated buffer not large enough to hold chunk line.
+                goto close_conn_and_report_err;
+            }
+            err = s_realloc_res_rw(cln);
+            if (err != AH_ENONE) {
+                goto close_conn_and_report_err;
+            }
+            cln->_prohibit_realloc = true;
+            return;
         }
+        cln->_prohibit_realloc = false;
 
         if (cln->_vtab->on_res_chunk_line != NULL) {
             cln->_vtab->on_res_chunk_line(cln, s_req_queue_get_head(&cln->_req_queue), chunk_line);
@@ -350,7 +372,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     case S_RES_STATE_DATA:
     case S_RES_STATE_CHUNK_DATA: {
         ah_buf_t readable_buf;
-        ah_buf_rw_get_readable_as_buf(&cln->_res_buf_rw, &readable_buf);
+        ah_buf_rw_get_readable_as_buf(&cln->_res_rw, &readable_buf);
 
         ah_buf_limit_size_to(&readable_buf, cln->_res_n_expected_bytes);
         cln->_res_n_expected_bytes -= ah_buf_get_size(&readable_buf);
@@ -375,12 +397,25 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     case S_RES_STATE_TRAILER: {
         for (;;) {
             ah_http_header_t header;
-            err = ah_i_http_parse_header(&cln->_res_buf_rw, &header);
+            err = ah_i_http_parse_header(&cln->_res_rw, &header);
             if (err != AH_ENONE) {
-                break;
+                if (err != AH_EEOF) {
+                    goto close_conn_and_report_err;
+                }
+                if (cln->_prohibit_realloc) {
+                    err = AH_EOVERFLOW; // Newly allocated buffer not large enough to hold headers.
+                    goto close_conn_and_report_err;
+                }
+                err = s_realloc_res_rw(cln);
+                if (err != AH_ENONE) {
+                    goto close_conn_and_report_err;
+                }
+                cln->_prohibit_realloc = true;
+                return;
             }
 
             if (header.name == NULL) {
+                cln->_prohibit_realloc = false;
                 goto state_end;
             }
 
@@ -407,7 +442,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         }
 
         if (s_req_queue_is_empty(&cln->_req_queue)) {
-            if (ah_buf_rw_get_readable_size(&cln->_res_buf_rw) != 0u) {
+            if (ah_buf_rw_get_readable_size(&cln->_res_rw) != 0u) {
                 err = AH_ESTATE;
                 goto close_conn_and_report_err;
             }
@@ -429,6 +464,28 @@ close_conn_and_report_err:
     }
 report_err:
     cln->_vtab->on_res_end(cln, s_req_queue_get_head(&cln->_req_queue), err);
+}
+
+static ah_err_t s_realloc_res_rw(ah_http_client_t* cln)
+{
+    ah_assert_if_debug(cln != NULL);
+
+    ah_buf_t new_buf;
+    cln->_vtab->on_alloc(cln, s_req_queue_get_head(&cln->_req_queue), &new_buf, false);
+    if (ah_buf_is_empty(&new_buf)) {
+        return AH_ENOBUFS;
+    }
+
+    ah_buf_rw_t new_rw;
+    ah_buf_rw_init_for_writing_to(&new_rw, &new_buf);
+
+    if (!ah_buf_rw_copyn(&cln->_res_rw, &new_rw, ah_buf_rw_get_readable_size(&cln->_res_rw))) {
+        return AH_EOVERFLOW;
+    }
+
+    cln->_res_rw = new_rw;
+
+    return AH_ENONE;
 }
 
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
@@ -453,7 +510,7 @@ ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, ah_http_req_t* 
     return AH_ENONE;
 }
 
-void s_prep_write_req(ah_http_client_t* cln)
+static void s_prep_write_req(ah_http_client_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
 
@@ -465,7 +522,7 @@ try_next:
 
     cln->_keep_alive = req->req_line.version.minor != 0u;
 
-    cln->_vtab->on_alloc(cln, req, &req->_head_buf);
+    cln->_vtab->on_alloc(cln, req, &req->_head_buf, true);
     if (ah_buf_is_empty(&req->_head_buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;

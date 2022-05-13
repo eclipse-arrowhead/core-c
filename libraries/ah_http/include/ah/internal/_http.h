@@ -23,10 +23,11 @@
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_client_vtab_t* _vtab;     \
  struct ah_i_http_req_queue _req_queue;  \
- ah_buf_rw_t _res_buf_rw;                \
+ ah_buf_rw_t _res_rw;                    \
  size_t _res_n_expected_bytes;           \
  uint8_t _res_state;                     \
- bool _keep_alive;
+ bool _keep_alive;                       \
+ bool _prohibit_realloc;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \

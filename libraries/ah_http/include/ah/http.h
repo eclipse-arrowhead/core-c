@@ -39,9 +39,9 @@ struct ah_http_client_vtab {
     void (*on_connect)(ah_http_client_t* cln, ah_err_t err);
     void (*on_close)(ah_http_client_t* cln, ah_err_t err);
 
-    // It is safe to provide `buf` with the same memory block every time this
-    // function is called with the same `cln`.
-    void (*on_alloc)(ah_http_client_t* cln, ah_http_req_t* req, ah_buf_t* buf);
+    // If `reuse` is true, any block of memory previously provided via `buf` may
+    // be used again without disrupting `cln`.
+    void (*on_alloc)(ah_http_client_t* cln, ah_http_req_t* req, ah_buf_t* buf, bool reuse);
 
     void (*on_req_sent)(ah_http_client_t* cln, ah_http_req_t* req, ah_err_t err);
 
@@ -62,9 +62,9 @@ struct ah_http_server_vtab {
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 
-    // It is safe to provide `buf` with the same memory block every time this
-    // function is called with the same `srv`.
-    void (*on_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_res_t* res);
+    // If `reuse` is true, any block of memory previously provided via `buf` may
+    // be used again without disrupting `srv`.
+    void (*on_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_res_t* res, bool reuse);
 
     void (*on_req_line)(ah_http_server_t* srv, const ah_http_req_line_t* req_line, ah_http_res_t* res);
     void (*on_req_header)(ah_http_server_t* srv, ah_http_header_t header, ah_http_res_t* res);
