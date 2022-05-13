@@ -174,7 +174,7 @@ ah_extern ah_err_t ah_i_loop_alloc_kev(ah_loop_t* loop, struct kevent** kev)
     ah_assert_if_debug(kev != NULL);
 
     if (ah_loop_is_term(loop)) {
-        return AH_ESTATE;
+        return AH_ECANCELED;
     }
 
     if (ah_unlikely(loop->_kqueue_nchanges == loop->_kqueue_capacity)) {

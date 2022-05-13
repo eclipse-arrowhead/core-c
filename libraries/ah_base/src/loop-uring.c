@@ -163,7 +163,7 @@ ah_extern ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sq
     ah_assert_if_debug(sqe != NULL);
 
     if (ah_loop_is_term(loop)) {
-        return AH_ESTATE;
+        return AH_ECANCELED;
     }
 
     struct io_uring_sqe* sqe0 = io_uring_get_sqe(&loop->_uring);

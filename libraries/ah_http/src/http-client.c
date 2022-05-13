@@ -40,6 +40,8 @@ static ah_http_req_t* s_req_queue_get_head(struct ah_i_http_req_queue* queue);
 static ah_http_req_t* s_req_queue_peek(struct ah_i_http_req_queue* queue);
 static void s_req_queue_remove_unsafe(struct ah_i_http_req_queue* queue);
 
+static void s_cancel_all_pending_reqs(ah_http_client_t* cln);
+static void s_complete_current_req(ah_http_client_t* cln, ah_err_t err);
 static void s_prep_write_req(ah_http_client_t* cln);
 static ah_err_t s_realloc_res_rw(ah_http_client_t* cln);
 
@@ -194,10 +196,6 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             err = AH_ESTATE;
             goto close_conn_and_report_err;
         }
-
-        ah_http_req_t* req = s_req_queue_get_head(&cln->_req_queue);
-        cln->_keep_alive = req->req_line.version.minor != 0u;
-        cln->_prohibit_realloc = false;
 
         cln->_res_state = S_RES_STATE_STAT_LINE;
         goto state_stat_line;
@@ -492,6 +490,19 @@ static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
     cln->_vtab->on_res_end(cln, s_req_queue_get_head(&cln->_req_queue), err);
+    s_cancel_all_pending_reqs(cln); // TODO: Is this OK?
+}
+
+static void s_cancel_all_pending_reqs(ah_http_client_t* cln)
+{
+    for (ah_http_req_t* req;;) {
+        req = s_req_queue_peek(&cln->_req_queue);
+        if (req == NULL) {
+            break;
+        }
+        s_req_queue_remove_unsafe(&cln->_req_queue);
+        cln->_vtab->on_req_sent(cln, req, AH_ECANCELED);
+    }
 }
 
 ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, ah_http_req_t* req)
@@ -521,6 +532,7 @@ try_next:
     req = s_req_queue_get_head(&cln->_req_queue);
 
     cln->_keep_alive = req->req_line.version.minor != 0u;
+    cln->_prohibit_realloc = false;
 
     cln->_vtab->on_alloc(cln, req, &req->_head_buf, true);
     if (ah_buf_is_empty(&req->_head_buf)) {
@@ -619,10 +631,12 @@ headers_end:
 
 report_err_and_try_next:
     s_req_queue_remove_unsafe(&cln->_req_queue);
+
     cln->_vtab->on_req_sent(cln, req, err);
     if (!ah_tcp_conn_is_writable(&cln->_conn)) {
         return;
     }
+
     if (s_req_queue_is_empty(&cln->_req_queue)) {
         return;
     }
@@ -635,39 +649,82 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
 
     ah_http_req_t* req = s_req_queue_get_head(&cln->_req_queue);
 
-    if (err != AH_ENONE) {
-        goto report_err_and_prep_next;
+    if (err == AH_ENONE) {
+        ah_assert_if_debug(req->_n_pending_tcp_msgs > 0u);
+        req->_n_pending_tcp_msgs -= 1u;
+        if (req->_n_pending_tcp_msgs != 0u || req->body._as_any._kind == AH_I_HTTP_BODY_KIND_OVERRIDE) {
+            return;
+        }
     }
 
-    ah_assert_if_debug(req->_n_pending_tcp_msgs > 0u);
-    req->_n_pending_tcp_msgs -= 1u;
-    if (req->_n_pending_tcp_msgs != 0u) {
-        return;
-    }
+    s_complete_current_req(cln, err);
+}
 
-report_err_and_prep_next:
+static void s_complete_current_req(ah_http_client_t* cln, ah_err_t err)
+{
+    ah_http_req_t* req = s_req_queue_get_head(&cln->_req_queue);
     s_req_queue_remove_unsafe(&cln->_req_queue);
+
     cln->_vtab->on_req_sent(cln, req, err);
     if (!ah_tcp_conn_is_writable(&cln->_conn)) {
         return;
     }
+
     if (s_req_queue_is_empty(&cln->_req_queue)) {
         return;
     }
     s_prep_write_req(cln);
 }
 
+ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* msg)
+{
+    if (cln == NULL || msg == NULL) {
+        return AH_EINVAL;
+    }
+
+    ah_http_req_t* req = s_req_queue_get_head(&cln->_req_queue);
+
+    if (req->body._as_any._kind != AH_I_HTTP_BODY_KIND_OVERRIDE) {
+        return AH_ESTATE;
+    }
+
+    ah_err_t err = cln->_trans_vtab->conn_write(&cln->_conn, msg);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    req->_n_pending_tcp_msgs += 1u;
+
+    return AH_ENONE;
+}
+
+ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln)
+{
+    if (cln == NULL) {
+        return AH_EINVAL;
+    }
+
+    ah_http_req_t* req = s_req_queue_get_head(&cln->_req_queue);
+
+    if (req->body._as_any._kind != AH_I_HTTP_BODY_KIND_OVERRIDE) {
+        return AH_ESTATE;
+    }
+
+    req->body._as_any._kind = AH_I_HTTP_BODY_KIND_EMPTY;
+
+    if (req->_n_pending_tcp_msgs > 0u) {
+        return AH_ENONE;
+    }
+
+    s_complete_current_req(cln, AH_ENONE);
+
+    return AH_ENONE;
+}
+
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_line_t chunk, ah_bufs_t bufs)
 {
     (void) cln;
     (void) chunk;
-    (void) bufs;
-    return AH_EOPNOTSUPP; // TODO: Implement.
-}
-
-ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_bufs_t bufs)
-{
-    (void) cln;
     (void) bufs;
     return AH_EOPNOTSUPP; // TODO: Implement.
 }
@@ -690,20 +747,8 @@ ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln)
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_http_client_t* cln = s_upcast_to_client(conn);
+    s_cancel_all_pending_reqs(cln);
     cln->_vtab->on_close(cln, err);
-
-    for (ah_http_req_t* req;;) {
-        req = s_req_queue_peek(&cln->_req_queue);
-        if (req == NULL) {
-            break;
-        }
-        ah_err_t err0 = cln->_trans_vtab->conn_connect(&cln->_conn, cln->_raddr);
-        if (err0 == AH_ENONE) {
-            break;
-        }
-        s_req_queue_remove_unsafe(&cln->_req_queue);
-        cln->_vtab->on_req_sent(cln, req, err0);
-    }
 }
 
 ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln)

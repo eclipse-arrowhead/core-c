@@ -287,7 +287,7 @@ ah_err_t ah_i_loop_evt_alloc(ah_loop_t* loop, ah_i_loop_evt_t** evt)
     ah_assert_if_debug(evt != NULL);
 
     if (ah_loop_is_term(loop)) {
-        return AH_ESTATE;
+        return AH_ECANCELED;
     }
 
     if (loop->_evt_free_list == NULL) {

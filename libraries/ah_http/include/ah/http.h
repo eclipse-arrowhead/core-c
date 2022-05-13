@@ -132,8 +132,9 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, ah_http_req_t* req);
+ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* msg);
+ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_line_t chunk, ah_bufs_t bufs);
-ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_bufs_t bufs);
 ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_header_t* headers);
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
 ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln);
@@ -144,8 +145,9 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog);
 ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_res_t* res);
-ah_extern ah_err_t ah_http_server_send_chunk(ah_http_server_t* srv, ah_http_chunk_line_t chunk, ah_bufs_t bufs);
 ah_extern ah_err_t ah_http_server_send_data(ah_http_server_t* srv, ah_bufs_t bufs);
+ah_extern ah_err_t ah_http_server_send_end(ah_http_server_t* srv);
+ah_extern ah_err_t ah_http_server_send_chunk(ah_http_server_t* srv, ah_http_chunk_line_t chunk, ah_bufs_t bufs);
 ah_extern ah_err_t ah_http_server_send_trailer(ah_http_server_t* srv, ah_http_header_t* headers);
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
 ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv);
