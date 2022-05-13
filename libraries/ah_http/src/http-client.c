@@ -230,7 +230,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             ah_http_header_t header;
             err = ah_i_http_parse_header(&cln->_res_buf_rw, &header);
             if (err != AH_ENONE) {
-                break;
+                goto close_conn_and_report_err;
             }
 
             if (header.name == NULL) {

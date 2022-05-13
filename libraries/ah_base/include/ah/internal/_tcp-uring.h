@@ -7,6 +7,8 @@
 #ifndef AH_INTERNAL_URING_TCP_H_
 #define AH_INTERNAL_URING_TCP_H_
 
+#include "../sock.h"
+
 #define AH_I_TCP_CONN_PLATFORM_FIELDS \
  int _fd;                             \
  ah_buf_t _recv_buf;
