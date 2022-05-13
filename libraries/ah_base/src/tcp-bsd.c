@@ -252,23 +252,3 @@ ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_
     }
     return AH_ENONE;
 }
-
-void ah_i_tcp_listener_force_close_with_err(ah_tcp_listener_t* ln, ah_err_t err)
-{
-    ah_assert_if_debug(ln != NULL);
-    ah_assert_if_debug(ln->_state != AH_I_TCP_LISTENER_STATE_CLOSED);
-    ah_assert_if_debug(ln->_fd != 0);
-
-    ln->_state = AH_I_TCP_LISTENER_STATE_CLOSED;
-
-    ah_err_t err0 = ah_i_sock_close(ln->_fd);
-    if (err0 == AH_EINTR) {
-        (void) ah_i_loop_try_set_pending_err(ln->_loop, AH_EINTR);
-    }
-
-#ifndef NDEBUG
-    ln->_fd = 0;
-#endif
-
-    ln->_vtab->on_close(ln, err);
-}

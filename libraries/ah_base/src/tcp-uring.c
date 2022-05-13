@@ -428,7 +428,9 @@ prep_another_accept:
 
     err = ah_i_loop_evt_alloc_with_sqe(ln->_loop, &evt0, &sqe);
     if (err != AH_ENONE) {
-        ah_i_tcp_listener_force_close_with_err(ln, err);
+        if (err != AH_ECANCELED) {
+            ln->_vtab->on_listen(ln, err);
+        }
         return;
     }
 

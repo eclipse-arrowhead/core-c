@@ -295,7 +295,7 @@ ah_extern bool ah_buf_rw_write_cstr(ah_buf_rw_t* rw, const char* cstr)
     return false;
 }
 
-ah_extern bool ah_buf_rw_write_size(ah_buf_rw_t* rw, size_t size)
+ah_extern bool ah_buf_rw_write_size_dec(ah_buf_rw_t* rw, size_t size)
 {
     ah_assert_if_debug(rw != NULL);
 
@@ -303,7 +303,7 @@ ah_extern bool ah_buf_rw_write_size(ah_buf_rw_t* rw, size_t size)
         return ah_buf_rw_write_byte(rw, '0');
     }
 
-    uint8_t buf[20]; // Large enough to hold all UINT64_MAX digits.
+    uint8_t buf[20]; // Large enough to hold all UINT64_MAX decimal digits.
     uint8_t* off = &buf[sizeof(buf) - 1u];
     const uint8_t* end = off;
 
@@ -311,6 +311,37 @@ ah_extern bool ah_buf_rw_write_size(ah_buf_rw_t* rw, size_t size)
     for (;;) {
         off[0u] = '0' + (s % 10);
         s /= 10;
+        if (s == 0u) {
+            break;
+        }
+        off = &off[-1];
+    }
+
+    return ah_buf_rw_write(rw, off, (size_t) (end - off));
+}
+
+ah_extern bool ah_buf_rw_write_size_hex(ah_buf_rw_t* rw, size_t size)
+{
+    ah_assert_if_debug(rw != NULL);
+
+    if (size == 0u)  {
+        return ah_buf_rw_write_byte(rw, '0');
+    }
+
+    uint8_t buf[16]; // Large enough to hold all UINT64_MAX hexadecimal digits.
+    uint8_t* off = &buf[sizeof(buf) - 1u];
+    const uint8_t* end = off;
+
+    size_t s = size;
+    for (;;) {
+        uint8_t digit = s % 16u;
+        if (digit < 10u) {
+            off[0u] = '0' + digit;
+        }
+        else {
+            off[0u] = 'A' + digit - 10u;
+        }
+        s /= 16u;
         if (s == 0u) {
             break;
         }

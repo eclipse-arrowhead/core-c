@@ -77,7 +77,8 @@ ah_extern bool ah_buf_rw_skipn(ah_buf_rw_t* rw, size_t size);
 ah_extern bool ah_buf_rw_write(ah_buf_rw_t* rw, uint8_t* src, size_t size);
 ah_extern bool ah_buf_rw_write_byte(ah_buf_rw_t* rw, uint8_t byte);
 ah_extern bool ah_buf_rw_write_cstr(ah_buf_rw_t* rw, const char* cstr);
-ah_extern bool ah_buf_rw_write_size(ah_buf_rw_t* rw, size_t size);
+ah_extern bool ah_buf_rw_write_size_dec(ah_buf_rw_t* rw, size_t size);
+ah_extern bool ah_buf_rw_write_size_hex(ah_buf_rw_t* rw, size_t size);
 ah_extern bool ah_buf_rw_juke1(ah_buf_rw_t* rw);
 ah_extern bool ah_buf_rw_juken(ah_buf_rw_t* rw, size_t size);
 

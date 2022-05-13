@@ -17,16 +17,17 @@
 #define AH_I_HTTP_BODY_KIND_BUF      2u
 #define AH_I_HTTP_BODY_KIND_BUFS     3u
 
-#define AH_I_HTTP_CLIENT_FIELDS          \
- ah_tcp_conn_t _conn;                    \
- const ah_sockaddr_t* _raddr;            \
- const ah_tcp_trans_vtab_t* _trans_vtab; \
- const ah_http_client_vtab_t* _vtab;     \
- struct ah_i_http_req_queue _req_queue;  \
- ah_buf_rw_t _res_rw;                    \
- size_t _res_n_expected_bytes;           \
- uint8_t _res_state;                     \
- bool _keep_alive;                       \
+#define AH_I_HTTP_CLIENT_FIELDS                                                  \
+ ah_tcp_conn_t _conn;                                                            \
+ const ah_sockaddr_t* _raddr;                                                    \
+ const ah_tcp_trans_vtab_t* _trans_vtab;                                         \
+ const ah_http_client_vtab_t* _vtab;                                             \
+ struct ah_i_http_req_queue _req_queue;     /* Not yet sent requests. */         \
+ struct ah_i_http_req_queue _res_req_queue; /* Requests not yet responded to. */ \
+ ah_buf_rw_t _res_rw;                                                            \
+ size_t _res_n_expected_bytes;                                                   \
+ uint8_t _res_state;                                                             \
+ bool _keep_alive;                                                               \
  bool _prohibit_realloc;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
@@ -40,6 +41,10 @@
  struct ah_i_http_body_buf _as_buf; \
  struct ah_i_http_body_bufs _as_bufs;
 
+#define AH_I_HTTP_CHUNK_FIELDS \
+ ah_buf_t _line_buf;           \
+ ah_tcp_msg_t _line_msg;
+
 #define AH_I_HTTP_REQ_FIELDS \
  ah_http_req_t* _next;       \
  ah_buf_t _head_buf;         \
@@ -49,6 +54,10 @@
 
 #define AH_I_HTTP_RES_FIELDS \
  ah_http_res_t* _next;
+
+#define AH_I_HTTP_TRAILER_FIELDS \
+ ah_buf_t _buf;                  \
+ ah_tcp_msg_t _msg;
 
 #define AH_I_HTTP_OBODY_COMMON \
  int _kind;

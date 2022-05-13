@@ -152,25 +152,30 @@ ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_r
     return AH_EOPNOTSUPP; // TODO: Implement.
 }
 
-ah_extern ah_err_t ah_http_server_send_chunk(ah_http_server_t* srv, ah_http_chunk_line_t chunk, ah_bufs_t bufs)
+ah_extern ah_err_t ah_http_server_send_end(ah_http_server_t* srv)
+{
+    (void) srv;
+    return AH_EOPNOTSUPP; // TODO: Implement.
+}
+
+ah_extern ah_err_t ah_http_server_send_chunk(ah_http_server_t* srv, ah_http_chunk_t* chunk)
 {
     (void) srv;
     (void) chunk;
-    (void) bufs;
     return AH_EOPNOTSUPP; // TODO: Implement.
 }
 
-ah_extern ah_err_t ah_http_server_send_data(ah_http_server_t* srv, ah_bufs_t bufs)
+ah_extern ah_err_t ah_http_server_send_data(ah_http_server_t* srv, ah_tcp_msg_t* msg)
 {
     (void) srv;
-    (void) bufs;
+    (void) msg;
     return AH_EOPNOTSUPP; // TODO: Implement.
 }
 
-ah_extern ah_err_t ah_http_server_send_trailer(ah_http_server_t* srv, ah_http_header_t* headers)
+ah_extern ah_err_t ah_http_server_send_trailer(ah_http_server_t* srv, ah_http_trailer_t* trailer)
 {
     (void) srv;
-    (void) headers;
+    (void) trailer;
     return AH_EOPNOTSUPP; // TODO: Implement.
 }
 

@@ -52,7 +52,7 @@ ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, const int sockfamily, const i
     ah_assert_if_debug(fd != NULL);
 
     if (ah_loop_is_term(loop)) {
-        return AH_ESTATE;
+        return AH_ECANCELED;
     }
 
     ah_i_sockfd_t fd0 = socket(sockfamily, type, 0);

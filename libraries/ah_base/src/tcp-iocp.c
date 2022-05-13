@@ -527,8 +527,8 @@ prep_another_accept:
     }
 
     err = s_prep_listener_accept(ln);
-    if (err != AH_ENONE) {
-        ah_i_tcp_listener_force_close_with_err(ln, err);
+    if (err != AH_ENONE && err != AH_ECANCELED) {
+        ln->_vtab->on_listen(ln, err);
     }
 
     return;
