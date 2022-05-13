@@ -97,11 +97,17 @@ struct ah_http_stat_line {
 
 struct ah_http_chunk_line {
     size_t size;
+
+    // Will be NULL or something that should adhere to the chunk-ext syntax, as
+    // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
     const char* ext;
 };
 
 struct ah_http_chunk {
+    // Must be NULL, an empty string, or adhere to the chunk-ext syntax, as
+    // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
     const char* ext;
+
     ah_tcp_msg_t data;
 
     AH_I_HTTP_CHUNK_FIELDS
@@ -113,8 +119,11 @@ struct ah_http_header {
 };
 
 struct ah_http_trailer {
+    // Must be NULL, an empty string, or adhere to the chunk-ext syntax, as
+    // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
     const char* ext;
-    ah_http_header_t* headers;
+
+    ah_http_header_t* headers; // Array terminated by { NULL, * } pair.
 
     AH_I_HTTP_TRAILER_FIELDS
 };
