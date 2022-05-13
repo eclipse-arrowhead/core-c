@@ -170,10 +170,10 @@ ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv);
 ah_extern void* ah_http_server_get_user_data(ah_http_server_t* srv);
 ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data);
 
-ah_extern ah_http_body_t ah_http_body_empty();
+ah_extern ah_http_body_t ah_http_body_empty(void);
 ah_extern ah_http_body_t ah_http_body_from_buf(ah_buf_t buf);
 ah_extern ah_http_body_t ah_http_body_from_bufs(ah_bufs_t bufs);
 ah_extern ah_http_body_t ah_http_body_from_cstr(char* cstr);
-ah_extern ah_http_body_t ah_http_body_override(void); // Enables use of *_send_{chunk,data,trailer} functions.
+ah_extern ah_http_body_t ah_http_body_override(void); // Enables use of *_send_{chunk,data,end,trailer} functions.
 
 #endif
