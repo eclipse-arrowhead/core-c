@@ -34,6 +34,7 @@ set(
     src/err.c
     src/ip.c
     src/lib.c
+    src/loop-evt.h
     src/loop.c
     src/math.c
     src/sock.c

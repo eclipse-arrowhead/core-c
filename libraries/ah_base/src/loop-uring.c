@@ -197,3 +197,14 @@ ah_extern void ah_i_loop_term(ah_loop_t* loop)
 
     io_uring_queue_exit(&loop->_uring);
 }
+
+void ah_i_loop_evt_call_as_canceled(ah_i_loop_evt_t* evt)
+{
+    ah_assert_if_debug(evt != NULL);
+
+    struct io_uring_cqe cqe = {
+        .res = -ECANCELED,
+    };
+
+    evt->_cb(evt, &cqe);
+}

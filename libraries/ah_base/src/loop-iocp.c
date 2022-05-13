@@ -338,3 +338,28 @@ ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task)
 
     return false;
 }
+
+ah_extern ah_err_t ah_i_loop_evt_get_result(ah_i_loop_evt_t* evt, DWORD* n_bytes_transferred)
+{
+    ah_assert_if_debug(evt != NULL);
+    ah_assert_if_debug(n_bytes_transferred != NULL);
+
+    if (ah_unlikely(evt->_is_canceled)) {
+        return AH_ECANCELED;
+    }
+
+    DWORD flags;
+    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
+        return WSAGetLastError();
+    }
+
+    return AH_ENONE;
+}
+
+void ah_i_loop_evt_call_as_canceled(ah_i_loop_evt_t* evt)
+{
+    ah_assert_if_debug(evt != NULL);
+
+    evt->_is_canceled = true;
+    evt->_cb(evt);
+}

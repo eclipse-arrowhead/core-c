@@ -136,15 +136,13 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt)
     ah_sockaddr_t* raddr;
 
     DWORD nrecv;
-    DWORD flags;
-    if (!WSAGetOverlappedResult(sock->_fd, &evt->_overlapped, &nrecv, false, &flags)) {
-        err = WSAGetLastError();
+    err = ah_i_loop_evt_get_result(evt, &nrecv);
+    if (err != AH_ENONE) {
         raddr = NULL;
         goto report_err;
     }
-    else {
-        raddr = ah_i_sockaddr_from_bsd(sock->_recv_addr);
-    }
+
+    raddr = ah_i_sockaddr_from_bsd(sock->_recv_addr);
 
     sock->_vtab->on_recv_data(sock, &sock->_recv_buf, nrecv, raddr);
 #ifndef NDEBUG
@@ -229,14 +227,10 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt)
 
     ah_err_t err;
 
-    DWORD n_bytes_sent;
-    DWORD flags;
-    if (WSAGetOverlappedResult(sock->_fd, &evt->_overlapped, &n_bytes_sent, false, &flags)) {
-        err = AH_ENONE;
-    }
-    else {
-        err = WSAGetLastError();
-        n_bytes_sent = 0u;
+    DWORD nsent;
+    err = ah_i_loop_evt_get_result(evt, &nsent);
+    if (err != AH_ENONE) {
+        nsent = 0u;
     }
 
     ah_udp_msg_t* msg;
@@ -245,7 +239,7 @@ report_err_and_prep_next:
     msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
     ah_i_udp_msg_queue_remove_unsafe(&sock->_msg_queue);
 
-    sock->_vtab->on_send_done(sock, n_bytes_sent, ah_i_sockaddr_from_bsd(msg->_wsamsg.name), err);
+    sock->_vtab->on_send_done(sock, nsent, ah_i_sockaddr_from_bsd(msg->_wsamsg.name), err);
 
     if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN) {
         return;

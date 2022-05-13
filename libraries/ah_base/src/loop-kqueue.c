@@ -216,3 +216,13 @@ ah_extern void ah_i_loop_term(ah_loop_t* loop)
 
     (void) close(loop->_kqueue_fd);
 }
+
+void ah_i_loop_evt_call_as_canceled(ah_i_loop_evt_t* evt)
+{
+    ah_assert_if_debug(evt != NULL);
+
+    struct kevent kev;
+    EV_SET(&kev, 0u, 0u, EV_ERROR, 0u, ECANCELED, NULL);
+
+    evt->_cb(evt, &kev);
+}

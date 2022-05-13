@@ -113,12 +113,8 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt)
     ah_err_t err;
 
     DWORD n_bytes_transferred;
-    DWORD flags;
-    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
-        conn->_state = AH_I_TCP_CONN_STATE_OPEN;
-        err = WSAGetLastError();
-    }
-    else {
+    err = ah_i_loop_evt_get_result(evt, &n_bytes_transferred);
+    if (err == AH_ENONE) {
         conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
 
         ah_tcp_shutdown_t shutdown_flags = 0u;
@@ -130,6 +126,9 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt)
             shutdown_flags |= AH_TCP_SHUTDOWN_WR;
         }
         err = ah_tcp_conn_shutdown(conn, shutdown_flags);
+    }
+    else {
+        conn->_state = AH_I_TCP_CONN_STATE_OPEN;
     }
 
     conn->_vtab->on_connect(conn, err);
@@ -207,9 +206,8 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
     ah_err_t err;
 
     DWORD nread;
-    DWORD flags;
-    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &nread, false, &flags)) {
-        err = WSAGetLastError();
+    err = ah_i_loop_evt_get_result(evt, &nread);
+    if (err != AH_ENONE) {
         goto report_err;
     }
 
@@ -307,13 +305,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt)
     ah_err_t err;
 
     DWORD nsent;
-    DWORD flags;
-    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &nsent, false, &flags)) {
-        err = WSAGetLastError();
-    }
-    else {
-        err = AH_ENONE;
-    }
+    err = ah_i_loop_evt_get_result(evt, &nsent);
 
 report_err_and_prep_next:
     ah_i_tcp_msg_queue_remove_unsafe(&conn->_msg_queue);
@@ -488,9 +480,11 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt)
     ah_err_t err;
 
     DWORD n_bytes_transferred;
-    DWORD flags;
-    if (!WSAGetOverlappedResult(ln->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
-        err = WSAGetLastError();
+    err = ah_i_loop_evt_get_result(evt, &n_bytes_transferred);
+    if (err != AH_ENONE) {
+        if (err == AH_ECANCELED) {
+            return;
+        }
         goto close_accept_fd_and_report_err;
     }
 
@@ -528,6 +522,9 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt)
     }
 
 prep_another_accept:
+    if (ah_tcp_listener_is_closed(ln)) {
+        return;
+    }
 
     err = s_prep_listener_accept(ln);
     if (err != AH_ENONE) {

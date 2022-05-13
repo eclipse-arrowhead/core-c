@@ -395,7 +395,9 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_assert_if_debug(ln != NULL);
 
     if (ah_unlikely(cqe->res < 0)) {
-        ln->_vtab->on_conn_err(ln, -cqe->res);
+        if (cqe->res != -ECANCELED) {
+            ln->_vtab->on_conn_err(ln, -cqe->res);
+        }
         goto prep_another_accept;
     }
 
@@ -420,6 +422,9 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     struct io_uring_sqe* sqe;
 
 prep_another_accept:
+    if (ah_tcp_listener_is_closed(ln)) {
+        return;
+    }
 
     err = ah_i_loop_evt_alloc_with_sqe(ln->_loop, &evt0, &sqe);
     if (err != AH_ENONE) {

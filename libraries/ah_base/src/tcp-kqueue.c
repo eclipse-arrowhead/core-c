@@ -415,8 +415,9 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(ln != NULL);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
-        ln->_vtab->on_listen(ln, (ah_err_t) kev->data);
-        ln->_state = AH_I_TCP_LISTENER_STATE_OPEN;
+        if ((ah_err_t) kev->data != ECANCELED) {
+            ah_i_tcp_listener_force_close_with_err(ln, (ah_err_t) kev->data);
+        }
         return;
     }
 
@@ -453,8 +454,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        ln->_vtab->on_listen(ln, (ah_err_t) kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF);
-        ln->_state = AH_I_TCP_LISTENER_STATE_OPEN;
+        ah_i_tcp_listener_force_close_with_err(ln, (ah_err_t) kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF);
     }
 }
 
