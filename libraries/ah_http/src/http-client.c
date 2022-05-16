@@ -515,6 +515,7 @@ static void s_prep_write_req(ah_http_client_t* cln)
     ah_assert_if_debug(cln != NULL);
 
     ah_err_t err;
+    ah_http_header_t* header;
     ah_http_req_t* req;
 
 try_next:
@@ -540,8 +541,17 @@ try_next:
     (void) ah_buf_rw_write_byte(&rw, '0' + req->req_line.version.minor);
     (void) ah_buf_rw_write_cstr(&rw, "\r\n");
 
-    // Write host header to head buffer, if HTTP version is 1.1 or above.
+    // Write host header to head buffer, if HTTP version is 1.1 or above and
+    // no such header has been provided.
     if (req->req_line.version.minor != 0u) {
+        if (req->headers != NULL) {
+            for (header = &req->headers[0u]; header->name != NULL; header = &header[1u]) {
+                if (ah_i_http_header_name_eq("host", header->name)) {
+                    goto headers;
+                }
+            }
+        }
+
         (void) ah_buf_rw_write_cstr(&rw, "host:");
 
         ah_sockaddr_t raddr = *cln->_raddr;
@@ -564,8 +574,8 @@ try_next:
 
     // Write other headers to head buffer.
     if (req->headers != NULL) {
-        ah_http_header_t* header = &req->headers[0u];
-        for (; header->name != NULL; header = &header[1u]) {
+    headers:
+        for (header = &req->headers[0u]; header->name != NULL; header = &header[1u]) {
             (void) ah_buf_rw_write_cstr(&rw, header->name);
             (void) ah_buf_rw_write_byte(&rw, ':');
             (void) ah_buf_rw_write_cstr(&rw, header->value);
