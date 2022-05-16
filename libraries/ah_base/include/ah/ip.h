@@ -13,6 +13,9 @@
 #include <stdint.h>
 #include <string.h>
 
+#define AH_IPADDR_V4_STRLEN_MAX  16u
+#define AH_IPADDR_V6_STRLEN_MAX  46u
+
 struct ah_ipaddr_v4 {
     uint8_t octets[4];
 };
@@ -39,5 +42,8 @@ ah_extern bool ah_ipaddr_v4_is_loopback(const ah_ipaddr_v4_t* addr);
 ah_extern bool ah_ipaddr_v4_is_wildcard(const ah_ipaddr_v4_t* addr);
 ah_extern bool ah_ipaddr_v6_is_loopback(const ah_ipaddr_v6_t* addr);
 ah_extern bool ah_ipaddr_v6_is_wildcard(const ah_ipaddr_v6_t* addr);
+
+ah_extern ah_err_t ah_ipaddr_v4_stringify(const struct ah_ipaddr_v4* addr, char* dest, size_t* dest_size);
+ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char* dest, size_t* dest_size);
 
 #endif

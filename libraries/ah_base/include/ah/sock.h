@@ -12,6 +12,10 @@
 
 #include <stdbool.h>
 
+#define AH_SOCKADDR_ANY_STRLEN_MAX  AH_SOCKADDR_IPV6_STRLEN_MAX
+#define AH_SOCKADDR_IPV4_STRLEN_MAX (AH_IPADDR_V4_STRLEN_MAX + 1u + 5u)
+#define AH_SOCKADDR_IPV6_STRLEN_MAX (1u + AH_IPADDR_V6_STRLEN_MAX + 3u + 10u + 1u + 1u + 5u)
+
 #define AH_SOCKFAMILY_IPV4 AH_I_SOCKFAMILY_IPV4
 #define AH_SOCKFAMILY_IPV6 AH_I_SOCKFAMILY_IPV6
 
@@ -73,5 +77,7 @@ ah_extern void ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, con
 ah_extern bool ah_sockaddr_is_ip(const ah_sockaddr_t* sockaddr);
 ah_extern bool ah_sockaddr_is_ip_wildcard(const ah_sockaddr_t* sockaddr);
 ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr);
+
+ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* dest, size_t* dest_size);
 
 #endif

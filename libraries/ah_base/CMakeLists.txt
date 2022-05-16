@@ -162,6 +162,7 @@ set(
     test/main.c
     test/test-buf.c
     test/test-err.c
+    test/test-ip.c
     test/test-math.c
     test/test-sock.c
     test/test-task.c
