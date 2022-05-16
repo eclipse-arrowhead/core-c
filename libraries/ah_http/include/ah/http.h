@@ -78,23 +78,27 @@ struct ah_http_server_vtab {
     void (*on_res_sent)(ah_http_server_t* srv, ah_http_res_t* res, ah_err_t err);
 };
 
+// An HTTP version indicator.
 struct ah_http_ver {
     uint8_t major;
     uint8_t minor;
 };
 
+// An HTTP request line.
 struct ah_http_req_line {
     const char* method;
     const char* target;
     ah_http_ver_t version;
 };
 
+// An HTTP status line.
 struct ah_http_stat_line {
     ah_http_ver_t version;
     uint16_t code;
     const char* reason;
 };
 
+// The size and extension string part of an incoming HTTP chunk.
 struct ah_http_chunk_line {
     size_t size;
 
@@ -103,6 +107,7 @@ struct ah_http_chunk_line {
     const char* ext;
 };
 
+// An outgoing HTTP chunk.
 struct ah_http_chunk {
     // Must be NULL, an empty string, or adhere to the chunk-ext syntax, as
     // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
@@ -113,11 +118,13 @@ struct ah_http_chunk {
     AH_I_HTTP_CHUNK_FIELDS
 };
 
+// An HTTP header.
 struct ah_http_header {
     const char* name;
     const char* value;
 };
 
+// The ending part of a chunked message transmission.
 struct ah_http_trailer {
     // Must be NULL, an empty string, or adhere to the chunk-ext syntax, as
     // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
