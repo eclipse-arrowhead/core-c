@@ -17,11 +17,11 @@
 #define AH_I_HTTP_BODY_KIND_BUF      2u
 #define AH_I_HTTP_BODY_KIND_BUFS     3u
 
-#define AH_I_HTTP_CLIENT_FIELDS                                                  \
+#define AH_I_HTTP_LCLIENT_FIELDS                                                 \
  ah_tcp_conn_t _conn;                                                            \
  const ah_sockaddr_t* _raddr;                                                    \
  const ah_tcp_trans_vtab_t* _trans_vtab;                                         \
- const ah_http_client_vtab_t* _vtab;                                             \
+ const ah_http_lclient_vtab_t* _vtab;                                            \
  struct ah_i_http_req_queue _req_queue;     /* Not yet sent requests. */         \
  struct ah_i_http_req_queue _res_req_queue; /* Requests not yet responded to. */ \
  ah_buf_rw_t _res_rw;                                                            \
@@ -29,6 +29,10 @@
  uint8_t _res_state;                                                             \
  bool _keep_alive;                                                               \
  bool _prohibit_realloc;
+
+#define AH_I_HTTP_RCLIENT_FIELDS \
+ ah_tcp_conn_t _conn;            \
+ struct ah_http_server* _srv;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \

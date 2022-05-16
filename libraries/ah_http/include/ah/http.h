@@ -18,9 +18,10 @@
 
 typedef struct ah_http_chunk ah_http_chunk_t;
 typedef struct ah_http_chunk_line ah_http_chunk_line_t;
-typedef struct ah_http_client ah_http_client_t;
-typedef struct ah_http_client_vtab ah_http_client_vtab_t;
 typedef struct ah_http_header ah_http_header_t;
+typedef struct ah_http_lclient ah_http_lclient_t;
+typedef struct ah_http_lclient_vtab ah_http_lclient_vtab_t;
+typedef struct ah_http_rclient ah_http_rclient_t;
 typedef struct ah_http_req ah_http_req_t;
 typedef struct ah_http_req_line ah_http_req_line_t;
 typedef struct ah_http_res ah_http_res_t;
@@ -32,27 +33,31 @@ typedef struct ah_http_ver ah_http_ver_t;
 
 typedef union ah_http_body ah_http_body_t;
 
-struct ah_http_client {
-    AH_I_HTTP_CLIENT_FIELDS
+struct ah_http_lclient {
+    AH_I_HTTP_LCLIENT_FIELDS
 };
 
-struct ah_http_client_vtab {
-    void (*on_open)(ah_http_client_t* cln, ah_err_t err);
-    void (*on_connect)(ah_http_client_t* cln, ah_err_t err);
-    void (*on_close)(ah_http_client_t* cln, ah_err_t err);
+struct ah_http_lclient_vtab {
+    void (*on_open)(ah_http_lclient_t* cln, ah_err_t err);
+    void (*on_connect)(ah_http_lclient_t* cln, ah_err_t err);
+    void (*on_close)(ah_http_lclient_t* cln, ah_err_t err);
 
     // If `reuse` is true, any block of memory previously provided via `buf` may
     // be used again without disrupting `cln`.
-    void (*on_alloc)(ah_http_client_t* cln, ah_http_req_t* req, ah_buf_t* buf, bool reuse);
+    void (*on_msg_alloc)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_buf_t* buf, bool reuse);
 
-    void (*on_req_sent)(ah_http_client_t* cln, ah_http_req_t* req, ah_err_t err);
+    void (*on_req_sent)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_err_t err);
 
-    void (*on_res_stat_line)(ah_http_client_t* cln, ah_http_req_t* req, ah_http_stat_line_t stat_line);
-    void (*on_res_header)(ah_http_client_t* cln, ah_http_req_t* req, ah_http_header_t header);
-    void (*on_res_headers)(ah_http_client_t* cln, ah_http_req_t* req);                                     // Optional.
-    void (*on_res_chunk_line)(ah_http_client_t* cln, ah_http_req_t* req, ah_http_chunk_line_t chunk_line); // Optional.
-    void (*on_res_data)(ah_http_client_t* cln, ah_http_req_t* req, const ah_buf_t* rbuf);
-    void (*on_res_end)(ah_http_client_t* cln, ah_http_req_t* req, ah_err_t err);
+    void (*on_res_line)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_http_stat_line_t stat_line);
+    void (*on_res_header)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_http_header_t header);
+    void (*on_res_headers)(ah_http_lclient_t* cln, ah_http_req_t* req);                                     // Optional.
+    void (*on_res_chunk_line)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_http_chunk_line_t chunk_line); // Optional.
+    void (*on_res_data)(ah_http_lclient_t* cln, ah_http_req_t* req, const ah_buf_t* rbuf);
+    void (*on_res_end)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_err_t err);
+};
+
+struct ah_http_rclient {
+    AH_I_HTTP_RCLIENT_FIELDS
 };
 
 struct ah_http_server {
@@ -64,11 +69,15 @@ struct ah_http_server_vtab {
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 
+    void (*on_client_alloc)(ah_http_server_t* srv, ah_http_rclient_t** client);
+    void (*on_client_accept)(ah_http_server_t* srv, ah_http_rclient_t* client);
+    void (*on_client_err)(ah_http_server_t* srv, ah_err_t);
+
     // If `reuse` is true, any block of memory previously provided via `buf` may
     // be used again without disrupting `srv`.
-    void (*on_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_res_t* res, bool reuse);
+    void (*on_msg_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_res_t* res, bool reuse);
 
-    void (*on_req_line)(ah_http_server_t* srv, const ah_http_req_line_t* req_line, ah_http_res_t* res);
+    void (*on_req_line)(ah_http_server_t* srv, ah_http_req_line_t req_line, ah_http_res_t* res);
     void (*on_req_header)(ah_http_server_t* srv, ah_http_header_t header, ah_http_res_t* res);
     void (*on_req_headers)(ah_http_server_t* srv, ah_http_res_t* res);                                     // Optional.
     void (*on_req_chunk_line)(ah_http_server_t* srv, ah_http_chunk_line_t chunk_line, ah_http_res_t* res); // Optional.
@@ -124,7 +133,7 @@ struct ah_http_header {
     const char* value;
 };
 
-// The ending part of a chunked message transmission.
+// The ending part of an outgoing chunked message transmission.
 struct ah_http_trailer {
     // Must be NULL, an empty string, or adhere to the chunk-ext syntax, as
     // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
@@ -135,7 +144,7 @@ struct ah_http_trailer {
     AH_I_HTTP_TRAILER_FIELDS
 };
 
-// An outgoing HTTP request or response body.
+// The body of an outgoing HTTP request or response.
 union ah_http_body {
     AH_I_HTTP_BODY_FIELDS
 };
@@ -160,18 +169,18 @@ struct ah_http_res {
     AH_I_HTTP_RES_FIELDS
 };
 
-ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab);
-ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr);
-ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
-ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, ah_http_req_t* req);
-ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* msg);
-ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
-ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_t* chunk);
-ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_trailer_t* trailer);
-ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
-ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln);
-ah_extern void* ah_http_client_get_user_data(ah_http_client_t* cln);
-ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data);
+ah_extern ah_err_t ah_http_lclient_init(ah_http_lclient_t* cln, ah_tcp_trans_t trans, const ah_http_lclient_vtab_t* vtab);
+ah_extern ah_err_t ah_http_lclient_open(ah_http_lclient_t* cln, const ah_sockaddr_t* laddr);
+ah_extern ah_err_t ah_http_lclient_connect(ah_http_lclient_t* cln, const ah_sockaddr_t* raddr);
+ah_extern ah_err_t ah_http_lclient_request(ah_http_lclient_t* cln, ah_http_req_t* req);
+ah_extern ah_err_t ah_http_lclient_send_data(ah_http_lclient_t* cln, ah_tcp_msg_t* msg);
+ah_extern ah_err_t ah_http_lclient_send_end(ah_http_lclient_t* cln);
+ah_extern ah_err_t ah_http_lclient_send_chunk(ah_http_lclient_t* cln, ah_http_chunk_t* chunk);
+ah_extern ah_err_t ah_http_lclient_send_trailer(ah_http_lclient_t* cln, ah_http_trailer_t* trailer);
+ah_extern ah_err_t ah_http_lclient_close(ah_http_lclient_t* cln);
+ah_extern ah_tcp_conn_t* ah_http_lclient_get_conn(ah_http_lclient_t* cln);
+ah_extern void* ah_http_lclient_get_user_data(ah_http_lclient_t* cln);
+ah_extern void ah_http_lclient_set_user_data(ah_http_lclient_t* cln, void* user_data);
 
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab);
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr);

@@ -32,7 +32,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
-static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
+static ah_http_lclient_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 
 static void s_req_queue_add(struct ah_i_http_req_queue* queue, ah_http_req_t* req);
 static bool s_req_queue_is_empty(struct ah_i_http_req_queue* queue);
@@ -43,11 +43,11 @@ static ah_http_req_t* s_req_queue_remove(struct ah_i_http_req_queue* queue);
 static void s_req_queue_discard_unsafe(struct ah_i_http_req_queue* queue);
 static ah_http_req_t* s_req_queue_remove_unsafe(struct ah_i_http_req_queue* queue);
 
-static void s_complete_current_req(ah_http_client_t* cln, ah_err_t err);
-static void s_prep_write_req(ah_http_client_t* cln);
-static ah_err_t s_realloc_res_rw(ah_http_client_t* cln);
+static void s_complete_current_req(ah_http_lclient_t* cln, ah_err_t err);
+static void s_prep_write_req(ah_http_lclient_t* cln);
+static ah_err_t s_realloc_res_rw(ah_http_lclient_t* cln);
 
-ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
+ah_extern ah_err_t ah_http_lclient_init(ah_http_lclient_t* cln, ah_tcp_trans_t trans, const ah_http_lclient_vtab_t* vtab)
 {
     if (cln == NULL || trans._vtab == NULL || trans._loop == NULL || vtab == NULL) {
         return AH_EINVAL;
@@ -66,8 +66,8 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_connect != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
     ah_assert_if_debug(vtab->on_req_sent != NULL);
-    ah_assert_if_debug(vtab->on_alloc != NULL);
-    ah_assert_if_debug(vtab->on_res_stat_line != NULL);
+    ah_assert_if_debug(vtab->on_msg_alloc != NULL);
+    ah_assert_if_debug(vtab->on_res_line != NULL);
     ah_assert_if_debug(vtab->on_res_header != NULL);
     ah_assert_if_debug(vtab->on_res_data != NULL);
     ah_assert_if_debug(vtab->on_res_end != NULL);
@@ -96,7 +96,7 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr)
+ah_extern ah_err_t ah_http_lclient_open(ah_http_lclient_t* cln, const ah_sockaddr_t* laddr)
 {
     if (cln == NULL) {
         return AH_EINVAL;
@@ -106,11 +106,11 @@ ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_
 
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_client_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = s_upcast_to_client(conn);
     cln->_vtab->on_open(cln, err);
 }
 
-ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr)
+ah_extern ah_err_t ah_http_lclient_connect(ah_http_lclient_t* cln, const ah_sockaddr_t* raddr)
 {
     if (cln == NULL) {
         return AH_EINVAL;
@@ -124,13 +124,13 @@ ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockad
 
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_client_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = s_upcast_to_client(conn);
     cln->_vtab->on_connect(cln, err);
 }
 
 static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
-    ah_http_client_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = s_upcast_to_client(conn);
 
     ah_err_t err;
 
@@ -145,7 +145,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         goto close_conn_and_report_err;
     }
 
-    cln->_vtab->on_alloc(cln, req, buf, true);
+    cln->_vtab->on_msg_alloc(cln, req, buf, true);
     if (!ah_tcp_conn_is_readable(&cln->_conn)) {
         return;
     }
@@ -163,14 +163,14 @@ close_conn_and_report_err:
     cln->_vtab->on_res_end(cln, NULL, err);
 }
 
-static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)
+static ah_http_lclient_t* s_upcast_to_client(ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
 
     // This is only safe if `conn` is a member of an ah_http_client_t value.
-    const size_t conn_member_offset = offsetof(ah_http_client_t, _conn);
+    const size_t conn_member_offset = offsetof(ah_http_lclient_t, _conn);
     ah_assert_if_debug(conn_member_offset <= PTRDIFF_MAX);
-    ah_http_client_t* cln = (ah_http_client_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
+    ah_http_lclient_t* cln = (ah_http_lclient_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
 
     ah_assert_if_debug(cln->_vtab != NULL);
     ah_assert_if_debug(cln->_trans_vtab != NULL);
@@ -180,7 +180,7 @@ static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)
 
 static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread)
 {
-    ah_http_client_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = s_upcast_to_client(conn);
 
     ah_err_t err;
 
@@ -214,7 +214,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             goto close_conn_and_report_err;
         }
 
-        cln->_vtab->on_res_stat_line(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), stat_line);
+        cln->_vtab->on_res_line(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), stat_line);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
@@ -466,12 +466,12 @@ report_err:
     cln->_vtab->on_res_end(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), err);
 }
 
-static ah_err_t s_realloc_res_rw(ah_http_client_t* cln)
+static ah_err_t s_realloc_res_rw(ah_http_lclient_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
 
     ah_buf_t new_buf;
-    cln->_vtab->on_alloc(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), &new_buf, false);
+    cln->_vtab->on_msg_alloc(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), &new_buf, false);
     if (ah_buf_is_empty(&new_buf)) {
         return AH_ENOBUFS;
     }
@@ -490,11 +490,11 @@ static ah_err_t s_realloc_res_rw(ah_http_client_t* cln)
 
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_client_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = s_upcast_to_client(conn);
     cln->_vtab->on_res_end(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), err);
 }
 
-ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, ah_http_req_t* req)
+ah_extern ah_err_t ah_http_lclient_request(ah_http_lclient_t* cln, ah_http_req_t* req)
 {
     if (cln == NULL || req == NULL) {
         return AH_EINVAL;
@@ -510,7 +510,7 @@ ah_extern ah_err_t ah_http_client_request(ah_http_client_t* cln, ah_http_req_t* 
     return AH_ENONE;
 }
 
-static void s_prep_write_req(ah_http_client_t* cln)
+static void s_prep_write_req(ah_http_lclient_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
 
@@ -524,7 +524,7 @@ try_next:
     cln->_keep_alive = req->req_line.version.minor != 0u;
     cln->_prohibit_realloc = false;
 
-    cln->_vtab->on_alloc(cln, req, &req->_head_buf, true);
+    cln->_vtab->on_msg_alloc(cln, req, &req->_head_buf, true);
     if (ah_buf_is_empty(&req->_head_buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;
@@ -666,7 +666,7 @@ report_err_and_try_next:
 
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_client_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = s_upcast_to_client(conn);
 
     ah_http_req_t* req = s_req_queue_peek_unsafe(&cln->_req_queue);
 
@@ -681,7 +681,7 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
     s_complete_current_req(cln, err);
 }
 
-static void s_complete_current_req(ah_http_client_t* cln, ah_err_t err)
+static void s_complete_current_req(ah_http_lclient_t* cln, ah_err_t err)
 {
     ah_http_req_t* req = s_req_queue_remove_unsafe(&cln->_req_queue);
 
@@ -700,7 +700,7 @@ static void s_complete_current_req(ah_http_client_t* cln, ah_err_t err)
     s_prep_write_req(cln);
 }
 
-ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* msg)
+ah_extern ah_err_t ah_http_lclient_send_data(ah_http_lclient_t* cln, ah_tcp_msg_t* msg)
 {
     if (cln == NULL || msg == NULL) {
         return AH_EINVAL;
@@ -722,7 +722,7 @@ ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t*
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln)
+ah_extern ah_err_t ah_http_lclient_send_end(ah_http_lclient_t* cln)
 {
     if (cln == NULL) {
         return AH_EINVAL;
@@ -745,7 +745,7 @@ ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_t* chunk)
+ah_extern ah_err_t ah_http_lclient_send_chunk(ah_http_lclient_t* cln, ah_http_chunk_t* chunk)
 {
     if (cln == NULL || chunk == NULL) {
         return AH_EINVAL;
@@ -771,7 +771,7 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
     }
 
     // Allocate chunk line buffer.
-    cln->_vtab->on_alloc(cln, req, &chunk->_line_buf, true);
+    cln->_vtab->on_msg_alloc(cln, req, &chunk->_line_buf, true);
     if (ah_buf_is_empty(&chunk->_line_buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;
@@ -817,7 +817,7 @@ report_err_and_try_next:
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_trailer_t* trailer)
+ah_extern ah_err_t ah_http_lclient_send_trailer(ah_http_lclient_t* cln, ah_http_trailer_t* trailer)
 {
     if (cln == NULL) {
         return AH_EINVAL;
@@ -833,7 +833,7 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     ah_http_req_t* req = s_req_queue_peek_unsafe(&cln->_req_queue);
 
     // Allocate trailer buffer.
-    cln->_vtab->on_alloc(cln, req, &trailer->_buf, true);
+    cln->_vtab->on_msg_alloc(cln, req, &trailer->_buf, true);
     if (ah_buf_is_empty(&trailer->_buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;
@@ -877,14 +877,14 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     }
     req->_n_pending_tcp_msgs += 1u;
 
-    return ah_http_client_send_end(cln);
+    return ah_http_lclient_send_end(cln);
 
 report_err_and_try_next:
     s_complete_current_req(cln, err);
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln)
+ah_extern ah_err_t ah_http_lclient_close(ah_http_lclient_t* cln)
 {
     if (cln == NULL) {
         return AH_EINVAL;
@@ -894,7 +894,7 @@ ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln)
 
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_client_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = s_upcast_to_client(conn);
 
     ah_http_req_t* req;
 
@@ -917,21 +917,21 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
     cln->_vtab->on_close(cln, err);
 }
 
-ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln)
+ah_extern ah_tcp_conn_t* ah_http_lclient_get_conn(ah_http_lclient_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
 
     return &cln->_conn;
 }
 
-ah_extern void* ah_http_client_get_user_data(ah_http_client_t* cln)
+ah_extern void* ah_http_lclient_get_user_data(ah_http_lclient_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
 
     return ah_tcp_conn_get_user_data(&cln->_conn);
 }
 
-ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data)
+ah_extern void ah_http_lclient_set_user_data(ah_http_lclient_t* cln, void* user_data)
 {
     ah_assert_if_debug(cln != NULL);
 

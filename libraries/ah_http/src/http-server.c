@@ -25,7 +25,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
 static void s_on_conn_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
-static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn);
+static ah_http_lclient_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln);
 
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab)
@@ -50,7 +50,7 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_open != NULL);
     ah_assert_if_debug(vtab->on_listen != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
-    ah_assert_if_debug(vtab->on_alloc != NULL);
+    ah_assert_if_debug(vtab->on_msg_alloc != NULL);
     ah_assert_if_debug(vtab->on_req_line != NULL);
     ah_assert_if_debug(vtab->on_req_header != NULL);
     ah_assert_if_debug(vtab->on_req_data != NULL);
@@ -187,7 +187,7 @@ static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
 static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     ah_http_server_t* srv = s_upcast_to_server(ln);
-    ah_http_client_t* cnt = s_upcast_to_client(conn);
+    ah_http_lclient_t* cnt = s_upcast_to_client(conn);
 
     ah_err_t err = srv->_trans_vtab->conn_read_start(conn);
 
@@ -203,14 +203,14 @@ static void s_on_listener_conn_err(ah_tcp_listener_t* ln, ah_err_t err)
     (void) err; // TODO: Handle.
 }
 
-static ah_http_client_t* s_upcast_to_client(ah_tcp_conn_t* conn)
+static ah_http_lclient_t* s_upcast_to_client(ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
 
     // This is only safe if `conn` is a member of an ah_http_client_t value.
-    const size_t conn_member_offset = offsetof(ah_http_client_t, _conn);
+    const size_t conn_member_offset = offsetof(ah_http_lclient_t, _conn);
     ah_assert_if_debug(conn_member_offset <= PTRDIFF_MAX);
-    ah_http_client_t* cln = (ah_http_client_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
+    ah_http_lclient_t* cln = (ah_http_lclient_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
 
     ah_assert_if_debug(cln->_vtab != NULL);
     ah_assert_if_debug(cln->_trans_vtab != NULL);

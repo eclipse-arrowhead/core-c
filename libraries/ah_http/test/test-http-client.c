@@ -17,6 +17,6 @@ void test_http_client(ah_unit_t* unit)
 
 static void s_should_be_safe_to_cast_tcp_conn_to_http_client(ah_unit_t* unit)
 {
-    size_t conn_offset = offsetof(ah_http_client_t, _conn);
+    size_t conn_offset = offsetof(ah_http_lclient_t, _conn);
     ah_unit_assert_unsigned_eq(unit, 0u, conn_offset);
 }
