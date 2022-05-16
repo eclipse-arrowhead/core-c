@@ -251,7 +251,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
                 }
 
                 if (has_transfer_encoding_chunked_been_seen) {
-                    if (content_length != 0u) {
+                    if (has_content_length_been_seen && content_length != 0u) {
                         err = AH_EBADMSG;
                         goto close_conn_and_report_err;
                     }
@@ -540,7 +540,29 @@ try_next:
     (void) ah_buf_rw_write_byte(&rw, '0' + req->req_line.version.minor);
     (void) ah_buf_rw_write_cstr(&rw, "\r\n");
 
-    // Write headers to head buffer.
+    // Write host header to head buffer, if HTTP version is 1.1 or above.
+    if (req->req_line.version.minor != 0u) {
+        (void) ah_buf_rw_write_cstr(&rw, "host:");
+
+        ah_sockaddr_t raddr = *cln->_raddr;
+        if (raddr.as_any.family == AH_SOCKFAMILY_IPV6 && raddr.as_ipv6.zone_id != 0u) {
+            raddr.as_ipv6.zone_id = 0u;
+        }
+
+        ah_buf_t buf;
+        ah_buf_rw_get_writable_as_buf(&rw, &buf);
+
+        size_t nwritten = ah_buf_get_size(&buf);
+        err = ah_sockaddr_stringify(&raddr, (char*) ah_buf_get_base(&buf), &nwritten);
+        if (err != AH_ENONE) {
+            goto report_err_and_try_next;
+        }
+        (void) ah_buf_rw_juken(&rw, nwritten);
+
+        (void) ah_buf_rw_write_cstr(&rw, "\r\n");
+    }
+
+    // Write other headers to head buffer.
     if (req->headers != NULL) {
         ah_http_header_t* header = &req->headers[0u];
         for (; header->name != NULL; header = &header[1u]) {
