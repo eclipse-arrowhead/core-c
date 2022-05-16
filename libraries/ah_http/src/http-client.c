@@ -214,7 +214,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             goto close_conn_and_report_err;
         }
 
-        cln->_vtab->on_res_stat_line(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), &stat_line);
+        cln->_vtab->on_res_stat_line(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), stat_line);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }

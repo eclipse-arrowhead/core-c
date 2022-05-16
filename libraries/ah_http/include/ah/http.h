@@ -47,7 +47,7 @@ struct ah_http_client_vtab {
 
     void (*on_req_sent)(ah_http_client_t* cln, ah_http_req_t* req, ah_err_t err);
 
-    void (*on_res_stat_line)(ah_http_client_t* cln, ah_http_req_t* req, const ah_http_stat_line_t* stat_line);
+    void (*on_res_stat_line)(ah_http_client_t* cln, ah_http_req_t* req, ah_http_stat_line_t stat_line);
     void (*on_res_header)(ah_http_client_t* cln, ah_http_req_t* req, ah_http_header_t header);
     void (*on_res_headers)(ah_http_client_t* cln, ah_http_req_t* req);                                     // Optional.
     void (*on_res_chunk_line)(ah_http_client_t* cln, ah_http_req_t* req, ah_http_chunk_line_t chunk_line); // Optional.
