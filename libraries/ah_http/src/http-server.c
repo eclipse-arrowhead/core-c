@@ -120,9 +120,7 @@ static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
     ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
     ah_http_rclient_t* cln = ah_i_http_upcast_to_rclient(conn);
 
-    if (err == AH_ENONE) {
-        err = ah_i_http_rclient_init(cln, srv, raddr);
-    }
+    ah_i_http_rclient_init(cln, srv, raddr);
     srv->_vtab->on_client_accept(srv, cln, err);
 }
 

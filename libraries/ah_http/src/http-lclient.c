@@ -685,7 +685,10 @@ ah_extern ah_err_t ah_http_lclient_send_data(ah_http_lclient_t* cln, ah_tcp_msg_
         return AH_EINVAL;
     }
 
-    ah_http_req_t* req = s_req_queue_peek_unsafe(&cln->_req_queue);
+    ah_http_req_t* req = s_req_queue_peek(&cln->_req_queue);
+    if (req == NULL) {
+        return AH_ESTATE;
+    }
 
     if (req->body._as_any._kind != AH_I_HTTP_BODY_KIND_OVERRIDE) {
         return AH_ESTATE;
@@ -707,7 +710,10 @@ ah_extern ah_err_t ah_http_lclient_send_end(ah_http_lclient_t* cln)
         return AH_EINVAL;
     }
 
-    ah_http_req_t* req = s_req_queue_peek_unsafe(&cln->_req_queue);
+    ah_http_req_t* req = s_req_queue_peek(&cln->_req_queue);
+    if (req == NULL) {
+        return AH_ESTATE;
+    }
 
     if (req->body._as_any._kind != AH_I_HTTP_BODY_KIND_OVERRIDE) {
         return AH_ESTATE;
@@ -737,7 +743,10 @@ ah_extern ah_err_t ah_http_lclient_send_chunk(ah_http_lclient_t* cln, ah_http_ch
 
     ah_err_t err;
 
-    ah_http_req_t* req = s_req_queue_peek_unsafe(&cln->_req_queue);
+    ah_http_req_t* req = s_req_queue_peek(&cln->_req_queue);
+    if (req == NULL) {
+        return AH_ESTATE;
+    }
 
     // Calculate the size of the chunk.
     size_t chunk_size = 0u;
@@ -809,7 +818,10 @@ ah_extern ah_err_t ah_http_lclient_send_trailer(ah_http_lclient_t* cln, ah_http_
 
     ah_err_t err;
 
-    ah_http_req_t* req = s_req_queue_peek_unsafe(&cln->_req_queue);
+    ah_http_req_t* req = s_req_queue_peek(&cln->_req_queue);
+    if (req == NULL) {
+        return AH_ESTATE;
+    }
 
     // Allocate trailer buffer.
     cln->_vtab->on_msg_alloc(cln, req, &trailer->_buf, true);

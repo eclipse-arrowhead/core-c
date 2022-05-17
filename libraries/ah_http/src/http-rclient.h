@@ -9,7 +9,7 @@
 
 #include "ah/http.h"
 
-ah_err_t ah_i_http_rclient_init(ah_http_rclient_t* cln, ah_http_server_t* srv, const ah_sockaddr_t* raddr);
+void ah_i_http_rclient_init(ah_http_rclient_t* cln, ah_http_server_t* srv, const ah_sockaddr_t* raddr);
 const ah_tcp_conn_vtab_t* ah_i_http_rclient_get_conn_vtab();
 
 #endif
