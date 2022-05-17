@@ -94,8 +94,7 @@ struct ah_http_server_vtab {
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 
     void (*on_client_alloc)(ah_http_server_t* srv, ah_http_rclient_t** client);
-    void (*on_client_accept)(ah_http_server_t* srv, ah_http_rclient_t* client);
-    void (*on_client_err)(ah_http_server_t* srv, ah_err_t);
+    void (*on_client_accept)(ah_http_server_t* srv, ah_http_rclient_t* client, ah_err_t err);
 };
 
 // An HTTP version indicator.

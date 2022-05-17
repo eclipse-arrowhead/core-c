@@ -30,8 +30,7 @@ static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
-static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
-static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_req_queue_add(struct ah_i_http_req_queue* queue, ah_http_req_t* req);
@@ -78,7 +77,6 @@ ah_extern ah_err_t ah_http_lclient_init(ah_http_lclient_t* cln, ah_tcp_trans_t t
         .on_close = s_on_close,
         .on_read_alloc = s_on_read_alloc,
         .on_read_data = s_on_read_data,
-        .on_read_err = s_on_read_err,
         .on_write_done = s_on_write_done,
     };
 
@@ -163,11 +161,13 @@ close_conn_and_report_err:
     cln->_vtab->on_res_end(cln, NULL, err);
 }
 
-static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread)
+static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err)
 {
     ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
 
-    ah_err_t err;
+    if (err != AH_ENONE) {
+        goto close_conn_and_report_err;
+    }
 
     ah_assert_if_debug(cln->_res_rw.wr == ah_buf_get_base_const(buf));
     (void) buf;
@@ -471,12 +471,6 @@ static ah_err_t s_realloc_res_rw(ah_http_lclient_t* cln)
     cln->_res_rw = new_rw;
 
     return AH_ENONE;
-}
-
-static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
-{
-    ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
-    cln->_vtab->on_res_end(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), err);
 }
 
 ah_extern ah_err_t ah_http_lclient_request(ah_http_lclient_t* cln, ah_http_req_t* req)

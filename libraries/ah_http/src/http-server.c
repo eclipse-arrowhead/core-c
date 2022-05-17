@@ -17,8 +17,7 @@ static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
-static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
-static void s_on_listener_conn_err(ah_tcp_listener_t* ln, ah_err_t err);
+static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab)
 {
@@ -44,7 +43,6 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_close != NULL);
     ah_assert_if_debug(vtab->on_client_alloc != NULL);
     ah_assert_if_debug(vtab->on_client_accept != NULL);
-    ah_assert_if_debug(vtab->on_client_err != NULL);
 
     static const ah_tcp_listener_vtab_t s_vtab = {
         .on_open = s_on_listener_open,
@@ -52,7 +50,6 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
         .on_close = s_on_listener_close,
         .on_conn_alloc = s_on_listener_conn_alloc,
         .on_conn_accept = s_on_listener_conn_accept,
-        .on_conn_err = s_on_listener_conn_err,
     };
 
     ah_err_t err = trans._vtab->listener_init(&srv->_ln, trans._loop, &s_vtab);
@@ -118,24 +115,15 @@ static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
     }
 }
 
-static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
+static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
     ah_http_rclient_t* cln = ah_i_http_upcast_to_rclient(conn);
 
-    ah_err_t err = ah_i_http_rclient_init(cln, srv, raddr);
-    if (err != AH_ENONE) {
-        srv->_vtab->on_client_accept(srv, cln);
+    if (err == AH_ENONE) {
+        err = ah_i_http_rclient_init(cln, srv, raddr);
     }
-    else {
-        srv->_vtab->on_client_err(srv, err);
-    }
-}
-
-static void s_on_listener_conn_err(ah_tcp_listener_t* ln, ah_err_t err)
-{
-    ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
-    srv->_vtab->on_client_err(srv, err);
+    srv->_vtab->on_client_accept(srv, cln, err);
 }
 
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)

@@ -18,7 +18,7 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, const 
 
     ah_assert_if_debug(vtab->on_open != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
-    ah_assert_if_debug(((vtab->on_recv_alloc == NULL) == (vtab->on_recv_data == NULL)) == (vtab->on_recv_err == NULL));
+    ah_assert_if_debug((vtab->on_recv_alloc == NULL) == (vtab->on_recv_data == NULL));
 
     if (ah_loop_is_term(loop)) {
         return AH_ESTATE;

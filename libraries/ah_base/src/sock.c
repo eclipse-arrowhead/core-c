@@ -87,7 +87,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
 
     switch (sockaddr->as_any.family) {
     case AH_SOCKFAMILY_IPV4: {
-        size_t ipaddr_size;
+        size_t ipaddr_size = dest_rem;
         err = ah_ipaddr_v4_stringify(&sockaddr->as_ipv4.ipaddr, dest, &ipaddr_size);
         if (err != AH_ENONE) {
             return err;
@@ -117,7 +117,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         dest = &dest[1u];
         dest_rem -= 1u;
 
-        size_t ipaddr_size;
+        size_t ipaddr_size = dest_rem;
         err = ah_ipaddr_v6_stringify(&sockaddr->as_ipv6.ipaddr, dest, &ipaddr_size);
         if (err != AH_ENONE) {
             return err;

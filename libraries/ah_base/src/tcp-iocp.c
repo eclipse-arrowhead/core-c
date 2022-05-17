@@ -216,7 +216,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
         goto report_err;
     }
 
-    conn->_vtab->on_read_data(conn, &conn->_recv_buf, (size_t) nread);
+    conn->_vtab->on_read_data(conn, &conn->_recv_buf, (size_t) nread, AH_ENONE);
 #ifndef NDEBUG
     conn->_recv_buf = (ah_buf_t) { 0u };
 #endif
@@ -233,7 +233,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
     return;
 
 report_err:
-    conn->_vtab->on_read_err(conn, err);
+    conn->_vtab->on_read_data(conn, NULL, 0u, err);
 }
 
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
@@ -360,15 +360,12 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
     if (ln == NULL || conn_vtab == NULL) {
         return AH_EINVAL;
     }
-    if (conn_vtab->on_close == NULL) {
-        return AH_EINVAL;
-    }
-    if (conn_vtab->on_read_alloc == NULL || conn_vtab->on_read_data == NULL || conn_vtab->on_read_err == NULL) {
-        return AH_EINVAL;
-    }
-    if (conn_vtab->on_write_done == NULL) {
-        return AH_EINVAL;
-    }
+
+    ah_assert_if_debug(conn_vtab->on_close != NULL);
+    ah_assert_if_debug(conn_vtab->on_read_alloc != NULL);
+    ah_assert_if_debug(conn_vtab->on_read_data != NULL);
+    ah_assert_if_debug(conn_vtab->on_write_done != NULL);
+
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {
         return AH_ESTATE;
     }
@@ -515,7 +512,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt)
     INT raddr_size;
 
     ln->_GetAcceptExSockaddrs(ln->_accept_buffer, 0u, addr_size, addr_size, &laddr, &laddr_size, &raddr, &raddr_size);
-    ln->_vtab->on_conn_accept(ln, conn, ah_i_sockaddr_from_bsd(raddr));
+    ln->_vtab->on_conn_accept(ln, conn, ah_i_sockaddr_from_bsd(raddr), AH_ENONE);
 
     if (ln->_state != AH_I_TCP_LISTENER_STATE_LISTENING) {
         return;
@@ -540,7 +537,7 @@ close_accept_fd_and_report_err:
     ln->_accept_fd = INVALID_SOCKET;
 #endif
 
-    ln->_vtab->on_conn_err(ln, err);
+    ln->_vtab->on_conn_accept(ln, NULL, NULL, err);
     goto prep_another_accept;
 }
 

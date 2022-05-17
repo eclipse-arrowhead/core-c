@@ -19,7 +19,7 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, const 
     ah_assert_if_debug(vtab->on_open != NULL);
     ah_assert_if_debug(vtab->on_connect != NULL);
     ah_assert_if_debug(vtab->on_close != NULL);
-    ah_assert_if_debug(((vtab->on_read_alloc == NULL) == (vtab->on_read_data == NULL)) == (vtab->on_read_err == NULL));
+    ah_assert_if_debug((vtab->on_read_alloc == NULL) == (vtab->on_read_data == NULL));
 
     if (ah_loop_is_term(loop)) {
         return AH_ESTATE;
@@ -89,7 +89,6 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
     ah_assert_if_debug(vtab->on_close != NULL);
     ah_assert_if_debug(vtab->on_conn_alloc != NULL);
     ah_assert_if_debug(vtab->on_conn_accept != NULL);
-    ah_assert_if_debug(vtab->on_conn_err != NULL);
 
     if (ah_loop_is_term(loop)) {
         return AH_ESTATE;

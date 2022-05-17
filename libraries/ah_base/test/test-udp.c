@@ -47,8 +47,7 @@ struct s_udp_sock_user_data {
 static void s_on_open(ah_udp_sock_t* sock, ah_err_t err);
 static void s_on_close(ah_udp_sock_t* sock, ah_err_t err);
 static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t* buf);
-static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrecv, const ah_sockaddr_t* raddr);
-static void s_on_recv_err(ah_udp_sock_t* sock, const ah_sockaddr_t* raddr, ah_err_t err);
+static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err);
 static void s_on_send_done(ah_udp_sock_t* sock, size_t nsent, const ah_sockaddr_t* raddr, ah_err_t err);
 
 static const ah_udp_sock_vtab_t s_sock_vtab = {
@@ -56,7 +55,6 @@ static const ah_udp_sock_vtab_t s_sock_vtab = {
     .on_close = s_on_close,
     .on_recv_alloc = s_on_recv_alloc,
     .on_recv_data = s_on_recv_data,
-    .on_recv_err = s_on_recv_err,
     .on_send_done = s_on_send_done,
 };
 
@@ -136,12 +134,15 @@ static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t* buf)
     user_data->did_call_recv_alloc_cb = true;
 }
 
-static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrecv, const ah_sockaddr_t* raddr)
+static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
 
     ah_unit_t* unit = user_data->unit;
 
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
     if (!ah_unit_assert(unit, buf != NULL, "buf == NULL")) {
         return;
     }
@@ -161,19 +162,12 @@ static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrec
         return;
     }
 
-    ah_err_t err = ah_udp_sock_close(sock);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+    ah_err_t err0 = ah_udp_sock_close(sock);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
         return;
     }
 
     user_data->did_call_recv_done_cb = true;
-}
-
-static void s_on_recv_err(ah_udp_sock_t* sock, const ah_sockaddr_t* raddr, ah_err_t err)
-{
-    struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
-    ah_unit_failf(user_data->unit, "unexpected recv error: %d [%s]", err, ah_strerror(err));
-    (void) raddr;
 }
 
 static void s_on_send_done(ah_udp_sock_t* sock, size_t nsent, const ah_sockaddr_t* raddr, ah_err_t err)

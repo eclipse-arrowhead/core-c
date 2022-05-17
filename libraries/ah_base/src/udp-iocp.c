@@ -161,7 +161,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt)
     return;
 
 report_err:
-    sock->_vtab->on_recv_err(sock, raddr, err);
+    sock->_vtab->on_recv_data(sock, NULL, 0u, raddr, err);
 }
 
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)

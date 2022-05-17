@@ -93,7 +93,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err;
     }
 
-    sock->_vtab->on_recv_data(sock, &buf, nread, raddr);
+    sock->_vtab->on_recv_data(sock, &buf, nread, raddr, 0);
 
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return;
@@ -107,7 +107,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    sock->_vtab->on_recv_err(sock, raddr, err);
+    sock->_vtab->on_recv_data(sock, NULL, 0u, raddr, err);
 }
 
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)

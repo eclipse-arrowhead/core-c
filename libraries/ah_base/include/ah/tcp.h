@@ -31,8 +31,7 @@ struct ah_tcp_conn_vtab {
 
     // If all three are NULL, receiving is shutdown automatically. Either all or none must be set.
     void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_buf_t* buf);
-    void (*on_read_data)(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
-    void (*on_read_err)(ah_tcp_conn_t* conn, ah_err_t err);
+    void (*on_read_data)(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err);
 
     // If NULL, sending is shutdown automatically.
     void (*on_write_done)(ah_tcp_conn_t* conn, ah_err_t err);
@@ -48,8 +47,7 @@ struct ah_tcp_listener_vtab {
     void (*on_close)(ah_tcp_listener_t* ln, ah_err_t err);
 
     void (*on_conn_alloc)(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
-    void (*on_conn_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
-    void (*on_conn_err)(ah_tcp_listener_t* ln, ah_err_t);
+    void (*on_conn_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 };
 
 // An outgoing TCP message.
