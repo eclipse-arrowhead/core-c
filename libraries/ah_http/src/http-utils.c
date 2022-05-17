@@ -52,3 +52,198 @@ ah_http_server_t* ah_i_http_upcast_to_server(ah_tcp_listener_t* ln)
 
     return srv;
 }
+
+void ah_i_http_req_queue_add(struct ah_i_http_req_queue* queue, ah_http_req_t* req)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(req != NULL);
+
+    req->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_head = req;
+        queue->_end = req;
+    }
+    else {
+        queue->_end->_next = req;
+        queue->_end = req;
+    }
+}
+
+void ah_i_http_req_queue_discard_unsafe(struct ah_i_http_req_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(queue->_head != NULL);
+    ah_assert_if_debug(queue->_end != NULL);
+
+    ah_http_req_t* req = queue->_head;
+    queue->_head = req->_next;
+
+#ifndef NDEBUG
+
+    req->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_end = NULL;
+    }
+
+#endif
+}
+
+bool ah_i_http_req_queue_is_empty(struct ah_i_http_req_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    return queue->_head == NULL;
+}
+
+bool ah_i_http_req_queue_is_empty_then_add(struct ah_i_http_req_queue* queue, ah_http_req_t* req)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(req != NULL);
+
+    req->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_head = req;
+        queue->_end = req;
+        return true;
+    }
+
+    queue->_end->_next = req;
+    queue->_end = req;
+
+    return false;
+}
+
+ah_http_req_t* ah_i_http_req_queue_peek(struct ah_i_http_req_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+
+    return queue->_head;
+}
+
+ah_http_req_t* ah_i_http_req_queue_peek_unsafe(struct ah_i_http_req_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(queue->_head != NULL);
+
+    return queue->_head;
+}
+
+ah_http_req_t* ah_i_http_req_queue_remove(struct ah_i_http_req_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+
+    if (queue->_head == NULL) {
+        return NULL;
+    }
+
+    return ah_i_http_req_queue_remove_unsafe(queue);
+}
+
+ah_http_req_t* ah_i_http_req_queue_remove_unsafe(struct ah_i_http_req_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+
+    ah_http_req_t* req = queue->_head;
+    ah_i_http_req_queue_discard_unsafe(queue);
+    return req;
+}
+
+
+void ah_i_http_res_queue_add(struct ah_i_http_res_queue* queue, ah_http_res_t* res)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(res != NULL);
+
+    res->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_head = res;
+        queue->_end = res;
+    }
+    else {
+        queue->_end->_next = res;
+        queue->_end = res;
+    }
+}
+
+void ah_i_http_res_queue_discard_unsafe(struct ah_i_http_res_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(queue->_head != NULL);
+    ah_assert_if_debug(queue->_end != NULL);
+
+    ah_http_res_t* res = queue->_head;
+    queue->_head = res->_next;
+
+#ifndef NDEBUG
+
+    res->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_end = NULL;
+    }
+
+#endif
+}
+
+bool ah_i_http_res_queue_is_empty(struct ah_i_http_res_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    return queue->_head == NULL;
+}
+
+bool ah_i_http_res_queue_is_empty_then_add(struct ah_i_http_res_queue* queue, ah_http_res_t* res)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(res != NULL);
+
+    res->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_head = res;
+        queue->_end = res;
+        return true;
+    }
+
+    queue->_end->_next = res;
+    queue->_end = res;
+
+    return false;
+}
+
+ah_http_res_t* ah_i_http_res_queue_peek(struct ah_i_http_res_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+
+    return queue->_head;
+}
+
+ah_http_res_t* ah_i_http_res_queue_peek_unsafe(struct ah_i_http_res_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+    ah_assert_if_debug(queue->_head != NULL);
+
+    return queue->_head;
+}
+
+ah_http_res_t* ah_i_http_res_queue_remove(struct ah_i_http_res_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+
+    if (queue->_head == NULL) {
+        return NULL;
+    }
+
+    return ah_i_http_res_queue_remove_unsafe(queue);
+}
+
+ah_http_res_t* ah_i_http_res_queue_remove_unsafe(struct ah_i_http_res_queue* queue)
+{
+    ah_assert_if_debug(queue != NULL);
+
+    ah_http_res_t* res = queue->_head;
+    ah_i_http_res_queue_discard_unsafe(queue);
+    return res;
+}

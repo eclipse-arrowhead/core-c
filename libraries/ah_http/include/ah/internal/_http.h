@@ -66,7 +66,8 @@
  unsigned _n_pending_tcp_msgs;
 
 #define AH_I_HTTP_RES_FIELDS \
- ah_http_res_t* _next;
+ ah_http_res_t* _next;       \
+ unsigned _n_pending_tcp_msgs;
 
 #define AH_I_HTTP_TRAILER_FIELDS \
  ah_buf_t _buf;                  \
