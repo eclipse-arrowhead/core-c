@@ -22,6 +22,7 @@ typedef struct ah_http_header ah_http_header_t;
 typedef struct ah_http_lclient ah_http_lclient_t;
 typedef struct ah_http_lclient_vtab ah_http_lclient_vtab_t;
 typedef struct ah_http_rclient ah_http_rclient_t;
+typedef struct ah_http_rclient_vtab ah_http_rclient_vtab_t;
 typedef struct ah_http_req ah_http_req_t;
 typedef struct ah_http_req_line ah_http_req_line_t;
 typedef struct ah_http_res ah_http_res_t;
@@ -33,10 +34,12 @@ typedef struct ah_http_ver ah_http_ver_t;
 
 typedef union ah_http_body ah_http_body_t;
 
+// A local HTTP client, potentially connected to a remote HTTP server.
 struct ah_http_lclient {
     AH_I_HTTP_LCLIENT_FIELDS
 };
 
+// Virtual function table of a local HTTP client.
 struct ah_http_lclient_vtab {
     void (*on_open)(ah_http_lclient_t* cln, ah_err_t err);
     void (*on_connect)(ah_http_lclient_t* cln, ah_err_t err);
@@ -56,14 +59,35 @@ struct ah_http_lclient_vtab {
     void (*on_res_end)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_err_t err);
 };
 
+// A remote HTTP client, connected via a local HTTP server.
 struct ah_http_rclient {
     AH_I_HTTP_RCLIENT_FIELDS
 };
 
+// Virtual function table of remote HTTP client.
+struct ah_http_rclient_vtab {
+    void (*on_close)(ah_http_rclient_t* cln, ah_err_t err);
+
+    // If `reuse` is true, any block of memory previously provided via `buf` may
+    // be used again without disrupting `srv`.
+    void (*on_msg_alloc)(ah_http_rclient_t* cln, ah_buf_t* buf, ah_http_res_t* res, bool reuse);
+
+    void (*on_req_line)(ah_http_rclient_t* cln, ah_http_req_line_t req_line, ah_http_res_t* res);
+    void (*on_req_header)(ah_http_rclient_t* cln, ah_http_header_t header, ah_http_res_t* res);
+    void (*on_req_headers)(ah_http_rclient_t* cln, ah_http_res_t* res);                                     // Optional.
+    void (*on_req_chunk_line)(ah_http_rclient_t* cln, ah_http_chunk_line_t chunk_line, ah_http_res_t* res); // Optional.
+    void (*on_req_data)(ah_http_rclient_t* cln, const ah_buf_t* rbuf, ah_http_res_t* res);
+    void (*on_req_end)(ah_http_rclient_t* cln, ah_err_t err, uint16_t stat_code, ah_http_res_t* res);
+
+    void (*on_res_sent)(ah_http_rclient_t* cln, ah_http_res_t* res, ah_err_t err);
+};
+
+// A local HTTP server.
 struct ah_http_server {
     AH_I_HTTP_SERVER_FIELDS
 };
 
+// Virtual function table of local HTTP server.
 struct ah_http_server_vtab {
     void (*on_open)(ah_http_server_t* srv, ah_err_t err);
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
@@ -72,19 +96,6 @@ struct ah_http_server_vtab {
     void (*on_client_alloc)(ah_http_server_t* srv, ah_http_rclient_t** client);
     void (*on_client_accept)(ah_http_server_t* srv, ah_http_rclient_t* client);
     void (*on_client_err)(ah_http_server_t* srv, ah_err_t);
-
-    // If `reuse` is true, any block of memory previously provided via `buf` may
-    // be used again without disrupting `srv`.
-    void (*on_msg_alloc)(ah_http_server_t* srv, ah_buf_t* buf, ah_http_res_t* res, bool reuse);
-
-    void (*on_req_line)(ah_http_server_t* srv, ah_http_req_line_t req_line, ah_http_res_t* res);
-    void (*on_req_header)(ah_http_server_t* srv, ah_http_header_t header, ah_http_res_t* res);
-    void (*on_req_headers)(ah_http_server_t* srv, ah_http_res_t* res);                                     // Optional.
-    void (*on_req_chunk_line)(ah_http_server_t* srv, ah_http_chunk_line_t chunk_line, ah_http_res_t* res); // Optional.
-    void (*on_req_data)(ah_http_server_t* srv, const ah_buf_t* rbuf, ah_http_res_t* res);
-    void (*on_req_end)(ah_http_server_t* srv, ah_err_t err, uint16_t stat_code, ah_http_res_t* res);
-
-    void (*on_res_sent)(ah_http_server_t* srv, ah_http_res_t* res, ah_err_t err);
 };
 
 // An HTTP version indicator.
@@ -184,16 +195,21 @@ ah_extern void ah_http_lclient_set_user_data(ah_http_lclient_t* cln, void* user_
 
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab);
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr);
-ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog);
-ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_res_t* res);
-ah_extern ah_err_t ah_http_server_send_data(ah_http_server_t* srv, ah_tcp_msg_t* msg);
-ah_extern ah_err_t ah_http_server_send_end(ah_http_server_t* srv);
-ah_extern ah_err_t ah_http_server_send_chunk(ah_http_server_t* srv, ah_http_chunk_t* chunk);
-ah_extern ah_err_t ah_http_server_send_trailer(ah_http_server_t* srv, ah_http_trailer_t* trailer);
+ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog, const ah_http_rclient_vtab_t* vtab);
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
 ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv);
 ah_extern void* ah_http_server_get_user_data(ah_http_server_t* srv);
 ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data);
+
+ah_extern ah_err_t ah_http_rclient_send_data(ah_http_rclient_t* cln, ah_tcp_msg_t* msg);
+ah_extern ah_err_t ah_http_rclient_send_end(ah_http_rclient_t* cln);
+ah_extern ah_err_t ah_http_rclient_send_chunk(ah_http_rclient_t* cln, ah_http_chunk_t* chunk);
+ah_extern ah_err_t ah_http_rclient_send_trailer(ah_http_rclient_t* cln, ah_http_trailer_t* trailer);
+ah_extern ah_err_t ah_http_rclient_close(ah_http_rclient_t* cln);
+ah_extern ah_tcp_conn_t* ah_http_rclient_get_conn(ah_http_rclient_t* cln);
+ah_extern ah_http_server_t* ah_http_rclient_get_server(ah_http_rclient_t* cln);
+ah_extern void* ah_http_rclient_get_user_data(ah_http_rclient_t* cln);
+ah_extern void ah_http_rclient_set_user_data(ah_http_rclient_t* cln, void* user_data);
 
 ah_extern ah_http_body_t ah_http_body_empty(void);
 ah_extern ah_http_body_t ah_http_body_from_buf(ah_buf_t buf);

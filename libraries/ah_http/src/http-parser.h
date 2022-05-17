@@ -4,8 +4,8 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef SRC_HTTP_PARSER_H
-#define SRC_HTTP_PARSER_H
+#ifndef SRC_HTTP_PARSER_H_
+#define SRC_HTTP_PARSER_H_
 
 #include "ah/http.h"
 

@@ -30,15 +30,24 @@
  bool _keep_alive;                                                               \
  bool _prohibit_realloc;
 
-#define AH_I_HTTP_RCLIENT_FIELDS \
- ah_tcp_conn_t _conn;            \
- struct ah_http_server* _srv;
+#define AH_I_HTTP_RCLIENT_FIELDS                                      \
+ ah_tcp_conn_t _conn;                                                 \
+ const ah_sockaddr_t* _raddr;                                         \
+ const ah_tcp_trans_vtab_t* _trans_vtab;                              \
+ const ah_http_rclient_vtab_t* _vtab;                                 \
+ struct ah_i_http_res_queue _res_queue; /* Not yet sent responses. */ \
+ struct ah_http_server* _srv;                                         \
+ ah_buf_rw_t _req_rw;                                                 \
+ size_t _req_n_expected_bytes;                                        \
+ uint8_t _req_state;                                                  \
+ bool _keep_alive;                                                    \
+ bool _prohibit_realloc;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_server_vtab_t* _vtab;     \
- struct ah_i_http_res_queue _res_queue;
+ const ah_http_rclient_vtab_t* _rclient_vtab;
 
 #define AH_I_HTTP_BODY_FIELDS       \
  struct ah_i_http_body_any _as_any; \
@@ -89,5 +98,7 @@ struct ah_i_http_req_queue {
     struct ah_http_req* _head;
     struct ah_http_req* _end;
 };
+
+const ah_tcp_conn_vtab_t* ah_i_http_rclient_get_conn_vtab();
 
 #endif

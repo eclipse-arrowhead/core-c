@@ -7,11 +7,11 @@ set(
     include/ah/http.h
     include/ah/internal/_http.h
     src/http-body.c
-    src/http-client.c
+    src/http-lclient.c
     src/http-parser.c
     src/http-parser.h
     src/http-server.c
-)
+    src/http-rclient.c src/http-utils.h)
 
 add_library(ah_http STATIC ${SOURCE_FILES})
 target_include_directories(ah_http
@@ -21,9 +21,7 @@ target_link_libraries(ah_http PRIVATE ah_base)
 set(
     TEST_FILES
     test/main.c
-    test/test-http-client.c
     test/test-http-parser.c
-    test/test-http-server.c
 )
 
 add_executable(ah_http_tests ${TEST_FILES})
