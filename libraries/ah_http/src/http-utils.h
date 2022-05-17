@@ -9,4 +9,8 @@
 
 #include "ah/http.h"
 
+ah_http_lclient_t* ah_i_http_upcast_to_lclient(ah_tcp_conn_t* conn);
+ah_http_rclient_t* ah_i_http_upcast_to_rclient(ah_tcp_conn_t* conn);
+ah_http_server_t* ah_i_http_upcast_to_server(ah_tcp_listener_t* ln);
+
 #endif

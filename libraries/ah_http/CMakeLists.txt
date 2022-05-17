@@ -10,8 +10,12 @@ set(
     src/http-lclient.c
     src/http-parser.c
     src/http-parser.h
+    src/http-rclient.c
+    src/http-rclient.h
     src/http-server.c
-    src/http-rclient.c src/http-utils.h)
+    src/http-utils.c
+    src/http-utils.h
+)
 
 add_library(ah_http STATIC ${SOURCE_FILES})
 target_include_directories(ah_http

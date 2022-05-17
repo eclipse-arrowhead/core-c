@@ -6,6 +6,9 @@
 
 #include "ah/http.h"
 
+#include "http-rclient.h"
+#include "http-utils.h"
+
 #include <ah/assert.h>
 #include <ah/err.h>
 #include <ah/math.h>
@@ -16,9 +19,6 @@ static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
 static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 static void s_on_listener_conn_err(ah_tcp_listener_t* ln, ah_err_t err);
-
-static ah_http_lclient_t* s_upcast_to_client(ah_tcp_conn_t* conn);
-static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln);
 
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab)
 {
@@ -45,7 +45,6 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_tcp_trans_t tra
     ah_assert_if_debug(vtab->on_client_alloc != NULL);
     ah_assert_if_debug(vtab->on_client_accept != NULL);
     ah_assert_if_debug(vtab->on_client_err != NULL);
-
 
     static const ah_tcp_listener_vtab_t s_vtab = {
         .on_open = s_on_listener_open,
@@ -78,23 +77,8 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
 
 static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    ah_http_server_t* srv = s_upcast_to_server(ln);
+    ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
     srv->_vtab->on_open(srv, err);
-}
-
-static ah_http_server_t* s_upcast_to_server(ah_tcp_listener_t* ln)
-{
-    ah_assert_if_debug(ln != NULL);
-
-    // This is only safe if `ln` is a member of an ah_http_server_t value.
-    const size_t ln_member_offset = offsetof(ah_http_server_t, _ln);
-    ah_assert_if_debug(ln_member_offset <= PTRDIFF_MAX);
-    ah_http_server_t* srv = (ah_http_server_t*) &((uint8_t*) ln)[-((ptrdiff_t) ln_member_offset)];
-
-    ah_assert_if_debug(srv->_vtab != NULL);
-    ah_assert_if_debug(srv->_trans_vtab != NULL);
-
-    return srv;
 }
 
 ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog, const ah_http_rclient_vtab_t* vtab)
@@ -117,7 +101,7 @@ ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog
 
 static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    ah_http_server_t* srv = s_upcast_to_server(ln);
+    ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
     srv->_vtab->on_listen(srv, err);
 }
 
@@ -125,81 +109,33 @@ static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
 {
     ah_assert_if_debug(conn != NULL);
 
-    ah_http_server_t* srv = s_upcast_to_server(ln);
-    (void) srv;
-    (void) conn; // TODO: Handle.
+    ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
+
+    ah_http_rclient_t* cln;
+    srv->_vtab->on_client_alloc(srv, &cln);
+    if (cln != NULL) {
+        *conn = &cln->_conn;
+    }
 }
 
 static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
-    ah_http_server_t* srv = s_upcast_to_server(ln);
-    ah_http_lclient_t* cnt = s_upcast_to_client(conn);
+    ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
+    ah_http_rclient_t* cln = ah_i_http_upcast_to_rclient(conn);
 
-    ah_err_t err = srv->_trans_vtab->conn_read_start(conn);
-
-    (void) cnt;
-    (void) raddr;
-    (void) err; // TODO: Handle.
+    ah_err_t err = ah_i_http_rclient_init(cln, srv, raddr);
+    if (err != AH_ENONE) {
+        srv->_vtab->on_client_accept(srv, cln);
+    }
+    else {
+        srv->_vtab->on_client_err(srv, err);
+    }
 }
 
 static void s_on_listener_conn_err(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    ah_http_server_t* srv = s_upcast_to_server(ln);
-    (void) srv;
-    (void) err; // TODO: Handle.
-}
-
-static ah_http_lclient_t* s_upcast_to_client(ah_tcp_conn_t* conn)
-{
-    ah_assert_if_debug(conn != NULL);
-
-    // This is only safe if `conn` is a member of an ah_http_client_t value.
-    const size_t conn_member_offset = offsetof(ah_http_lclient_t, _conn);
-    ah_assert_if_debug(conn_member_offset <= PTRDIFF_MAX);
-    ah_http_lclient_t* cln = (ah_http_lclient_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
-
-    ah_assert_if_debug(cln->_vtab != NULL);
-    ah_assert_if_debug(cln->_trans_vtab != NULL);
-
-    return cln;
-}
-
-ah_extern ah_err_t ah_http_server_respond(ah_http_server_t* srv, const ah_http_res_t* res)
-{
-    if (srv == NULL || res == NULL) {
-        return AH_EINVAL;
-    }
-
-    (void) srv;
-    (void) res;
-    return AH_EOPNOTSUPP; // TODO: Implement.
-}
-
-ah_extern ah_err_t ah_http_server_send_end(ah_http_server_t* srv)
-{
-    (void) srv;
-    return AH_EOPNOTSUPP; // TODO: Implement.
-}
-
-ah_extern ah_err_t ah_http_server_send_chunk(ah_http_server_t* srv, ah_http_chunk_t* chunk)
-{
-    (void) srv;
-    (void) chunk;
-    return AH_EOPNOTSUPP; // TODO: Implement.
-}
-
-ah_extern ah_err_t ah_http_server_send_data(ah_http_server_t* srv, ah_tcp_msg_t* msg)
-{
-    (void) srv;
-    (void) msg;
-    return AH_EOPNOTSUPP; // TODO: Implement.
-}
-
-ah_extern ah_err_t ah_http_server_send_trailer(ah_http_server_t* srv, ah_http_trailer_t* trailer)
-{
-    (void) srv;
-    (void) trailer;
-    return AH_EOPNOTSUPP; // TODO: Implement.
+    ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
+    srv->_vtab->on_client_err(srv, err);
 }
 
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
@@ -212,7 +148,7 @@ ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
 
 static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    ah_http_server_t* srv = s_upcast_to_server(ln);
+    ah_http_server_t* srv = ah_i_http_upcast_to_server(ln);
     srv->_vtab->on_close(srv, err);
 }
 

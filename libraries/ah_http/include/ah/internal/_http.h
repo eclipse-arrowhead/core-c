@@ -99,6 +99,4 @@ struct ah_i_http_req_queue {
     struct ah_http_req* _end;
 };
 
-const ah_tcp_conn_vtab_t* ah_i_http_rclient_get_conn_vtab();
-
 #endif

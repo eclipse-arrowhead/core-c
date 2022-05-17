@@ -7,10 +7,12 @@
 #include "ah/http.h"
 
 #include "http-parser.h"
+#include "http-utils.h"
 
 #include <ah/assert.h>
 #include <ah/err.h>
 #include <ah/math.h>
+#include <ah/sock.h>
 
 // Response states.
 #define S_RES_STATE_INIT       0x01
@@ -31,8 +33,6 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
 static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread);
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
-
-static ah_http_lclient_t* s_upcast_to_client(ah_tcp_conn_t* conn);
 
 static void s_req_queue_add(struct ah_i_http_req_queue* queue, ah_http_req_t* req);
 static bool s_req_queue_is_empty(struct ah_i_http_req_queue* queue);
@@ -106,7 +106,7 @@ ah_extern ah_err_t ah_http_lclient_open(ah_http_lclient_t* cln, const ah_sockadd
 
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_lclient_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
     cln->_vtab->on_open(cln, err);
 }
 
@@ -124,13 +124,13 @@ ah_extern ah_err_t ah_http_lclient_connect(ah_http_lclient_t* cln, const ah_sock
 
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_lclient_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
     cln->_vtab->on_connect(cln, err);
 }
 
 static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
-    ah_http_lclient_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
 
     ah_err_t err;
 
@@ -163,24 +163,9 @@ close_conn_and_report_err:
     cln->_vtab->on_res_end(cln, NULL, err);
 }
 
-static ah_http_lclient_t* s_upcast_to_client(ah_tcp_conn_t* conn)
-{
-    ah_assert_if_debug(conn != NULL);
-
-    // This is only safe if `conn` is a member of an ah_http_client_t value.
-    const size_t conn_member_offset = offsetof(ah_http_lclient_t, _conn);
-    ah_assert_if_debug(conn_member_offset <= PTRDIFF_MAX);
-    ah_http_lclient_t* cln = (ah_http_lclient_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
-
-    ah_assert_if_debug(cln->_vtab != NULL);
-    ah_assert_if_debug(cln->_trans_vtab != NULL);
-
-    return cln;
-}
-
 static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread)
 {
-    ah_http_lclient_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
 
     ah_err_t err;
 
@@ -490,7 +475,7 @@ static ah_err_t s_realloc_res_rw(ah_http_lclient_t* cln)
 
 static void s_on_read_err(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_lclient_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
     cln->_vtab->on_res_end(cln, s_req_queue_peek_unsafe(&cln->_res_req_queue), err);
 }
 
@@ -666,7 +651,7 @@ report_err_and_try_next:
 
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_lclient_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
 
     ah_http_req_t* req = s_req_queue_peek_unsafe(&cln->_req_queue);
 
@@ -894,7 +879,7 @@ ah_extern ah_err_t ah_http_lclient_close(ah_http_lclient_t* cln)
 
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_http_lclient_t* cln = s_upcast_to_client(conn);
+    ah_http_lclient_t* cln = ah_i_http_upcast_to_lclient(conn);
 
     ah_http_req_t* req;
 
