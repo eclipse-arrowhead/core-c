@@ -133,14 +133,14 @@ struct ah_http_rclient_vtab {
 
     // If `reuse` is true, any block of memory previously provided via `buf` may
     // be used again without disrupting `srv`.
-    void (*on_msg_alloc)(ah_http_rclient_t* cln, ah_buf_t* buf, bool reuse, ah_http_res_t* res);
+    void (*on_msg_alloc)(ah_http_rclient_t* cln, ah_buf_t* buf, bool reuse);
 
-    void (*on_req_line)(ah_http_rclient_t* cln, ah_http_req_line_t req_line, ah_http_res_t* res);
-    void (*on_req_header)(ah_http_rclient_t* cln, ah_http_header_t header, ah_http_res_t* res);
-    void (*on_req_headers)(ah_http_rclient_t* cln, ah_http_res_t* res);                                     // Optional.
-    void (*on_req_chunk_line)(ah_http_rclient_t* cln, ah_http_chunk_line_t chunk_line, ah_http_res_t* res); // Optional.
-    void (*on_req_data)(ah_http_rclient_t* cln, const ah_buf_t* rbuf, ah_http_res_t* res);
-    void (*on_req_end)(ah_http_rclient_t* cln, ah_err_t err, uint16_t stat_code, ah_http_res_t* res);
+    void (*on_req_line)(ah_http_rclient_t* cln, ah_http_req_line_t req_line);
+    void (*on_req_header)(ah_http_rclient_t* cln, ah_http_header_t header);
+    void (*on_req_headers)(ah_http_rclient_t* cln);                                     // Optional.
+    void (*on_req_chunk_line)(ah_http_rclient_t* cln, ah_http_chunk_line_t chunk_line); // Optional.
+    void (*on_req_data)(ah_http_rclient_t* cln, const ah_buf_t* rbuf);
+    void (*on_req_end)(ah_http_rclient_t* cln, ah_err_t err, uint16_t stat_code);
 
     void (*on_res_sent)(ah_http_rclient_t* cln, ah_http_res_t* res, ah_err_t err);
 };
@@ -263,6 +263,7 @@ ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv);
 ah_extern void* ah_http_server_get_user_data(ah_http_server_t* srv);
 ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data);
 
+ah_extern ah_err_t ah_http_rclient_respond(ah_http_rclient_t* cln, ah_http_res_t* res);
 ah_extern ah_err_t ah_http_rclient_send_data(ah_http_rclient_t* cln, ah_tcp_msg_t* msg);
 ah_extern ah_err_t ah_http_rclient_send_end(ah_http_rclient_t* cln);
 ah_extern ah_err_t ah_http_rclient_send_chunk(ah_http_rclient_t* cln, ah_http_chunk_t* chunk);

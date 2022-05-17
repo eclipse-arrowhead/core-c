@@ -6,6 +6,7 @@
 
 #include "ah/http.h"
 
+#include "ah/math.h"
 #include "http-parser.h"
 #include "http-utils.h"
 
@@ -29,6 +30,8 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
 static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err);
 static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
+static void s_complete_current_res(ah_http_rclient_t* cln, ah_err_t err);
+static void s_prep_write_res(ah_http_rclient_t* cln);
 static ah_err_t s_realloc_res_rw(ah_http_rclient_t* cln);
 
 void ah_i_http_rclient_init(ah_http_rclient_t* cln, ah_http_server_t* srv, const ah_sockaddr_t* raddr)
@@ -76,7 +79,7 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         goto close_conn_and_report_err_code;
     }
 
-    cln->_vtab->on_msg_alloc(cln, buf, true, res);
+    cln->_vtab->on_msg_alloc(cln, buf, true);
     if (!ah_tcp_conn_is_readable(&cln->_conn)) {
         return;
     }
@@ -92,7 +95,7 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 
 close_conn_and_report_err_code:
     cln->_trans_vtab->conn_close(conn);
-    cln->_vtab->on_req_end(cln, err, code, NULL);
+    cln->_vtab->on_req_end(cln, err, code);
 }
 
 static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err)
@@ -136,7 +139,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
             goto close_conn_and_report_err;
         }
 
-        cln->_vtab->on_req_line(cln, req_line, ah_i_http_res_queue_peek_unsafe(&cln->_res_queue));
+        cln->_vtab->on_req_line(cln, req_line);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
@@ -167,7 +170,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
 
             if (header.name == NULL) {
                 if (cln->_vtab->on_req_headers != NULL) {
-                    cln->_vtab->on_req_headers(cln, res);
+                    cln->_vtab->on_req_headers(cln);
                     if (!ah_tcp_conn_is_readable(&cln->_conn)) {
                         return;
                     }
@@ -247,7 +250,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
                 }
             }
 
-            cln->_vtab->on_req_header(cln, header, res);
+            cln->_vtab->on_req_header(cln, header);
             if (!ah_tcp_conn_is_readable(&cln->_conn)) {
                 return;
             }
@@ -280,7 +283,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
         cln->_prohibit_realloc = false;
 
         if (cln->_vtab->on_req_chunk_line != NULL) {
-            cln->_vtab->on_req_chunk_line(cln, chunk_line, ah_i_http_res_queue_peek_unsafe(&cln->_res_queue));
+            cln->_vtab->on_req_chunk_line(cln, chunk_line);
             if (!ah_tcp_conn_is_readable(&cln->_conn)) {
                 return;
             }
@@ -307,7 +310,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
         ah_buf_limit_size_to(&readable_buf, cln->_req_n_expected_bytes);
         cln->_req_n_expected_bytes -= ah_buf_get_size(&readable_buf);
 
-        cln->_vtab->on_req_data(cln, &readable_buf, ah_i_http_res_queue_peek_unsafe(&cln->_res_queue));
+        cln->_vtab->on_req_data(cln, &readable_buf);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
@@ -352,7 +355,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
                 goto state_end;
             }
 
-            cln->_vtab->on_req_header(cln, header, ah_i_http_res_queue_peek_unsafe(&cln->_res_queue));
+            cln->_vtab->on_req_header(cln, header);
             if (!ah_tcp_conn_is_readable(&cln->_conn)) {
                 return;
             }
@@ -360,7 +363,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
     }
 
     state_end : {
-        cln->_vtab->on_req_end(cln, AH_ENONE, 0u, ah_i_http_res_queue_peek_unsafe(&cln->_res_queue));
+        cln->_vtab->on_req_end(cln, AH_ENONE, 0u);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
@@ -396,7 +399,7 @@ close_conn_and_report_err:
         (void) cln->_trans_vtab->conn_close(conn);
     }
 report_err:
-    cln->_vtab->on_req_end(cln, err, code, ah_i_http_res_queue_peek_unsafe(&cln->_res_queue));
+    cln->_vtab->on_req_end(cln, err, code);
 }
 
 static ah_err_t s_realloc_res_rw(ah_http_rclient_t* cln)
@@ -404,7 +407,7 @@ static ah_err_t s_realloc_res_rw(ah_http_rclient_t* cln)
     ah_assert_if_debug(cln != NULL);
 
     ah_buf_t new_buf;
-    cln->_vtab->on_msg_alloc(cln, &new_buf, false, ah_i_http_res_queue_peek_unsafe(&cln->_res_queue));
+    cln->_vtab->on_msg_alloc(cln, &new_buf, false);
     if (ah_buf_is_empty(&new_buf)) {
         return AH_ENOBUFS;
     }
@@ -421,11 +424,175 @@ static ah_err_t s_realloc_res_rw(ah_http_rclient_t* cln)
     return AH_ENONE;
 }
 
+ah_extern ah_err_t ah_http_rclient_respond(ah_http_rclient_t* cln, ah_http_res_t* res)
+{
+    if (cln == NULL || res == NULL) {
+        return AH_EINVAL;
+    }
+    if (res->stat_line.version.major != 1u || res->stat_line.version.minor > 9u) {
+        return AH_EPROTONOSUPPORT;
+    }
+
+    if (ah_i_http_res_queue_is_empty_then_add(&cln->_res_queue, res)) {
+        s_prep_write_res(cln);
+    }
+
+    return AH_ENONE;
+}
+
+static void s_prep_write_res(ah_http_rclient_t* cln)
+{
+    ah_assert_if_debug(cln != NULL);
+
+    ah_err_t err;
+    ah_http_header_t* header;
+    ah_http_res_t* res;
+
+try_next:
+    res = ah_i_http_res_queue_peek_unsafe(&cln->_res_queue);
+
+    cln->_keep_alive = res->stat_line.version.minor != 0u;
+    cln->_prohibit_realloc = false;
+
+    cln->_vtab->on_msg_alloc(cln, &res->_head_buf, true);
+    if (ah_buf_is_empty(&res->_head_buf)) {
+        err = AH_ENOBUFS;
+        goto report_err_and_try_next;
+    }
+
+    ah_buf_rw_t rw;
+    ah_buf_rw_init_for_writing_to(&rw, &res->_head_buf);
+
+    // Write request line to head buffer.
+    (void) ah_buf_rw_write_cstr(&rw, " HTTP/1.");
+    (void) ah_buf_rw_write_byte(&rw, '0' + res->stat_line.version.minor);
+    (void) ah_buf_rw_write_byte(&rw, ' ');
+    (void) ah_buf_rw_write_size_dec(&rw, res->stat_line.code);
+    (void) ah_buf_rw_write_byte(&rw, ' ');
+    (void) ah_buf_rw_write_cstr(&rw, res->stat_line.reason);
+    (void) ah_buf_rw_write_cstr(&rw, "\r\n");
+
+    // Write other headers to head buffer.
+    if (res->headers != NULL) {
+        for (header = &res->headers[0u]; header->name != NULL; header = &header[1u]) {
+            (void) ah_buf_rw_write_cstr(&rw, header->name);
+            (void) ah_buf_rw_write_byte(&rw, ':');
+            (void) ah_buf_rw_write_cstr(&rw, header->value);
+            (void) ah_buf_rw_write_cstr(&rw, "\r\n");
+        }
+    }
+
+    // Write content-length header to head buffer and prepare message payload (if any).
+    size_t content_length;
+    switch (res->body._as_any._kind) {
+    case AH_I_HTTP_BODY_KIND_EMPTY:
+    case AH_I_HTTP_BODY_KIND_OVERRIDE:
+        content_length = 0u;
+        goto headers_end;
+
+    case AH_I_HTTP_BODY_KIND_BUF:
+        content_length = res->body._as_buf._buf._size;
+        err = ah_tcp_msg_init(&res->_body_msg, (ah_bufs_t) { .items = &res->body._as_buf._buf, .length = 1u });
+        if (ah_unlikely(err != AH_ENONE)) {
+            goto report_err_and_try_next;
+        }
+        break;
+
+    case AH_I_HTTP_BODY_KIND_BUFS:
+        content_length = 0u;
+        for (size_t i = 0u; i < res->body._as_bufs._bufs.length; i += 1u) {
+            err = ah_add_size(content_length, res->body._as_bufs._bufs.items[i]._size, &content_length);
+            if (ah_unlikely(err != AH_ENONE)) {
+                goto report_err_and_try_next;
+            }
+        }
+        err = ah_tcp_msg_init(&res->_body_msg, res->body._as_bufs._bufs);
+        if (ah_unlikely(err != AH_ENONE)) {
+            goto report_err_and_try_next;
+        }
+        break;
+
+    default:
+        ah_unreachable();
+    }
+    (void) ah_buf_rw_write_cstr(&rw, "content-length:");
+    (void) ah_buf_rw_write_size_dec(&rw, content_length);
+    (void) ah_buf_rw_write_cstr(&rw, "\r\n");
+
+headers_end:
+    err = ah_buf_rw_write_cstr(&rw, "\r\n");
+    if (err != AH_ENONE) {
+        goto report_err_and_try_next;
+    }
+
+    // Prepare message with request line and headers.
+    err = ah_tcp_msg_init(&res->_head_msg, (ah_bufs_t) { .items = &res->_head_buf, .length = 1u });
+    if (ah_unlikely(err != AH_ENONE)) {
+        goto report_err_and_try_next;
+    }
+
+    // Send message with request line and headers.
+    err = cln->_trans_vtab->conn_write(&cln->_conn, &res->_head_msg);
+    if (err != AH_ENONE) {
+        goto report_err_and_try_next;
+    }
+    res->_n_pending_tcp_msgs = 1u;
+
+    // Send message with body, if any.
+    if (content_length != 0u) {
+        err = cln->_trans_vtab->conn_write(&cln->_conn, &res->_body_msg);
+        if (err != AH_ENONE) {
+            goto report_err_and_try_next;
+        }
+        res->_n_pending_tcp_msgs += 1u;
+    }
+
+    return;
+
+report_err_and_try_next:
+    ah_i_http_res_queue_discard_unsafe(&cln->_res_queue);
+
+    cln->_vtab->on_res_sent(cln, res, err);
+    if (!ah_tcp_conn_is_writable(&cln->_conn)) {
+        return;
+    }
+
+    if (ah_i_http_res_queue_is_empty(&cln->_res_queue)) {
+        return;
+    }
+    goto try_next;
+}
+
 static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_assert_if_debug(conn != NULL);
-    (void) conn;
-    (void) err; // TODO: Implement.
+    ah_http_rclient_t* cln = ah_i_http_upcast_to_rclient(conn);
+
+    ah_http_res_t* res = ah_i_http_res_queue_peek_unsafe(&cln->_res_queue);
+
+    if (err == AH_ENONE) {
+        ah_assert_if_debug(res->_n_pending_tcp_msgs > 0u);
+        res->_n_pending_tcp_msgs -= 1u;
+        if (res->_n_pending_tcp_msgs != 0u || res->body._as_any._kind == AH_I_HTTP_BODY_KIND_OVERRIDE) {
+            return;
+        }
+    }
+
+    s_complete_current_res(cln, err);
+}
+
+static void s_complete_current_res(ah_http_rclient_t* cln, ah_err_t err)
+{
+    ah_http_res_t* res = ah_i_http_res_queue_remove_unsafe(&cln->_res_queue);
+
+    cln->_vtab->on_res_sent(cln, res, err);
+    if (!ah_tcp_conn_is_writable(&cln->_conn)) {
+        return;
+    }
+
+    if (ah_i_http_res_queue_is_empty(&cln->_res_queue)) {
+        return;
+    }
+    s_prep_write_res(cln);
 }
 
 ah_extern ah_err_t ah_http_rclient_send_data(ah_http_rclient_t* cln, ah_tcp_msg_t* msg)
@@ -471,9 +638,9 @@ ah_extern ah_err_t ah_http_rclient_send_end(ah_http_rclient_t* cln)
         return AH_ENONE;
     }
 
-    // s_complete_current_res(cln, AH_ENONE);
+    s_complete_current_res(cln, AH_ENONE);
 
-    return AH_EOPNOTSUPP; // TODO: Finish implementation.
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_http_rclient_send_chunk(ah_http_rclient_t* cln, ah_http_chunk_t* chunk)
@@ -487,7 +654,68 @@ ah_extern ah_err_t ah_http_rclient_send_chunk(ah_http_rclient_t* cln, ah_http_ch
     }
 #endif
 
-    return AH_EOPNOTSUPP; // TODO: Implement.
+        ah_err_t err;
+
+        ah_http_res_t* res = ah_i_http_res_queue_peek(&cln->_res_queue);
+        if (res == NULL) {
+            return AH_ESTATE;
+        }
+
+        // Calculate the size of the chunk.
+        size_t chunk_size = 0u;
+        ah_bufs_t bufs = ah_tcp_msg_unwrap(&chunk->data);
+        for (size_t i = 0u; i < bufs.length; i += 1u) {
+            err = ah_add_size(chunk_size, ah_buf_get_size(&bufs.items[i]), &chunk_size);
+            if (ah_unlikely(err != AH_ENONE)) {
+                goto report_err_and_try_next;
+            }
+        }
+
+        // Allocate chunk line buffer.
+        cln->_vtab->on_msg_alloc(cln, &chunk->_line_buf, true);
+        if (ah_buf_is_empty(&chunk->_line_buf)) {
+            err = AH_ENOBUFS;
+            goto report_err_and_try_next;
+        }
+
+        ah_buf_rw_t rw;
+        ah_buf_rw_init_for_writing_to(&rw, &chunk->_line_buf);
+
+        // Write chunk line to buffer.
+        (void) ah_buf_rw_write_size_hex(&rw, chunk_size);
+        if (chunk->ext != NULL) {
+            (void) ah_buf_rw_write_cstr(&rw, chunk->ext);
+        }
+        if (!ah_buf_rw_write_cstr(&rw, "\r\n")) {
+            err = AH_EOVERFLOW;
+            goto report_err_and_try_next;
+        }
+
+        // Prepare message with chunk line.
+        err = ah_tcp_msg_init(&chunk->_line_msg, (ah_bufs_t) { .items = &chunk->_line_buf, .length = 1u });
+        if (ah_unlikely(err != AH_ENONE)) {
+            goto report_err_and_try_next;
+        }
+
+        // Send message with chunk line.
+        err = cln->_trans_vtab->conn_write(&cln->_conn, &chunk->_line_msg);
+        if (err != AH_ENONE) {
+            goto report_err_and_try_next;
+        }
+        res->_n_pending_tcp_msgs += 1u;
+
+        // Send message with data.
+        err = cln->_trans_vtab->conn_write(&cln->_conn, &chunk->data);
+        if (err != AH_ENONE) {
+            goto report_err_and_try_next;
+        }
+        res->_n_pending_tcp_msgs += 1u;
+
+        return AH_ENONE;
+
+    report_err_and_try_next:
+        s_complete_current_res(cln, err);
+        return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_http_rclient_send_trailer(ah_http_rclient_t* cln, ah_http_trailer_t* trailer)
@@ -501,7 +729,63 @@ ah_extern ah_err_t ah_http_rclient_send_trailer(ah_http_rclient_t* cln, ah_http_
     }
 #endif
 
-    return AH_EOPNOTSUPP; // TODO: Implement.
+        ah_err_t err;
+
+        ah_http_res_t* res = ah_i_http_res_queue_peek(&cln->_res_queue);
+        if (res == NULL) {
+            return AH_ESTATE;
+        }
+
+        // Allocate trailer buffer.
+        cln->_vtab->on_msg_alloc(cln, &trailer->_buf, true);
+        if (ah_buf_is_empty(&trailer->_buf)) {
+            err = AH_ENOBUFS;
+            goto report_err_and_try_next;
+        }
+
+        ah_buf_rw_t rw;
+        ah_buf_rw_init_for_writing_to(&rw, &trailer->_buf);
+
+        // Write trailer chunk line to buffer.
+        (void) ah_buf_rw_write_byte(&rw, '0');
+        if (trailer->ext != NULL) {
+            (void) ah_buf_rw_write_cstr(&rw, trailer->ext);
+        }
+        if (!ah_buf_rw_write_cstr(&rw, "\r\n")) {
+            err = AH_EOVERFLOW;
+            goto report_err_and_try_next;
+        }
+
+        // Write trailer headers to buffer.
+        if (trailer->headers != NULL) {
+            ah_http_header_t* header = &trailer->headers[0u];
+            for (; header->name != NULL; header = &header[1u]) {
+                (void) ah_buf_rw_write_cstr(&rw, header->name);
+                (void) ah_buf_rw_write_byte(&rw, ':');
+                (void) ah_buf_rw_write_cstr(&rw, header->value);
+                (void) ah_buf_rw_write_cstr(&rw, "\r\n");
+            }
+        }
+        (void) ah_buf_rw_write_cstr(&rw, "\r\n");
+
+        // Prepare message with complete trailer.
+        err = ah_tcp_msg_init(&trailer->_msg, (ah_bufs_t) { .items = &trailer->_buf, .length = 1u });
+        if (ah_unlikely(err != AH_ENONE)) {
+            goto report_err_and_try_next;
+        }
+
+        // Send message with complete trailer.
+        err = cln->_trans_vtab->conn_write(&cln->_conn, &trailer->_msg);
+        if (err != AH_ENONE) {
+            goto report_err_and_try_next;
+        }
+        res->_n_pending_tcp_msgs += 1u;
+
+        return ah_http_rclient_send_end(cln);
+
+    report_err_and_try_next:
+        s_complete_current_res(cln, err);
+        return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_http_rclient_close(ah_http_rclient_t* cln)
@@ -514,9 +798,19 @@ ah_extern ah_err_t ah_http_rclient_close(ah_http_rclient_t* cln)
 
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_assert_if_debug(conn != NULL);
-    (void) conn;
-    (void) err; // TODO: Implement.
+    ah_http_rclient_t* cln = ah_i_http_upcast_to_rclient(conn);
+
+    ah_http_res_t* res;
+
+    for (;;) {
+        res = ah_i_http_res_queue_remove(&cln->_res_queue);
+        if (res == NULL) {
+            break;
+        }
+        cln->_vtab->on_res_sent(cln, res, AH_ECANCELED);
+    }
+
+    cln->_vtab->on_close(cln, err);
 }
 
 ah_extern ah_tcp_conn_t* ah_http_rclient_get_conn(ah_http_rclient_t* cln)
