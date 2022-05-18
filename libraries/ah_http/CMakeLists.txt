@@ -13,7 +13,6 @@ set(
     src/http-rclient.c
     src/http-rclient.h
     src/http-server.c
-    src/http-utils.c
     src/http-utils.h
 )
 

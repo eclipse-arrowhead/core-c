@@ -132,7 +132,7 @@ struct ah_http_rclient_vtab {
     void (*on_close)(ah_http_rclient_t* cln, ah_err_t err);
 
     // If `reuse` is true, any block of memory previously provided via `buf` may
-    // be used again without disrupting `srv`.
+    // be used again without disrupting `cln`.
     void (*on_msg_alloc)(ah_http_rclient_t* cln, ah_buf_t* buf, bool reuse);
 
     void (*on_req_line)(ah_http_rclient_t* cln, ah_http_req_line_t req_line);
@@ -140,6 +140,8 @@ struct ah_http_rclient_vtab {
     void (*on_req_headers)(ah_http_rclient_t* cln);                                     // Optional.
     void (*on_req_chunk_line)(ah_http_rclient_t* cln, ah_http_chunk_line_t chunk_line); // Optional.
     void (*on_req_data)(ah_http_rclient_t* cln, const ah_buf_t* rbuf);
+
+    // You should close `cln` if `err` is not AH_ENONE.
     void (*on_req_end)(ah_http_rclient_t* cln, ah_err_t err);
 
     void (*on_res_sent)(ah_http_rclient_t* cln, ah_http_res_t* res, ah_err_t err);

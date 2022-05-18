@@ -41,7 +41,7 @@ struct ah_udp_sock_vtab {
     void (*on_open)(ah_udp_sock_t* sock, ah_err_t err);
     void (*on_close)(ah_udp_sock_t* sock, ah_err_t err);
 
-    // If all three are NULL, every attempt to receive data will fail with AH_ESTATE. Either all or none must be set.
+    // If both are NULL, every attempt to receive data will fail with AH_ESTATE. Either both or none must be non-NULL.
     void (*on_recv_alloc)(ah_udp_sock_t* sock, ah_buf_t* buf);
     void (*on_recv_data)(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err);
 

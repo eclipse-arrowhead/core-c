@@ -71,8 +71,7 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         return;
     }
 
-    ah_http_res_t* res = ah_i_http_res_queue_peek(&cln->_res_queue);
-    if (res == NULL) {
+    if (ah_i_http_res_queue_is_empty(&cln->_res_queue)) {
         err = AH_ESTATE;
         goto close_conn_and_report_err_code;
     }

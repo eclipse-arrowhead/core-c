@@ -128,8 +128,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         return;
     }
 
-    ah_http_req_t* req = ah_i_http_req_queue_peek(&cln->_res_req_queue);
-    if (req == NULL) {
+    if (ah_i_http_req_queue_is_empty(&cln->_res_req_queue)) {
         err = AH_ESTATE;
         goto close_conn_and_report_err;
     }
@@ -205,8 +204,6 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         bool has_content_length_been_seen = false;
         bool has_transfer_encoding_chunked_been_seen = false;
         size_t content_length;
-
-        ah_http_req_t* req = ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue);
 
         for (;;) {
             ah_http_header_t header;
@@ -289,7 +286,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
                     cln->_keep_alive = false;
                     has_connection_close_been_seen = true;
                 }
-                else if (req->req_line.version.minor == 0u) {
+                else if (ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue)->req_line.version.minor == 0u) {
                     if (ah_i_http_header_value_has_csv(header.value, "keep-alive", NULL)) {
                         cln->_keep_alive = true;
                     }

@@ -29,7 +29,7 @@ struct ah_tcp_conn_vtab {
     void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err); // Never called for accepted connections.
     void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
 
-    // If all three are NULL, receiving is shutdown automatically. Either all or none must be set.
+    // If both are NULL, receiving is shutdown automatically. Either both or none must be non-NULL.
     void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_buf_t* buf);
     void (*on_read_data)(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err);
 
