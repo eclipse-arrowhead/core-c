@@ -7,11 +7,10 @@ set(
     include/ah/http.h
     include/ah/internal/_http.h
     src/http-body.c
-    src/http-lclient.c
+    src/http-client.c
+    src/http-client.h
     src/http-parser.c
     src/http-parser.h
-    src/http-rclient.c
-    src/http-rclient.h
     src/http-server.c
     src/http-utils.h
 )

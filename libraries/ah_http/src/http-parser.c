@@ -15,7 +15,6 @@
 #include <stddef.h>
 #include <string.h>
 
-static ah_err_t s_parse_status_code(ah_buf_rw_t* rw, uint16_t* code);
 static ah_err_t s_parse_version(ah_buf_rw_t* rw, ah_http_ver_t* version);
 
 static bool s_is_digit(uint8_t ch);
@@ -29,18 +28,20 @@ static ah_err_t s_skip_ch(ah_buf_rw_t* rw, char ch);
 static ah_err_t s_skip_crlf(ah_buf_rw_t* rw);
 static void s_skip_ows(ah_buf_rw_t* rw);
 
-static const char* s_take_while(ah_buf_rw_t* rw, bool (*pred)(uint8_t));
+static size_t s_skip_while(ah_buf_rw_t* rw, bool (*predicate)(uint8_t));
+static const char* s_take_while(ah_buf_rw_t* rw, bool (*predicate)(uint8_t));
 static uint8_t s_to_lower_ascii(uint8_t ch);
 
-ah_err_t ah_i_http_parse_chunk_line(ah_buf_rw_t* rw, ah_http_chunk_line_t* chunk_line)
+ah_err_t ah_i_http_parse_chunk_line(ah_buf_rw_t* rw, size_t* size, const char** ext)
 {
     ah_assert_if_debug(rw != NULL);
-    ah_assert_if_debug(chunk_line != NULL);
+    ah_assert_if_debug(size != NULL);
+    ah_assert_if_debug(ext != NULL);
 
     ah_err_t err;
 
-    size_t size = 0u;
-    const char* ext = NULL;
+    size_t size0 = 0u;
+    const char* ext0 = NULL;
 
     for (uint8_t ch; ah_buf_rw_read1(rw, &ch);) {
         size_t inc;
@@ -64,12 +65,12 @@ ah_err_t ah_i_http_parse_chunk_line(ah_buf_rw_t* rw, ah_http_chunk_line_t* chunk
             return AH_EILSEQ;
         }
 
-        err = ah_mul_size(size, 16u, &size);
+        err = ah_mul_size(size0, 16u, &size0);
         if (err != AH_ENONE) {
             return err;
         }
 
-        err = ah_add_size(size, inc, &size);
+        err = ah_add_size(size0, inc, &size0);
         if (err != AH_ENONE) {
             return err;
         }
@@ -79,7 +80,7 @@ ah_err_t ah_i_http_parse_chunk_line(ah_buf_rw_t* rw, ah_http_chunk_line_t* chunk
 
 parse_ext:
 
-    ext = (const char*) &rw->rd[-1];
+    ext0 = (const char*) &rw->rd[-1];
 
     for (uint8_t ch; ah_buf_rw_read1(rw, &ch);) {
         if (ch != '\r') {
@@ -100,10 +101,8 @@ parse_ext:
 
 finish:
 
-    *chunk_line = (ah_http_chunk_line_t) {
-        .size = size,
-        .ext = ext,
-    };
+    *size = size0;
+    *ext = ext0;
 
     return AH_ENONE;
 }
@@ -192,18 +191,21 @@ ah_err_t ah_i_http_parse_header(ah_buf_rw_t* rw, ah_http_header_t* header)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_http_parse_req_line(ah_buf_rw_t* rw, ah_http_req_line_t* req_line)
+ah_err_t ah_i_http_parse_req_line(ah_buf_rw_t* rw, const char** line, ah_http_ver_t* version)
 {
     ah_assert_if_debug(rw != NULL);
-    ah_assert_if_debug(req_line != NULL);
+    ah_assert_if_debug(line != NULL);
+    ah_assert_if_debug(version != NULL);
 
     ah_err_t err;
 
-    req_line->method = s_take_while(rw, s_is_tchar);
+    const char* line_start = (char*) rw->rd;
+
+    const size_t method_len = s_skip_while(rw, s_is_tchar);
     if (ah_buf_rw_get_readable_size(rw) == 0u) {
         return AH_EEOF;
     }
-    if (req_line->method[0u] == ' ') {
+    if (method_len == 0u) {
         return AH_EILSEQ;
     }
 
@@ -212,69 +214,81 @@ ah_err_t ah_i_http_parse_req_line(ah_buf_rw_t* rw, ah_http_req_line_t* req_line)
         return err;
     }
 
-    // Terminate method by replacing ' ' with '\0'.
-    rw->rd[-1] = '\0';
-
-    req_line->target = s_take_while(rw, s_is_rchar);
+    const size_t target_len = s_skip_while(rw, s_is_rchar);
     if (ah_buf_rw_get_readable_size(rw) == 0u) {
         return AH_EEOF;
     }
-    if (req_line->target[0u] == ' ') {
+    if (target_len == 0u) {
         return AH_EILSEQ;
     }
 
-    err = s_skip_ch(rw, ' ');
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    // Terminate target by replacing ' ' with '\0'.
-    rw->rd[-1] = '\0';
-
-    err = s_parse_version(rw, &req_line->version);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    return s_skip_crlf(rw);
-}
-
-ah_err_t ah_i_http_parse_stat_line(ah_buf_rw_t* rw, ah_http_stat_line_t* stat_line)
-{
-    ah_assert_if_debug(rw != NULL);
-    ah_assert_if_debug(stat_line != NULL);
-
-    ah_err_t err;
-
-    err = s_parse_version(rw, &stat_line->version);
-    if (err != AH_ENONE) {
-        return err;
-    }
+    char* line_end = (char*) rw->rd;
 
     err = s_skip_ch(rw, ' ');
     if (err != AH_ENONE) {
         return err;
     }
 
-    err = s_parse_status_code(rw, &stat_line->code);
+    err = s_parse_version(rw, version);
     if (err != AH_ENONE) {
         return err;
     }
-
-    err = s_skip_ch(rw, ' ');
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    stat_line->reason = s_take_while(rw, s_is_vchar_obs_text_htab_sp);
 
     err = s_skip_crlf(rw);
     if (err != AH_ENONE) {
         return err;
     }
 
-    // Terminate reason phrase by replacing first CRLF character with '\0'.
-    rw->rd[-2] = '\0';
+    *line = line_start;
+    *line_end = '\0'; // Terminate line by replacing space before version with '\0'.
+
+    return AH_ENONE;
+}
+
+ah_err_t ah_i_http_parse_stat_line(ah_buf_rw_t* rw, const char** line, ah_http_ver_t* version)
+{
+    ah_assert_if_debug(rw != NULL);
+    ah_assert_if_debug(line != NULL);
+    ah_assert_if_debug(version != NULL);
+
+    ah_err_t err;
+
+    err = s_parse_version(rw, version);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    err = s_skip_ch(rw, ' ');
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    const char* line_start = (char*) rw->rd;
+
+    const size_t code_len = s_skip_while(rw, s_is_digit);
+    if (ah_buf_rw_get_readable_size(rw) == 0u) {
+        return AH_EEOF;
+    }
+    if (code_len != 3u) {
+        return AH_EILSEQ;
+    }
+
+    err = s_skip_ch(rw, ' ');
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    (void) s_skip_while(rw, s_is_vchar_obs_text_htab_sp);
+
+    char* line_end = (char*) rw->rd;
+
+    err = s_skip_crlf(rw);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    *line = line_start;
+    *line_end = '\0'; // Terminate line by replacing first CRLF character with '\0'.
 
     return AH_ENONE;
 }
@@ -295,22 +309,6 @@ static ah_err_t s_parse_version(ah_buf_rw_t* rw, ah_http_ver_t* version)
     version->minor = rw->rd[7u] - '0';
 
     rw->rd = &rw->rd[8u];
-
-    return AH_ENONE;
-}
-
-static ah_err_t s_parse_status_code(ah_buf_rw_t* rw, uint16_t* code)
-{
-    if (ah_buf_rw_get_readable_size(rw) < 3u) {
-        return AH_EEOF;
-    }
-    if (!s_is_digit(rw->rd[0u]) || !s_is_digit(rw->rd[1u]) || !s_is_digit(rw->rd[2u])) {
-        return AH_EILSEQ;
-    }
-
-    *code = ((rw->rd[0u] - '0') * 100) + ((rw->rd[1u] - '0') * 10) + (rw->rd[2u] - '0');
-
-    rw->rd = &rw->rd[3u];
 
     return AH_ENONE;
 }
@@ -522,12 +520,22 @@ static void s_skip_ows(ah_buf_rw_t* rw)
     }
 }
 
-static const char* s_take_while(ah_buf_rw_t* rw, bool (*pred)(uint8_t))
+static size_t s_skip_while(ah_buf_rw_t* rw, bool (*predicate)(uint8_t))
+{
+    uint8_t ch;
+    size_t i = 0u;
+    for (; ah_buf_rw_peek1(rw, &ch) && predicate(ch); i += 1u) {
+        rw->rd = &rw->rd[1u];
+    }
+    return i;
+}
+
+static const char* s_take_while(ah_buf_rw_t* rw, bool (*predicate)(uint8_t))
 {
     const char* str = (const char*) rw->rd;
 
     uint8_t ch;
-    while (ah_buf_rw_peek1(rw, &ch) && pred(ch)) {
+    while (ah_buf_rw_peek1(rw, &ch) && predicate(ch)) {
         rw->rd = &rw->rd[1u];
     }
 

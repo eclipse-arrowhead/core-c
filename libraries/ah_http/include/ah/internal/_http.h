@@ -17,37 +17,25 @@
 #define AH_I_HTTP_BODY_KIND_BUF      2u
 #define AH_I_HTTP_BODY_KIND_BUFS     3u
 
-#define AH_I_HTTP_LCLIENT_FIELDS                                                 \
- ah_tcp_conn_t _conn;                                                            \
- const ah_sockaddr_t* _raddr;                                                    \
- const ah_tcp_trans_vtab_t* _trans_vtab;                                         \
- const ah_http_lclient_vtab_t* _vtab;                                            \
- struct ah_i_http_req_queue _req_queue;     /* Not yet sent requests. */         \
- struct ah_i_http_req_queue _res_req_queue; /* Requests not yet responded to. */ \
- ah_buf_rw_t _res_rw;                                                            \
- size_t _res_n_expected_bytes;                                                   \
- uint8_t _res_state;                                                             \
- bool _keep_alive;                                                               \
- bool _prohibit_realloc;
-
-#define AH_I_HTTP_RCLIENT_FIELDS                                      \
- ah_tcp_conn_t _conn;                                                 \
- const ah_sockaddr_t* _raddr;                                         \
- const ah_tcp_trans_vtab_t* _trans_vtab;                              \
- const ah_http_rclient_vtab_t* _vtab;                                 \
- struct ah_i_http_res_queue _res_queue; /* Not yet sent responses. */ \
- struct ah_http_server* _srv;                                         \
- ah_buf_rw_t _req_rw;                                                 \
- size_t _req_n_expected_bytes;                                        \
- uint8_t _req_state;                                                  \
- bool _keep_alive;                                                    \
- bool _prohibit_realloc;
+#define AH_I_HTTP_CLIENT_FIELDS                                           \
+ ah_tcp_conn_t _conn;                                                     \
+ const ah_sockaddr_t* _raddr;                                             \
+ const ah_tcp_trans_vtab_t* _trans_vtab;                                  \
+ const struct ah_http_client_vtab* _vtab;                                 \
+ struct ah_i_http_msg_queue _out_queue;                                   \
+ ah_buf_rw_t _in_buf_rw;                                                  \
+ size_t _in_n_expected_bytes;                                             \
+ size_t _in_n_expected_msgs;                                              \
+ uint8_t _in_state;                                                       \
+ bool _is_accepted; /* If true, client was accepted by a local server. */ \
+ bool _is_keeping_connection_open;                                        \
+ bool _is_preventing_realloc;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_server_vtab_t* _vtab;     \
- const ah_http_rclient_vtab_t* _rclient_vtab;
+ const ah_http_client_vtab_t* _client_vtab;
 
 #define AH_I_HTTP_BODY_FIELDS       \
  struct ah_i_http_body_any _as_any; \
@@ -58,18 +46,11 @@
  ah_buf_t _line_buf;           \
  ah_tcp_msg_t _line_msg;
 
-#define AH_I_HTTP_REQ_FIELDS \
- ah_http_req_t* _next;       \
- ah_buf_t _head_buf;         \
- ah_tcp_msg_t _head_msg;     \
- ah_tcp_msg_t _body_msg;     \
- unsigned _n_pending_tcp_msgs;
-
-#define AH_I_HTTP_RES_FIELDS \
- ah_http_res_t* _next;       \
- ah_buf_t _head_buf;         \
- ah_tcp_msg_t _head_msg;     \
- ah_tcp_msg_t _body_msg;     \
+#define AH_I_HTTP_MSG_FIELDS  \
+ struct ah_http_msg* _next; \
+ ah_buf_t _head_buf;          \
+ ah_tcp_msg_t _head_msg;      \
+ ah_tcp_msg_t _body_msg;      \
  unsigned _n_pending_tcp_msgs;
 
 #define AH_I_HTTP_TRAILER_FIELDS \
@@ -93,14 +74,9 @@ struct ah_i_http_body_bufs {
     ah_bufs_t _bufs;
 };
 
-struct ah_i_http_res_queue {
-    struct ah_http_res* _head;
-    struct ah_http_res* _end;
-};
-
-struct ah_i_http_req_queue {
-    struct ah_http_req* _head;
-    struct ah_http_req* _end;
+struct ah_i_http_msg_queue {
+    struct ah_http_msg* _head;
+    struct ah_http_msg* _end;
 };
 
 #endif
