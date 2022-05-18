@@ -140,7 +140,7 @@ struct ah_http_rclient_vtab {
     void (*on_req_headers)(ah_http_rclient_t* cln);                                     // Optional.
     void (*on_req_chunk_line)(ah_http_rclient_t* cln, ah_http_chunk_line_t chunk_line); // Optional.
     void (*on_req_data)(ah_http_rclient_t* cln, const ah_buf_t* rbuf);
-    void (*on_req_end)(ah_http_rclient_t* cln, ah_err_t err, uint16_t stat_code);
+    void (*on_req_end)(ah_http_rclient_t* cln, ah_err_t err);
 
     void (*on_res_sent)(ah_http_rclient_t* cln, ah_http_res_t* res, ah_err_t err);
 };

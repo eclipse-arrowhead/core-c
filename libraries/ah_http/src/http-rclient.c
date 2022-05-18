@@ -65,7 +65,6 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
     ah_http_rclient_t* cln = ah_i_http_upcast_to_rclient(conn);
 
     ah_err_t err;
-    uint16_t code;
 
     if (S_REQ_STATE_IS_REUSING_BUF_RW(cln->_req_state)) {
         ah_buf_rw_get_writable_as_buf(&cln->_req_rw, buf);
@@ -75,7 +74,6 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
     ah_http_res_t* res = ah_i_http_res_queue_peek(&cln->_res_queue);
     if (res == NULL) {
         err = AH_ESTATE;
-        code = 500u;
         goto close_conn_and_report_err_code;
     }
 
@@ -85,7 +83,6 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
     }
     if (ah_buf_is_empty(buf)) {
         err = AH_ENOBUFS;
-        code = 503u;
         goto close_conn_and_report_err_code;
     }
 
@@ -95,14 +92,12 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 
 close_conn_and_report_err_code:
     cln->_trans_vtab->conn_close(conn);
-    cln->_vtab->on_req_end(cln, err, code);
+    cln->_vtab->on_req_end(cln, err);
 }
 
 static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err)
 {
     ah_http_rclient_t* cln = ah_i_http_upcast_to_rclient(conn);
-
-    uint16_t code = AH_HTTP_CODE_INTERNAL_SERVER_ERROR;
 
     if (err != AH_ENONE) {
         goto close_conn_and_report_err;
@@ -133,7 +128,6 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
         err = ah_i_http_parse_req_line(&cln->_req_rw, &req_line);
         if (err != AH_ENONE) {
             if (err == AH_EEOF) {
-                code = AH_HTTP_CODE_URI_TOO_LONG;
                 err = AH_EOVERFLOW; // Current buffer not large enough to hold request line.
             }
             goto close_conn_and_report_err;
@@ -162,7 +156,6 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
             err = ah_i_http_parse_header(&cln->_req_rw, &header);
             if (err != AH_ENONE) {
                 if (err == AH_EEOF) {
-                    code = AH_HTTP_CODE_REQUEST_HEADER_FIELDS_TOO_LARGE;
                     err = AH_EOVERFLOW; // Current buffer not large enough to hold all headers.
                 }
                 goto close_conn_and_report_err;
@@ -178,7 +171,6 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
 
                 if (has_transfer_encoding_chunked_been_seen) {
                     if (has_content_length_been_seen && content_length != 0u) {
-                        code = AH_HTTP_CODE_BAD_REQUEST;
                         err = AH_EBADMSG;
                         goto close_conn_and_report_err;
                     }
@@ -197,13 +189,11 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
 
             if (ah_i_http_header_name_eq("content-length", header.name)) {
                 if (has_content_length_been_seen) {
-                    code = AH_HTTP_CODE_BAD_REQUEST;
                     err = AH_EDUP;
                     goto close_conn_and_report_err;
                 }
                 err = ah_i_http_header_value_to_size(header.value, &content_length);
                 if (err != AH_ENONE) {
-                    code = AH_HTTP_CODE_BAD_REQUEST;
                     goto close_conn_and_report_err;
                 }
                 has_content_length_been_seen = true;
@@ -216,7 +206,6 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
                     // The `chunked` transfer-encoding must be last if used.
                     // See https://www.rfc-editor.org/rfc/rfc7230#section-3.3.3.
                     if (rest[0u] != '\0') {
-                        code = AH_HTTP_CODE_BAD_REQUEST;
                         err = AH_EBADMSG;
                         goto close_conn_and_report_err;
                     }
@@ -264,17 +253,14 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
         err = ah_i_http_parse_chunk_line(&cln->_req_rw, &chunk_line);
         if (err != AH_ENONE) {
             if (err != AH_EEOF) {
-                code = AH_HTTP_CODE_BAD_REQUEST;
                 goto close_conn_and_report_err;
             }
             if (cln->_prohibit_realloc) {
-                code = AH_HTTP_CODE_BAD_REQUEST;
                 err = AH_EOVERFLOW; // Newly allocated buffer not large enough to hold chunk line.
                 goto close_conn_and_report_err;
             }
             err = s_realloc_res_rw(cln);
             if (err != AH_ENONE) {
-                code = AH_HTTP_CODE_INSUFFICIENT_STORAGE;
                 goto close_conn_and_report_err;
             }
             cln->_prohibit_realloc = true;
@@ -333,17 +319,14 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
             err = ah_i_http_parse_header(&cln->_req_rw, &header);
             if (err != AH_ENONE) {
                 if (err != AH_EEOF) {
-                    code = AH_HTTP_CODE_BAD_REQUEST;
                     goto close_conn_and_report_err;
                 }
                 if (cln->_prohibit_realloc) {
-                    code = AH_HTTP_CODE_REQUEST_HEADER_FIELDS_TOO_LARGE;
                     err = AH_EOVERFLOW; // Newly allocated buffer not large enough to hold headers.
                     goto close_conn_and_report_err;
                 }
                 err = s_realloc_res_rw(cln);
                 if (err != AH_ENONE) {
-                    code = AH_HTTP_CODE_INSUFFICIENT_STORAGE;
                     goto close_conn_and_report_err;
                 }
                 cln->_prohibit_realloc = true;
@@ -363,7 +346,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
     }
 
     state_end : {
-        cln->_vtab->on_req_end(cln, AH_ENONE, 0u);
+        cln->_vtab->on_req_end(cln, AH_ENONE);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
@@ -399,7 +382,7 @@ close_conn_and_report_err:
         (void) cln->_trans_vtab->conn_close(conn);
     }
 report_err:
-    cln->_vtab->on_req_end(cln, err, code);
+    cln->_vtab->on_req_end(cln, err);
 }
 
 static ah_err_t s_realloc_res_rw(ah_http_rclient_t* cln)
