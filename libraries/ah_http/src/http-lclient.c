@@ -134,7 +134,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         goto close_conn_and_report_err;
     }
 
-    cln->_vtab->on_msg_alloc(cln, req, buf, true);
+    cln->_vtab->on_msg_alloc(cln, buf, true);
     if (!ah_tcp_conn_is_readable(&cln->_conn)) {
         return;
     }
@@ -149,7 +149,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 
 close_conn_and_report_err:
     cln->_trans_vtab->conn_close(conn);
-    cln->_vtab->on_res_end(cln, NULL, err);
+    cln->_vtab->on_res_end(cln, err);
 }
 
 static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err)
@@ -190,7 +190,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             goto close_conn_and_report_err;
         }
 
-        cln->_vtab->on_res_line(cln, ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue), stat_line);
+        cln->_vtab->on_res_line(cln, stat_line);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
@@ -220,7 +220,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
             if (header.name == NULL) {
                 if (cln->_vtab->on_res_headers != NULL) {
-                    cln->_vtab->on_res_headers(cln, req);
+                    cln->_vtab->on_res_headers(cln);
                     if (!ah_tcp_conn_is_readable(&cln->_conn)) {
                         return;
                     }
@@ -296,7 +296,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
                 }
             }
 
-            cln->_vtab->on_res_header(cln, req, header);
+            cln->_vtab->on_res_header(cln, header);
             if (!ah_tcp_conn_is_readable(&cln->_conn)) {
                 return;
             }
@@ -326,7 +326,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         cln->_prohibit_realloc = false;
 
         if (cln->_vtab->on_res_chunk_line != NULL) {
-            cln->_vtab->on_res_chunk_line(cln, ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue), chunk_line);
+            cln->_vtab->on_res_chunk_line(cln, chunk_line);
             if (!ah_tcp_conn_is_readable(&cln->_conn)) {
                 return;
             }
@@ -353,7 +353,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         ah_buf_limit_size_to(&readable_buf, cln->_res_n_expected_bytes);
         cln->_res_n_expected_bytes -= ah_buf_get_size(&readable_buf);
 
-        cln->_vtab->on_res_data(cln, ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue), &readable_buf);
+        cln->_vtab->on_res_data(cln, &readable_buf);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
@@ -395,7 +395,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
                 goto state_end;
             }
 
-            cln->_vtab->on_res_header(cln, ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue), header);
+            cln->_vtab->on_res_header(cln, header);
             if (!ah_tcp_conn_is_readable(&cln->_conn)) {
                 return;
             }
@@ -403,7 +403,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     }
 
     state_end : {
-        cln->_vtab->on_res_end(cln, ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue), AH_ENONE);
+        cln->_vtab->on_res_end(cln, AH_ENONE);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
@@ -439,7 +439,7 @@ close_conn_and_report_err:
         (void) cln->_trans_vtab->conn_close(conn);
     }
 report_err:
-    cln->_vtab->on_res_end(cln, ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue), err);
+    cln->_vtab->on_res_end(cln, err);
 }
 
 static ah_err_t s_realloc_res_rw(ah_http_lclient_t* cln)
@@ -447,7 +447,7 @@ static ah_err_t s_realloc_res_rw(ah_http_lclient_t* cln)
     ah_assert_if_debug(cln != NULL);
 
     ah_buf_t new_buf;
-    cln->_vtab->on_msg_alloc(cln, ah_i_http_req_queue_peek_unsafe(&cln->_res_req_queue), &new_buf, false);
+    cln->_vtab->on_msg_alloc(cln, &new_buf, false);
     if (ah_buf_is_empty(&new_buf)) {
         return AH_ENOBUFS;
     }
@@ -494,7 +494,7 @@ try_next:
     cln->_keep_alive = req->req_line.version.minor != 0u;
     cln->_prohibit_realloc = false;
 
-    cln->_vtab->on_msg_alloc(cln, req, &req->_head_buf, true);
+    cln->_vtab->on_msg_alloc(cln, &req->_head_buf, true);
     if (ah_buf_is_empty(&req->_head_buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;
@@ -750,7 +750,7 @@ ah_extern ah_err_t ah_http_lclient_send_chunk(ah_http_lclient_t* cln, ah_http_ch
     }
 
     // Allocate chunk line buffer.
-    cln->_vtab->on_msg_alloc(cln, req, &chunk->_line_buf, true);
+    cln->_vtab->on_msg_alloc(cln, &chunk->_line_buf, true);
     if (ah_buf_is_empty(&chunk->_line_buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;
@@ -815,7 +815,7 @@ ah_extern ah_err_t ah_http_lclient_send_trailer(ah_http_lclient_t* cln, ah_http_
     }
 
     // Allocate trailer buffer.
-    cln->_vtab->on_msg_alloc(cln, req, &trailer->_buf, true);
+    cln->_vtab->on_msg_alloc(cln, &trailer->_buf, true);
     if (ah_buf_is_empty(&trailer->_buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;

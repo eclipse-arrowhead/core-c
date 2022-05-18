@@ -110,16 +110,16 @@ struct ah_http_lclient_vtab {
 
     // If `reuse` is true, any block of memory previously provided via `buf` may
     // be used again without disrupting `cln`.
-    void (*on_msg_alloc)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_buf_t* buf, bool reuse);
+    void (*on_msg_alloc)(ah_http_lclient_t* cln, ah_buf_t* buf, bool reuse);
 
     void (*on_req_sent)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_err_t err);
 
-    void (*on_res_line)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_http_stat_line_t stat_line);
-    void (*on_res_header)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_http_header_t header);
-    void (*on_res_headers)(ah_http_lclient_t* cln, ah_http_req_t* req);                                     // Optional.
-    void (*on_res_chunk_line)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_http_chunk_line_t chunk_line); // Optional.
-    void (*on_res_data)(ah_http_lclient_t* cln, ah_http_req_t* req, const ah_buf_t* rbuf);
-    void (*on_res_end)(ah_http_lclient_t* cln, ah_http_req_t* req, ah_err_t err);
+    void (*on_res_line)(ah_http_lclient_t* cln, ah_http_stat_line_t stat_line);
+    void (*on_res_header)(ah_http_lclient_t* cln, ah_http_header_t header);
+    void (*on_res_headers)(ah_http_lclient_t* cln);                                     // Optional.
+    void (*on_res_chunk_line)(ah_http_lclient_t* cln, ah_http_chunk_line_t chunk_line); // Optional.
+    void (*on_res_data)(ah_http_lclient_t* cln, const ah_buf_t* rbuf);
+    void (*on_res_end)(ah_http_lclient_t* cln, ah_err_t err);
 };
 
 // A remote HTTP client, connected via a local HTTP server.
