@@ -20,9 +20,6 @@ static inline ah_http_client_t* ah_i_http_conn_to_client(ah_tcp_conn_t* conn)
     ah_assert_if_debug(conn_member_offset <= PTRDIFF_MAX);
     ah_http_client_t* cln = (ah_http_client_t*) &((uint8_t*) conn)[-((ptrdiff_t) conn_member_offset)];
 
-    ah_assert_if_debug(cln->_vtab != NULL);
-    ah_assert_if_debug(cln->_trans_vtab != NULL);
-
     return cln;
 }
 
@@ -34,9 +31,6 @@ static inline ah_http_server_t* ah_i_http_conn_to_server(ah_tcp_listener_t* ln)
     const size_t ln_member_offset = offsetof(ah_http_server_t, _ln);
     ah_assert_if_debug(ln_member_offset <= PTRDIFF_MAX);
     ah_http_server_t* srv = (ah_http_server_t*) &((uint8_t*) ln)[-((ptrdiff_t) ln_member_offset)];
-
-    ah_assert_if_debug(srv->_vtab != NULL);
-    ah_assert_if_debug(srv->_trans_vtab != NULL);
 
     return srv;
 }

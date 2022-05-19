@@ -24,6 +24,7 @@ set(
     TEST_FILES
     test/main.c
     test/test-http-parser.c
+    test/test-http.c
 )
 
 add_executable(ah_http_tests ${TEST_FILES})
