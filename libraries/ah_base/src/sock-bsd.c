@@ -145,13 +145,17 @@ ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* lad
     }
 
 #if AH_IS_WIN32
-    if (bind(fd0, ah_i_sockaddr_const_into_bsd(laddr), ah_i_sockaddr_get_size(laddr)) != 0) {
+    ah_sockaddr_t laddr_copy = *laddr;
+    laddr_copy.as_ip.port = htons(laddr->as_ip.port);
+    if (bind(fd0, ah_i_sockaddr_const_into_bsd(laddr_copy), ah_i_sockaddr_get_size(laddr)) != 0) {
         err = WSAGetLastError();
         goto close_fd0_and_return;
     }
 #else
     if (laddr != NULL && (laddr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(laddr))) {
-        if (bind(fd0, ah_i_sockaddr_const_into_bsd(laddr), ah_i_sockaddr_get_size(laddr)) != 0) {
+        ah_sockaddr_t laddr_copy = *laddr;
+        laddr_copy.as_ip.port = htons(laddr->as_ip.port);
+        if (bind(fd0, ah_i_sockaddr_const_into_bsd(&laddr_copy), ah_i_sockaddr_get_size(laddr)) != 0) {
             err = errno;
             goto close_fd0_and_return;
         }

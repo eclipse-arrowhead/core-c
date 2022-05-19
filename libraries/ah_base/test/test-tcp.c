@@ -30,6 +30,9 @@ struct s_tcp_conn_user_data {
 };
 
 struct s_tcp_listener_user_data {
+    ah_sockaddr_t addr;
+    ah_tcp_conn_t *conn;
+
     ah_tcp_conn_t* free_conn;
     struct s_tcp_conn_user_data accept_user_data;
     ah_tcp_msg_t conn_msg;
@@ -247,8 +250,21 @@ static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err)
 static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err)
 {
     struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
+    ah_unit_t* unit = user_data->unit;
 
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
+
+    // Save the IP address the listener is bound to.
+    err = ah_tcp_listener_get_laddr(ln, &user_data->addr);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
+
+    // Open connection that will connect to our listener.
+    err = ah_tcp_conn_open(user_data->conn, NULL);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -349,13 +365,9 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
         return;
     }
 
-    // Setup and open listener.
+    // Setup listener.
 
     ah_tcp_listener_t ln;
-    ah_sockaddr_t ln_addr;
-
-    ah_sockaddr_init_ipv4(&ln_addr, 0u, &ah_ipaddr_v4_loopback);
-
     err = ah_tcp_listener_init(&ln, &loop, &s_listener_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
@@ -364,17 +376,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     ln_user_data.accept_user_data.ln = &ln;
     ah_tcp_listener_set_user_data(&ln, &ln_user_data);
 
-    err = ah_tcp_listener_open(&ln, &ln_addr);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
-
-    err = ah_tcp_listener_get_laddr(&ln, &ln_addr);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
-
-    // Setup and open connection.
+    // Setup connection.
 
     ah_tcp_conn_t conn;
 
@@ -383,10 +385,14 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
         return;
     }
 
-    conn_user_data.ln_addr = &ln_addr;
+    conn_user_data.ln_addr = &ln_user_data.addr;
     ah_tcp_conn_set_user_data(&conn, &conn_user_data);
 
-    err = ah_tcp_conn_open(&conn, NULL);
+    ln_user_data.conn = &conn;
+
+    // Open listener, which will open the connection, and so on.
+
+    err = ah_tcp_listener_open(&ln, NULL);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

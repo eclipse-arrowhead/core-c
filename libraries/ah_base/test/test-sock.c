@@ -138,7 +138,15 @@ static void s_should_use_same_data_layout_as_platform_sockaddr(ah_unit_t* unit)
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv4_t, ipaddr, struct sockaddr_in, sin_addr);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, ipaddr, struct sockaddr_in6, sin6_addr);
 
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv4_t, zero, struct sockaddr_in, sin_zero);
+
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_sockaddr_ipv6_t, zone_id, struct sockaddr_in6, sin6_scope_id);
+
+    ah_unit_assert(unit, sizeof(ah_sockaddr_ipv4_t) >= sizeof(struct sockaddr_in),
+        "ah_sockaddr_ipv4_t seems to be missing fields");
+
+    ah_unit_assert(unit, sizeof(ah_sockaddr_ipv6_t) >= sizeof(struct sockaddr_in6),
+        "ah_sockaddr_ipv6_t seems to be missing fields");
 
 # undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
 }

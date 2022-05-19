@@ -38,12 +38,17 @@ struct ah_sockaddr_ipv4 {
     AH_I_SOCKADDR_COMMON
     uint16_t port;
     struct ah_ipaddr_v4 ipaddr;
+#if AH_HAS_BSD_SOCKETS
+    uint8_t zero[8u];
+#endif
 };
 
 struct ah_sockaddr_ipv6 {
     AH_I_SOCKADDR_COMMON
     uint16_t port;
+#if AH_HAS_BSD_SOCKETS
     uint32_t flowinfo;
+#endif
     struct ah_ipaddr_v6 ipaddr;
     uint32_t zone_id;
 };
@@ -56,10 +61,10 @@ union ah_sockaddr {
 };
 
 static const ah_sockaddr_ipv4_t ah_sockaddr_ipv4_loopback = {
-    AH_I_SOCKADDR_PREAMBLE_IPV4 AH_SOCKFAMILY_IPV4, 0u, { { 127u, 0u, 0u, 1u } }
+    AH_I_SOCKADDR_PREAMBLE_IPV4 AH_SOCKFAMILY_IPV4, 0u, { { 127u, 0u, 0u, 1u } }, { 0u }
 };
 static const ah_sockaddr_ipv4_t ah_sockaddr_ipv4_wildcard = {
-    AH_I_SOCKADDR_PREAMBLE_IPV4 AH_SOCKFAMILY_IPV4, 0u, { { 0u, 0u, 0u, 0u } }
+    AH_I_SOCKADDR_PREAMBLE_IPV4 AH_SOCKFAMILY_IPV4, 0u, { { 0u, 0u, 0u, 0u } }, { 0u }
 };
 
 static const ah_sockaddr_ipv6_t ah_sockaddr_ipv6_loopback = {

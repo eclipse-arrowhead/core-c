@@ -22,7 +22,9 @@ ah_extern void ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port, con
 #if AH_I_SOCKADDR_HAS_SIZE
         .size = sizeof(struct sockaddr_in),
 #endif
-        .family = AH_SOCKFAMILY_IPV4, .port = port, .ipaddr = *ipaddr,
+        .family = AH_SOCKFAMILY_IPV4,
+        .port = port,
+        .ipaddr = *ipaddr,
     };
 }
 

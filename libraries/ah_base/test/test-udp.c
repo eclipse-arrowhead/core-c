@@ -31,6 +31,11 @@ void test_udp(ah_unit_t* unit)
 struct s_udp_sock_user_data {
     ah_buf_t* free_buf;
 
+    ah_sockaddr_t* raddr;
+    ah_udp_sock_t* rsock;
+    ah_sockaddr_t laddr;
+
+    ah_bufs_t send_bufs;
     ah_udp_msg_t* send_msg;
 
     size_t* close_call_counter;
@@ -61,24 +66,42 @@ static const ah_udp_sock_vtab_t s_sock_vtab = {
 static void s_on_open(ah_udp_sock_t* sock, ah_err_t err)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
+    ah_unit_t* unit = user_data->unit;
 
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     err = ah_udp_sock_set_reuseaddr(sock, false);
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
+    if (user_data->rsock != NULL) {
+        err = ah_udp_sock_get_laddr(sock, &user_data->laddr);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
+
+        err = ah_udp_sock_open(user_data->rsock, (ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
+    }
+
     if (user_data->send_msg != NULL) {
+        err = ah_udp_msg_init(user_data->send_msg, user_data->send_bufs, user_data->raddr);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
+
         err = ah_udp_sock_send(sock, user_data->send_msg);
     }
     else {
         err = ah_udp_sock_recv_start(sock);
     }
 
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
@@ -88,7 +111,6 @@ static void s_on_open(ah_udp_sock_t* sock, ah_err_t err)
 static void s_on_close(ah_udp_sock_t* sock, ah_err_t err)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
-
     ah_unit_t* unit = user_data->unit;
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
@@ -217,7 +239,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     // Setup close counter, which we use to decide when to terminate `loop`.
     size_t close_call_counter = 0u;
 
-    // Setup and open receiver socket.
+    // Setup receiver socket.
 
     uint8_t free_buf_base[24] = { 0u };
     ah_buf_t free_buf;
@@ -233,10 +255,6 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     };
 
     ah_udp_sock_t recv_sock;
-    ah_sockaddr_t recv_addr;
-
-    ah_sockaddr_init_ipv4(&recv_addr, 0u, &ah_ipaddr_v4_loopback);
-
     err = ah_udp_sock_init(&recv_sock, &loop, &s_sock_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
@@ -244,37 +262,23 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     ah_udp_sock_set_user_data(&recv_sock, &recv_sock_user_data);
 
-    err = ah_udp_sock_open(&recv_sock, &recv_addr);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
-
-    err = ah_udp_sock_get_laddr(&recv_sock, &recv_addr);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
-
-    // Setup and open sender socket.
+    // Setup sender socket.
 
     ah_buf_t send_buf;
     ah_buf_init(&send_buf, (uint8_t*) "Hello, Arrowhead!", 18u);
 
+    ah_udp_msg_t send_msg;
     ah_bufs_t send_bufs = { .items = &send_buf, .length = 1u };
 
-    ah_udp_msg_t send_msg;
-    ah_udp_msg_init(&send_msg, send_bufs, &recv_addr);
-
     struct s_udp_sock_user_data send_sock_user_data = {
+        .raddr = &recv_sock_user_data.laddr,
+        .send_bufs = send_bufs,
         .send_msg = &send_msg,
         .close_call_counter = &close_call_counter,
         .unit = unit,
     };
 
     ah_udp_sock_t send_sock;
-    ah_sockaddr_t send_addr;
-
-    ah_sockaddr_init_ipv4(&send_addr, 0u, &ah_ipaddr_v4_loopback);
-
     err = ah_udp_sock_init(&send_sock, &loop, &s_sock_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
@@ -282,7 +286,10 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     ah_udp_sock_set_user_data(&send_sock, &send_sock_user_data);
 
-    err = ah_udp_sock_open(&send_sock, &send_addr);
+    // Open receiver socket, which will open sender socket, and so on.
+
+    recv_sock_user_data.rsock = &send_sock;
+    err = ah_udp_sock_open(&recv_sock, (ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
