@@ -50,7 +50,8 @@ struct ah_bufs {
 // * AH_EDOM [Win32] - `size` is larger than AH_BUF_SIZE_MAX.
 ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size);
 
-// Note that `size` is 32-bit, in contrast to the `size` of `ah_buf_init`.
+// Note that `size` is always 32-bits, in contrast to the `size` parameter of
+// `ah_buf_init`.
 ah_extern ah_buf_t ah_buf_from(uint8_t* base, uint32_t size);
 
 ah_extern uint8_t* ah_buf_get_base(ah_buf_t* buf);
@@ -74,11 +75,8 @@ ah_extern bool ah_buf_rw_read1(ah_buf_rw_t* rw, uint8_t* dst);
 ah_extern bool ah_buf_rw_readn(ah_buf_rw_t* rw, uint8_t* dst, size_t size);
 ah_extern bool ah_buf_rw_skip1(ah_buf_rw_t* rw);
 ah_extern bool ah_buf_rw_skipn(ah_buf_rw_t* rw, size_t size);
-ah_extern bool ah_buf_rw_write(ah_buf_rw_t* rw, uint8_t* src, size_t size);
-ah_extern bool ah_buf_rw_write_byte(ah_buf_rw_t* rw, uint8_t byte);
-ah_extern bool ah_buf_rw_write_cstr(ah_buf_rw_t* rw, const char* cstr);
-ah_extern bool ah_buf_rw_write_size_dec(ah_buf_rw_t* rw, size_t size);
-ah_extern bool ah_buf_rw_write_size_hex(ah_buf_rw_t* rw, size_t size);
+ah_extern bool ah_buf_rw_writen(ah_buf_rw_t* rw, uint8_t* src, size_t size);
+ah_extern bool ah_buf_rw_write1(ah_buf_rw_t* rw, uint8_t byte);
 ah_extern bool ah_buf_rw_juke1(ah_buf_rw_t* rw);
 ah_extern bool ah_buf_rw_juken(ah_buf_rw_t* rw, size_t size);
 
