@@ -199,10 +199,17 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             goto handle_head_parse_err;
         }
 
+        if (version.major != 1u) {
+            cln->_vtab->on_recv_end(cln, AH_EPROTONOSUPPORT);
+            return;
+        }
+
         cln->_vtab->on_recv_line(cln, line, version);
         if (!ah_tcp_conn_is_readable(&cln->_conn)) {
             return;
         }
+
+        cln->_is_keeping_connection_open = version.minor != 0u;
 
         cln->_in_state = S_IN_STATE_HEADERS;
         goto state_headers;
@@ -399,7 +406,12 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         }
 
         if (!cln->_is_keeping_connection_open) {
-            err = cln->_trans_vtab->conn_close(conn);
+            if (cln->_is_accepted) {
+                err = cln->_trans_vtab->conn_shutdown(conn, AH_TCP_SHUTDOWN_RD);
+            }
+            else {
+                err = cln->_trans_vtab->conn_close(conn);
+            }
             if (err != AH_ENONE) {
                 goto report_err_and_close_conn;
             }
@@ -503,7 +515,6 @@ static void s_write_msg(ah_http_client_t* cln)
 try_next:
     msg = ah_i_http_msg_queue_peek_unsafe(&cln->_out_queue);
 
-    cln->_is_keeping_connection_open = msg->version.minor != 0u;
     cln->_is_preventing_realloc = false;
 
     cln->_vtab->on_alloc(cln, &msg->_head_buf, true);
@@ -684,6 +695,14 @@ static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err)
     ah_http_msg_t* msg = ah_i_http_msg_queue_remove_unsafe(&cln->_out_queue);
 
     cln->_vtab->on_send_done(cln, msg, err);
+
+    if (cln->_is_accepted) {
+        ah_tcp_conn_t* conn = ah_http_client_get_conn(cln);
+        if (!ah_tcp_conn_is_readable(conn)) {
+            (void) cln->_trans_vtab->conn_close(conn);
+        }
+    }
+
     if (!ah_tcp_conn_is_writable(&cln->_conn)) {
         return;
     }
