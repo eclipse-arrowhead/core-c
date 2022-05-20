@@ -121,7 +121,7 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_http_client_send(ah_http_client_t* cln, ah_http_msg_t* msg);
-ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* msg);
+ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* data);
 ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_t* chunk);
 ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_trailer_t* trailer); // Implies *_end().

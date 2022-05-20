@@ -87,6 +87,7 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
     cln->_vtab = vtab;
 
     cln->_in_state = S_IN_STATE_INIT;
+    cln->_is_local = true;
 
     return AH_ENONE;
 }
@@ -179,7 +180,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 
     switch (cln->_in_state) {
     case S_IN_STATE_INIT: {
-        if (!cln->_is_accepted && cln->_in_n_expected_msgs == 0u) {
+        if (cln->_is_local && cln->_in_n_expected_responses == 0u) {
             err = AH_ESTATE;
             goto report_err_and_close_conn;
         }
@@ -192,9 +193,12 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     case S_IN_STATE_LINE: {
         const char* line;
         ah_http_ver_t version;
-        err = cln->_is_accepted
-            ? ah_i_http_parse_req_line(&cln->_in_buf_rw, &line, &version)
-            : ah_i_http_parse_stat_line(&cln->_in_buf_rw, &line, &version);
+        if (cln->_is_local) {
+            err = ah_i_http_parse_stat_line(&cln->_in_buf_rw, &line, &version);
+        }
+        else {
+            err = ah_i_http_parse_req_line(&cln->_in_buf_rw, &line, &version);
+        }
         if (err != AH_ENONE) {
             goto handle_head_parse_err;
         }
@@ -400,30 +404,31 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
             return;
         }
 
-        if (!cln->_is_accepted) {
-            ah_assert_if_debug(cln->_in_n_expected_msgs > 0u);
-            cln->_in_n_expected_msgs -= 1u;
-        }
-
         if (!cln->_is_keeping_connection_open) {
-            if (cln->_is_accepted) {
-                err = cln->_trans_vtab->conn_shutdown(conn, AH_TCP_SHUTDOWN_RD);
+            if (cln->_is_local) {
+                err = cln->_trans_vtab->conn_close(conn);
             }
             else {
-                err = cln->_trans_vtab->conn_close(conn);
+                err = cln->_trans_vtab->conn_shutdown(conn, AH_TCP_SHUTDOWN_RD);
             }
             if (err != AH_ENONE) {
                 goto report_err_and_close_conn;
             }
+            return;
         }
 
-        if (!cln->_is_accepted && cln->_in_n_expected_msgs == 0u) {
-            if (ah_buf_rw_get_readable_size(&cln->_in_buf_rw) != 0u) {
-                err = AH_ESTATE;
-                goto report_err_and_close_conn;
+        if (cln->_is_local) {
+            ah_assert_if_debug(cln->_in_n_expected_responses > 0u);
+            cln->_in_n_expected_responses -= 1u;
+
+            if (cln->_in_n_expected_responses == 0u) {
+                if (ah_buf_rw_get_readable_size(&cln->_in_buf_rw) != 0u) {
+                    err = AH_ESTATE;
+                    goto report_err_and_close_conn;
+                }
+                cln->_in_state = S_IN_STATE_INIT;
+                return;
             }
-            cln->_in_state = S_IN_STATE_INIT;
-            return;
         }
 
         cln->_in_state = S_IN_STATE_LINE;
@@ -527,21 +532,21 @@ try_next:
     ah_buf_rw_init_for_writing_to(&rw, &msg->_head_buf);
 
     // Write request/status line to head buffer.
-    if (!cln->_is_accepted) {
+    if (cln->_is_local) {
         (void) s_write_cstr(&rw, msg->line);
         (void) ah_buf_rw_write1(&rw, ' ');
     }
     (void) s_write_cstr(&rw, "HTTP/1.");
     (void) ah_buf_rw_write1(&rw, '0' + msg->version.minor);
-    if (cln->_is_accepted) {
+    if (!cln->_is_local) {
         (void) ah_buf_rw_write1(&rw, ' ');
         (void) s_write_cstr(&rw, msg->line);
     }
     (void) s_write_crlf(&rw);
 
-    // Write host header to head buffer, if HTTP version is 1.1 or above and
-    // no such header has been provided.
-    if (!cln->_is_accepted && msg->version.minor != 0u) {
+    // Write host header to head buffer of outgoing request, if HTTP version is
+    // 1.1 or above and no such header has been provided.
+    if (cln->_is_local && msg->version.minor != 0u) {
         bool host_is_not_specified = true;
         if (msg->headers != NULL) {
             for (header = &msg->headers[0u]; header->name != NULL; header = &header[1u]) {
@@ -688,15 +693,16 @@ static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err)
 {
     ah_assert_if_debug(cln != NULL);
 
-    if (!cln->_is_accepted && err == AH_ENONE) {
-        cln->_in_n_expected_msgs += 1u;
-    }
-
     ah_http_msg_t* msg = ah_i_http_msg_queue_remove_unsafe(&cln->_out_queue);
 
     cln->_vtab->on_send_done(cln, msg, err);
 
-    if (cln->_is_accepted) {
+    if (cln->_is_local) {
+        if (err == AH_ENONE) {
+            cln->_in_n_expected_responses += 1u;
+        }
+    }
+    else {
         ah_tcp_conn_t* conn = ah_http_client_get_conn(cln);
         if (!ah_tcp_conn_is_readable(conn)) {
             (void) cln->_trans_vtab->conn_close(conn);
@@ -714,27 +720,27 @@ static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err)
     s_write_msg(cln);
 }
 
-ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* msg)
+ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* data)
 {
-    if (cln == NULL || msg == NULL) {
+    if (cln == NULL || data == NULL) {
         return AH_EINVAL;
     }
 
-    ah_http_msg_t* req = ah_i_http_msg_queue_peek(&cln->_out_queue);
-    if (req == NULL) {
+    ah_http_msg_t* msg = ah_i_http_msg_queue_peek(&cln->_out_queue);
+    if (msg == NULL) {
         return AH_ESTATE;
     }
 
-    if (req->body._as_any._kind != AH_I_HTTP_BODY_KIND_OVERRIDE) {
+    if (msg->body._as_any._kind != AH_I_HTTP_BODY_KIND_OVERRIDE) {
         return AH_ESTATE;
     }
 
-    ah_err_t err = cln->_trans_vtab->conn_write(&cln->_conn, msg);
+    ah_err_t err = cln->_trans_vtab->conn_write(&cln->_conn, data);
     if (err != AH_ENONE) {
         return err;
     }
 
-    req->_n_pending_tcp_msgs += 1u;
+    msg->_n_pending_tcp_msgs += 1u;
 
     return AH_ENONE;
 }
@@ -745,18 +751,18 @@ ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln)
         return AH_EINVAL;
     }
 
-    ah_http_msg_t* req = ah_i_http_msg_queue_peek(&cln->_out_queue);
-    if (req == NULL) {
+    ah_http_msg_t* msg = ah_i_http_msg_queue_peek(&cln->_out_queue);
+    if (msg == NULL) {
         return AH_ESTATE;
     }
 
-    if (req->body._as_any._kind != AH_I_HTTP_BODY_KIND_OVERRIDE) {
+    if (msg->body._as_any._kind != AH_I_HTTP_BODY_KIND_OVERRIDE) {
         return AH_ESTATE;
     }
 
-    req->body._as_any._kind = AH_I_HTTP_BODY_KIND_EMPTY;
+    msg->body._as_any._kind = AH_I_HTTP_BODY_KIND_EMPTY;
 
-    if (req->_n_pending_tcp_msgs > 0u) {
+    if (msg->_n_pending_tcp_msgs > 0u) {
         return AH_ENONE;
     }
 
@@ -778,8 +784,8 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
 
     ah_err_t err;
 
-    ah_http_msg_t* req = ah_i_http_msg_queue_peek(&cln->_out_queue);
-    if (req == NULL) {
+    ah_http_msg_t* msg = ah_i_http_msg_queue_peek(&cln->_out_queue);
+    if (msg == NULL) {
         return AH_ESTATE;
     }
 
@@ -824,14 +830,14 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
     if (err != AH_ENONE) {
         goto report_err_and_try_next;
     }
-    req->_n_pending_tcp_msgs += 1u;
+    msg->_n_pending_tcp_msgs += 1u;
 
     // Send message with data.
     err = cln->_trans_vtab->conn_write(&cln->_conn, &chunk->data);
     if (err != AH_ENONE) {
         goto report_err_and_try_next;
     }
-    req->_n_pending_tcp_msgs += 1u;
+    msg->_n_pending_tcp_msgs += 1u;
 
     return AH_ENONE;
 
@@ -853,8 +859,8 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
 
     ah_err_t err;
 
-    ah_http_msg_t* req = ah_i_http_msg_queue_peek(&cln->_out_queue);
-    if (req == NULL) {
+    ah_http_msg_t* msg = ah_i_http_msg_queue_peek(&cln->_out_queue);
+    if (msg == NULL) {
         return AH_ESTATE;
     }
 
@@ -901,7 +907,7 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     if (err != AH_ENONE) {
         goto report_err_and_try_next;
     }
-    req->_n_pending_tcp_msgs += 1u;
+    msg->_n_pending_tcp_msgs += 1u;
 
     return ah_http_client_send_end(cln);
 
@@ -986,7 +992,6 @@ void ah_i_http_client_init_accepted(ah_http_client_t* cln, ah_http_server_t* srv
     cln->_trans_vtab = srv->_trans_vtab;
     cln->_vtab = srv->_client_vtab;
     cln->_in_state = S_IN_STATE_INIT;
-    cln->_is_accepted = true;
 }
 
 const ah_tcp_conn_vtab_t* ah_i_http_client_get_conn_vtab()

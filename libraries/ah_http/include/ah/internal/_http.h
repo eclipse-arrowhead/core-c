@@ -17,18 +17,18 @@
 #define AH_I_HTTP_BODY_KIND_BUF      2u
 #define AH_I_HTTP_BODY_KIND_BUFS     3u
 
-#define AH_I_HTTP_CLIENT_FIELDS                                           \
- ah_tcp_conn_t _conn;                                                     \
- const ah_sockaddr_t* _raddr;                                             \
- const ah_tcp_trans_vtab_t* _trans_vtab;                                  \
- const struct ah_http_client_vtab* _vtab;                                 \
- struct ah_i_http_msg_queue _out_queue;                                   \
- ah_buf_rw_t _in_buf_rw;                                                  \
- size_t _in_n_expected_bytes;                                             \
- size_t _in_n_expected_msgs;                                              \
- uint8_t _in_state;                                                       \
- bool _is_accepted; /* If true, client was accepted by a local server. */ \
- bool _is_keeping_connection_open;                                        \
+#define AH_I_HTTP_CLIENT_FIELDS           \
+ ah_tcp_conn_t _conn;                     \
+ const ah_sockaddr_t* _raddr;             \
+ const ah_tcp_trans_vtab_t* _trans_vtab;  \
+ const struct ah_http_client_vtab* _vtab; \
+ struct ah_i_http_msg_queue _out_queue;   \
+ ah_buf_rw_t _in_buf_rw;                  \
+ size_t _in_n_expected_bytes;             \
+ size_t _in_n_expected_responses;         \
+ uint8_t _in_state;                       \
+ bool _is_keeping_connection_open;        \
+ bool _is_local;                          \
  bool _is_preventing_realloc;
 
 #define AH_I_HTTP_SERVER_FIELDS          \
@@ -46,11 +46,11 @@
  ah_buf_t _line_buf;           \
  ah_tcp_msg_t _line_msg;
 
-#define AH_I_HTTP_MSG_FIELDS  \
- struct ah_http_msg* _next; \
- ah_buf_t _head_buf;          \
- ah_tcp_msg_t _head_msg;      \
- ah_tcp_msg_t _body_msg;      \
+#define AH_I_HTTP_MSG_FIELDS \
+ struct ah_http_msg* _next;  \
+ ah_buf_t _head_buf;         \
+ ah_tcp_msg_t _head_msg;     \
+ ah_tcp_msg_t _body_msg;     \
  unsigned _n_pending_tcp_msgs;
 
 #define AH_I_HTTP_TRAILER_FIELDS \
