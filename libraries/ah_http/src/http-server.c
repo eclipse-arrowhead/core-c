@@ -111,6 +111,7 @@ static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
     ah_http_client_t* cln;
     srv->_vtab->on_client_alloc(srv, &cln);
     if (cln != NULL) {
+        *cln = (ah_http_client_t) { 0u };
         *conn = &cln->_conn;
     }
 }
@@ -118,10 +119,23 @@ static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
 static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_conn_to_server(ln);
-    ah_http_client_t* cln = ah_i_http_conn_to_client(conn);
+    if (err != AH_ENONE) {
+        srv->_vtab->on_client_accept(srv, NULL, err);
+        return;
+    }
 
+    ah_http_client_t* cln = ah_i_http_conn_to_client(conn);
     ah_i_http_client_init_accepted(cln, srv, raddr);
+
     srv->_vtab->on_client_accept(srv, cln, err);
+    if (ah_tcp_conn_is_closed(conn)) {
+        return;
+    }
+
+    err = ah_tcp_conn_read_start(conn);
+    if (err != AH_ENONE) {
+        cln->_vtab->on_recv_end(cln, err);
+    }
 }
 
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
@@ -145,7 +159,21 @@ ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv)
     return &srv->_ln;
 }
 
-ah_extern void* ah_http_server_get_user_data(ah_http_server_t* srv)
+ah_extern ah_err_t ah_http_server_get_laddr(const ah_http_server_t* srv, ah_sockaddr_t* laddr)
+{
+    ah_assert_if_debug(srv != NULL);
+
+    return ah_tcp_listener_get_laddr(&srv->_ln, laddr);
+}
+
+ah_extern ah_loop_t* ah_http_server_get_loop(const ah_http_server_t* srv)
+{
+    ah_assert_if_debug(srv != NULL);
+
+    return ah_tcp_listener_get_loop(&srv->_ln);
+}
+
+ah_extern void* ah_http_server_get_user_data(const ah_http_server_t* srv)
 {
     ah_assert_if_debug(srv != NULL);
 

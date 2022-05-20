@@ -12,9 +12,10 @@
 #include <ah/unit.h>
 
 struct s_http_client_user_data {
-    ah_buf_t* free_buf;
-    ah_http_msg_t* msg;
-    ah_sockaddr_t* raddr;
+    ah_buf_t* on_alloc_provide_buf;
+    ah_http_msg_t* on_connect_send_msg;
+    ah_http_msg_t* on_recv_end_send_msg;
+    ah_sockaddr_t* on_open_connect_to_raddr;
     size_t* close_call_counter;
 
     bool did_call_open_cb;
@@ -33,11 +34,11 @@ struct s_http_client_user_data {
 };
 
 struct s_http_server_user_data {
-    ah_sockaddr_t laddr;
+    ah_sockaddr_t on_open_store_laddr;
 
-    ah_http_client_t* lclient;
-    ah_http_client_t* free_rclient;
-    struct s_http_client_user_data accept_user_data;
+    ah_http_client_t* on_listen_open_lclient;
+    ah_http_client_t* on_client_alloc_provide_rclient;
+    struct s_http_client_user_data on_client_accept_provide_user_data;
 
     bool did_call_open_cb;
     bool did_call_listen_cb;
@@ -104,9 +105,11 @@ void on_client_open(ah_http_client_t* cln, ah_err_t err)
         return;
     }
 
-    err = ah_http_client_connect(cln, user_data->raddr);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
+    if (user_data->on_open_connect_to_raddr != NULL) {
+        err = ah_http_client_connect(cln, user_data->on_open_connect_to_raddr);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
     }
 
     user_data->did_call_open_cb = true;
@@ -121,6 +124,13 @@ void on_client_connect(ah_http_client_t* cln, ah_err_t err)
         return;
     }
 
+    if (user_data->on_connect_send_msg != NULL) {
+        err = ah_http_client_send(cln, user_data->on_connect_send_msg);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
+    }
+
     user_data->did_call_connect_cb = true;
 }
 
@@ -131,6 +141,19 @@ void on_client_close(ah_http_client_t* cln, ah_err_t err)
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
+    }
+
+    *user_data->close_call_counter += 1u;
+    if (*user_data->close_call_counter == 2u) {
+        ah_loop_t* loop = ah_http_client_get_loop(cln);
+        if (!ah_unit_assert(unit, loop != NULL, "loop == NULL")) {
+            return;
+        }
+
+        err = ah_loop_term(loop);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
     }
 
     user_data->did_call_close_cb = true;
@@ -144,8 +167,14 @@ void on_client_alloc(ah_http_client_t* cln, ah_buf_t* buf, bool reuse)
     if (!ah_unit_assert(unit, buf != NULL, "buf == NULL")) {
         return;
     }
+    if (!ah_unit_assert(unit, reuse, "reuse == false")) {
+        return;
+    }
 
-    (void) reuse;
+    if (!ah_unit_assert(unit, user_data->on_alloc_provide_buf != NULL, "user_data->on_alloc_provide_buf == NULL")) {
+        return;
+    }
+    *buf = *user_data->on_alloc_provide_buf;
 
     user_data->did_call_alloc_cb = true;
 }
@@ -159,7 +188,12 @@ void on_client_send_done(ah_http_client_t* cln, ah_http_msg_t* msg, ah_err_t err
         return;
     }
 
-    (void) msg; // TODO: Check msg.
+    if (user_data->on_connect_send_msg != NULL) {
+        (void) ah_unit_assert_cstr_eq(unit, "GET /things/1234", msg->line);
+    }
+    if (user_data->on_recv_end_send_msg != NULL) {
+        (void) ah_unit_assert_cstr_eq(unit, "200 OK", msg->line);
+    }
 
     user_data->did_call_send_done_cb = true;
 }
@@ -169,10 +203,15 @@ void on_client_recv_line(ah_http_client_t* cln, const char* line, ah_http_ver_t 
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
     ah_unit_t* unit = user_data->unit;
 
-    (void) line; // TODO: Check line.
+    if (user_data->on_connect_send_msg == NULL) {
+        (void) ah_unit_assert_cstr_eq(unit, "GET /things/1234", line);
+    }
+    if (user_data->on_recv_end_send_msg == NULL) {
+        (void) ah_unit_assert_cstr_eq(unit, "200 OK", line);
+    }
 
-    ah_unit_assert_unsigned_eq(unit, 1u, version.major);
-    ah_unit_assert_unsigned_eq(unit, 1u, version.minor);
+    (void) ah_unit_assert_unsigned_eq(unit, 1u, version.major);
+    (void) ah_unit_assert_unsigned_eq(unit, 1u, version.minor);
 
     user_data->did_call_recv_line_cb = true;
 }
@@ -180,10 +219,7 @@ void on_client_recv_line(ah_http_client_t* cln, const char* line, ah_http_ver_t 
 void on_client_recv_header(ah_http_client_t* cln, ah_http_header_t header)
 {
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
-    //ah_unit_t* unit = user_data->unit;
-
-    (void) header; // TODO: Check header.
-
+    (void) header;
     user_data->did_call_recv_header_cb = true;
 }
 
@@ -196,20 +232,22 @@ void on_client_recv_headers(ah_http_client_t* cln)
 void on_client_recv_chunk_line(ah_http_client_t* cln, size_t size, const char* ext)
 {
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
-    //ah_unit_t* unit = user_data->unit;
-
-    (void) size; // TODO: Check size.
-    (void) ext;  // TODO: Check ext.
-
+    (void) size;
+    (void) ext;
     user_data->did_call_recv_chunk_line_cb = true;
 }
 
 void on_client_recv_data(ah_http_client_t* cln, const ah_buf_t* rbuf)
 {
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
-    //ah_unit_t* unit = user_data->unit;
+    ah_unit_t* unit = user_data->unit;
 
-    (void) rbuf; // TODO: Check rbuf.
+    if (user_data->on_connect_send_msg != NULL) {
+        if (!ah_unit_assert_unsigned_eq(unit, 28u, ah_buf_get_size(rbuf))) {
+            return;
+        }
+        ah_unit_assert_mem_eq(unit, "{\"text\":\"Hello, Arrowhead!\"}", ah_buf_get_base_const(rbuf), 28u);
+    }
 
     user_data->did_call_recv_data_cb = true;
 }
@@ -219,8 +257,19 @@ void on_client_recv_end(ah_http_client_t* cln, ah_err_t err)
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
     ah_unit_t* unit = user_data->unit;
 
+    if (err == AH_EEOF) {
+        return;
+    }
+
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
+    }
+
+    if (user_data->on_recv_end_send_msg != NULL) {
+        err = ah_http_client_send(cln, user_data->on_recv_end_send_msg);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
     }
 
     user_data->did_call_recv_end_cb = true;
@@ -245,7 +294,7 @@ void s_on_server_open(ah_http_server_t* srv, ah_err_t err)
         return;
     }
 
-    err = ah_tcp_listener_get_laddr(ln, &user_data->laddr);
+    err = ah_tcp_listener_get_laddr(ln, &user_data->on_open_store_laddr);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -267,7 +316,7 @@ void s_on_server_listen(ah_http_server_t* srv, ah_err_t err)
         return;
     }
 
-    err = ah_http_client_open(user_data->lclient, NULL);
+    err = ah_http_client_open(user_data->on_listen_open_lclient, (const ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -296,8 +345,8 @@ void s_on_server_client_alloc(ah_http_server_t* srv, ah_http_client_t** client)
         return;
     }
 
-    *client = user_data->free_rclient;
-    user_data->free_rclient = NULL;
+    *client = user_data->on_client_alloc_provide_rclient;
+    user_data->on_client_alloc_provide_rclient = NULL;
 
     user_data->did_call_client_alloc_cb = true;
 }
@@ -307,11 +356,17 @@ void s_on_server_client_accept(ah_http_server_t* srv, ah_http_client_t* client, 
     struct s_http_server_user_data* user_data = ah_http_server_get_user_data(srv);
     ah_unit_t* unit = user_data->unit;
 
+    if (err == AH_ECANCELED) {
+        err = ah_http_server_close(srv);
+        (void) ah_unit_assert_err_eq(unit, AH_ENONE, err);
+        return;
+    }
+
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    ah_http_client_set_user_data(client, &user_data->accept_user_data);
+    ah_http_client_set_user_data(client, &user_data->on_client_accept_provide_user_data);
 
     user_data->did_call_client_accept_cb = true;
 }
@@ -328,10 +383,10 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
     ah_buf_t rclient_free_buf = ah_buf_from(rclient_free_buf_base, sizeof(rclient_free_buf_base));
 
     struct s_http_server_user_data server_user_data = {
-        .free_rclient = &(ah_http_client_t) { 0u },
-        .accept_user_data = (struct s_http_client_user_data) {
-            .free_buf = &rclient_free_buf,
-            .msg = &(ah_http_msg_t) {
+        .on_client_alloc_provide_rclient = &(ah_http_client_t) { 0u },
+        .on_client_accept_provide_user_data = (struct s_http_client_user_data) {
+            .on_alloc_provide_buf = &rclient_free_buf,
+            .on_recv_end_send_msg = &(ah_http_msg_t) {
                 .line = "200 OK",
                 .version = { 1u, 1u },
                 .headers = (ah_http_header_t[]) {
@@ -350,13 +405,14 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
     ah_buf_t lclient_free_buf = ah_buf_from(lclient_free_buf_base, sizeof(lclient_free_buf_base));
 
     struct s_http_client_user_data lclient_user_data = {
-        .raddr = &server_user_data.laddr,
-        .free_buf = &lclient_free_buf,
-        .msg = &(ah_http_msg_t) {
+        .on_open_connect_to_raddr = &server_user_data.on_open_store_laddr,
+        .on_alloc_provide_buf = &lclient_free_buf,
+        .on_connect_send_msg = &(ah_http_msg_t) {
             .line = "GET /things/1234",
             .version = { 1u, 1u },
             .headers = (ah_http_header_t[]) {
                 { "accept", "application/json" },
+                { "connection", "close" },
                 { NULL, NULL },
             },
             .body = ah_http_body_empty(),
@@ -393,7 +449,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
     ah_http_client_set_user_data(&lclient, &lclient_user_data);
 
     // Store reference to local client so the server can open it later.
-    server_user_data.lclient = &lclient;
+    server_user_data.on_listen_open_lclient = &lclient;
 
     // Open local HTTP server, which will open the local HTTP client, and so on.
     err = ah_http_server_open(&server, (const ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
@@ -423,7 +479,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
     (void) ah_unit_assert(unit, lclient_data->did_call_recv_line_cb, "`lclient` s_on_client_recv_line() not called");
     (void) ah_unit_assert(unit, lclient_data->did_call_recv_header_cb, "`lclient` s_on_client_recv_header() not called");
     (void) ah_unit_assert(unit, lclient_data->did_call_recv_headers_cb, "`lclient` s_on_client_recv_headers() not called");
-    (void) ah_unit_assert(unit, lclient_data->did_call_recv_chunk_line_cb, "`lclient` s_on_client_recv_chunk_line() not called");
+    (void) ah_unit_assert(unit, !lclient_data->did_call_recv_chunk_line_cb, "`lclient` s_on_client_recv_chunk_line() was called");
     (void) ah_unit_assert(unit, lclient_data->did_call_recv_data_cb, "`lclient` s_on_client_recv_data() not called");
     (void) ah_unit_assert(unit, lclient_data->did_call_recv_end_cb, "`lclient` s_on_client_recv_end() not called");
 
@@ -434,18 +490,18 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
     (void) ah_unit_assert(unit, server_data->did_call_client_alloc_cb, "s_on_server_client_alloc() not called");
     (void) ah_unit_assert(unit, server_data->did_call_client_accept_cb, "s_on_server_client_accept() not called");
 
-    struct s_http_client_user_data* rclient_data = &server_data->accept_user_data;
-    (void) ah_unit_assert(unit, !rclient_data->did_call_open_cb, "`lclient` s_on_client_open() was called");
-    (void) ah_unit_assert(unit, !rclient_data->did_call_connect_cb, "`lclient` s_on_client_connect() was called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_close_cb, "`lclient` s_on_client_close() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_alloc_cb, "`lclient` s_on_client_alloc() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_send_done_cb, "`lclient` s_on_client_send_done() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_recv_line_cb, "`lclient` s_on_client_recv_line() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_recv_header_cb, "`lclient` s_on_client_recv_header() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_recv_headers_cb, "`lclient` s_on_client_recv_headers() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_recv_chunk_line_cb, "`lclient` s_on_client_recv_chunk_line() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_recv_data_cb, "`lclient` s_on_client_recv_data() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_recv_end_cb, "`lclient` s_on_client_recv_end() not called");
+    struct s_http_client_user_data* rclient_data = &server_data->on_client_accept_provide_user_data;
+    (void) ah_unit_assert(unit, !rclient_data->did_call_open_cb, "`rclient` s_on_client_open() was called");
+    (void) ah_unit_assert(unit, !rclient_data->did_call_connect_cb, "`rclient` s_on_client_connect() was called");
+    (void) ah_unit_assert(unit, rclient_data->did_call_close_cb, "`rclient` s_on_client_close() not called");
+    (void) ah_unit_assert(unit, rclient_data->did_call_alloc_cb, "`rclient` s_on_client_alloc() not called");
+    (void) ah_unit_assert(unit, rclient_data->did_call_send_done_cb, "`rclient` s_on_client_send_done() not called");
+    (void) ah_unit_assert(unit, rclient_data->did_call_recv_line_cb, "`rclient` s_on_client_recv_line() not called");
+    (void) ah_unit_assert(unit, rclient_data->did_call_recv_header_cb, "`rclient` s_on_client_recv_header() not called");
+    (void) ah_unit_assert(unit, rclient_data->did_call_recv_headers_cb, "`rclient` s_on_client_recv_headers() not called");
+    (void) ah_unit_assert(unit, !rclient_data->did_call_recv_chunk_line_cb, "`rclient` s_on_client_recv_chunk_line() was called");
+    (void) ah_unit_assert(unit, !rclient_data->did_call_recv_data_cb, "`rclient` s_on_client_recv_data() was called");
+    (void) ah_unit_assert(unit, rclient_data->did_call_recv_end_cb, "`rclient` s_on_client_recv_end() not called");
 
     ah_unit_assert(unit, ah_loop_is_term(&loop), "`loop` never terminated");
 }

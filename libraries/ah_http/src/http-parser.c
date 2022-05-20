@@ -332,7 +332,7 @@ ah_err_t ah_i_http_header_name_eq(const char* expected_lowercase, const char* ac
     return false;
 }
 
-ah_err_t ah_i_http_header_value_has_csv(const char* value, const char* csv_lowercase, const char** rest)
+ah_err_t ah_i_http_header_value_find_csv(const char* value, const char* csv_lowercase, const char** rest)
 {
     ah_assert_if_debug(value != NULL);
 
@@ -405,7 +405,7 @@ ah_err_t ah_i_http_header_value_to_size(const char* value, size_t* size)
 
     ah_err_t err;
 
-    size_t size0;
+    size_t size0 = 0u;
     for (;;) {
         const char ch = value[0u];
         if (ch <= '0' || ch >= '9') {
