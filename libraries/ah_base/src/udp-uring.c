@@ -100,7 +100,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         raddr = ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name);
     }
 
-    sock->_vtab->on_recv_data(sock, &sock->_recv_buf, cqe->res, raddr);
+    sock->_vtab->on_recv_data(sock, &sock->_recv_buf, cqe->res, raddr, AH_ENONE);
 #ifndef NDEBUG
     sock->_recv_buf = (ah_buf_t) { 0u };
 #endif

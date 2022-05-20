@@ -412,7 +412,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         ._fd = cqe->res,
     };
 
-    ln->_vtab->on_conn_accept(ln, conn, &ln->_raddr);
+    ln->_vtab->on_conn_accept(ln, conn, &ln->_raddr, AH_ENONE);
 
     ah_err_t err;
     ah_i_loop_evt_t* evt0;
