@@ -7,7 +7,7 @@
 #ifndef AH_LOOP_H_
 #define AH_LOOP_H_
 
-#include "internal/loop.h"
+#include "internal/_loop.h"
 
 struct ah_loop {
     AH_I_LOOP_FIELDS

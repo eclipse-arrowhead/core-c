@@ -13,14 +13,10 @@
 
 typedef void* (*ah_alloc_cb)(void* ptr, size_t size);
 
-ah_extern void ah_dealloc(ah_alloc_cb alloc_cb, void* ptr);
-ah_extern void* ah_malloc(ah_alloc_cb alloc_cb, size_t size);
-ah_extern void* ah_malloc_zeroed(ah_alloc_cb alloc_cb, size_t size);
-ah_extern void* ah_malloc_array(ah_alloc_cb alloc_cb, size_t array_length, size_t item_size);
-ah_extern void* ah_calloc(ah_alloc_cb alloc_cb, size_t array_length, size_t item_size);
-ah_extern void* ah_realloc_array(ah_alloc_cb alloc_cb, void* ptr, size_t new_array_length, size_t item_size);
-ah_extern void* ah_realloc_array_zero_expansion(ah_alloc_cb alloc_cb, void* ptr, size_t old_array_length,
-    size_t new_array_length, size_t item_size);
-ah_extern void* ah_realloc_array_larger(ah_alloc_cb alloc_cb, void* ptr, size_t* array_length, size_t item_size);
+ah_extern void ah_dealloc(ah_alloc_cb a, void* ptr);
+ah_extern void* ah_malloc(ah_alloc_cb a, size_t size);
+ah_extern void* ah_malloc_array(ah_alloc_cb a, size_t array_length, size_t item_size);
+ah_extern void* ah_realloc_array(ah_alloc_cb a, void* ptr, size_t new_array_length, size_t item_size);
+ah_extern void* ah_realloc_array_larger(ah_alloc_cb a, void* ptr, size_t* array_length, size_t item_size);
 
 #endif

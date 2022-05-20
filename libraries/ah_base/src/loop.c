@@ -8,12 +8,15 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
+#include "ah/intrin.h"
 #include "ah/math.h"
+#include "loop-evt.h"
 
 static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list);
 static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, ah_i_loop_evt_page_t** page_list,
     ah_i_loop_evt_t** free_list);
 static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t* evt_page_list);
+static void s_cancel_all_pending_events(ah_i_loop_evt_page_t* evt_page_list, ah_i_loop_evt_t* evt_free_list);
 
 static void s_term(ah_loop_t* loop);
 
@@ -175,6 +178,7 @@ static void s_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
+    s_cancel_all_pending_events(loop->_evt_page_list, loop->_evt_free_list);
     s_dealloc_evt_page_list(loop->_alloc_cb, loop->_evt_page_list);
 
     ah_i_loop_term(loop);
@@ -184,6 +188,28 @@ static void s_term(ah_loop_t* loop)
 #endif
 
     loop->_state = AH_I_LOOP_STATE_TERMINATED;
+}
+
+static void s_cancel_all_pending_events(ah_i_loop_evt_page_t* evt_page_list, ah_i_loop_evt_t* evt_free_list)
+{
+    ah_assert_if_debug(evt_page_list != NULL);
+    ah_assert_if_debug(evt_free_list != NULL);
+
+    // Mark all free events.
+    for (ah_i_loop_evt_t* free_evt = evt_free_list; free_evt != NULL; free_evt = free_evt->_next_free) {
+        free_evt->_subject = NULL;
+    }
+
+    // Call all non-free events.
+    for (ah_i_loop_evt_page_t* page = evt_page_list; page != NULL; page = page->_next_page) {
+        for (size_t i = 1; i < AH_I_LOOP_EVT_PAGE_CAPACITY; i += 1) {
+            ah_i_loop_evt_t* evt = &page->_evt_array[i];
+            if (evt->_subject == NULL) {
+                continue;
+            }
+            ah_i_loop_evt_call_as_canceled(evt);
+        }
+    }
 }
 
 ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop)
@@ -235,7 +261,7 @@ ah_err_t ah_loop_term(ah_loop_t* loop)
 
 bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err)
 {
-    if (ah_loop_is_term(loop)) {
+    if (ah_loop_is_term(loop) || (loop->_pending_err != AH_ENONE && loop->_pending_err != err)) {
         return false;
     }
     loop->_pending_err = err;
@@ -261,7 +287,7 @@ ah_err_t ah_i_loop_evt_alloc(ah_loop_t* loop, ah_i_loop_evt_t** evt)
     ah_assert_if_debug(evt != NULL);
 
     if (ah_loop_is_term(loop)) {
-        return AH_ESTATE;
+        return AH_ECANCELED;
     }
 
     if (loop->_evt_free_list == NULL) {

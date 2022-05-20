@@ -12,6 +12,7 @@
 
 void test_buf(ah_unit_t* unit);
 void test_err(ah_unit_t* unit);
+void test_ip(ah_unit_t* unit);
 void test_math(ah_unit_t* unit);
 void test_sock(ah_unit_t* unit);
 void test_task(ah_unit_t* unit);
@@ -21,15 +22,17 @@ void test_udp(ah_unit_t* unit);
 
 int main(void)
 {
-    (void) printf("Arrowhead Base C Library Unit Tests\n"
-                  "- Source Commit: %s\n"
-                  "- Platform:      %s\n",
+    (void) printf(
+        "Arrowhead Base C Library Unit Tests\n"
+        "- Source Commit: %s\n"
+        "- Platform:      %s\n",
         ah_lib_commit_str(), ah_lib_platform_str());
 
     struct ah_unit unit = { 0 };
 
     test_buf(&unit);
     test_err(&unit);
+    test_ip(&unit);
     test_math(&unit);
     test_sock(&unit);
     test_task(&unit);

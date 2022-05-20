@@ -7,6 +7,10 @@
 #include "ah/sock.h"
 
 #include "ah/assert.h"
+#include "ah/err.h"
+
+#include <inttypes.h>
+#include <stdio.h>
 
 ah_extern void ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v4* ipaddr)
 {
@@ -18,7 +22,9 @@ ah_extern void ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port, con
 #if AH_I_SOCKADDR_HAS_SIZE
         .size = sizeof(struct sockaddr_in),
 #endif
-        .family = AH_SOCKFAMILY_IPV4, .port = port, .ipaddr = *ipaddr,
+        .family = AH_SOCKFAMILY_IPV4,
+        .port = port,
+        .ipaddr = *ipaddr,
     };
 }
 
@@ -48,10 +54,10 @@ ah_extern bool ah_sockaddr_is_ip_wildcard(const ah_sockaddr_t* sockaddr)
 
     switch (sockaddr->as_any.family) {
     case AH_SOCKFAMILY_IPV4:
-        return ah_ipaddr_v4_is_wildcard(sockaddr->as_ipv4.ipaddr);
+        return ah_ipaddr_v4_is_wildcard(&sockaddr->as_ipv4.ipaddr);
 
     case AH_SOCKFAMILY_IPV6:
-        return ah_ipaddr_v6_is_wildcard(sockaddr->as_ipv6.ipaddr);
+        return ah_ipaddr_v6_is_wildcard(&sockaddr->as_ipv6.ipaddr);
 
     default:
         return false;
@@ -69,5 +75,97 @@ ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr)
 
     default:
         return false;
+    }
+}
+
+ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* dest, size_t* dest_size)
+{
+    ah_assert_if_debug(sockaddr != NULL);
+    ah_assert_if_debug(dest != NULL);
+    ah_assert_if_debug(dest_size != NULL);
+
+    ah_err_t err;
+    size_t dest_rem = *dest_size;
+
+    switch (sockaddr->as_any.family) {
+    case AH_SOCKFAMILY_IPV4: {
+        size_t ipaddr_size = dest_rem;
+        err = ah_ipaddr_v4_stringify(&sockaddr->as_ipv4.ipaddr, dest, &ipaddr_size);
+        if (err != AH_ENONE) {
+            return err;
+        }
+        dest = &dest[ipaddr_size];
+        dest_rem -= ipaddr_size;
+
+        size_t port_size;
+        const int n = snprintf(dest, dest_rem, ":%" PRIu16, sockaddr->as_ipv4.port);
+        if (n < 0) {
+            return AH_EOPNOTSUPP;
+        }
+        port_size = (size_t) n;
+        if (port_size == dest_rem) {
+            return AH_ENOSPC;
+        }
+
+        *dest_size = ipaddr_size + port_size;
+        return AH_ENONE;
+    }
+
+    case AH_SOCKFAMILY_IPV6: {
+        if (dest_rem <= 1u) {
+            return AH_ENOSPC;
+        }
+        dest[0u] = '[';
+        dest = &dest[1u];
+        dest_rem -= 1u;
+
+        size_t ipaddr_size = dest_rem;
+        err = ah_ipaddr_v6_stringify(&sockaddr->as_ipv6.ipaddr, dest, &ipaddr_size);
+        if (err != AH_ENONE) {
+            return err;
+        }
+        dest = &dest[ipaddr_size];
+        dest_rem -= ipaddr_size;
+
+        size_t zone_id_size;
+        if (sockaddr->as_ipv6.zone_id != 0u) {
+            const int n = snprintf(dest, dest_rem, "%%25%" PRIu32, sockaddr->as_ipv6.zone_id);
+            if (n < 0) {
+                return AH_EOPNOTSUPP;
+            }
+            zone_id_size = (size_t) n;
+            if (zone_id_size == dest_rem) {
+                return AH_ENOSPC;
+            }
+            dest = &dest[zone_id_size];
+            dest_rem -= ipaddr_size;
+        }
+        else {
+            zone_id_size = 0u;
+        }
+
+        if (dest_rem <= 1u) {
+            return AH_ENOSPC;
+        }
+        dest[0u] = ']';
+        dest = &dest[1u];
+        dest_rem -= 1u;
+
+        size_t port_size;
+        const int n = snprintf(dest, dest_rem, ":%" PRIu16, sockaddr->as_ipv4.port);
+        if (n < 0) {
+            return AH_EOPNOTSUPP;
+        }
+        port_size = (size_t) n;
+        if (port_size == dest_rem) {
+            return AH_ENOSPC;
+        }
+
+        *dest_size = 1u + ipaddr_size + zone_id_size + 1u + port_size;
+        return AH_ENONE;
+    }
+
+    default:
+        return AH_EPROTONOSUPPORT;
     }
 }

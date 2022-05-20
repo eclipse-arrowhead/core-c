@@ -6,7 +6,9 @@
 
 #include "ah/unit.h"
 
+#include <ah/err.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -77,6 +79,33 @@ bool ah_i_unit_assertf(struct ah_i_unit unit, bool is_success, const char* forma
     return false;
 }
 
+bool ah_i_unit_assert_cstr_eq(struct ah_i_unit unit, const char* a, const char* b, const char* message)
+{
+    if (unit.external == NULL) {
+        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
+        return false;
+    }
+
+    unit.external->assertion_count += 1;
+
+    if (a == b) {
+        return true;
+    }
+    if (a == NULL || b == NULL) {
+        goto fail;
+    }
+    if (strcmp(a, b) == 0) {
+        return true;
+    }
+
+fail:
+    unit.external->fail_count += 1;
+
+    (void) printf("FAIL %s (%s:%d) %s\n\t\"%s\" != \"%s\"\n", unit.func, unit.file, unit.line, message, a, b);
+
+    return false;
+}
+
 bool ah_i_unit_assert_enum_eq(struct ah_i_unit unit, int a, int b, const char* (*tostr_cb)(int) )
 {
     if (unit.external == NULL) {
@@ -98,6 +127,27 @@ bool ah_i_unit_assert_enum_eq(struct ah_i_unit unit, int a, int b, const char* (
 
     (void) printf("FAIL %s (%s:%d) [%s] != [%s]; %d != %d\n", unit.func, unit.file, unit.line, tostr_cb(a), tostr_cb(b),
         a, b);
+
+    return false;
+}
+
+bool ah_i_unit_assert_err_eq(struct ah_i_unit unit, ah_err_t a, ah_err_t b, const char* message)
+{
+    if (unit.external == NULL) {
+        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
+        return false;
+    }
+
+    unit.external->assertion_count += 1;
+
+    if (a == b) {
+        return true;
+    }
+
+    unit.external->fail_count += 1;
+
+    (void) printf("FAIL %s (%s:%d) [%s] != [%s]; %d != %d\n\t%s\n", unit.func, unit.file, unit.line, ah_strerror(a),
+        ah_strerror(b), a, b, message);
 
     return false;
 }
@@ -154,26 +204,6 @@ bool ah_i_unit_assert_signed_eq(struct ah_i_unit unit, intmax_t a, intmax_t b, c
     unit.external->fail_count += 1;
 
     (void) printf("FAIL %s (%s:%d) %s; %" PRIiMAX " != %" PRIiMAX "\n", unit.func, unit.file, unit.line, message, a, b);
-
-    return false;
-}
-
-bool ah_i_unit_assert_str_eq(struct ah_i_unit unit, const char* a, const char* b, const char* message)
-{
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
-
-    unit.external->assertion_count += 1;
-
-    if (strcmp(a, b) == 0) {
-        return true;
-    }
-
-    unit.external->fail_count += 1;
-
-    (void) printf("FAIL %s (%s:%d) %s\n\t\"%s\" != \"%s\"\n", unit.func, unit.file, unit.line, message, a, b);
 
     return false;
 }
