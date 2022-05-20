@@ -163,6 +163,10 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             goto report_err;
         }
 
+        if (nread == 0) {
+            break;
+        }
+
         if (ah_unlikely(ah_buf_get_size(&buf) < (size_t) nread)) {
             err = AH_EDOM;
             goto report_err;
@@ -412,9 +416,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_assert_if_debug(ln != NULL);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
-        if ((ah_err_t) kev->data != ECANCELED) {
-            ln->_vtab->on_listen(ln, (ah_err_t) kev->data);
-        }
+        ln->_vtab->on_listen(ln, (ah_err_t) kev->data);
         return;
     }
 

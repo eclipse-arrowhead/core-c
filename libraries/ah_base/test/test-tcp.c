@@ -302,6 +302,10 @@ static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
 
     ah_unit_t* unit = user_data->unit;
 
+    if (err == AH_ECANCELED) {
+        return;
+    }
+
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

@@ -154,6 +154,12 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
+    if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) != 0 && cqe->res == 0)) {
+        conn->_shutdown_flags |= AH_TCP_SHUTDOWN_RD;
+        err = AH_EEOF;
+        goto report_err;
+    }
+
     if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) < (size_t) cqe->res)) {
         err = AH_EDOM;
         goto report_err;
@@ -392,9 +398,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_assert_if_debug(ln != NULL);
 
     if (ah_unlikely(cqe->res < 0)) {
-        if (cqe->res != -ECANCELED) {
-            ln->_vtab->on_conn_accept(ln, NULL, NULL, -cqe->res);
-        }
+        ln->_vtab->on_conn_accept(ln, NULL, NULL, -cqe->res);
         goto prep_another_accept;
     }
 
@@ -472,7 +476,7 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln)
     }
 
     // These events are safe to ignore. No other errors should be possible.
-    ah_assert_if_debug(err == AH_ENOMEM || err == AH_ENOBUFS || err == AH_ESTATE);
+    ah_assert_if_debug(err == AH_ENOMEM || err == AH_ENOBUFS || err == AH_ECANCELED);
 
     err = ah_i_sock_close(ln->_fd);
     if (err == AH_EINTR) {

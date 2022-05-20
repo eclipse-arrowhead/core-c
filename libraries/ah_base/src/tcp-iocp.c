@@ -211,6 +211,12 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
         goto report_err;
     }
 
+    if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) != 0 && nread == 0)) {
+        conn->_shutdown_flags |= AH_TCP_SHUTDOWN_RD;
+        err = AH_EEOF;
+        goto report_err;
+    }
+
     if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) < (size_t) nread)) {
         err = AH_EDOM;
         goto report_err;
@@ -479,9 +485,6 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt)
     DWORD n_bytes_transferred;
     err = ah_i_loop_evt_get_result(evt, &n_bytes_transferred);
     if (err != AH_ENONE) {
-        if (err == AH_ECANCELED) {
-            return;
-        }
         goto close_accept_fd_and_report_err;
     }
 
