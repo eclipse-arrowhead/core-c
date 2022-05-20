@@ -6,8 +6,10 @@
 
 #include "ah/http.h"
 
+#include "http-msg-queue.h"
 #include "http-parser.h"
 #include "http-utils.h"
+#include "http-writer.h"
 
 #include <ah/assert.h>
 #include <ah/err.h>
@@ -34,12 +36,8 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err);
-static void s_write_msg(ah_http_client_t* cln);
+static void ah_i_http_write_msg(ah_http_client_t* cln);
 static ah_err_t s_realloc_res_rw(ah_http_client_t* cln);
-
-static bool s_write_crlf(ah_buf_rw_t* rw);
-static bool s_write_cstr(ah_buf_rw_t* rw, const char* cstr);
-static bool s_write_size_as_string(ah_buf_rw_t* rw, size_t size, unsigned base);
 
 static const ah_tcp_conn_vtab_t s_vtab = {
     .on_open = s_on_open,
@@ -503,13 +501,13 @@ ah_extern ah_err_t ah_http_client_send(ah_http_client_t* cln, ah_http_msg_t* msg
     }
 
     if (ah_i_http_msg_queue_is_empty_then_add(&cln->_out_queue, msg)) {
-        s_write_msg(cln);
+        ah_i_http_write_msg(cln);
     }
 
     return AH_ENONE;
 }
 
-static void s_write_msg(ah_http_client_t* cln)
+static void ah_i_http_write_msg(ah_http_client_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
 
@@ -533,16 +531,16 @@ try_next:
 
     // Write request/status line to head buffer.
     if (cln->_is_local) {
-        (void) s_write_cstr(&rw, msg->line);
+        (void) ah_i_http_write_cstr(&rw, msg->line);
         (void) ah_buf_rw_write1(&rw, ' ');
     }
-    (void) s_write_cstr(&rw, "HTTP/1.");
+    (void) ah_i_http_write_cstr(&rw, "HTTP/1.");
     (void) ah_buf_rw_write1(&rw, '0' + msg->version.minor);
     if (!cln->_is_local) {
         (void) ah_buf_rw_write1(&rw, ' ');
-        (void) s_write_cstr(&rw, msg->line);
+        (void) ah_i_http_write_cstr(&rw, msg->line);
     }
-    (void) s_write_crlf(&rw);
+    (void) ah_i_http_write_crlf(&rw);
 
     // Write host header to head buffer of outgoing request, if HTTP version is
     // 1.1 or above and no such header has been provided.
@@ -558,7 +556,7 @@ try_next:
         }
 
         if (host_is_not_specified) {
-            (void) s_write_cstr(&rw, "host:");
+            (void) ah_i_http_write_cstr(&rw, "host:");
 
             ah_sockaddr_t raddr = *cln->_raddr;
             if (raddr.as_any.family == AH_SOCKFAMILY_IPV6 && raddr.as_ipv6.zone_id != 0u) {
@@ -575,17 +573,17 @@ try_next:
             }
             (void) ah_buf_rw_juken(&rw, nwritten);
 
-            (void) s_write_crlf(&rw);
+            (void) ah_i_http_write_crlf(&rw);
         }
     }
 
     // Write other headers to head buffer.
     if (msg->headers != NULL) {
         for (header = &msg->headers[0u]; header->name != NULL; header = &header[1u]) {
-            (void) s_write_cstr(&rw, header->name);
+            (void) ah_i_http_write_cstr(&rw, header->name);
             (void) ah_buf_rw_write1(&rw, ':');
-            (void) s_write_cstr(&rw, header->value);
-            (void) s_write_crlf(&rw);
+            (void) ah_i_http_write_cstr(&rw, header->value);
+            (void) ah_i_http_write_crlf(&rw);
         }
     }
 
@@ -622,12 +620,12 @@ try_next:
     default:
         ah_unreachable();
     }
-    (void) s_write_cstr(&rw, "content-length:");
-    (void) s_write_size_as_string(&rw, content_length, 10u);
-    (void) s_write_crlf(&rw);
+    (void) ah_i_http_write_cstr(&rw, "content-length:");
+    (void) ah_i_http_write_size_as_string(&rw, content_length, 10u);
+    (void) ah_i_http_write_crlf(&rw);
 
 headers_end:
-    if (!s_write_crlf(&rw)) {
+    if (!ah_i_http_write_crlf(&rw)) {
         err = AH_EOVERFLOW;
         goto report_err_and_try_next;
     }
@@ -717,7 +715,7 @@ static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err)
         return;
     }
 
-    s_write_msg(cln);
+    ah_i_http_write_msg(cln);
 }
 
 ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* data)
@@ -810,11 +808,11 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
     ah_buf_rw_init_for_writing_to(&rw, &chunk->_line_buf);
 
     // Write chunk line to buffer.
-    (void) s_write_size_as_string(&rw, chunk_size, 16u);
+    (void) ah_i_http_write_size_as_string(&rw, chunk_size, 16u);
     if (chunk->ext != NULL) {
-        (void) s_write_cstr(&rw, chunk->ext);
+        (void) ah_i_http_write_cstr(&rw, chunk->ext);
     }
-    if (!s_write_crlf(&rw)) {
+    if (!ah_i_http_write_crlf(&rw)) {
         err = AH_EOVERFLOW;
         goto report_err_and_try_next;
     }
@@ -877,9 +875,9 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     // Write trailer chunk line to buffer.
     (void) ah_buf_rw_write1(&rw, '0');
     if (trailer->ext != NULL) {
-        (void) s_write_cstr(&rw, trailer->ext);
+        (void) ah_i_http_write_cstr(&rw, trailer->ext);
     }
-    if (!s_write_crlf(&rw)) {
+    if (!ah_i_http_write_crlf(&rw)) {
         err = AH_EOVERFLOW;
         goto report_err_and_try_next;
     }
@@ -888,13 +886,13 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     if (trailer->headers != NULL) {
         ah_http_header_t* header = &trailer->headers[0u];
         for (; header->name != NULL; header = &header[1u]) {
-            (void) s_write_cstr(&rw, header->name);
+            (void) ah_i_http_write_cstr(&rw, header->name);
             (void) ah_buf_rw_write1(&rw, ':');
-            (void) s_write_cstr(&rw, header->value);
-            (void) s_write_crlf(&rw);
+            (void) ah_i_http_write_cstr(&rw, header->value);
+            (void) ah_i_http_write_crlf(&rw);
         }
     }
-    (void) s_write_crlf(&rw);
+    (void) ah_i_http_write_crlf(&rw);
 
     // Prepare message with complete trailer.
     err = ah_tcp_msg_init(&trailer->_msg, (ah_bufs_t) { .items = &trailer->_buf, .length = 1u });
@@ -997,73 +995,4 @@ void ah_i_http_client_init_accepted(ah_http_client_t* cln, ah_http_server_t* srv
 const ah_tcp_conn_vtab_t* ah_i_http_client_get_conn_vtab()
 {
     return &s_vtab;
-}
-
-static bool s_write_crlf(ah_buf_rw_t* rw)
-{
-    ah_assert_if_debug(rw != NULL);
-
-    if ((rw->end - rw->wr) < 2u) {
-        return false;
-    }
-
-    rw->wr[0u] = '\r';
-    rw->wr[1u] = '\n';
-    rw->wr = &rw->wr[2u];
-
-    return true;
-}
-
-static bool s_write_cstr(ah_buf_rw_t* rw, const char* cstr)
-{
-    ah_assert_if_debug(rw != NULL);
-
-    const uint8_t* c = (const uint8_t*) cstr;
-    uint8_t* wr = rw->wr;
-
-    while (wr != rw->end) {
-        if (c[0u] == '\0') {
-            rw->wr = wr;
-            return true;
-        }
-
-        wr[0u] = c[0u];
-
-        wr = &wr[1u];
-        c = &c[1u];
-    }
-
-    return false;
-}
-
-static bool s_write_size_as_string(ah_buf_rw_t* rw, size_t size, unsigned base)
-{
-    ah_assert_if_debug(rw != NULL);
-    ah_assert_if_debug(base >= 10u && base <= 16u);
-
-    if (size == 0u) {
-        return ah_buf_rw_write1(rw, '0');
-    }
-
-    uint8_t buf[20];
-    uint8_t* off = &buf[sizeof(buf) - 1u];
-    const uint8_t* end = &buf[sizeof(buf)];
-
-    uint64_t s = size;
-    for (;;) {
-        uint8_t digit = s % base;
-        if (digit < 10u) {
-            off[0u] = '0' + digit;
-        }
-        else {
-            off[0u] = 'A' + digit - 10u;
-        }
-        s /= base;
-        if (s == 0u) {
-            break;
-        }
-        off = &off[-1];
-    }
-
-    return ah_buf_rw_writen(rw, off, (size_t) (end - off));
 }
