@@ -65,7 +65,12 @@ static void s_should_execute_task_with_no_err(ah_unit_t* unit)
         return;
     }
 
-    err = ah_loop_run_until(&loop, &(struct ah_time) { 0u });
+    ah_time_t deadline;
+    err = ah_time_add(ah_time_now(), 100 * AH_TIMEDIFF_MS, &deadline);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
+    err = ah_loop_run_until(&loop, &deadline);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
