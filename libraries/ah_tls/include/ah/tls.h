@@ -13,14 +13,22 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct ah_tls_x509_cert ah_tls_x509_cert_t;
-typedef struct ah_tls_priv_key ah_tls_priv_key_t;
+#define AH_TLS_VER_1_2 0x12
+#define AH_TLS_VER_1_3 0x13
 
-struct ah_tls_x509_cert {
+typedef struct ah_tls_priv_key ah_tls_priv_key_t;
+typedef struct ah_tls_trans ah_tls_trans_t;
+typedef struct ah_tls_x509_cert ah_tls_x509_cert_t;
+
+struct ah_tls_priv_key {
     int todo;
 };
 
-struct ah_tls_priv_key {
+struct ah_tls_trans {
+    int todo;
+};
+
+struct ah_tls_x509_cert {
     int todo;
 };
 

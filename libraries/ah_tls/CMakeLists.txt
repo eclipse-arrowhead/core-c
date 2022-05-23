@@ -6,13 +6,23 @@ set(
     SOURCE_FILES
     include/ah/tls.h
     include/ah/internal/_tls.h
-    src/tls-openssl3.c
 )
+
+set(LINKED_LIBRARIES)
+
+include(FindWolfSSL)
+
+if (wolfssl_FOUND)
+    list(APPEND SOURCE_FILES src/tls-wolfssl.c)
+    list(APPEND LINKED_LIBRARIES wolfssl::wolfssl)
+else ()
+    message(FATAL_ERROR "No supported TLS/SSL library available (`wolfssl`). Required.")
+endif ()
 
 add_library(ah_tls STATIC ${SOURCE_FILES})
 target_include_directories(ah_tls
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(ah_tls PRIVATE ah_base)
+target_link_libraries(ah_tls PRIVATE ah_base ${LINKED_LIBRARIES})
 
 set(
     TEST_FILES
