@@ -11,7 +11,6 @@ set(
 set(
     LINKED_LIBRARIES
     ah_base
-    ah_x509
 )
 
 include(FindMbedTLS)

@@ -133,6 +133,7 @@ ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_d
 
 ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop)
 {
+    ah_assert_if_debug(trans != NULL);
     ah_assert_if_debug(loop != NULL);
 
     static const ah_tcp_trans_vtab_t s_vtab = {

@@ -7,5 +7,4 @@
 #ifndef AH_INTERNAL_TLS_H_
 #define AH_INTERNAL_TLS_H_
 
-
 #endif
