@@ -8,15 +8,19 @@ set(
     include/ah/internal/_tls.h
 )
 
-set(LINKED_LIBRARIES)
+set(
+    LINKED_LIBRARIES
+    ah_base
+    ah_x509
+)
 
-include(FindWolfSSL)
+include(FindMbedTLS)
 
-if (wolfssl_FOUND)
-    list(APPEND SOURCE_FILES src/tls-wolfssl.c)
-    list(APPEND LINKED_LIBRARIES wolfssl::wolfssl)
+if (mbedtls_FOUND)
+    list(APPEND SOURCE_FILES src/tls-mbedtls.c)
+    list(APPEND LINKED_LIBRARIES MbedTLS::mbedtls)
 else ()
-    message(FATAL_ERROR "No supported TLS/SSL library available (`wolfssl`). Required.")
+    message(FATAL_ERROR "No supported TLS/SSL library available (`MbedTLS`). Required.")
 endif ()
 
 add_library(ah_tls STATIC ${SOURCE_FILES})

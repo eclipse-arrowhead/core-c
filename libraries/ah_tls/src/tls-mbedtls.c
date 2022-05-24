@@ -7,7 +7,7 @@
 #include "ah/tls.h"
 
 #include <ah/err.h>
-#include <wolfssl/ssl.h>
+#include <mbedtls/ssl.h>
 
 ah_err_t ah_tls_x509_cert_parse_der(ah_tls_x509_cert_t* cert, const uint8_t* der, size_t len)
 {
