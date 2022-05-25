@@ -8,17 +8,20 @@
 
 #include <ah/assert.h>
 #include <ah/err.h>
+#include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
 
 typedef struct s_tls_ctx {
     mbedtls_ssl_config conf;
+    mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_entropy_context entropy;
     mbedtls_net_context net;
     mbedtls_ssl_context ssl;
 } s_tls_ctx_t;
 
+static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 static ah_err_t s_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 static ah_err_t s_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg);
 static ah_err_t s_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
@@ -40,7 +43,7 @@ ah_extern ah_err_t ah_tls_trans_init(ah_tcp_trans_t* trans, ah_tls_ctx_t* ctx)
 
     static const ah_tcp_trans_vtab_t s_vtab = {
         .conn_init = ah_tcp_conn_init,
-        .conn_open = ah_tcp_conn_open,
+        .conn_open = s_conn_open,
         .conn_connect = s_conn_connect,
         .conn_read_start = ah_tcp_conn_read_start,
         .conn_read_stop = ah_tcp_conn_read_stop,
@@ -54,12 +57,25 @@ ah_extern ah_err_t ah_tls_trans_init(ah_tcp_trans_t* trans, ah_tls_ctx_t* ctx)
         .listener_close = s_listener_close,
     };
 
-    (void) s_vtab; // TODO: This is not quite right.
-
-    ah_tcp_trans_init(trans, ctx->_loop);
-    trans->_data = ctx;
+    *trans = (ah_tcp_trans_t) {
+        ._vtab = &s_vtab,
+        ._loop = ctx->_loop,
+        ._data = ctx,
+    };
 
     return AH_ENONE;
+}
+
+static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
+{
+    ah_err_t err = ah_tcp_conn_open(conn, laddr);
+
+    if (err == AH_ENONE) {
+        s_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
+        (void) ctx;
+    }
+
+    return err;
 }
 
 static ah_err_t s_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
@@ -67,7 +83,7 @@ static ah_err_t s_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
     s_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
     (void) raddr;
 
-    // TODO: Should this be here? Why not in the init function?
+    // TODO: Should this be here? Why not in the open function?
     mbedtls_ssl_set_bio(&ctx->ssl, conn, s_ssl_send, s_ssl_recv, NULL);
 
     return AH_EOPNOTSUPP;
