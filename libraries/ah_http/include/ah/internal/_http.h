@@ -19,6 +19,7 @@
 
 #define AH_I_HTTP_CLIENT_FIELDS           \
  ah_tcp_conn_t _conn;                     \
+ void* _user_data;                        \
  const ah_sockaddr_t* _raddr;             \
  const ah_tcp_trans_vtab_t* _trans_vtab;  \
  const struct ah_http_client_vtab* _vtab; \
@@ -33,6 +34,7 @@
 
 #define AH_I_HTTP_SERVER_FIELDS          \
  ah_tcp_listener_t _ln;                  \
+ void* _user_data;                       \
  const ah_tcp_trans_vtab_t* _trans_vtab; \
  const ah_http_server_vtab_t* _vtab;     \
  const ah_http_client_vtab_t* _client_vtab;

@@ -181,8 +181,8 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
         n_bytes_left -= (size_t) nread;
     }
 
-    if (ah_unlikely((kev->flags & EV_EOF) != 0) && kev->fflags != 0u) {
-        err = (ah_err_t) kev->fflags;
+    if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
+        err = kev->fflags != 0u ? (ah_err_t) kev->fflags : AH_EEOF;
         conn->_shutdown_flags |= AH_TCP_SHUTDOWN_RD;
         goto report_err;
     }

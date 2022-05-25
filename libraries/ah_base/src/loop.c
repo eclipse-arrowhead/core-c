@@ -202,7 +202,7 @@ static void s_cancel_all_pending_events(ah_i_loop_evt_page_t* evt_page_list, ah_
 
     // Call all non-free events.
     for (ah_i_loop_evt_page_t* page = evt_page_list; page != NULL; page = page->_next_page) {
-        for (size_t i = 1; i < AH_I_LOOP_EVT_PAGE_CAPACITY; i += 1) {
+        for (size_t i = 0u; i < AH_I_LOOP_EVT_PAGE_CAPACITY; i += 1u) {
             ah_i_loop_evt_t* evt = &page->_evt_array[i];
             if (evt->_subject == NULL) {
                 continue;

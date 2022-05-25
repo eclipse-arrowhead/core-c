@@ -131,11 +131,8 @@ ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_d
     ln->_user_data = user_data;
 }
 
-ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop)
+ah_extern ah_tcp_trans_t ah_tcp_trans_get_default()
 {
-    ah_assert_if_debug(trans != NULL);
-    ah_assert_if_debug(loop != NULL);
-
     static const ah_tcp_trans_vtab_t s_vtab = {
         .conn_init = ah_tcp_conn_init,
         .conn_open = ah_tcp_conn_open,
@@ -152,10 +149,9 @@ ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop)
         .listener_close = ah_tcp_listener_close,
     };
 
-    *trans = (ah_tcp_trans_t) {
-        ._vtab = &s_vtab,
-        ._loop = loop,
-        ._data = NULL,
+    return (ah_tcp_trans_t) {
+        .vtab = &s_vtab,
+        .data = NULL,
     };
 }
 

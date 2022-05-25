@@ -48,20 +48,20 @@ static const ah_tcp_conn_vtab_t s_vtab = {
     .on_write_done = s_on_write_done,
 };
 
-ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
+ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
 {
-    if (cln == NULL || trans._vtab == NULL || trans._loop == NULL || vtab == NULL) {
+    if (cln == NULL || trans.vtab == NULL || loop == NULL || vtab == NULL) {
         return AH_EINVAL;
     }
 
-    ah_assert_if_debug(trans._vtab->conn_init != NULL);
-    ah_assert_if_debug(trans._vtab->conn_open != NULL);
-    ah_assert_if_debug(trans._vtab->conn_connect != NULL);
-    ah_assert_if_debug(trans._vtab->conn_read_start != NULL);
-    ah_assert_if_debug(trans._vtab->conn_read_stop != NULL);
-    ah_assert_if_debug(trans._vtab->conn_write != NULL);
-    ah_assert_if_debug(trans._vtab->conn_shutdown != NULL);
-    ah_assert_if_debug(trans._vtab->conn_close != NULL);
+    ah_assert_if_debug(trans.vtab->conn_init != NULL);
+    ah_assert_if_debug(trans.vtab->conn_open != NULL);
+    ah_assert_if_debug(trans.vtab->conn_connect != NULL);
+    ah_assert_if_debug(trans.vtab->conn_read_start != NULL);
+    ah_assert_if_debug(trans.vtab->conn_read_stop != NULL);
+    ah_assert_if_debug(trans.vtab->conn_write != NULL);
+    ah_assert_if_debug(trans.vtab->conn_shutdown != NULL);
+    ah_assert_if_debug(trans.vtab->conn_close != NULL);
 
     ah_assert_if_debug(vtab->on_open != NULL);
     ah_assert_if_debug(vtab->on_connect != NULL);
@@ -75,13 +75,13 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_tcp_trans_t tra
 
     *cln = (ah_http_client_t) { 0u };
 
-    ah_err_t err = trans._vtab->conn_init(&cln->_conn, trans._loop, &s_vtab);
+    ah_err_t err = trans.vtab->conn_init(&cln->_conn, loop, &s_vtab);
     if (err != AH_ENONE) {
         return err;
     }
+    ah_tcp_conn_set_user_data(&cln->_conn, trans.data);
 
-    cln->_conn._trans_data = trans._data;
-    cln->_trans_vtab = trans._vtab;
+    cln->_trans_vtab = trans.vtab;
     cln->_vtab = vtab;
 
     cln->_in_state = S_IN_STATE_INIT;
@@ -438,7 +438,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
     }
 
 handle_chunk_or_trailer_parse_err:
-    if (err != AH_EEOF) {
+    if (err != AH_EAGAIN) {
         goto report_err_and_close_conn;
     }
     if (cln->_is_preventing_realloc) {
@@ -453,7 +453,7 @@ handle_chunk_or_trailer_parse_err:
     return;
 
 handle_head_parse_err:
-    if (err != AH_EEOF) {
+    if (err != AH_EAGAIN) {
         goto report_err_and_close_conn;
     }
     if (ah_buf_rw_get_writable_size(&cln->_in_buf_rw) == 0u) {
@@ -704,6 +704,7 @@ static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err)
         ah_tcp_conn_t* conn = ah_http_client_get_conn(cln);
         if (!ah_tcp_conn_is_readable(conn)) {
             (void) cln->_trans_vtab->conn_close(conn);
+            return;
         }
     }
 
@@ -969,14 +970,14 @@ ah_extern void* ah_http_client_get_user_data(const ah_http_client_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
 
-    return ah_tcp_conn_get_user_data(&cln->_conn);
+    return cln->_user_data;
 }
 
 ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data)
 {
     ah_assert_if_debug(cln != NULL);
 
-    ah_tcp_conn_set_user_data(&cln->_conn, user_data);
+    cln->_user_data = user_data;
 }
 
 void ah_i_http_client_init_accepted(ah_http_client_t* cln, ah_http_server_t* srv, const ah_sockaddr_t* raddr)

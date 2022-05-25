@@ -31,7 +31,6 @@
  ah_loop_t* _loop;                     \
  const ah_tcp_conn_vtab_t* _vtab;      \
  struct ah_i_tcp_msg_queue _msg_queue; \
- void* _trans_data;                    \
  void* _user_data;                     \
  ah_tcp_shutdown_t _shutdown_flags;    \
  uint8_t _state;                       \
@@ -41,7 +40,6 @@
  ah_loop_t* _loop;                     \
  const ah_tcp_listener_vtab_t* _vtab;  \
  const ah_tcp_conn_vtab_t* _conn_vtab; \
- void* _trans_data;                    \
  void* _user_data;                     \
  uint8_t _state;                       \
  AH_I_TCP_LISTENER_PLATFORM_FIELDS
@@ -49,11 +47,6 @@
 #define AH_I_TCP_MSG_FIELDS \
  ah_tcp_msg_t* _next;       \
  AH_I_TCP_MSG_PLATFORM_FIELDS
-
-#define AH_I_TCP_TRANS_FIELDS      \
- ah_loop_t* _loop;                 \
- const ah_tcp_trans_vtab_t* _vtab; \
- void* _data;
 
 struct ah_i_tcp_msg_queue {
     ah_tcp_msg_t* _head;

@@ -19,6 +19,8 @@ typedef struct s_tls_ctx {
     mbedtls_entropy_context entropy;
     mbedtls_net_context net;
     mbedtls_ssl_context ssl;
+
+    ah_tcp_trans_t trans;
 } s_tls_ctx_t;
 
 static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
@@ -35,11 +37,16 @@ static ah_err_t s_listener_close(ah_tcp_listener_t* ln);
 int s_ssl_send(void* ctx, const unsigned char* buf, size_t len);
 int s_ssl_recv(void* ctx, unsigned char* buf, size_t len);
 
-ah_extern ah_err_t ah_tls_trans_init(ah_tcp_trans_t* trans, ah_tls_ctx_t* ctx)
+ah_extern ah_tcp_trans_t ah_tls_trans_using(ah_tcp_trans_t trans, ah_tls_ctx_t* ctx)
 {
-    if (trans == NULL || ctx == NULL) {
-        return AH_EINVAL;
+    if (ctx == NULL) {
+        return trans;
     }
+
+    s_tls_ctx_t* ctx0 = ctx->_impl;
+    ah_assert_if_debug(ctx0 != NULL);
+
+    ctx0->trans = trans;
 
     static const ah_tcp_trans_vtab_t s_vtab = {
         .conn_init = ah_tcp_conn_init,
@@ -57,13 +64,10 @@ ah_extern ah_err_t ah_tls_trans_init(ah_tcp_trans_t* trans, ah_tls_ctx_t* ctx)
         .listener_close = s_listener_close,
     };
 
-    *trans = (ah_tcp_trans_t) {
-        ._vtab = &s_vtab,
-        ._loop = ctx->_loop,
-        ._data = ctx,
+    return (ah_tcp_trans_t) {
+        .vtab = &s_vtab,
+        .data = ctx,
     };
-
-    return AH_ENONE;
 }
 
 static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
@@ -92,9 +96,9 @@ static ah_err_t s_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 static s_tls_ctx_t* s_get_ctx_from_conn(ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
-    ah_assert_if_debug(conn->_trans_data != NULL);
 
-    ah_tls_ctx_t* ctx = conn->_trans_data;
+    ah_tls_ctx_t* ctx = ah_tcp_conn_get_user_data(conn);
+    ah_assert_if_debug(ctx != NULL);
     ah_assert_if_debug(ctx->_impl != NULL);
 
     return ctx->_impl;

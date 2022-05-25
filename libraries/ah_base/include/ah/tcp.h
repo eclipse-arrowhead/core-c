@@ -55,8 +55,10 @@ struct ah_tcp_msg {
     AH_I_TCP_MSG_FIELDS
 };
 
+// A TCP-based transport.
 struct ah_tcp_trans {
-    AH_I_TCP_TRANS_FIELDS
+    const ah_tcp_trans_vtab_t* vtab;
+    void* data;
 };
 
 struct ah_tcp_trans_vtab {
@@ -111,6 +113,6 @@ ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_d
 ah_extern ah_err_t ah_tcp_msg_init(ah_tcp_msg_t* msg, ah_bufs_t bufs);
 ah_extern ah_bufs_t ah_tcp_msg_unwrap(ah_tcp_msg_t* msg);
 
-ah_extern void ah_tcp_trans_init(ah_tcp_trans_t* trans, ah_loop_t* loop);
+ah_extern ah_tcp_trans_t ah_tcp_trans_get_default();
 
 #endif

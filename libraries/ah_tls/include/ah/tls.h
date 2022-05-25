@@ -42,6 +42,6 @@ struct ah_tls_trans {
     ah_tcp_trans_t _tcp_tran;
 };
 
-ah_extern ah_err_t ah_tls_trans_init(ah_tcp_trans_t* trans, ah_tls_ctx_t* ctx);
+ah_extern ah_tcp_trans_t ah_tls_trans_using(ah_tcp_trans_t trans, ah_tls_ctx_t* ctx);
 
 #endif

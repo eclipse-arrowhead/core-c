@@ -312,6 +312,12 @@ void s_on_server_listen(ah_http_server_t* srv, ah_err_t err)
     struct s_http_server_user_data* user_data = ah_http_server_get_user_data(srv);
     ah_unit_t* unit = user_data->unit;
 
+    if (err == AH_ECANCELED) {
+        err = ah_http_server_close(srv);
+        (void) ah_unit_assert_err_eq(unit, AH_ENONE, err);
+        return;
+    }
+
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -429,12 +435,11 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
     }
 
     // Setup plain TCP transport.
-    ah_tcp_trans_t transport;
-    ah_tcp_trans_init(&transport, &loop);
+    ah_tcp_trans_t transport = ah_tcp_trans_get_default();
 
     // Setup HTTP server.
     ah_http_server_t server;
-    err = ah_http_server_init(&server, transport, &s_server_vtab);
+    err = ah_http_server_init(&server, &loop, transport, &s_server_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -442,7 +447,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
 
     // Setup local HTTP client.
     ah_http_client_t lclient;
-    err = ah_http_client_init(&lclient, transport, &s_client_vtab);
+    err = ah_http_client_init(&lclient, &loop, transport, &s_client_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

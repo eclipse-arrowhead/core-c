@@ -76,7 +76,7 @@ ah_err_t ah_i_http_parse_chunk_line(ah_buf_rw_t* rw, size_t* size, const char** 
         }
     }
 
-    return AH_EEOF;
+    return AH_EAGAIN;
 
 parse_ext:
 
@@ -97,7 +97,7 @@ parse_ext:
         return AH_EILSEQ;
     }
 
-    return AH_EEOF;
+    return AH_EAGAIN;
 
 finish:
 
@@ -155,7 +155,7 @@ ah_err_t ah_i_http_parse_header(ah_buf_rw_t* rw, ah_http_header_t* header)
     uint8_t ch;
 
     if (!ah_buf_rw_read1(rw, &ch)) {
-        return AH_EEOF;
+        return AH_EAGAIN;
     }
     if (!s_is_vchar_obs_text(ch)) {
         return AH_EILSEQ;
@@ -203,7 +203,7 @@ ah_err_t ah_i_http_parse_req_line(ah_buf_rw_t* rw, const char** line, ah_http_ve
 
     const size_t method_len = s_skip_while(rw, s_is_tchar);
     if (ah_buf_rw_get_readable_size(rw) == 0u) {
-        return AH_EEOF;
+        return AH_EAGAIN;
     }
     if (method_len == 0u) {
         return AH_EILSEQ;
@@ -216,7 +216,7 @@ ah_err_t ah_i_http_parse_req_line(ah_buf_rw_t* rw, const char** line, ah_http_ve
 
     const size_t target_len = s_skip_while(rw, s_is_rchar);
     if (ah_buf_rw_get_readable_size(rw) == 0u) {
-        return AH_EEOF;
+        return AH_EAGAIN;
     }
     if (target_len == 0u) {
         return AH_EILSEQ;
@@ -267,7 +267,7 @@ ah_err_t ah_i_http_parse_stat_line(ah_buf_rw_t* rw, const char** line, ah_http_v
 
     const size_t code_len = s_skip_while(rw, s_is_digit);
     if (ah_buf_rw_get_readable_size(rw) == 0u) {
-        return AH_EEOF;
+        return AH_EAGAIN;
     }
     if (code_len != 3u) {
         return AH_EILSEQ;
@@ -296,7 +296,7 @@ ah_err_t ah_i_http_parse_stat_line(ah_buf_rw_t* rw, const char** line, ah_http_v
 static ah_err_t s_parse_version(ah_buf_rw_t* rw, ah_http_ver_t* version)
 {
     if (ah_buf_rw_get_readable_size(rw) < 8u) {
-        return AH_EEOF;
+        return AH_EAGAIN;
     }
     if (memcmp(rw->rd, "HTTP/", 5u) != 0) {
         return AH_EILSEQ;
@@ -486,7 +486,7 @@ static ah_err_t s_skip_ch(ah_buf_rw_t* rw, char ch)
 {
     uint8_t ch0;
     if (!ah_buf_rw_peek1(rw, &ch0)) {
-        return AH_EEOF;
+        return AH_EAGAIN;
     }
 
     if (((uint8_t) ch) != ch0) {
@@ -501,7 +501,7 @@ static ah_err_t s_skip_ch(ah_buf_rw_t* rw, char ch)
 static ah_err_t s_skip_crlf(ah_buf_rw_t* rw)
 {
     if (ah_buf_rw_get_readable_size(rw) < 2u) {
-        return AH_EEOF;
+        return AH_EAGAIN;
     }
     if (memcmp(rw->rd, (uint8_t[]) { '\r', '\n' }, 2u) != 0) {
         return AH_EILSEQ;
