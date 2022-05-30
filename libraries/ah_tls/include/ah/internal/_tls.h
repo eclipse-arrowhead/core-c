@@ -7,4 +7,11 @@
 #ifndef AH_INTERNAL_TLS_H_
 #define AH_INTERNAL_TLS_H_
 
+#define AH_I_TLS_CTX_FIELDS \
+ ah_loop_t* _loop;          \
+ ah_tcp_trans_t _trans;     \
+ void* _impl;               \
+ void* _user_data;          \
+ ah_tls_err_t _last_err;
+
 #endif
