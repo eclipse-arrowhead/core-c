@@ -19,10 +19,6 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(opts != NULL);
 
-    if (opts->alloc_cb == NULL) {
-        opts->alloc_cb = realloc;
-    }
-
     if (opts->capacity == 0u) {
         opts->capacity = 1024u;
     }
@@ -43,13 +39,13 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
         goto close_fd_and_return_err;
     }
 
-    struct kevent* kqueue_changelist = ah_malloc_array(opts->alloc_cb, opts->capacity, sizeof(struct kevent));
+    struct kevent* kqueue_changelist = calloc(opts->capacity, sizeof(struct kevent));
     if (kqueue_changelist == NULL) {
         err = errno;
         goto close_fd_and_return_err;
     }
 
-    struct kevent* kqueue_eventlist = ah_malloc_array(opts->alloc_cb, opts->capacity, sizeof(struct kevent));
+    struct kevent* kqueue_eventlist = calloc(opts->capacity, sizeof(struct kevent));
     if (kqueue_eventlist == NULL) {
         err = AH_ENOMEM;
         goto close_fd_free_changelist_and_return_err;
@@ -63,7 +59,7 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
     return AH_ENONE;
 
 close_fd_free_changelist_and_return_err:
-    ah_dealloc(opts->alloc_cb, kqueue_changelist);
+    free(kqueue_changelist);
 
 close_fd_and_return_err:
     (void) close(kqueue_fd);
@@ -211,8 +207,8 @@ ah_extern void ah_i_loop_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
-    ah_dealloc(loop->_alloc_cb, loop->_kqueue_changelist);
-    ah_dealloc(loop->_alloc_cb, loop->_kqueue_eventlist);
+    free(loop->_kqueue_changelist);
+    free(loop->_kqueue_eventlist);
 
     (void) close(loop->_kqueue_fd);
 }

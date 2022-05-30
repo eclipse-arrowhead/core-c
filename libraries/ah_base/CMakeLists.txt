@@ -7,7 +7,6 @@ set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(
     SOURCE_FILES
     include/ah/abort.h
-    include/ah/alloc.h
     include/ah/assert.h
     include/ah/buf.h
     include/ah/defs.h
@@ -29,7 +28,6 @@ set(
     include/ah/time.h
     include/ah/udp.h
     src/abort.c
-    src/alloc.c
     src/buf.c
     src/err.c
     src/ip.c

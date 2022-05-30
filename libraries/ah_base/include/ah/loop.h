@@ -14,7 +14,6 @@ struct ah_loop {
 };
 
 struct ah_loop_opts {
-    ah_alloc_cb alloc_cb;
     size_t capacity;
 };
 

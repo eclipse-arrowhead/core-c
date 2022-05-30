@@ -7,7 +7,6 @@
 #ifndef AH_INTERNAL_LOOP_H_
 #define AH_INTERNAL_LOOP_H_
 
-#include "../alloc.h"
 #include "../defs.h"
 #include "../time.h"
 
@@ -29,8 +28,6 @@
 #define AH_I_LOOP_EVT_PAGE_CAPACITY ((AH_I_LOOP_EVT_PAGE_SIZE / sizeof(ah_i_loop_evt_t)) - 1)
 
 #define AH_I_LOOP_FIELDS                    \
- ah_alloc_cb _alloc_cb;                     \
-                                            \
  struct ah_i_loop_evt_page* _evt_page_list; \
  struct ah_i_loop_evt* _evt_free_list;      \
                                             \

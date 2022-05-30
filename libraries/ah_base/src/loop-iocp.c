@@ -8,6 +8,7 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
+#include "ah/math.h"
 #include "ah/task.h"
 
 #include <winsock2.h>
@@ -26,10 +27,6 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(opts != NULL);
-
-    if (opts->alloc_cb == NULL) {
-        opts->alloc_cb = realloc;
-    }
 
     if (opts->capacity == 0u) {
         opts->capacity = 1024u;
@@ -176,7 +173,7 @@ static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_c
 
     struct ah_i_loop_task_entry* entries;
 
-    entries = ah_malloc_array(alloc_cb, initial_capacity, sizeof(struct ah_i_loop_task_entry));
+    entries = calloc(initial_capacity, sizeof(struct ah_i_loop_task_entry));
     if (entries == NULL) {
         return AH_ENOMEM;
     }
@@ -265,7 +262,7 @@ static void s_task_queue_term(struct ah_i_loop_task_queue* queue, ah_alloc_cb al
     ah_assert_if_debug(queue != NULL);
     ah_assert_if_debug(alloc_cb != NULL);
 
-    ah_dealloc(alloc_cb, queue->_entries);
+    free(queue->_entries);
 
 #ifndef NDEBUG
     *queue = (struct ah_i_loop_task_queue) { 0u };
@@ -284,14 +281,25 @@ ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, 
     struct ah_i_loop_task_queue* queue = &loop->_task_queue;
 
     if (queue->_length == queue->_capacity) {
-        const size_t entry_size = sizeof(struct ah_i_loop_task_entry);
-        struct ah_i_loop_task_entry* entries;
+        size_t new_queue_capacity;
+        if (queue->_capacity == 0u) {
+            new_queue_capacity = 8u;
+        }
+        else if (ah_add_size(queue->_capacity, queue->_capacity / 2u, &new_queue_capacity) != AH_ENONE) {
+            return AH_ENOMEM;
+        }
 
-        entries = ah_realloc_array_larger(loop->_alloc_cb, queue->_entries, &queue->_capacity, entry_size);
+        size_t total_size;
+        if (ah_mul_size(new_queue_capacity, sizeof(struct ah_i_loop_task_entry), &total_size) != AH_ENONE) {
+            return AH_ENOMEM;
+        }
+
+        struct ah_i_loop_task_entry* entries = realloc(queue->_entries, total_size);
         if (entries == NULL) {
             return AH_ENOMEM;
         }
 
+        queue->_capacity = new_queue_capacity;
         queue->_entries = entries;
     }
 

@@ -12,10 +12,11 @@
 #include "ah/math.h"
 #include "loop-evt.h"
 
-static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list);
-static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, ah_i_loop_evt_page_t** page_list,
-    ah_i_loop_evt_t** free_list);
-static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t* evt_page_list);
+#include <stdlib.h>
+
+static ah_err_t s_alloc_evt_page(ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list);
+static ah_err_t s_alloc_evt_page_list(size_t cap, ah_i_loop_evt_page_t** page_list, ah_i_loop_evt_t** free_list);
+static void s_dealloc_evt_page_list(ah_i_loop_evt_page_t* evt_page_list);
 static void s_cancel_all_pending_events(ah_i_loop_evt_page_t* evt_page_list, ah_i_loop_evt_t* evt_free_list);
 
 static void s_term(ah_loop_t* loop);
@@ -33,18 +34,16 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
         return err;
     }
 
-    ah_assert_if_debug(opts->alloc_cb != NULL);
     ah_assert_if_debug(opts->capacity != 0u);
 
     ah_i_loop_evt_page_t* evt_page_list;
     ah_i_loop_evt_t* evt_free_list;
-    err = s_alloc_evt_page_list(opts->alloc_cb, opts->capacity, &evt_page_list, &evt_free_list);
+    err = s_alloc_evt_page_list(opts->capacity, &evt_page_list, &evt_free_list);
     if (err != AH_ENONE) {
         ah_i_loop_term(loop);
         return err;
     }
 
-    loop->_alloc_cb = opts->alloc_cb;
     loop->_evt_page_list = evt_page_list;
     loop->_evt_free_list = evt_free_list;
     loop->_now = ah_time_now();
@@ -53,10 +52,8 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
     return AH_ENONE;
 }
 
-static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, ah_i_loop_evt_page_t** page_list,
-    ah_i_loop_evt_t** free_list)
+static ah_err_t s_alloc_evt_page_list(size_t cap, ah_i_loop_evt_page_t** page_list, ah_i_loop_evt_t** free_list)
 {
-    ah_assert_if_debug(alloc_cb != NULL);
     ah_assert_if_debug(page_list != NULL);
     ah_assert_if_debug(free_list != NULL);
 
@@ -64,9 +61,9 @@ static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, ah_i_loo
     ah_i_loop_evt_t* free_list_new = NULL;
 
     for (size_t evt_cap_remaining = cap; evt_cap_remaining != 0;) {
-        ah_err_t err = s_alloc_evt_page(alloc_cb, &page_list_new, &free_list_new);
+        ah_err_t err = s_alloc_evt_page(&page_list_new, &free_list_new);
         if (err != AH_ENONE) {
-            s_dealloc_evt_page_list(alloc_cb, page_list_new);
+            s_dealloc_evt_page_list(page_list_new);
             return err;
         }
         if (ah_sub_size(evt_cap_remaining, AH_I_LOOP_EVT_PAGE_CAPACITY, &evt_cap_remaining) != AH_ENONE) {
@@ -80,14 +77,13 @@ static ah_err_t s_alloc_evt_page_list(ah_alloc_cb alloc_cb, size_t cap, ah_i_loo
     return AH_ENONE;
 }
 
-static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list)
+static ah_err_t s_alloc_evt_page(ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list)
 {
-    ah_assert_if_debug(alloc_cb != NULL);
     ah_assert_if_debug(evt_page != NULL);
     ah_assert_if_debug(free_list != NULL);
 
     ah_i_loop_evt_page_t* evt_page_next = *evt_page;
-    ah_i_loop_evt_page_t* evt_page_first = ah_malloc(alloc_cb, sizeof(ah_i_loop_evt_page_t));
+    ah_i_loop_evt_page_t* evt_page_first = malloc(sizeof(ah_i_loop_evt_page_t));
     if (evt_page_first == NULL) {
         return AH_ENOMEM;
     }
@@ -107,14 +103,12 @@ static ah_err_t s_alloc_evt_page(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t** ev
     return AH_ENONE;
 }
 
-static void s_dealloc_evt_page_list(ah_alloc_cb alloc_cb, ah_i_loop_evt_page_t* evt_page_list)
+static void s_dealloc_evt_page_list(ah_i_loop_evt_page_t* evt_page_list)
 {
-    ah_assert_if_debug(alloc_cb != NULL);
-
     ah_i_loop_evt_page_t* page = evt_page_list;
     while (page != NULL) {
         ah_i_loop_evt_page_t* next_page = page->_next_page;
-        ah_dealloc(alloc_cb, page);
+        free(page);
         page = next_page;
     }
 }
@@ -179,7 +173,7 @@ static void s_term(ah_loop_t* loop)
     ah_assert_if_debug(loop != NULL);
 
     s_cancel_all_pending_events(loop->_evt_page_list, loop->_evt_free_list);
-    s_dealloc_evt_page_list(loop->_alloc_cb, loop->_evt_page_list);
+    s_dealloc_evt_page_list(loop->_evt_page_list);
 
     ah_i_loop_term(loop);
 
@@ -291,7 +285,7 @@ ah_err_t ah_i_loop_evt_alloc(ah_loop_t* loop, ah_i_loop_evt_t** evt)
     }
 
     if (loop->_evt_free_list == NULL) {
-        ah_err_t err = s_alloc_evt_page(loop->_alloc_cb, &loop->_evt_page_list, &loop->_evt_free_list);
+        ah_err_t err = s_alloc_evt_page(&loop->_evt_page_list, &loop->_evt_free_list);
         if (err != AH_ENONE) {
             return err;
         }

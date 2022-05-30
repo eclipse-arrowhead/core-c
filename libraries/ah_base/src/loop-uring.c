@@ -18,10 +18,6 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(opts != NULL);
 
-    if (opts->alloc_cb == NULL) {
-        opts->alloc_cb = realloc;
-    }
-
     if (opts->capacity == 0u) {
         opts->capacity = 1024u;
     }
