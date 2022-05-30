@@ -29,6 +29,7 @@
 
 #define AH_I_TCP_CONN_FIELDS           \
  ah_loop_t* _loop;                     \
+ ah_tcp_trans_t _trans;                \
  const ah_tcp_conn_vtab_t* _vtab;      \
  struct ah_i_tcp_msg_queue _msg_queue; \
  void* _user_data;                     \
@@ -38,6 +39,7 @@
 
 #define AH_I_TCP_LISTENER_FIELDS       \
  ah_loop_t* _loop;                     \
+ ah_tcp_trans_t _trans;                \
  const ah_tcp_listener_vtab_t* _vtab;  \
  const ah_tcp_conn_vtab_t* _conn_vtab; \
  void* _user_data;                     \

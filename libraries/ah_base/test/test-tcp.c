@@ -372,10 +372,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Setup listener.
 
     ah_tcp_listener_t ln;
-    err = ah_tcp_listener_init(&ln, &loop, &s_listener_vtab);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
+    ah_tcp_listener_init(&ln, &loop, ah_tcp_trans_get_default(), &s_listener_vtab);
 
     ln_user_data.accept_user_data.ln = &ln;
     ah_tcp_listener_set_user_data(&ln, &ln_user_data);
@@ -383,11 +380,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Setup connection.
 
     ah_tcp_conn_t conn;
-
-    ah_tcp_conn_init(&conn, &loop, &s_conn_vtab);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
+    ah_tcp_conn_init(&conn, &loop, ah_tcp_trans_get_default(), &s_conn_vtab);
 
     conn_user_data.ln_addr = &ln_user_data.addr;
     ah_tcp_conn_set_user_data(&conn, &conn_user_data);

@@ -21,7 +21,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev);
 
 static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn);
 
-ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
+ah_err_t ah_i_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     if (conn == NULL || raddr == NULL || !ah_sockaddr_is_ip(raddr)) {
         return AH_EINVAL;
@@ -94,7 +94,7 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt, struct kevent* kev)
     conn->_vtab->on_connect(conn, err);
 }
 
-ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_conn_read_start(ah_tcp_conn_t* conn)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -193,7 +193,7 @@ report_err:
     conn->_vtab->on_read_data(conn, NULL, 0u, err);
 }
 
-ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -215,7 +215,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
+ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
     if (conn == NULL || msg == NULL) {
         return AH_EINVAL;
@@ -326,7 +326,7 @@ prep_next:
     }
 }
 
-ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_conn_close(ah_tcp_conn_t* conn)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -361,7 +361,7 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_vtab_t* conn_vtab)
+ah_err_t ah_i_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_vtab_t* conn_vtab)
 {
     if (ln == NULL || conn_vtab == NULL) {
         return AH_EINVAL;
@@ -444,6 +444,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         *conn = (ah_tcp_conn_t) {
             ._loop = ln->_loop,
+            ._trans = ln->_trans,
             ._vtab = ln->_conn_vtab,
             ._state = AH_I_TCP_CONN_STATE_CONNECTED,
             ._fd = fd,
@@ -457,7 +458,7 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 }
 
-ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln)
+ah_err_t ah_i_tcp_listener_close(ah_tcp_listener_t* ln)
 {
     if (ln == NULL) {
         return AH_EINVAL;

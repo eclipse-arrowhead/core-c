@@ -26,26 +26,6 @@
 # define SHUT_RDWR SD_BOTH
 #endif
 
-ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
-{
-    if (conn == NULL) {
-        return AH_EINVAL;
-    }
-    if (conn->_state != AH_I_TCP_CONN_STATE_CLOSED) {
-        return AH_ESTATE;
-    }
-
-    ah_err_t err = ah_i_sock_open_bind(conn->_loop, laddr, SOCK_STREAM, &conn->_fd);
-
-    if (err == AH_ENONE) {
-        conn->_state = AH_I_TCP_CONN_STATE_OPEN;
-    }
-
-    conn->_vtab->on_open(conn, err);
-
-    return AH_ENONE;
-}
-
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
 {
     if (conn == NULL || laddr == NULL) {
@@ -113,7 +93,7 @@ ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enable
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
+ah_extern ah_err_t ah_i_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
 {
     if (conn == NULL || (flags & ~AH_TCP_SHUTDOWN_RDWR) != 0u) {
         return AH_EINVAL;
@@ -173,7 +153,7 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t f
     return err;
 }
 
-ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
     if (ln == NULL) {
         return AH_EINVAL;
@@ -250,5 +230,25 @@ ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_
     if (setsockopt(ln->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
         return errno;
     }
+    return AH_ENONE;
+}
+
+ah_err_t ah_i_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
+{
+    if (conn == NULL) {
+        return AH_EINVAL;
+    }
+    if (conn->_state != AH_I_TCP_CONN_STATE_CLOSED) {
+        return AH_ESTATE;
+    }
+
+    ah_err_t err = ah_i_sock_open_bind(conn->_loop, laddr, SOCK_STREAM, &conn->_fd);
+
+    if (err == AH_ENONE) {
+        conn->_state = AH_I_TCP_CONN_STATE_OPEN;
+    }
+
+    conn->_vtab->on_open(conn, err);
+
     return AH_ENONE;
 }

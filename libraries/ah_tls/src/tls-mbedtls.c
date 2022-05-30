@@ -49,7 +49,6 @@ ah_extern ah_tcp_trans_t ah_tls_trans_using(ah_tcp_trans_t trans, ah_tls_ctx_t* 
     ctx0->trans = trans;
 
     static const ah_tcp_trans_vtab_t s_vtab = {
-        .conn_init = ah_tcp_conn_init,
         .conn_open = s_conn_open,
         .conn_connect = s_conn_connect,
         .conn_read_start = ah_tcp_conn_read_start,
@@ -58,7 +57,6 @@ ah_extern ah_tcp_trans_t ah_tls_trans_using(ah_tcp_trans_t trans, ah_tls_ctx_t* 
         .conn_shutdown = s_conn_shutdown,
         .conn_close = s_conn_close,
 
-        .listener_init = ah_tcp_listener_init,
         .listener_open = ah_tcp_listener_open,
         .listener_listen = s_listener_listen,
         .listener_close = s_listener_close,

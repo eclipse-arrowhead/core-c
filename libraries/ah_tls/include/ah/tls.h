@@ -7,7 +7,6 @@
 #ifndef AH_TLS_H_
 #define AH_TLS_H_
 
-#include "ah/alloc.h"
 #include "internal/_tls.h"
 
 #include <ah/buf.h>
@@ -32,7 +31,6 @@ typedef struct ah_tls_pkey ah_tls_pkey_t;
 typedef struct ah_tls_trans ah_tls_trans_t;
 
 struct ah_tls_ctx {
-    ah_alloc_cb _alloc_cb;
     void* _impl;
     ah_loop_t* _loop;
     void* _user_data;
