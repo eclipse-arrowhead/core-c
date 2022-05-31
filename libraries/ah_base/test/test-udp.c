@@ -255,7 +255,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     };
 
     ah_udp_sock_t recv_sock;
-    err = ah_udp_sock_init(&recv_sock, &loop, &s_sock_vtab);
+    err = ah_udp_sock_init(&recv_sock, &loop, ah_udp_trans_get_default(), &s_sock_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -265,7 +265,10 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     // Setup sender socket.
 
     ah_buf_t send_buf;
-    ah_buf_init(&send_buf, (uint8_t*) "Hello, Arrowhead!", 18u);
+    err = ah_buf_init(&send_buf, (uint8_t*) "Hello, Arrowhead!", 18u);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
 
     ah_udp_msg_t send_msg;
     ah_bufs_t send_bufs = { .items = &send_buf, .length = 1u };
@@ -279,7 +282,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     };
 
     ah_udp_sock_t send_sock;
-    err = ah_udp_sock_init(&send_sock, &loop, &s_sock_vtab);
+    err = ah_udp_sock_init(&send_sock, &loop, ah_udp_trans_get_default(), &s_sock_vtab);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

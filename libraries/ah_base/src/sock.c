@@ -12,10 +12,11 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-ah_extern void ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v4* ipaddr)
+ah_extern ah_err_t ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v4* ipaddr)
 {
-    ah_assert_if_debug(sockaddr != NULL);
-    ah_assert_if_debug(ipaddr != NULL);
+    if (sockaddr == NULL || ipaddr == NULL) {
+        return AH_EINVAL;
+    }
 
     sockaddr->as_ipv4 = (struct ah_sockaddr_ipv4)
     {
@@ -26,12 +27,15 @@ ah_extern void ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port, con
         .port = port,
         .ipaddr = *ipaddr,
     };
+
+    return AH_ENONE;
 }
 
-ah_extern void ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v6* ipaddr)
+ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v6* ipaddr)
 {
-    ah_assert_if_debug(sockaddr != NULL);
-    ah_assert_if_debug(ipaddr != NULL);
+    if (sockaddr == NULL || ipaddr == NULL) {
+        return AH_EINVAL;
+    }
 
     sockaddr->as_ipv6 = (struct ah_sockaddr_ipv6)
     {
@@ -40,6 +44,8 @@ ah_extern void ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, con
 #endif
         .family = AH_SOCKFAMILY_IPV4, .port = port, .ipaddr = *ipaddr,
     };
+
+    return AH_ENONE;
 }
 
 ah_extern bool ah_sockaddr_is_ip(const ah_sockaddr_t* sockaddr)

@@ -76,9 +76,9 @@ struct ah_tcp_msg {
     AH_I_TCP_MSG_FIELDS
 };
 
-ah_extern ah_tcp_trans_t ah_tcp_trans_get_default();
+ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
 
-ah_extern void ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_vtab_t* vtab);
+ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_vtab_t* vtab);
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
@@ -99,7 +99,7 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 
-ah_extern void ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_vtab_t* vtab);
+ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_vtab_t* vtab);
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_vtab_t* conn_vtab);
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);

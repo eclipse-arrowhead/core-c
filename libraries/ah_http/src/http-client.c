@@ -48,38 +48,31 @@ static const ah_tcp_conn_vtab_t s_vtab = {
     .on_write_done = s_on_write_done,
 };
 
-ah_extern void ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
+ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_vtab_t* vtab)
 {
-    ah_assert_if_debug(cln != NULL);
-
-    ah_assert_if_debug(loop != NULL);
-
-    ah_assert_if_debug(trans.vtab != NULL);
-    ah_assert_if_debug(trans.vtab->conn_open != NULL);
-    ah_assert_if_debug(trans.vtab->conn_connect != NULL);
-    ah_assert_if_debug(trans.vtab->conn_read_start != NULL);
-    ah_assert_if_debug(trans.vtab->conn_read_stop != NULL);
-    ah_assert_if_debug(trans.vtab->conn_write != NULL);
-    ah_assert_if_debug(trans.vtab->conn_shutdown != NULL);
-    ah_assert_if_debug(trans.vtab->conn_close != NULL);
-
-    ah_assert_if_debug(vtab != NULL);
-    ah_assert_if_debug(vtab->on_open != NULL);
-    ah_assert_if_debug(vtab->on_connect != NULL);
-    ah_assert_if_debug(vtab->on_close != NULL);
-    ah_assert_if_debug(vtab->on_alloc != NULL);
-    ah_assert_if_debug(vtab->on_send_done != NULL);
-    ah_assert_if_debug(vtab->on_recv_line != NULL);
-    ah_assert_if_debug(vtab->on_recv_header != NULL);
-    ah_assert_if_debug(vtab->on_recv_data != NULL);
-    ah_assert_if_debug(vtab->on_recv_end != NULL);
+    if (cln == NULL || loop == NULL || trans.vtab == NULL || vtab == NULL) {
+        return AH_EINVAL;
+    }
+    if (trans.vtab->conn_open == NULL || trans.vtab->conn_connect == NULL || trans.vtab->conn_read_start == NULL || trans.vtab->conn_read_stop == NULL) {
+        return AH_EINVAL;
+    }
+    if (trans.vtab->conn_write == NULL || trans.vtab->conn_shutdown == NULL || trans.vtab->conn_close == NULL) {
+        return AH_EINVAL;
+    }
+    if (vtab->on_open == NULL || vtab->on_connect == NULL || vtab->on_close == NULL || vtab->on_alloc == NULL) {
+        return AH_EINVAL;
+    }
+    if (vtab->on_send_done == NULL || vtab->on_recv_line == NULL || vtab->on_recv_header == NULL || vtab->on_recv_data == NULL || vtab->on_recv_end == NULL) {
+        return AH_EINVAL;
+    }
 
     *cln = (ah_http_client_t) {
         ._vtab = vtab,
         ._in_state = S_IN_STATE_INIT,
         ._is_local = true,
     };
-    ah_tcp_conn_init(&cln->_conn, loop, trans, &s_vtab);
+
+    return ah_tcp_conn_init(&cln->_conn, loop, trans, &s_vtab);
 }
 
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr)
@@ -932,42 +925,42 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 
 ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln)
 {
-    ah_assert_if_debug(cln != NULL);
+    ah_assert(cln != NULL);
 
     return &cln->_conn;
 }
 
 ah_extern ah_err_t ah_http_client_get_laddr(const ah_http_client_t* cln, ah_sockaddr_t* laddr)
 {
-    ah_assert_if_debug(cln != NULL);
+    ah_assert(cln != NULL);
 
     return ah_tcp_conn_get_laddr(&cln->_conn, laddr);
 }
 
 ah_extern ah_err_t ah_http_client_get_raddr(const ah_http_client_t* cln, ah_sockaddr_t* raddr)
 {
-    ah_assert_if_debug(cln != NULL);
+    ah_assert(cln != NULL);
 
     return ah_tcp_conn_get_raddr(&cln->_conn, raddr);
 }
 
 ah_extern ah_loop_t* ah_http_client_get_loop(const ah_http_client_t* cln)
 {
-    ah_assert_if_debug(cln != NULL);
+    ah_assert(cln != NULL);
 
     return ah_tcp_conn_get_loop(&cln->_conn);
 }
 
 ah_extern void* ah_http_client_get_user_data(const ah_http_client_t* cln)
 {
-    ah_assert_if_debug(cln != NULL);
+    ah_assert(cln != NULL);
 
     return ah_tcp_conn_get_user_data(&cln->_conn);
 }
 
 ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data)
 {
-    ah_assert_if_debug(cln != NULL);
+    ah_assert(cln != NULL);
 
     ah_tcp_conn_set_user_data(&cln->_conn, user_data);
 }

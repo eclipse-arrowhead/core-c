@@ -14,7 +14,7 @@
 # include <ws2ipdef.h>
 #endif
 
-ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr)
 {
     if (sock == NULL || sock->_loop == NULL) {
         return AH_EINVAL;

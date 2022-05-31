@@ -439,12 +439,18 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
 
     // Setup HTTP server.
     ah_http_server_t server;
-    ah_http_server_init(&server, &loop, transport, &s_server_vtab);
+    err = ah_http_server_init(&server, &loop, transport, &s_server_vtab);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
     ah_http_server_set_user_data(&server, &server_user_data);
 
     // Setup local HTTP client.
     ah_http_client_t lclient;
-    ah_http_client_init(&lclient, &loop, transport, &s_client_vtab);
+    err = ah_http_client_init(&lclient, &loop, transport, &s_client_vtab);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
     ah_http_client_set_user_data(&lclient, &lclient_user_data);
 
     // Store reference to local client so the server can open it later.

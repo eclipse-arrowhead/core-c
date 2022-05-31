@@ -36,13 +36,14 @@ ah_extern ah_err_t ah_udp_msg_init(ah_udp_msg_t* msg, ah_bufs_t bufs, ah_sockadd
 
 ah_extern ah_sockaddr_t* ah_udp_msg_get_raddr(ah_udp_msg_t* msg)
 {
-    ah_assert_if_debug(msg != NULL);
+    ah_assert(msg != NULL);
+
     return ah_i_sockaddr_from_bsd(msg->_msghdr.msg_name);
 }
 
 ah_extern ah_bufs_t ah_udp_msg_get_bufs(ah_udp_msg_t* msg)
 {
-    ah_assert_if_debug(msg != NULL);
+    ah_assert(msg != NULL);
 
     ah_bufs_t bufs;
     ah_i_bufs_from_iovec(&bufs, msg->_msghdr.msg_iov, msg->_msghdr.msg_iovlen);
