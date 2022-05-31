@@ -57,7 +57,7 @@ struct ah_tls_key {
     AH_I_TLS_KEYS_FIELDS
 };
 
-ah_extern void ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs);
+ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs);
 ah_extern ah_tls_err_t ah_tls_ctx_get_last_error(ah_tls_ctx_t* ctx);
 ah_extern ah_tcp_trans_t ah_tls_ctx_get_transport(ah_tls_ctx_t* ctx);
 ah_extern void ah_tls_ctx_term(ah_tls_ctx_t* ctx);

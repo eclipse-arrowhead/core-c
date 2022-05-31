@@ -37,12 +37,14 @@ static ah_err_t s_listener_close(ah_tcp_listener_t* ln);
 int s_ssl_send(void* void_conn, const unsigned char* buf, size_t len);
 int s_ssl_recv(void* void_conn, unsigned char* buf, size_t len);
 
-ah_extern void ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs)
+ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs)
 {
-    ah_assert_if_debug(ctx != NULL);
-    ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(trans.vtab != NULL);
-    ah_assert_if_debug(certs != NULL);
+    if (ctx == NULL || loop == NULL || trans.vtab == NULL || certs == NULL) {
+        return AH_EINVAL;
+    }
+    if (!(certs->_authorities != NULL || (certs->_own_chain != NULL && certs->_own_key != NULL))) {
+        return AH_EINVAL;
+    }
 
     *ctx = (ah_tls_ctx_t) {
         ._loop = loop,
@@ -51,11 +53,40 @@ ah_extern void ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_loop_t* loop, ah_tcp_trans_
         ._state = S_STATE_CLOSED,
     };
 
-    mbedtls_ctr_drbg_init(&ctx->_ctr_drbg);
+    int res;
+
+    // Setup source of secure random numbers.
     mbedtls_entropy_init(&ctx->_entropy);
-    mbedtls_ssl_init(&ctx->_ssl);
-    mbedtls_ssl_cache_init(&ctx->_ssl_cache);
+    mbedtls_ctr_drbg_init(&ctx->_ctr_drbg);
+    res = mbedtls_ctr_drbg_seed(&ctx->_ctr_drbg, mbedtls_entropy_func, &ctx->_entropy, NULL, 0u);
+    if (res != 0) {
+        goto handle_non_zero_res;
+    }
+
+    // Initialize and setup configuration.
     mbedtls_ssl_config_init(&ctx->_ssl_conf);
+    mbedtls_ssl_conf_rng(&ctx->_ssl_conf, mbedtls_ctr_drbg_random, &ctx->_ctr_drbg);
+    mbedtls_ssl_conf_ca_chain(&ctx->_ssl_conf, ctx->_certs->_authorities, ctx->_certs->_revocations);
+    res = mbedtls_ssl_conf_own_cert(&ctx->_ssl_conf, certs->_own_chain, certs->_own_key);
+    if (res != 0) {
+        goto handle_non_zero_res;
+    }
+
+    // Initialize and setup SSL transport.
+    mbedtls_ssl_init(&ctx->_ssl);
+    res = mbedtls_ssl_setup(&ctx->_ssl, &ctx->_ssl_conf);
+    if (res != 0) {
+        goto handle_non_zero_res;
+    }
+
+    return AH_ENONE;
+
+handle_non_zero_res:
+    if (res == MBEDTLS_ERR_SSL_ALLOC_FAILED) {
+        return AH_ENOMEM;
+    }
+    ctx->_last_mbedtls_err = res;
+    return AH_EINTERN;
 }
 
 ah_extern ah_tls_err_t ah_tls_ctx_get_last_error(ah_tls_ctx_t* ctx)
@@ -98,17 +129,7 @@ static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 
     ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
 
-    ah_tls_cert_store_t* certs = ctx->_certs;
-    if (certs->_authorities == NULL || (certs->_own_chain == NULL) != (certs->_own_key == NULL)) {
-        return AH_ESTATE;
-    }
-
     int res;
-
-    res = mbedtls_ctr_drbg_seed(&ctx->_ctr_drbg, mbedtls_entropy_func, &ctx->_entropy, NULL, 0u);
-    if (res != 0) {
-        goto handle_non_zero_res;
-    }
 
     const int endpoint = MBEDTLS_SSL_IS_CLIENT;
     const int transport = MBEDTLS_SSL_TRANSPORT_STREAM;
@@ -118,28 +139,12 @@ static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
         goto handle_non_zero_res;
     }
 
-    mbedtls_ssl_conf_ca_chain(&ctx->_ssl_conf, ctx->_certs->_authorities, NULL);
-
-    if (certs->_own_chain != NULL) {
-        res = mbedtls_ssl_conf_own_cert(&ctx->_ssl_conf, certs->_own_chain, certs->_own_key);
-        if (res != 0) {
-            goto handle_non_zero_res;
-        }
-    }
-
-    mbedtls_ssl_conf_rng(&ctx->_ssl_conf, mbedtls_ctr_drbg_random, &ctx->_ctr_drbg);
-
-    res = mbedtls_ssl_setup(&ctx->_ssl, &ctx->_ssl_conf);
-    if (res != 0) {
-        goto handle_non_zero_res;
-    }
-
     mbedtls_ssl_set_bio(&ctx->_ssl, conn, s_ssl_send, s_ssl_recv, NULL);
 
-    return ah_tcp_conn_open(conn, laddr);
+    return ctx->_trans.vtab->conn_open(conn, laddr);
 
 handle_non_zero_res:
-    if (res == MBEDTLS_ERR_SSL_ALLOC_FAILED || res == MBEDTLS_ERR_MPI_ALLOC_FAILED) {
+    if (res == MBEDTLS_ERR_MPI_ALLOC_FAILED) {
         return AH_ENOMEM;
     }
     ctx->_last_mbedtls_err = res;
@@ -155,18 +160,20 @@ static ah_tls_ctx_t* s_conn_get_ctx(ah_tcp_conn_t* conn)
 
 static ah_err_t s_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
-    (void) conn;
-    (void) raddr;
-
-    return AH_EOPNOTSUPP;
+    ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
+    return ctx->_trans.vtab->conn_connect(conn, raddr);
 }
 
 int s_ssl_send(void* void_conn, const unsigned char* buf, size_t len)
 {
-    ah_assert_if_debug(void_conn != NULL);
-    ah_assert_if_debug(buf != NULL || len == 0u);
-
     ah_tcp_conn_t* conn = void_conn;
+
+    if (conn == NULL || (buf == NULL && len != 0u)) {
+        return MBEDTLS_ERR_SSL_BAD_INPUT_DATA;
+    }
+
+    ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
+    (void) ctx;
 
     (void) conn;
     // buf/len refer to an encrypted block of data that now needs to be sent to
