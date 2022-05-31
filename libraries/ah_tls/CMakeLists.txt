@@ -19,7 +19,7 @@ if (mbedtls_FOUND)
     list(APPEND SOURCE_FILES src/tls-mbedtls.c)
     list(APPEND LINKED_LIBRARIES MbedTLS::mbedtls)
 else ()
-    message(FATAL_ERROR "No supported TLS/SSL library available (`MbedTLS`). Required.")
+    message(FATAL_ERROR "The MbedTLS library could not be found. Required.")
 endif ()
 
 add_library(ah_tls STATIC ${SOURCE_FILES})

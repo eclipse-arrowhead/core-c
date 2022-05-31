@@ -7,11 +7,41 @@
 #ifndef AH_INTERNAL_TLS_H_
 #define AH_INTERNAL_TLS_H_
 
-#define AH_I_TLS_CTX_FIELDS \
- ah_loop_t* _loop;          \
- ah_tcp_trans_t _trans;     \
- void* _impl;               \
- void* _user_data;          \
- ah_tls_err_t _last_err;
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ssl.h>
+#include <mbedtls/ssl_cache.h>
+
+#define AH_I_TLS_CERT_FIELDS \
+ mbedtls_x509_crt _x509_crt;
+
+#define AH_I_TLS_CERT_STORE_FIELDS \
+ mbedtls_x509_crt* _authorities;   \
+ mbedtls_x509_crt* _own_chain;     \
+ mbedtls_pk_context* _own_key;     \
+ mbedtls_x509_crl* _revocations;
+
+#define AH_I_TLS_CRL_FIELDS \
+ mbedtls_x509_crl _x509_crl;
+
+#define AH_I_TLS_CTX_FIELDS            \
+ ah_loop_t* _loop;                     \
+ ah_tcp_trans_t _trans;                \
+ ah_tls_cert_store_t* _certs;          \
+ unsigned _state;                      \
+                                       \
+ int _last_mbedtls_err;                \
+ ah_err_t _pending_ah_err;             \
+                                       \
+ mbedtls_ctr_drbg_context _ctr_drbg;   \
+ mbedtls_entropy_context _entropy;     \
+ mbedtls_ssl_context _ssl;             \
+ mbedtls_ssl_cache_context _ssl_cache; \
+ mbedtls_ssl_config _ssl_conf;         \
+                                       \
+ void* _user_data;
+
+#define AH_I_TLS_KEYS_FIELDS \
+ mbedtls_pk_context _pk_cxt;
 
 #endif
