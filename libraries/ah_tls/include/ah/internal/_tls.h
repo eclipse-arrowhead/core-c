@@ -25,7 +25,6 @@
  mbedtls_x509_crl _x509_crl;
 
 #define AH_I_TLS_CTX_FIELDS            \
- ah_loop_t* _loop;                     \
  ah_tcp_trans_t _trans;                \
  ah_tls_cert_store_t* _certs;          \
  unsigned _state;                      \
@@ -37,9 +36,7 @@
  mbedtls_entropy_context _entropy;     \
  mbedtls_ssl_context _ssl;             \
  mbedtls_ssl_cache_context _ssl_cache; \
- mbedtls_ssl_config _ssl_conf;         \
-                                       \
- void* _user_data;
+ mbedtls_ssl_config _ssl_conf;
 
 #define AH_I_TLS_KEYS_FIELDS \
  mbedtls_pk_context _pk_cxt;

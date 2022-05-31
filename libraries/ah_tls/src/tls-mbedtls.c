@@ -37,9 +37,9 @@ static ah_err_t s_listener_close(ah_tcp_listener_t* ln);
 int s_ssl_send(void* void_conn, const unsigned char* buf, size_t len);
 int s_ssl_recv(void* void_conn, unsigned char* buf, size_t len);
 
-ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs)
+ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs)
 {
-    if (ctx == NULL || loop == NULL || trans.vtab == NULL || certs == NULL) {
+    if (ctx == NULL || trans.vtab == NULL || certs == NULL) {
         return AH_EINVAL;
     }
     if (!(certs->_authorities != NULL || (certs->_own_chain != NULL && certs->_own_key != NULL))) {
@@ -47,7 +47,6 @@ ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_loop_t* loop, ah_tcp_tr
     }
 
     *ctx = (ah_tls_ctx_t) {
-        ._loop = loop,
         ._trans = trans,
         ._certs = certs,
         ._state = S_STATE_CLOSED,
