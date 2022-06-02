@@ -399,7 +399,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
                     { "content-type", "application/json" },
                     { NULL, NULL },
                 },
-                .body = ah_http_body_from_cstr("{\"text\":\"Hello, Arrowhead!\"}"),
+                .body = ah_http_body_from_buf(ah_buf_from((uint8_t*) "{\"text\":\"Hello, Arrowhead!\"}", 28u)),
             },
             .close_call_counter = &close_call_counter,
             .unit = unit,

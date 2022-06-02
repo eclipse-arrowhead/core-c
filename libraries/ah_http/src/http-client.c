@@ -32,7 +32,7 @@ static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
-static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err);
+static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err);
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err);
@@ -145,7 +145,7 @@ report_err_and_close_conn:
     (void) ah_tcp_conn_close(conn);
 }
 
-static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err)
+static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err)
 {
     ah_http_client_t* cln = ah_i_http_conn_to_client(conn);
 
@@ -153,7 +153,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nrea
         goto report_err_and_close_conn;
     }
 
-    ah_assert_if_debug(cln->_in_buf_rw.wr == ah_buf_get_base_const(buf));
+    ah_assert_if_debug(cln->_in_buf_rw.wr == ah_buf_get_base_const(&buf));
     (void) buf;
 
     if (!ah_buf_rw_juken(&cln->_in_buf_rw, nread)) {
@@ -505,14 +505,14 @@ try_next:
 
     cln->_is_preventing_realloc = false;
 
-    cln->_vtab->on_alloc(cln, &msg->_head_buf, true);
-    if (ah_buf_is_empty(&msg->_head_buf)) {
+    cln->_vtab->on_alloc(cln, &msg->_head.buf, true);
+    if (ah_buf_is_empty(&msg->_head.buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;
     }
 
     ah_buf_rw_t rw;
-    ah_buf_rw_init_for_writing_to(&rw, &msg->_head_buf);
+    ah_buf_rw_init_for_writing_to(&rw, &msg->_head.buf);
 
     // Write request/status line to head buffer.
     if (cln->_is_local) {
@@ -578,52 +578,29 @@ try_next:
     case AH_I_HTTP_BODY_KIND_EMPTY:
     case AH_I_HTTP_BODY_KIND_OVERRIDE:
         content_length = 0u;
-        goto headers_end;
-
-    case AH_I_HTTP_BODY_KIND_BUF:
-        content_length = msg->body._as_buf._buf._size;
-        err = ah_tcp_msg_init(&msg->_body_msg, (ah_bufs_t) { .items = &msg->body._as_buf._buf, .length = 1u });
-        if (ah_unlikely(err != AH_ENONE)) {
-            goto report_err_and_try_next;
-        }
         break;
 
-    case AH_I_HTTP_BODY_KIND_BUFS:
-        content_length = 0u;
-        for (size_t i = 0u; i < msg->body._as_bufs._bufs.length; i += 1u) {
-            err = ah_add_size(content_length, msg->body._as_bufs._bufs.items[i]._size, &content_length);
-            if (ah_unlikely(err != AH_ENONE)) {
-                goto report_err_and_try_next;
-            }
-        }
-        err = ah_tcp_msg_init(&msg->_body_msg, msg->body._as_bufs._bufs);
-        if (ah_unlikely(err != AH_ENONE)) {
-            goto report_err_and_try_next;
-        }
+    case AH_I_HTTP_BODY_KIND_MSG:
+        content_length = ah_buf_get_size(&msg->body._as_msg._msg.buf);
+        (void) ah_i_http_write_cstr(&rw, "content-length:");
+        (void) ah_i_http_write_size_as_string(&rw, content_length, 10u);
+        (void) ah_i_http_write_crlf(&rw);
         break;
 
     default:
         ah_unreachable();
     }
-    (void) ah_i_http_write_cstr(&rw, "content-length:");
-    (void) ah_i_http_write_size_as_string(&rw, content_length, 10u);
-    (void) ah_i_http_write_crlf(&rw);
 
-headers_end:
     if (!ah_i_http_write_crlf(&rw)) {
         err = AH_EOVERFLOW;
         goto report_err_and_try_next;
     }
 
     // Prepare message with request line and headers.
-    ah_buf_rw_get_readable_as_buf(&rw, &msg->_head_buf);
-    err = ah_tcp_msg_init(&msg->_head_msg, (ah_bufs_t) { .items = &msg->_head_buf, .length = 1u });
-    if (ah_unlikely(err != AH_ENONE)) {
-        goto report_err_and_try_next;
-    }
+    ah_buf_rw_get_readable_as_buf(&rw, &msg->_head.buf);
 
     // Send message with request line and headers.
-    err = ah_tcp_conn_write(&cln->_conn, &msg->_head_msg);
+    err = ah_tcp_conn_write(&cln->_conn, &msg->_head);
     if (err != AH_ENONE) {
         goto report_err_and_try_next;
     }
@@ -631,7 +608,7 @@ headers_end:
 
     // Send message with body, if any.
     if (content_length != 0u) {
-        err = ah_tcp_conn_write(&cln->_conn, &msg->_body_msg);
+        err = ah_tcp_conn_write(&cln->_conn, &msg->body._as_msg._msg);
         if (err != AH_ENONE) {
             goto report_err_and_try_next;
         }
@@ -773,28 +750,18 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
         return AH_ESTATE;
     }
 
-    // Calculate the size of the chunk.
-    size_t chunk_size = 0u;
-    ah_bufs_t bufs = ah_tcp_msg_unwrap(&chunk->data);
-    for (size_t i = 0u; i < bufs.length; i += 1u) {
-        err = ah_add_size(chunk_size, ah_buf_get_size(&bufs.items[i]), &chunk_size);
-        if (ah_unlikely(err != AH_ENONE)) {
-            goto report_err_and_try_next;
-        }
-    }
-
     // Allocate chunk line buffer.
-    cln->_vtab->on_alloc(cln, &chunk->_line_buf, true);
-    if (ah_buf_is_empty(&chunk->_line_buf)) {
+    cln->_vtab->on_alloc(cln, &chunk->_line.buf, true);
+    if (ah_buf_is_empty(&chunk->_line.buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;
     }
 
     ah_buf_rw_t rw;
-    ah_buf_rw_init_for_writing_to(&rw, &chunk->_line_buf);
+    ah_buf_rw_init_for_writing_to(&rw, &chunk->_line.buf);
 
     // Write chunk line to buffer.
-    (void) ah_i_http_write_size_as_string(&rw, chunk_size, 16u);
+    (void) ah_i_http_write_size_as_string(&rw, ah_buf_get_size(&chunk->data.buf), 16u);
     if (chunk->ext != NULL) {
         (void) ah_i_http_write_cstr(&rw, chunk->ext);
     }
@@ -804,13 +771,10 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
     }
 
     // Prepare message with chunk line.
-    err = ah_tcp_msg_init(&chunk->_line_msg, (ah_bufs_t) { .items = &chunk->_line_buf, .length = 1u });
-    if (ah_unlikely(err != AH_ENONE)) {
-        goto report_err_and_try_next;
-    }
+    ah_buf_rw_get_readable_as_buf(&rw, &chunk->_line.buf);
 
     // Send message with chunk line.
-    err = ah_tcp_conn_write(&cln->_conn, &chunk->_line_msg);
+    err = ah_tcp_conn_write(&cln->_conn, &chunk->_line);
     if (err != AH_ENONE) {
         goto report_err_and_try_next;
     }
@@ -849,14 +813,14 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     }
 
     // Allocate trailer buffer.
-    cln->_vtab->on_alloc(cln, &trailer->_buf, true);
-    if (ah_buf_is_empty(&trailer->_buf)) {
+    cln->_vtab->on_alloc(cln, &trailer->_msg.buf, true);
+    if (ah_buf_is_empty(&trailer->_msg.buf)) {
         err = AH_ENOBUFS;
         goto report_err_and_try_next;
     }
 
     ah_buf_rw_t rw;
-    ah_buf_rw_init_for_writing_to(&rw, &trailer->_buf);
+    ah_buf_rw_init_for_writing_to(&rw, &trailer->_msg.buf);
 
     // Write trailer chunk line to buffer.
     (void) ah_buf_rw_write1(&rw, '0');
@@ -881,10 +845,7 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     (void) ah_i_http_write_crlf(&rw);
 
     // Prepare message with complete trailer.
-    err = ah_tcp_msg_init(&trailer->_msg, (ah_bufs_t) { .items = &trailer->_buf, .length = 1u });
-    if (ah_unlikely(err != AH_ENONE)) {
-        goto report_err_and_try_next;
-    }
+    ah_buf_rw_get_readable_as_buf(&rw, &trailer->_msg.buf);
 
     // Send message with complete trailer.
     err = ah_tcp_conn_write(&cln->_conn, &trailer->_msg);

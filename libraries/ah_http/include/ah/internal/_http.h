@@ -14,8 +14,7 @@
 
 #define AH_I_HTTP_BODY_KIND_EMPTY    0u
 #define AH_I_HTTP_BODY_KIND_OVERRIDE 1u
-#define AH_I_HTTP_BODY_KIND_BUF      2u
-#define AH_I_HTTP_BODY_KIND_BUFS     3u
+#define AH_I_HTTP_BODY_KIND_MSG      2u
 
 #define AH_I_HTTP_CLIENT_FIELDS           \
  ah_tcp_conn_t _conn;                     \
@@ -37,39 +36,29 @@
 
 #define AH_I_HTTP_BODY_FIELDS       \
  struct ah_i_http_body_any _as_any; \
- struct ah_i_http_body_buf _as_buf; \
- struct ah_i_http_body_bufs _as_bufs;
+ struct ah_i_http_body_msg _as_msg;
 
 #define AH_I_HTTP_CHUNK_FIELDS \
- ah_buf_t _line_buf;           \
- ah_tcp_msg_t _line_msg;
+ ah_tcp_msg_t _line;
 
 #define AH_I_HTTP_MSG_FIELDS \
  struct ah_http_msg* _next;  \
- ah_buf_t _head_buf;         \
- ah_tcp_msg_t _head_msg;  \
- ah_tcp_msg_t _body_msg;  \
+ ah_tcp_msg_t _head;  \
  unsigned _n_pending_tcp_msgs;
 
 #define AH_I_HTTP_TRAILER_FIELDS \
- ah_buf_t _buf;                  \
  ah_tcp_msg_t _msg;
 
 #define AH_I_HTTP_OBODY_COMMON \
- int _kind;
+ unsigned _kind;
 
 struct ah_i_http_body_any {
     AH_I_HTTP_OBODY_COMMON
 };
 
-struct ah_i_http_body_buf {
+struct ah_i_http_body_msg {
     AH_I_HTTP_OBODY_COMMON
-    ah_buf_t _buf;
-};
-
-struct ah_i_http_body_bufs {
-    AH_I_HTTP_OBODY_COMMON
-    ah_bufs_t _bufs;
+    ah_tcp_msg_t _msg;
 };
 
 struct ah_i_http_msg_queue {

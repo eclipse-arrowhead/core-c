@@ -11,46 +11,10 @@
 
 #include <ah/assert.h>
 
-static inline void ah_i_http_msg_queue_add(struct ah_i_http_msg_queue* queue, ah_http_msg_t* msg)
-{
-    ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(msg != NULL);
-
-    msg->_next = NULL;
-
-    if (queue->_head == NULL) {
-        queue->_head = msg;
-        queue->_end = msg;
-    }
-    else {
-        queue->_end->_next = msg;
-        queue->_end = msg;
-    }
-}
-
-static inline void ah_i_http_msg_queue_discard_unsafe(struct ah_i_http_msg_queue* queue)
-{
-    ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(queue->_head != NULL);
-    ah_assert_if_debug(queue->_end != NULL);
-
-    ah_http_msg_t* msg = queue->_head;
-    queue->_head = msg->_next;
-
-#ifndef NDEBUG
-
-    msg->_next = NULL;
-
-    if (queue->_head == NULL) {
-        queue->_end = NULL;
-    }
-
-#endif
-}
-
 static inline bool ah_i_http_msg_queue_is_empty(struct ah_i_http_msg_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
+
     return queue->_head == NULL;
 }
 
@@ -92,9 +56,20 @@ static inline ah_http_msg_t* ah_i_http_msg_queue_remove_unsafe(struct ah_i_http_
 {
     ah_assert_if_debug(queue != NULL);
 
-    ah_http_msg_t* req = queue->_head;
-    ah_i_http_msg_queue_discard_unsafe(queue);
-    return req;
+    ah_http_msg_t* msg = queue->_head;
+    queue->_head = msg->_next;
+
+#ifndef NDEBUG
+
+    msg->_next = NULL;
+
+    if (queue->_head == NULL) {
+        queue->_end = NULL;
+    }
+
+#endif
+
+    return msg;
 }
 
 static inline ah_http_msg_t* ah_i_http_msg_queue_remove(struct ah_i_http_msg_queue* queue)
