@@ -13,7 +13,7 @@
 ah_err_t ah_i_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
 ah_err_t ah_i_udp_sock_recv_start(ah_udp_sock_t* sock);
 ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock);
-ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg);
+ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, const ah_udp_msg_t* msg);
 ah_err_t ah_i_udp_sock_close(ah_udp_sock_t* sock);
 
 ah_extern ah_udp_trans_t ah_udp_trans_get_default(void)
@@ -86,7 +86,7 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return sock->_trans.vtab->sock_recv_stop(sock);
 }
 
-ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, const ah_udp_msg_t* msg)
 {
     if (sock == NULL) {
         return AH_EINVAL;
@@ -128,6 +128,8 @@ ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
 
     sock->_user_data = user_data;
 }
+
+/*
 
 bool ah_i_udp_msg_queue_is_empty(struct ah_i_udp_msg_queue* queue)
 {
@@ -182,3 +184,5 @@ void ah_i_udp_msg_queue_remove_unsafe(struct ah_i_udp_msg_queue* queue)
 
 #endif
 }
+
+*/

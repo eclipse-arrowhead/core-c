@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/err.h"
-#include "ah/ip.h"
 #include "ah/loop.h"
 #include "ah/sock.h"
 #include "ah/udp.h"
@@ -31,11 +30,9 @@ void test_udp(ah_unit_t* unit)
 struct s_udp_sock_user_data {
     ah_buf_t* free_buf;
 
-    ah_sockaddr_t* raddr;
     ah_udp_sock_t* rsock;
     ah_sockaddr_t laddr;
 
-    ah_bufs_t send_bufs;
     ah_udp_msg_t* send_msg;
 
     size_t* close_call_counter;
@@ -52,7 +49,7 @@ struct s_udp_sock_user_data {
 static void s_on_open(ah_udp_sock_t* sock, ah_err_t err);
 static void s_on_close(ah_udp_sock_t* sock, ah_err_t err);
 static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t* buf);
-static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err);
+static void s_on_recv_data(ah_udp_sock_t* sock, ah_buf_t buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err);
 static void s_on_send_done(ah_udp_sock_t* sock, size_t nsent, const ah_sockaddr_t* raddr, ah_err_t err);
 
 static const ah_udp_sock_vtab_t s_sock_vtab = {
@@ -90,11 +87,6 @@ static void s_on_open(ah_udp_sock_t* sock, ah_err_t err)
     }
 
     if (user_data->send_msg != NULL) {
-        err = ah_udp_msg_init(user_data->send_msg, user_data->send_bufs, user_data->raddr);
-        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-            return;
-        }
-
         err = ah_udp_sock_send(sock, user_data->send_msg);
     }
     else {
@@ -156,7 +148,7 @@ static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t* buf)
     user_data->did_call_recv_alloc_cb = true;
 }
 
-static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_on_recv_data(ah_udp_sock_t* sock, ah_buf_t buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
 
@@ -165,22 +157,16 @@ static void s_on_recv_data(ah_udp_sock_t* sock, const ah_buf_t* buf, size_t nrec
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    if (!ah_unit_assert(unit, buf != NULL, "buf == NULL")) {
+    if (!ah_unit_assert(unit, raddr != NULL, "raddr == NULL")) {
         return;
     }
-
     if (!ah_unit_assert_unsigned_eq(unit, 18u, nrecv)) {
         return;
     }
-
-    if (!ah_unit_assert_unsigned_eq(unit, 24u, ah_buf_get_size(buf))) {
+    if (!ah_unit_assert_unsigned_eq(unit, 24u, ah_buf_get_size(&buf))) {
         return;
     }
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base_const(buf))) {
-        return;
-    }
-
-    if (!ah_unit_assert(unit, raddr != NULL, "raddr == NULL")) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base_const(&buf))) {
         return;
     }
 
@@ -264,18 +250,12 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     // Setup sender socket.
 
-    ah_buf_t send_buf;
-    err = ah_buf_init(&send_buf, (uint8_t*) "Hello, Arrowhead!", 18u);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
-
-    ah_udp_msg_t send_msg;
-    ah_bufs_t send_bufs = { .items = &send_buf, .length = 1u };
+    ah_udp_msg_t send_msg = {
+        .buf = ah_buf_from((uint8_t*) "Hello, Arrowhead!", 18u),
+        .raddr = &recv_sock_user_data.laddr,
+    };
 
     struct s_udp_sock_user_data send_sock_user_data = {
-        .raddr = &recv_sock_user_data.laddr,
-        .send_bufs = send_bufs,
         .send_msg = &send_msg,
         .close_call_counter = &close_call_counter,
         .unit = unit,

@@ -40,11 +40,6 @@ struct ah_buf_rw {
     uint8_t* end;
 };
 
-struct ah_bufs {
-    ah_buf_t* items;
-    size_t length;
-};
-
 // Error codes:
 // * AH_EINVAL       - `buf` is NULL or `base` is NULL and `size` is positive.
 // * AH_EDOM [Win32] - `size` is larger than AH_BUF_SIZE_MAX.

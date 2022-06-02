@@ -22,7 +22,6 @@
 #define AH_I_UDP_SOCK_STATE_RECEIVING 2u // Sends allowed.
 
 #define AH_I_UDP_MSG_FIELDS \
- ah_udp_msg_t* _next;       \
  AH_I_UDP_MSG_PLATFORM_FIELDS
 
 #define AH_I_UDP_SOCK_FIELDS           \
@@ -41,9 +40,11 @@ struct ah_i_udp_msg_queue {
     ah_udp_msg_t* _end;
 };
 
+/*
 bool ah_i_udp_msg_queue_is_empty(struct ah_i_udp_msg_queue* queue);
 bool ah_i_udp_msg_queue_is_empty_then_add(struct ah_i_udp_msg_queue* queue, ah_udp_msg_t* msg);
 ah_udp_msg_t* ah_i_udp_msg_queue_get_head(struct ah_i_udp_msg_queue* queue);
 void ah_i_udp_msg_queue_remove_unsafe(struct ah_i_udp_msg_queue* queue);
+ */
 
 #endif

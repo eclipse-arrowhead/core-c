@@ -19,47 +19,6 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt);
 static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock);
 static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock);
 
-ah_extern ah_err_t ah_udp_msg_init(ah_udp_msg_t* msg, ah_bufs_t bufs, ah_sockaddr_t* raddr)
-{
-    if (msg == NULL || (bufs.items == NULL && bufs.length != 0u) || raddr == NULL) {
-        return AH_EINVAL;
-    }
-
-    WSABUF* buffers;
-    ULONG buffer_count;
-
-    ah_err_t err = ah_i_bufs_into_wsabufs(&bufs, &buffers, &buffer_count);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    *msg = (ah_udp_msg_t) {
-        ._next = NULL,
-        ._wsamsg.name = ah_i_sockaddr_into_bsd(raddr),
-        ._wsamsg.namelen = ah_i_sockaddr_get_size(raddr),
-        ._wsamsg.lpBuffers = buffers,
-        ._wsamsg.dwBufferCount = buffer_count,
-    };
-
-    return AH_ENONE;
-}
-
-ah_extern ah_sockaddr_t* ah_udp_msg_get_raddr(ah_udp_msg_t* msg)
-{
-    ah_assert_if_debug(msg != NULL);
-    return ah_i_sockaddr_from_bsd(msg->_wsamsg.name);
-}
-
-ah_extern ah_bufs_t ah_udp_msg_get_bufs(ah_udp_msg_t* msg)
-{
-    ah_assert_if_debug(msg != NULL);
-
-    ah_bufs_t bufs;
-    ah_i_bufs_from_wsabufs(&bufs, msg->_wsamsg.lpBuffers, msg->_wsamsg.dwBufferCount);
-
-    return bufs;
-}
-
 ah_err_t ah_i_udp_sock_recv_start(ah_udp_sock_t* sock)
 {
     if (sock == NULL) {
@@ -177,7 +136,7 @@ ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
+ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, const ah_udp_msg_t* msg)
 {
     if (sock == NULL || msg == NULL) {
         return AH_EINVAL;

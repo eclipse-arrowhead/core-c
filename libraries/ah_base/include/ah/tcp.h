@@ -31,7 +31,7 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*conn_connect)(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
     ah_err_t (*conn_read_start)(ah_tcp_conn_t* conn);
     ah_err_t (*conn_read_stop)(ah_tcp_conn_t* conn);
-    ah_err_t (*conn_write)(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg); // May modify ah_bufs_t items in msg.
+    ah_err_t (*conn_write)(ah_tcp_conn_t* conn, const ah_tcp_msg_t* msg);
     ah_err_t (*conn_shutdown)(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
     ah_err_t (*conn_close)(ah_tcp_conn_t* conn);
 
@@ -50,7 +50,7 @@ struct ah_tcp_conn_vtab {
 
     // If both are NULL, receiving is shutdown automatically. Either both or none must be non-NULL.
     void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_buf_t* buf);
-    void (*on_read_data)(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err);
+    void (*on_read_data)(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err);
 
     // If NULL, sending is shutdown automatically.
     void (*on_write_done)(ah_tcp_conn_t* conn, ah_err_t err);
@@ -71,9 +71,11 @@ struct ah_tcp_listener_vtab {
     void (*on_conn_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 };
 
-// An outgoing TCP message.
+// A buffer part of a stream of outgoing TCP bytes.
 struct ah_tcp_msg {
-    AH_I_TCP_MSG_FIELDS
+    ah_buf_t buf;
+
+    AH_I_TCP_STREAM_FIELDS
 };
 
 ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
@@ -83,7 +85,7 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg); // May modify ah_bufs_t items in msg.
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, const ah_tcp_msg_t* stream);
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
@@ -111,8 +113,5 @@ ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_
 ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled);
 ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled);
 ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data);
-
-ah_extern ah_err_t ah_tcp_msg_init(ah_tcp_msg_t* msg, ah_bufs_t bufs);
-ah_extern ah_bufs_t ah_tcp_msg_unwrap(ah_tcp_msg_t* msg);
 
 #endif

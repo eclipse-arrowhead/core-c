@@ -15,7 +15,6 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock);
-static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock);
 
 ah_err_t ah_i_udp_sock_recv_start(ah_udp_sock_t* sock)
 {
@@ -100,7 +99,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         raddr = ah_i_sockaddr_from_bsd(sock->_recv_msghdr.msg_name);
     }
 
-    sock->_vtab->on_recv_data(sock, &sock->_recv_buf, cqe->res, raddr, AH_ENONE);
+    sock->_vtab->on_recv_data(sock, sock->_recv_buf, cqe->res, raddr, AH_ENONE);
 #ifndef NDEBUG
     sock->_recv_buf = (ah_buf_t) { 0u };
 #endif
@@ -117,7 +116,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     return;
 
 report_err:
-    sock->_vtab->on_recv_data(sock, NULL, 0u, raddr, err);
+    sock->_vtab->on_recv_data(sock, (ah_buf_t) { 0u }, 0u, raddr, err);
 }
 
 ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
@@ -133,7 +132,7 @@ ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
+ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, const ah_udp_msg_t* msg)
 {
     if (sock == NULL || msg == NULL) {
         return AH_EINVAL;
@@ -142,15 +141,6 @@ ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
         return AH_ESTATE;
     }
 
-    if (ah_i_udp_msg_queue_is_empty_then_add(&sock->_msg_queue, msg)) {
-        return s_prep_sock_send(sock);
-    }
-
-    return AH_ENONE;
-}
-
-static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
-{
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
@@ -161,10 +151,16 @@ static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
 
     evt->_cb = s_on_sock_send;
     evt->_subject = sock;
+    evt->_object = (void*) msg->raddr;
 
-    ah_udp_msg_t* msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
+    struct msghdr* msghdr = (struct msghdr*) &msg->_msghdr;
 
-    io_uring_prep_sendmsg(sqe, sock->_fd, &msg->_msghdr, 0u);
+    msghdr->msg_name = (void*) ah_i_sockaddr_const_into_bsd(msg->raddr);
+    msghdr->msg_namelen = ah_i_sockaddr_get_size(msg->raddr);
+    msghdr->msg_iov = ah_i_buf_into_iovec((ah_buf_t*) &msg->buf);
+    msghdr->msg_iovlen = 1u;
+
+    io_uring_prep_sendmsg(sqe, sock->_fd, msghdr, 0u);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -190,25 +186,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         n_bytes_sent = cqe->res;
     }
 
-    ah_udp_msg_t* msg;
-
-report_err_and_prep_next:
-    msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
-    ah_i_udp_msg_queue_remove_unsafe(&sock->_msg_queue);
-
-    sock->_vtab->on_send_done(sock, n_bytes_sent, ah_i_sockaddr_const_from_bsd(msg->_msghdr.msg_name), err);
-
-    if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN) {
-        return;
-    }
-    if (ah_i_udp_msg_queue_is_empty(&sock->_msg_queue)) {
-        return;
-    }
-
-    err = s_prep_sock_send(sock);
-    if (err != AH_ENONE) {
-        goto report_err_and_prep_next;
-    }
+    sock->_vtab->on_send_done(sock, n_bytes_sent, evt->_object, err);
 }
 
 ah_err_t ah_i_udp_sock_close(ah_udp_sock_t* sock)

@@ -36,7 +36,6 @@ struct s_tcp_listener_user_data {
     ah_tcp_conn_t* free_conn;
     struct s_tcp_conn_user_data accept_user_data;
     ah_tcp_msg_t conn_msg;
-    ah_buf_t conn_write_buf;
 
     bool did_call_open_cb;
     bool did_call_listen_cb;
@@ -58,7 +57,7 @@ static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
-static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err);
+static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err);
 static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err);
@@ -172,7 +171,7 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
     user_data->did_call_read_alloc_cb = true;
 }
 
-static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t nread, ah_err_t err)
+static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
@@ -182,7 +181,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
         return;
     }
 
-    if (!ah_unit_assert(unit, ah_buf_get_base_const(buf) != NULL, "ah_buf_get_base_const(buf) == NULL")) {
+    if (!ah_unit_assert(unit, ah_buf_get_base_const(&buf) != NULL, "ah_buf_get_base_const(buf) == NULL")) {
         return;
     }
 
@@ -190,10 +189,10 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, const ah_buf_t* buf, size_t
         return;
     }
 
-    if (!ah_unit_assert_unsigned_eq(unit, 24u, ah_buf_get_size(buf))) {
+    if (!ah_unit_assert_unsigned_eq(unit, 24u, ah_buf_get_size(&buf))) {
         return;
     }
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base_const(buf))) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base_const(&buf))) {
         return;
     }
 
@@ -314,16 +313,13 @@ static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
 
     ah_tcp_conn_set_user_data(conn, &user_data->accept_user_data);
 
-    ah_err_t err0;
-
-    ah_buf_init(&user_data->conn_write_buf, (uint8_t*) "Hello, Arrowhead!", 18u);
-    err0 = ah_tcp_msg_init(&user_data->conn_msg, (ah_bufs_t) { .items = &user_data->conn_write_buf, .length = 1u });
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
+    err = ah_buf_init(&user_data->conn_msg.buf, (uint8_t*) "Hello, Arrowhead!", 18u);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
-    err0 = ah_tcp_conn_write(conn, &user_data->conn_msg);
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
+    err = ah_tcp_conn_write(conn, &user_data->conn_msg);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 

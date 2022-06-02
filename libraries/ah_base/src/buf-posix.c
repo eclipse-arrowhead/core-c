@@ -29,25 +29,3 @@ ah_extern ah_buf_t ah_buf_from(uint8_t* base, uint32_t size)
     ah_assert_if_debug(base != NULL || size == 0u);
     return (ah_buf_t) { base, size };
 }
-
-ah_extern void ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, size_t iovcnt)
-{
-    ah_assert_if_debug(bufs != NULL && iov != NULL);
-
-    bufs->items = (ah_buf_t*) iov;
-    bufs->length = iovcnt;
-}
-
-ah_extern ah_err_t ah_i_bufs_into_iovecs(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt)
-{
-    ah_assert_if_debug(bufs != NULL && iov != NULL && iovcnt != NULL);
-
-    if (bufs->length > INT_MAX) {
-        return AH_EOVERFLOW;
-    }
-
-    *iov = (struct iovec*) bufs->items;
-    *iovcnt = (int) bufs->length;
-
-    return AH_ENONE;
-}

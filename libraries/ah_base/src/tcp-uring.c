@@ -22,7 +22,6 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 static void s_on_listener_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn);
-static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn);
 
 ah_err_t ah_i_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
@@ -165,7 +164,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
-    conn->_vtab->on_read_data(conn, &conn->_recv_buf, cqe->res, AH_ENONE);
+    conn->_vtab->on_read_data(conn, conn->_recv_buf, cqe->res, AH_ENONE);
 #ifndef NDEBUG
     conn->_recv_buf = (ah_buf_t) { 0u };
 #endif
@@ -182,7 +181,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     return;
 
 report_err:
-    conn->_vtab->on_read_data(conn, NULL, 0u, err);
+    conn->_vtab->on_read_data(conn, (ah_buf_t) { 0u }, 0u, err);
 }
 
 ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn)
@@ -199,7 +198,7 @@ ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
+ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, const ah_tcp_msg_t* msg)
 {
     if (conn == NULL || msg == NULL) {
         return AH_EINVAL;
@@ -208,15 +207,6 @@ ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
         return AH_ESTATE;
     }
 
-    if (ah_i_tcp_msg_queue_is_empty_then_add(&conn->_msg_queue, msg)) {
-        return s_prep_conn_write(conn);
-    }
-
-    return AH_ENONE;
-}
-
-static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
-{
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
@@ -228,9 +218,7 @@ static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_write;
     evt->_subject = conn;
 
-    ah_tcp_msg_t* msg = ah_i_tcp_msg_queue_get_head(&conn->_msg_queue);
-
-    io_uring_prep_writev(sqe, conn->_fd, msg->_iov, msg->_iovcnt, 0u);
+    io_uring_prep_send(sqe, conn->_fd, msg->buf._base, msg->buf._size, 0);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -257,21 +245,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         err = AH_ENONE;
     }
 
-report_err_and_prep_next:
-    ah_i_tcp_msg_queue_remove_unsafe(&conn->_msg_queue);
     conn->_vtab->on_write_done(conn, err);
-
-    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
-        return;
-    }
-    if (ah_i_tcp_msg_queue_is_empty(&conn->_msg_queue)) {
-        return;
-    }
-
-    err = s_prep_conn_write(conn);
-    if (err != AH_ENONE) {
-        goto report_err_and_prep_next;
-    }
 }
 
 ah_err_t ah_i_tcp_conn_close(ah_tcp_conn_t* conn)

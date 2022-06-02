@@ -31,7 +31,6 @@
  ah_loop_t* _loop;                     \
  ah_tcp_trans_t _trans;                \
  const ah_tcp_conn_vtab_t* _vtab;      \
- struct ah_i_tcp_msg_queue _msg_queue; \
  void* _user_data;                     \
  ah_tcp_shutdown_t _shutdown_flags;    \
  uint8_t _state;                       \
@@ -46,18 +45,7 @@
  uint8_t _state;                       \
  AH_I_TCP_LISTENER_PLATFORM_FIELDS
 
-#define AH_I_TCP_MSG_FIELDS \
- ah_tcp_msg_t* _next;       \
- AH_I_TCP_MSG_PLATFORM_FIELDS
-
-struct ah_i_tcp_msg_queue {
-    ah_tcp_msg_t* _head;
-    ah_tcp_msg_t* _end;
-};
-
-bool ah_i_tcp_msg_queue_is_empty(struct ah_i_tcp_msg_queue* queue);
-bool ah_i_tcp_msg_queue_is_empty_then_add(struct ah_i_tcp_msg_queue* queue, ah_tcp_msg_t* msg);
-ah_tcp_msg_t* ah_i_tcp_msg_queue_get_head(struct ah_i_tcp_msg_queue* queue);
-void ah_i_tcp_msg_queue_remove_unsafe(struct ah_i_tcp_msg_queue* queue);
+#define AH_I_TCP_STREAM_FIELDS \
+ AH_I_TCP_STREAM_PLATFORM_FIELDS
 
 #endif

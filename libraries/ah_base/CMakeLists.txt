@@ -60,11 +60,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         src/task-kqueue.c
         src/tcp-bsd.c
         src/tcp-kqueue.c
-        src/tcp-posix.c
         src/time-darwin.c
         src/udp-bsd.c
         src/udp-kqueue.c
-        src/udp-posix.c
     )
 endif ()
 
@@ -85,11 +83,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         src/sock-bsd.c
         src/task-uring.c
         src/tcp-bsd.c
-        src/tcp-posix.c
         src/tcp-uring.c
         src/time-uring.c
         src/udp-bsd.c
-        src/udp-posix.c
         src/udp-uring.c
     )
 endif ()

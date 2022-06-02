@@ -30,9 +30,9 @@
  bool _is_local;                          \
  bool _is_preventing_realloc;
 
-#define AH_I_HTTP_SERVER_FIELDS          \
- ah_tcp_listener_t _ln;                  \
- const ah_http_server_vtab_t* _vtab;     \
+#define AH_I_HTTP_SERVER_FIELDS      \
+ ah_tcp_listener_t _ln;              \
+ const ah_http_server_vtab_t* _vtab; \
  const ah_http_client_vtab_t* _client_vtab;
 
 #define AH_I_HTTP_BODY_FIELDS       \
@@ -47,8 +47,8 @@
 #define AH_I_HTTP_MSG_FIELDS \
  struct ah_http_msg* _next;  \
  ah_buf_t _head_buf;         \
- ah_tcp_msg_t _head_msg;     \
- ah_tcp_msg_t _body_msg;     \
+ ah_tcp_msg_t _head_msg;  \
+ ah_tcp_msg_t _body_msg;  \
  unsigned _n_pending_tcp_msgs;
 
 #define AH_I_HTTP_TRAILER_FIELDS \

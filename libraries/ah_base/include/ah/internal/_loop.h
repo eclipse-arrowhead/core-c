@@ -41,6 +41,8 @@ struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS
 
     void* _subject; // Must be non-NULL while the event is in use.
+    void* _object; // Arbitrary data associated with event.
+
     ah_i_loop_evt_t* _next_free; // Used by loop allocator. Do not use directly.
 };
 

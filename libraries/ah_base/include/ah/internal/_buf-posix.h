@@ -30,7 +30,4 @@ static inline ah_buf_t* ah_i_buf_from_iovec(struct iovec* iovec)
     return (ah_buf_t*) iovec;
 }
 
-ah_extern void ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, size_t iovcnt);
-ah_extern ah_err_t ah_i_bufs_into_iovecs(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt);
-
 #endif
