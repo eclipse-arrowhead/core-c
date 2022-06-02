@@ -36,7 +36,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err);
-static void ah_i_http_write_msg(ah_http_client_t* cln);
+static void s_write_msg(ah_http_client_t* cln);
 static ah_err_t s_realloc_res_rw(ah_http_client_t* cln);
 
 static const ah_tcp_conn_vtab_t s_vtab = {
@@ -486,13 +486,13 @@ ah_extern ah_err_t ah_http_client_send(ah_http_client_t* cln, ah_http_msg_t* msg
     }
 
     if (ah_i_http_msg_queue_is_empty_then_add(&cln->_out_queue, msg)) {
-        ah_i_http_write_msg(cln);
+        s_write_msg(cln);
     }
 
     return AH_ENONE;
 }
 
-static void ah_i_http_write_msg(ah_http_client_t* cln)
+static void s_write_msg(ah_http_client_t* cln)
 {
     ah_assert_if_debug(cln != NULL);
 
@@ -678,7 +678,7 @@ static void s_complete_current_msg(ah_http_client_t* cln, ah_err_t err)
         return;
     }
 
-    ah_i_http_write_msg(cln);
+    s_write_msg(cln);
 }
 
 ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* data)
