@@ -177,7 +177,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             goto report_err;
         }
 
-        conn->_vtab->on_read_data(conn, &buf, (size_t) nread, AH_ENONE);
+        conn->_vtab->on_read_data(conn, buf, (size_t) nread, AH_ENONE);
 
         if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
             return;
@@ -195,7 +195,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    conn->_vtab->on_read_data(conn, NULL, 0u, err);
+    conn->_vtab->on_read_data(conn, (ah_buf_t) { 0u }, 0u, err);
 }
 
 ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn)
@@ -220,7 +220,7 @@ ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, const ah_tcp_msg_t* msg)
+ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
     if (conn == NULL || msg == NULL) {
         return AH_EINVAL;
@@ -228,6 +228,8 @@ ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, const ah_tcp_msg_t* msg)
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return AH_ESTATE;
     }
+
+    msg->_buf_offset = 0u;
 
     if (s_msg_queue_is_empty_then_add(&conn->_msg_queue, msg)) {
         return s_prep_conn_write(conn);
@@ -283,34 +285,25 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err_and_prep_next;
     }
 
-    ssize_t res = writev(conn->_fd, msg->_iov, msg->_iovcnt);
+    if (msg->_buf_offset > ah_buf_get_size(&msg->buf)) {
+        err = AH_EINTERN;
+        goto report_err_and_prep_next;
+    }
+
+    void* buffer = &ah_buf_get_base(&msg->buf)[msg->_buf_offset];
+    size_t length = ah_buf_get_size(&msg->buf) - msg->_buf_offset;
+
+    ssize_t res = send(conn->_fd, buffer, length, 0);
     if (ah_unlikely(res < 0)) {
         err = errno;
         goto report_err_and_prep_next;
     }
 
-    // If more remains to be written but no output buffer space is available,
-    // adjust current write buffers and schedule another writing.
-    for (int i = 0; i < msg->_iovcnt; i += 1) {
-        struct iovec* iov = &msg->_iov[i];
-
-        if (((size_t) res) >= iov->iov_len) {
-            res -= (ssize_t) iov->iov_len;
-            continue;
-        }
-
-        // There is more, adjust current write buffers and reschedule.
-
-        msg->_iov = &msg->_iov[i];
-        msg->_iovcnt -= i;
-
-        iov->iov_base = &((uint8_t*) iov->iov_base)[(size_t) res];
-        iov->iov_len -= (size_t) res;
-
+    if (((size_t) res) < ah_buf_get_size(&msg->buf)) {
+        ((ah_tcp_msg_t*) msg)->_buf_offset = (size_t) res;
         goto prep_next;
     }
 
-    // We're done! Dequeue the current write and schedule the next one, if any.
     err = AH_ENONE;
 
 report_err_and_prep_next:

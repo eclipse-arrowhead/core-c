@@ -132,7 +132,7 @@ ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, const ah_udp_msg_t* msg)
+ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
 {
     if (sock == NULL || msg == NULL) {
         return AH_EINVAL;

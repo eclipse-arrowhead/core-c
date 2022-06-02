@@ -14,7 +14,7 @@ ah_err_t ah_i_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 ah_err_t ah_i_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 ah_err_t ah_i_tcp_conn_read_start(ah_tcp_conn_t* conn);
 ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn);
-ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, const ah_tcp_msg_t* msg);
+ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg);
 ah_err_t ah_i_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_err_t ah_i_tcp_conn_close(ah_tcp_conn_t* conn);
 
@@ -110,7 +110,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return conn->_trans.vtab->conn_read_stop(conn);
 }
 
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, const ah_tcp_msg_t* stream)
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -118,7 +118,7 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, const ah_tcp_msg_t* st
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_write == NULL) {
         return AH_EINVAL;
     }
-    return conn->_trans.vtab->conn_write(conn, stream);
+    return conn->_trans.vtab->conn_write(conn, msg);
 }
 
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)

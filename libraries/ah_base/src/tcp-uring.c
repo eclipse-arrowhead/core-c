@@ -198,7 +198,7 @@ ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, const ah_tcp_msg_t* msg)
+ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
     if (conn == NULL || msg == NULL) {
         return AH_EINVAL;

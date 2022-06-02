@@ -18,6 +18,6 @@
  ah_sockaddr_t _raddr;                    \
  socklen_t _raddr_len;
 
-#define AH_I_TCP_STREAM_PLATFORM_FIELDS
+#define AH_I_TCP_MSG_PLATFORM_FIELDS
 
 #endif

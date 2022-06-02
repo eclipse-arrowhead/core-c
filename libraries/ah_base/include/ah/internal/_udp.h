@@ -29,7 +29,6 @@
  ah_udp_trans_t _trans;                \
  const ah_udp_sock_vtab_t* _vtab;      \
  struct ah_i_udp_msg_queue _msg_queue; \
- void* _trans_data;                    \
  void* _user_data;                     \
  bool _is_ipv6;                        \
  uint8_t _state;                       \
@@ -39,12 +38,5 @@ struct ah_i_udp_msg_queue {
     ah_udp_msg_t* _head;
     ah_udp_msg_t* _end;
 };
-
-/*
-bool ah_i_udp_msg_queue_is_empty(struct ah_i_udp_msg_queue* queue);
-bool ah_i_udp_msg_queue_is_empty_then_add(struct ah_i_udp_msg_queue* queue, ah_udp_msg_t* msg);
-ah_udp_msg_t* ah_i_udp_msg_queue_get_head(struct ah_i_udp_msg_queue* queue);
-void ah_i_udp_msg_queue_remove_unsafe(struct ah_i_udp_msg_queue* queue);
- */
 
 #endif
