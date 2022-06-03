@@ -28,7 +28,8 @@
  ah_tcp_trans_t _trans;                \
  const ah_tcp_conn_cbs_t* _conn_cbs;   \
  ah_tls_cert_store_t* _certs;          \
- unsigned _state;                      \
+ uint8_t _state;                       \
+ bool _is_read_started;                \
                                        \
  int _last_mbedtls_err;                \
  ah_err_t _pending_ah_err;             \
