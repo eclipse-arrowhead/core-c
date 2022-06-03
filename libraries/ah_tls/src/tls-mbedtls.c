@@ -26,20 +26,28 @@ static ah_err_t s_conn_write(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 static ah_err_t s_conn_shutdown(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 static ah_err_t s_conn_close(void* ctx_, ah_tcp_conn_t* conn);
 
-static ah_err_t s_close_notify(ah_tcp_conn_t* conn, unsigned next_state);
+static void s_conn_on_open(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_conn_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_conn_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
+static void s_conn_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err);
+static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_conn_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 
-static ah_tls_ctx_t* s_conn_get_ctx(ah_tcp_conn_t* conn);
+static ah_err_t s_close_notify(ah_tls_ctx_t* ctx, ah_tcp_conn_t* conn, unsigned next_state);
+
+static ah_tls_ctx_t* s_cast_ctx(void* ctx);
+static ah_tls_ctx_t* s_get_ctx_from_conn(ah_tcp_conn_t* conn);
 
 static ah_err_t s_listener_open(void* ctx_, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
 static ah_err_t s_listener_listen(void* ctx_, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
 static ah_err_t s_listener_close(void* ctx_, ah_tcp_listener_t* ln);
 
-int s_ssl_send(void* void_conn, const unsigned char* buf, size_t len);
-int s_ssl_recv(void* void_conn, unsigned char* buf, size_t len);
+int s_ssl_send(void* conn_, const unsigned char* buf, size_t len);
+int s_ssl_recv(void* conn_, unsigned char* buf, size_t len);
 
 ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs)
 {
-    if (ctx == NULL || trans.vtab == NULL || certs == NULL) {
+    if (ctx == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || certs == NULL) {
         return AH_EINVAL;
     }
     if ((certs->_own_chain == NULL) != (certs->_own_key == NULL)) {
@@ -124,11 +132,23 @@ ah_extern ah_tcp_trans_t ah_tls_ctx_get_transport(ah_tls_ctx_t* ctx)
 
 static ah_err_t s_conn_open(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
+    ah_tls_ctx_t* ctx = s_cast_ctx(ctx_);
+
     if (conn == NULL) {
         return AH_EINVAL;
     }
 
-    ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
+    static const ah_tcp_conn_cbs_t s_cbs = {
+        .on_open = s_conn_on_open,
+        .on_connect = s_conn_on_connect,
+        .on_read_alloc = s_conn_on_read_alloc,
+        .on_read_data = s_conn_on_read_data,
+        .on_write_done = s_conn_on_write_done,
+        .on_close = s_conn_on_close,
+    };
+
+    ctx->_conn_cbs = conn->_cbs;
+    conn->_cbs = &s_cbs;
 
     int res;
 
@@ -142,7 +162,7 @@ static ah_err_t s_conn_open(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t
 
     mbedtls_ssl_set_bio(&ctx->_ssl, conn, s_ssl_send, s_ssl_recv, NULL);
 
-    return ctx->_trans.vtab->conn_open(NULL, conn, laddr);
+    return ctx->_trans.vtab->conn_open(ctx->_trans.ctx, conn, laddr);
 
 handle_non_zero_res:
     if (res == MBEDTLS_ERR_MPI_ALLOC_FAILED) {
@@ -152,51 +172,70 @@ handle_non_zero_res:
     return AH_EDEP;
 }
 
-static ah_tls_ctx_t* s_conn_get_ctx(ah_tcp_conn_t* conn)
+static ah_tls_ctx_t* s_cast_ctx(void* ctx)
 {
-    ah_tls_ctx_t* ctx = ah_tcp_conn_get_trans_data(conn);
     ah_assert_if_debug(ctx != NULL);
-
     return ctx;
 }
 
 static ah_err_t s_conn_connect(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
-    ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
-    return ctx->_trans.vtab->conn_connect(NULL, conn, raddr);
+    ah_tls_ctx_t* ctx = s_cast_ctx(ctx_);
+
+    if (conn == NULL) {
+        return AH_EINVAL;
+    }
+    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_connect == NULL) {
+        return AH_EINVAL;
+    }
+    return ctx->_trans.vtab->conn_connect(ctx->_trans.ctx, conn, raddr);
 }
 
-int s_ssl_send(void* void_conn, const unsigned char* buf, size_t len)
+// Called with encrypted data to have it sent.
+int s_ssl_send(void* conn_, const unsigned char* buf, size_t len)
 {
-    ah_tcp_conn_t* conn = void_conn;
+    ah_tcp_conn_t* conn = conn_;
 
     if (conn == NULL || (buf == NULL && len != 0u)) {
         return MBEDTLS_ERR_SSL_BAD_INPUT_DATA;
     }
 
-    ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
-    (void) ctx;
+    ah_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
 
-    (void) conn;
-    // buf/len refer to an encrypted block of data that now needs to be sent to
-    // the remote host.
+    if (len > INT_MAX) {
+        ctx->_pending_ah_err = AH_EOVERFLOW;
+        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
+    }
 
-    // I currently think that the appropriate behavior is for this function to
-    // take one out of two states. In state A, the buffer is sent, its pointer
-    // and length is saved, the state transitions to B and
-    // MBEDTLS_ERR_SSL_WANT_WRITE is returned. In state B, buf/len are compared
-    // with the last buf/len. If they do not match, return an appropriate error
-    // code. If they do match, change state to A and return len.
+    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_write == NULL) {
+        return MBEDTLS_ERR_SSL_BAD_INPUT_DATA;
+    }
 
-    return 0; // TODO: What to return? MBEDTLS_ERR_SSL_WANT_WRITE?
+    ah_tcp_msg_t* msg = NULL; // TODO: buf and len to newly allocated msg. Free msg in on_write_done callback.
+
+    ah_err_t err = ctx->_trans.vtab->conn_write(ctx->_trans.ctx, conn, msg);
+    if (err != AH_ENONE) {
+        ctx->_pending_ah_err = err;
+        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
+    }
+
+    return (int) len;
 }
 
-int s_ssl_recv(void* void_conn, unsigned char* buf, size_t len)
+static ah_tls_ctx_t* s_get_ctx_from_conn(ah_tcp_conn_t* conn)
 {
-    ah_assert_if_debug(void_conn != NULL);
+    ah_assert_if_debug(conn != NULL);
+
+    return s_cast_ctx(conn->_trans.ctx);
+}
+
+// Called to get new unencrypted data, if available.
+int s_ssl_recv(void* conn_, unsigned char* buf, size_t len)
+{
+    ah_assert_if_debug(conn_ != NULL);
     ah_assert_if_debug(buf != NULL || len == 0u);
 
-    ah_tcp_conn_t* conn = void_conn;
+    ah_tcp_conn_t* conn = conn_;
 
     (void) conn;
     // What does this function being invoked really signify? That there is room
@@ -207,56 +246,71 @@ int s_ssl_recv(void* void_conn, unsigned char* buf, size_t len)
 
 static ah_err_t s_conn_read_start(void* ctx_, ah_tcp_conn_t* conn)
 {
+    (void) ctx_;
     (void) conn;
     return AH_EOPNOTSUPP;
 }
 
 static ah_err_t s_conn_read_stop(void* ctx_, ah_tcp_conn_t* conn)
 {
+    (void) ctx_;
     (void) conn;
     return AH_EOPNOTSUPP;
 }
 
 static ah_err_t s_conn_write(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
-    ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
+    ah_tls_ctx_t* ctx = s_cast_ctx(ctx_);
+
+    if (conn == NULL) {
+        return AH_EINVAL;
+    }
+    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_write == NULL) {
+        return AH_EINVAL;
+    }
 
     int res = mbedtls_ssl_write(&ctx->_ssl, ah_buf_get_base(&msg->buf), ah_buf_get_size(&msg->buf));
-    switch (res) {
-    case 0:
+    if (res >= 0) {
         return AH_ENONE;
+    }
 
+    switch (res) {
     case MBEDTLS_ERR_SSL_WANT_READ:
     case MBEDTLS_ERR_SSL_WANT_WRITE:
     case MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS:
     case MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS:
-        return AH_EAGAIN; // TODO: This being returned must be impossible.
+        // TODO: Save state indicating that this write should be retried after the next read.
+        return AH_ENONE;
 
     default:
-        ctx->_last_mbedtls_err = res; // TODO: Check if any result codes can be converted to ah_err_t errors.
+        ctx->_last_mbedtls_err = res; // TODO: Check if any more result codes can be converted to ah_err_t errors.
         return AH_EDEP;
     }
 }
 
 static ah_err_t s_conn_shutdown(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
 {
+    ah_tls_ctx_t* ctx = s_cast_ctx(ctx_);
+
     if ((flags & AH_TCP_SHUTDOWN_WR) != 0) {
         unsigned next_state = flags == AH_TCP_SHUTDOWN_RDWR ? S_STATE_SHUTTING_DOWN_RDWR : S_STATE_SHUTTING_DOWN_WR;
-        return s_close_notify(conn, next_state);
+        return s_close_notify(ctx, conn, next_state);
     }
-    return ah_tcp_conn_shutdown(conn, flags);
+
+    if (ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_shutdown == NULL) {
+        return AH_ESTATE;
+    }
+    return ctx->_trans.vtab->conn_shutdown(ctx->_trans.ctx, conn, flags);
 }
 
-static ah_err_t s_close_notify(ah_tcp_conn_t* conn, unsigned next_state)
+static ah_err_t s_close_notify(ah_tls_ctx_t* ctx, ah_tcp_conn_t* conn, unsigned next_state)
 {
-    ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
+    ah_assert_if_debug(ctx != NULL);
+    ah_assert_if_debug(conn != NULL);
 
     int res = mbedtls_ssl_close_notify(&ctx->_ssl);
     switch (res) {
     case 0:
-        ctx->_state = next_state;
-        return ah_tcp_conn_close(conn);
-
     case MBEDTLS_ERR_SSL_WANT_READ:
     case MBEDTLS_ERR_SSL_WANT_WRITE:
         ctx->_state = next_state;
@@ -277,11 +331,53 @@ static ah_err_t s_close_notify(ah_tcp_conn_t* conn, unsigned next_state)
 
 static ah_err_t s_conn_close(void* ctx_, ah_tcp_conn_t* conn)
 {
-    return s_close_notify(conn, S_STATE_CLOSING);
+    return s_close_notify(ctx_, conn, S_STATE_CLOSING);
+}
+
+static void s_conn_on_open(ah_tcp_conn_t* conn, ah_err_t err)
+{
+    ah_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
+    ctx->_conn_cbs->on_open(conn, err);
+}
+
+static void s_conn_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
+{
+    ah_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
+    ctx->_conn_cbs->on_connect(conn, err);
+}
+
+static void s_conn_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
+{
+    ah_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
+    ctx->_conn_cbs->on_read_alloc(conn, buf);
+}
+
+static void s_conn_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err)
+{
+    ah_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
+
+    switch (ctx->_state) {
+
+    }
+
+    ctx->_conn_cbs->on_read_data(conn, buf, nread, err);
+}
+
+static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
+{
+    ah_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
+    ctx->_conn_cbs->on_write_done(conn, err);
+}
+
+static void s_conn_on_close(ah_tcp_conn_t* conn, ah_err_t err)
+{
+    ah_tls_ctx_t* ctx = s_get_ctx_from_conn(conn);
+    ctx->_conn_cbs->on_close(conn, err);
 }
 
 static ah_err_t s_listener_open(void* ctx_, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
+    (void) ctx_;
     (void) ln;
     (void) laddr;
     return AH_EOPNOTSUPP;
@@ -289,6 +385,7 @@ static ah_err_t s_listener_open(void* ctx_, ah_tcp_listener_t* ln, const ah_sock
 
 static ah_err_t s_listener_listen(void* ctx_, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
 {
+    (void) ctx_;
     (void) ln;
     (void) backlog;
     (void) conn_cbs;
@@ -297,6 +394,7 @@ static ah_err_t s_listener_listen(void* ctx_, ah_tcp_listener_t* ln, unsigned ba
 
 static ah_err_t s_listener_close(void* ctx_, ah_tcp_listener_t* ln)
 {
+    (void) ctx_;
     (void) ln;
     return AH_EOPNOTSUPP;
 }

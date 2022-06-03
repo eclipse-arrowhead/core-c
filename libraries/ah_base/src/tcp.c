@@ -92,7 +92,7 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
         return AH_EINVAL;
     }
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_open == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_open(conn->_trans.ctx, conn, laddr);
 }
@@ -103,7 +103,7 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
         return AH_EINVAL;
     }
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_connect == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_connect(conn->_trans.ctx, conn, raddr);
 }
@@ -114,7 +114,7 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
         return AH_EINVAL;
     }
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_start == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_read_start(conn->_trans.ctx, conn);
 }
@@ -125,7 +125,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
         return AH_EINVAL;
     }
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_stop == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_read_stop(conn->_trans.ctx, conn);
 }
@@ -136,7 +136,7 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
         return AH_EINVAL;
     }
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_write == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_write(conn->_trans.ctx, conn, msg);
 }
@@ -147,7 +147,7 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t f
         return AH_EINVAL;
     }
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_shutdown == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_shutdown(conn->_trans.ctx, conn, flags);
 }
@@ -158,7 +158,7 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
         return AH_EINVAL;
     }
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_close == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_close(conn->_trans.ctx, conn);
 }
@@ -168,13 +168,6 @@ ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
     ah_assert(conn != NULL);
 
     return conn->_loop;
-}
-
-ah_extern void* ah_tcp_conn_get_trans_data(const ah_tcp_conn_t* conn)
-{
-    ah_assert(conn != NULL);
-
-    return conn->_trans.ctx;
 }
 
 ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
@@ -242,7 +235,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
         return AH_EINVAL;
     }
     if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_open == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return ln->_trans.vtab->listener_open(NULL, ln, laddr);
 }
@@ -253,7 +246,7 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
         return AH_EINVAL;
     }
     if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_listen == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return ln->_trans.vtab->listener_listen(NULL, ln, backlog, conn_cbs);
 }
@@ -264,7 +257,7 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln)
         return AH_EINVAL;
     }
     if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_close == NULL) {
-        return AH_EINVAL;
+        return AH_ESTATE;
     }
     return ln->_trans.vtab->listener_close(NULL, ln);
 }

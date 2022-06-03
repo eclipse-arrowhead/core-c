@@ -26,7 +26,7 @@
 
 #define AH_I_TLS_CTX_FIELDS            \
  ah_tcp_trans_t _trans;                \
- const ah_tcp_conn_cbs_t* _cbs;      \
+ const ah_tcp_conn_cbs_t* _conn_cbs;   \
  ah_tls_cert_store_t* _certs;          \
  unsigned _state;                      \
                                        \

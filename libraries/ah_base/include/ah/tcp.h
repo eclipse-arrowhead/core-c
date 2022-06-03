@@ -93,7 +93,6 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr);
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
-ah_extern void* ah_tcp_conn_get_trans_data(const ah_tcp_conn_t* conn);
 ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn);
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn);
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn);
