@@ -27,7 +27,7 @@
 #define AH_I_UDP_SOCK_FIELDS           \
  ah_loop_t* _loop;                     \
  ah_udp_trans_t _trans;                \
- const ah_udp_sock_vtab_t* _vtab;      \
+ const ah_udp_sock_cbs_t* _cbs;        \
  struct ah_i_udp_msg_queue _msg_queue; \
  void* _user_data;                     \
  bool _is_ipv6;                        \

@@ -30,7 +30,7 @@ ah_err_t ah_i_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr)
         sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
     }
 
-    sock->_vtab->on_open(sock, err);
+    sock->_cbs->on_open(sock, err);
 
     return err;
 }

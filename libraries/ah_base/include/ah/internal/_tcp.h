@@ -27,22 +27,22 @@
 #define AH_I_TCP_LISTENER_STATE_OPEN      1u
 #define AH_I_TCP_LISTENER_STATE_LISTENING 2u
 
-#define AH_I_TCP_CONN_FIELDS           \
- ah_loop_t* _loop;                     \
- ah_tcp_trans_t _trans;                \
- const ah_tcp_conn_vtab_t* _vtab;      \
- void* _user_data;                     \
- ah_tcp_shutdown_t _shutdown_flags;    \
- uint8_t _state;                       \
+#define AH_I_TCP_CONN_FIELDS        \
+ ah_loop_t* _loop;                  \
+ ah_tcp_trans_t _trans;             \
+ const ah_tcp_conn_cbs_t* _cbs;     \
+ void* _user_data;                  \
+ ah_tcp_shutdown_t _shutdown_flags; \
+ uint8_t _state;                    \
  AH_I_TCP_CONN_PLATFORM_FIELDS
 
-#define AH_I_TCP_LISTENER_FIELDS       \
- ah_loop_t* _loop;                     \
- ah_tcp_trans_t _trans;                \
- const ah_tcp_listener_vtab_t* _vtab;  \
- const ah_tcp_conn_vtab_t* _conn_vtab; \
- void* _user_data;                     \
- uint8_t _state;                       \
+#define AH_I_TCP_LISTENER_FIELDS     \
+ ah_loop_t* _loop;                   \
+ ah_tcp_trans_t _trans;              \
+ const ah_tcp_listener_cbs_t* _cbs;  \
+ const ah_tcp_conn_cbs_t* _conn_cbs; \
+ void* _user_data;                   \
+ uint8_t _state;                     \
  AH_I_TCP_LISTENER_PLATFORM_FIELDS
 
 #define AH_I_TCP_MSG_FIELDS \

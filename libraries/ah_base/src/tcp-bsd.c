@@ -172,7 +172,7 @@ ah_err_t ah_i_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* ladd
         ln->_state = AH_I_TCP_LISTENER_STATE_OPEN;
     }
 
-    ln->_vtab->on_open(ln, err);
+    ln->_cbs->on_open(ln, err);
 
     return AH_ENONE;
 }
@@ -248,7 +248,7 @@ ah_err_t ah_i_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
     }
 
-    conn->_vtab->on_open(conn, err);
+    conn->_cbs->on_open(conn, err);
 
     return AH_ENONE;
 }

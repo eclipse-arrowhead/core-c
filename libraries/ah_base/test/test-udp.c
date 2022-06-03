@@ -52,7 +52,7 @@ static void s_on_recv_alloc(ah_udp_sock_t* sock, ah_buf_t* buf);
 static void s_on_recv_data(ah_udp_sock_t* sock, ah_buf_t buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err);
 static void s_on_send_done(ah_udp_sock_t* sock, size_t nsent, const ah_sockaddr_t* raddr, ah_err_t err);
 
-static const ah_udp_sock_vtab_t s_sock_vtab = {
+static const ah_udp_sock_cbs_t s_sock_cbs = {
     .on_open = s_on_open,
     .on_close = s_on_close,
     .on_recv_alloc = s_on_recv_alloc,
@@ -241,7 +241,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     };
 
     ah_udp_sock_t recv_sock;
-    err = ah_udp_sock_init(&recv_sock, &loop, ah_udp_trans_get_default(), &s_sock_vtab);
+    err = ah_udp_sock_init(&recv_sock, &loop, ah_udp_trans_get_default(), &s_sock_cbs);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -262,7 +262,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     };
 
     ah_udp_sock_t send_sock;
-    err = ah_udp_sock_init(&send_sock, &loop, ah_udp_trans_get_default(), &s_sock_vtab);
+    err = ah_udp_sock_init(&send_sock, &loop, ah_udp_trans_get_default(), &s_sock_cbs);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

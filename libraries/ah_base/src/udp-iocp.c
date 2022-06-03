@@ -24,7 +24,7 @@ ah_err_t ah_i_udp_sock_recv_start(ah_udp_sock_t* sock)
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_UDP_SOCK_STATE_OPEN || sock->_vtab->on_recv_data == NULL) {
+    if (sock->_state != AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_recv_data == NULL) {
         return AH_ESTATE;
     }
 
@@ -53,7 +53,7 @@ static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock)
     evt->_subject = sock;
 
     sock->_recv_buf = (ah_buf_t) { 0u };
-    sock->_vtab->on_recv_alloc(sock, &sock->_recv_buf);
+    sock->_cbs->on_recv_alloc(sock, &sock->_recv_buf);
 
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return AH_ENONE;
@@ -103,7 +103,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt)
 
     raddr = ah_i_sockaddr_from_bsd(sock->_recv_addr);
 
-    sock->_vtab->on_recv_data(sock, &sock->_recv_buf, nrecv, raddr);
+    sock->_cbs->on_recv_data(sock, &sock->_recv_buf, nrecv, raddr);
 #ifndef NDEBUG
     sock->_recv_buf = (ah_buf_t) { 0u };
 #endif
@@ -120,7 +120,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt)
     return;
 
 report_err:
-    sock->_vtab->on_recv_data(sock, NULL, 0u, raddr, err);
+    sock->_cbs->on_recv_data(sock, NULL, 0u, raddr, err);
 }
 
 ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
@@ -141,7 +141,7 @@ ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
     if (sock == NULL || msg == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN || sock->_vtab->on_send_done == NULL) {
+    if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_send_done == NULL) {
         return AH_ESTATE;
     }
 
@@ -198,7 +198,7 @@ report_err_and_prep_next:
     msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
     ah_i_udp_msg_queue_remove_unsafe(&sock->_msg_queue);
 
-    sock->_vtab->on_send_done(sock, nsent, ah_i_sockaddr_from_bsd(msg->_wsamsg.name), err);
+    sock->_cbs->on_send_done(sock, nsent, ah_i_sockaddr_from_bsd(msg->_wsamsg.name), err);
 
     if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN) {
         return;
@@ -239,7 +239,7 @@ ah_err_t ah_i_udp_sock_close(ah_udp_sock_t* sock)
     sock->_fd = 0;
 #endif
 
-    sock->_vtab->on_close(sock, err);
+    sock->_cbs->on_close(sock, err);
 
     return err;
 }

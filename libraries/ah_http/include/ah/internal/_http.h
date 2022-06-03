@@ -19,7 +19,7 @@
 #define AH_I_HTTP_CLIENT_FIELDS           \
  ah_tcp_conn_t _conn;                     \
  const ah_sockaddr_t* _raddr;             \
- const struct ah_http_client_vtab* _vtab; \
+ const struct ah_http_client_cbs* _cbs; \
  struct ah_i_http_msg_queue _out_queue;   \
  ah_buf_rw_t _in_buf_rw;                  \
  size_t _in_n_expected_bytes;             \
@@ -31,8 +31,8 @@
 
 #define AH_I_HTTP_SERVER_FIELDS      \
  ah_tcp_listener_t _ln;              \
- const ah_http_server_vtab_t* _vtab; \
- const ah_http_client_vtab_t* _client_vtab;
+ const ah_http_server_cbs_t* _cbs; \
+ const ah_http_client_cbs_t* _client_cbs;
 
 #define AH_I_HTTP_BODY_FIELDS       \
  struct ah_i_http_body_any _as_any; \

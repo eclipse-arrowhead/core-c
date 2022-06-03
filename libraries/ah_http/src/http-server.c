@@ -19,9 +19,9 @@ static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
 static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
-ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_server_vtab_t* vtab)
+ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_server_cbs_t* cbs)
 {
-    if (srv == NULL || loop == NULL || trans.vtab == NULL || vtab == NULL) {
+    if (srv == NULL || loop == NULL || trans.vtab == NULL || cbs == NULL) {
         return AH_EINVAL;
     }
     if (trans.vtab->conn_open == NULL || trans.vtab->conn_connect == NULL || trans.vtab->conn_read_start == NULL || trans.vtab->conn_read_stop == NULL) {
@@ -33,14 +33,14 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, a
     if (trans.vtab->listener_open == NULL || trans.vtab->listener_listen == NULL || trans.vtab->listener_close == NULL) {
         return AH_EINVAL;
     }
-    if (vtab->on_open == NULL || vtab->on_listen == NULL || vtab->on_close == NULL) {
+    if (cbs->on_open == NULL || cbs->on_listen == NULL || cbs->on_close == NULL) {
         return AH_EINVAL;
     }
-    if (vtab->on_client_alloc == NULL || vtab->on_client_accept == NULL) {
+    if (cbs->on_client_alloc == NULL || cbs->on_client_accept == NULL) {
         return AH_EINVAL;
     }
 
-    static const ah_tcp_listener_vtab_t s_vtab = {
+    static const ah_tcp_listener_cbs_t s_cbs = {
         .on_open = s_on_listener_open,
         .on_listen = s_on_listener_listen,
         .on_close = s_on_listener_close,
@@ -49,10 +49,10 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, a
     };
 
     *srv = (ah_http_server_t) {
-        ._vtab = vtab,
+        ._cbs = cbs,
     };
 
-    return ah_tcp_listener_init(&srv->_ln, loop, trans, &s_vtab);
+    return ah_tcp_listener_init(&srv->_ln, loop, trans, &s_cbs);
 }
 
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr)
@@ -66,38 +66,38 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
 static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_conn_to_server(ln);
-    srv->_vtab->on_open(srv, err);
+    srv->_cbs->on_open(srv, err);
 }
 
-ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog, const ah_http_client_vtab_t* vtab)
+ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog, const ah_http_client_cbs_t* cbs)
 {
-    if (srv == NULL || vtab == NULL) {
+    if (srv == NULL || cbs == NULL) {
         return AH_EINVAL;
     }
-    if (vtab->on_close == NULL || vtab->on_alloc == NULL) {
+    if (cbs->on_close == NULL || cbs->on_alloc == NULL) {
         return AH_EINVAL;
     }
-    if (vtab->on_send_done == NULL || vtab->on_recv_line == NULL || vtab->on_recv_header == NULL || vtab->on_recv_data == NULL || vtab->on_recv_end == NULL) {
+    if (cbs->on_send_done == NULL || cbs->on_recv_line == NULL || cbs->on_recv_header == NULL || cbs->on_recv_data == NULL || cbs->on_recv_end == NULL) {
         return AH_EINVAL;
     }
 
-    ah_assert_if_debug(vtab->on_close != NULL);
-    ah_assert_if_debug(vtab->on_alloc != NULL);
-    ah_assert_if_debug(vtab->on_send_done != NULL);
-    ah_assert_if_debug(vtab->on_recv_line != NULL);
-    ah_assert_if_debug(vtab->on_recv_header != NULL);
-    ah_assert_if_debug(vtab->on_recv_data != NULL);
-    ah_assert_if_debug(vtab->on_recv_end != NULL);
+    ah_assert_if_debug(cbs->on_close != NULL);
+    ah_assert_if_debug(cbs->on_alloc != NULL);
+    ah_assert_if_debug(cbs->on_send_done != NULL);
+    ah_assert_if_debug(cbs->on_recv_line != NULL);
+    ah_assert_if_debug(cbs->on_recv_header != NULL);
+    ah_assert_if_debug(cbs->on_recv_data != NULL);
+    ah_assert_if_debug(cbs->on_recv_end != NULL);
 
-    srv->_client_vtab = vtab;
+    srv->_client_cbs = cbs;
 
-    return ah_tcp_listener_listen(&srv->_ln, backlog, ah_i_http_client_get_conn_vtab());
+    return ah_tcp_listener_listen(&srv->_ln, backlog, ah_i_http_client_get_conn_cbs());
 }
 
 static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_conn_to_server(ln);
-    srv->_vtab->on_listen(srv, err);
+    srv->_cbs->on_listen(srv, err);
 }
 
 static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn)
@@ -107,7 +107,7 @@ static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
     ah_http_server_t* srv = ah_i_http_conn_to_server(ln);
 
     ah_http_client_t* cln;
-    srv->_vtab->on_client_alloc(srv, &cln);
+    srv->_cbs->on_client_alloc(srv, &cln);
     if (cln != NULL) {
         *cln = (ah_http_client_t) { 0u };
         *conn = &cln->_conn;
@@ -118,21 +118,21 @@ static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
 {
     ah_http_server_t* srv = ah_i_http_conn_to_server(ln);
     if (err != AH_ENONE) {
-        srv->_vtab->on_client_accept(srv, NULL, err);
+        srv->_cbs->on_client_accept(srv, NULL, err);
         return;
     }
 
     ah_http_client_t* cln = ah_i_http_conn_to_client(conn);
     ah_i_http_client_init_accepted(cln, srv, raddr);
 
-    srv->_vtab->on_client_accept(srv, cln, err);
+    srv->_cbs->on_client_accept(srv, cln, err);
     if (ah_tcp_conn_is_closed(conn)) {
         return;
     }
 
     err = ah_tcp_conn_read_start(conn);
     if (err != AH_ENONE) {
-        cln->_vtab->on_recv_end(cln, err);
+        cln->_cbs->on_recv_end(cln, err);
     }
 }
 
@@ -147,7 +147,7 @@ ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
 static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_conn_to_server(ln);
-    srv->_vtab->on_close(srv, err);
+    srv->_cbs->on_close(srv, err);
 }
 
 ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv)

@@ -74,7 +74,7 @@ void s_on_server_close(ah_http_server_t* srv, ah_err_t err);
 void s_on_server_client_alloc(ah_http_server_t* srv, ah_http_client_t** client);
 void s_on_server_client_accept(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err);
 
-static const ah_http_client_vtab_t s_client_vtab = {
+static const ah_http_client_cbs_t s_client_cbs = {
     .on_open = on_client_open,
     .on_connect = on_client_connect,
     .on_close = on_client_close,
@@ -88,7 +88,7 @@ static const ah_http_client_vtab_t s_client_vtab = {
     .on_recv_end = on_client_recv_end,
 };
 
-static const ah_http_server_vtab_t s_server_vtab = {
+static const ah_http_server_cbs_t s_server_cbs = {
     .on_open = s_on_server_open,
     .on_listen = s_on_server_listen,
     .on_close = s_on_server_close,
@@ -299,7 +299,7 @@ void s_on_server_open(ah_http_server_t* srv, ah_err_t err)
         return;
     }
 
-    err = ah_http_server_listen(srv, 1, &s_client_vtab);
+    err = ah_http_server_listen(srv, 1, &s_client_cbs);
     if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
         return;
     }
@@ -439,7 +439,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
 
     // Setup HTTP server.
     ah_http_server_t server;
-    err = ah_http_server_init(&server, &loop, transport, &s_server_vtab);
+    err = ah_http_server_init(&server, &loop, transport, &s_server_cbs);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -447,7 +447,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
 
     // Setup local HTTP client.
     ah_http_client_t lclient;
-    err = ah_http_client_init(&lclient, &loop, transport, &s_client_vtab);
+    err = ah_http_client_init(&lclient, &loop, transport, &s_client_cbs);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

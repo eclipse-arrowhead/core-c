@@ -18,7 +18,7 @@ ah_err_t ah_i_udp_sock_close(ah_udp_sock_t* sock);
 
 ah_extern ah_udp_trans_t ah_udp_trans_get_default(void)
 {
-    static const ah_udp_trans_vtab_t s_vtab = {
+    static const ah_udp_vtab_t s_vtab = {
         .sock_open = ah_i_udp_sock_open,
         .sock_recv_start = ah_i_udp_sock_recv_start,
         .sock_recv_stop = ah_i_udp_sock_recv_stop,
@@ -32,22 +32,22 @@ ah_extern ah_udp_trans_t ah_udp_trans_get_default(void)
     };
 }
 
-ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, const ah_udp_sock_vtab_t* vtab)
+ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, const ah_udp_sock_cbs_t* cbs)
 {
-    if (sock == NULL || loop == NULL || vtab == NULL) {
+    if (sock == NULL || loop == NULL || cbs == NULL) {
         return AH_EINVAL;
     }
-    if (vtab->on_open == NULL || vtab->on_close == NULL) {
+    if (cbs->on_open == NULL || cbs->on_close == NULL) {
         return AH_EINVAL;
     }
-    if ((vtab->on_recv_alloc == NULL) != (vtab->on_recv_data == NULL)) {
+    if ((cbs->on_recv_alloc == NULL) != (cbs->on_recv_data == NULL)) {
         return AH_EINVAL;
     }
 
     *sock = (ah_udp_sock_t) {
         ._loop = loop,
         ._trans = trans,
-        ._vtab = vtab,
+        ._cbs = cbs,
     };
 
     return AH_ENONE;
