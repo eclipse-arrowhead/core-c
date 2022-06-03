@@ -56,6 +56,7 @@
 #endif
 
 #define AH_I_ERR_MAP(E)                                                                               \
+ E(DEP, 5405, "dependency error")                                                                     \
  E(DUP, 5403, "duplicate exists")                                                                     \
  E(EOF, 5401, "unexpected end of stream")                                                             \
  E(INTERN, 5404, "internal error")                                                                    \

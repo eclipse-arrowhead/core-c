@@ -42,7 +42,10 @@ ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_t
     if (ctx == NULL || trans.vtab == NULL || certs == NULL) {
         return AH_EINVAL;
     }
-    if (!(certs->_authorities != NULL || (certs->_own_chain != NULL && certs->_own_key != NULL))) {
+    if ((certs->_own_chain == NULL) != (certs->_own_key == NULL)) {
+        return AH_EINVAL;
+    }
+    if (certs->_own_chain == NULL && certs->_authorities == NULL) {
         return AH_EINVAL;
     }
 
@@ -90,15 +93,14 @@ handle_non_zero_res:
 
 ah_extern ah_tls_err_t ah_tls_ctx_get_last_error(ah_tls_ctx_t* ctx)
 {
-    if (ctx == NULL) {
-        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
-    }
+    ah_assert(ctx != NULL);
+
     return ctx->_last_mbedtls_err;
 }
 
 ah_extern ah_tcp_trans_t ah_tls_ctx_get_transport(ah_tls_ctx_t* ctx)
 {
-    ah_assert_if_debug(ctx != NULL);
+    ah_assert(ctx != NULL);
 
     static const ah_tcp_trans_vtab_t s_vtab = {
         .conn_open = s_conn_open,
@@ -147,13 +149,14 @@ handle_non_zero_res:
         return AH_ENOMEM;
     }
     ctx->_last_mbedtls_err = res;
-    return AH_EINTERN;
+    return AH_EDEP;
 }
 
 static ah_tls_ctx_t* s_conn_get_ctx(ah_tcp_conn_t* conn)
 {
     ah_tls_ctx_t* ctx = ah_tcp_conn_get_trans_data(conn);
     ah_assert_if_debug(ctx != NULL);
+
     return ctx;
 }
 
@@ -218,27 +221,21 @@ static ah_err_t s_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
     ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
 
-    ah_bufs_t bufs = ah_tcp_msg_unwrap(msg);
-    for (size_t i = 0u; i < bufs.length; i += 1u) {
-        ah_buf_t buf = bufs.items[i];
-        int res = mbedtls_ssl_write(&ctx->_ssl, ah_buf_get_base(&buf), ah_buf_get_size(&buf));
-        switch (res) {
-        case 0:
-            continue;
+    int res = mbedtls_ssl_write(&ctx->_ssl, ah_buf_get_base(&msg->buf), ah_buf_get_size(&msg->buf));
+    switch (res) {
+    case 0:
+        return AH_ENONE;
 
-        case MBEDTLS_ERR_SSL_WANT_READ:
-        case MBEDTLS_ERR_SSL_WANT_WRITE:
-        case MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS:
-        case MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS:
-            return AH_EAGAIN; // TODO: This being returned must be impossible.
+    case MBEDTLS_ERR_SSL_WANT_READ:
+    case MBEDTLS_ERR_SSL_WANT_WRITE:
+    case MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS:
+    case MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS:
+        return AH_EAGAIN; // TODO: This being returned must be impossible.
 
-        default:
-            ctx->_last_mbedtls_err = res; // TODO: Check if any result codes can be converted to ah_err_t errors.
-            return AH_EINTERN;
-        }
+    default:
+        ctx->_last_mbedtls_err = res; // TODO: Check if any result codes can be converted to ah_err_t errors.
+        return AH_EDEP;
     }
-
-    return AH_ENONE;
 }
 
 static ah_err_t s_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
@@ -274,7 +271,7 @@ static ah_err_t s_close_notify(ah_tcp_conn_t* conn, unsigned next_state)
         // fallthrough
     default:
         ctx->_last_mbedtls_err = res;
-        return AH_EINTERN;
+        return AH_EDEP;
     }
 }
 
