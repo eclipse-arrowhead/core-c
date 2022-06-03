@@ -93,8 +93,10 @@ ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enable
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
+ah_extern ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
 {
+    (void) ctx;
+
     if (conn == NULL || (flags & ~AH_TCP_SHUTDOWN_RDWR) != 0u) {
         return AH_EINVAL;
     }
@@ -153,8 +155,10 @@ ah_extern ah_err_t ah_i_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t
     return err;
 }
 
-ah_err_t ah_i_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
+    (void) ctx;
+
     if (ln == NULL) {
         return AH_EINVAL;
     }
@@ -233,8 +237,10 @@ ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
+    (void) ctx;
+
     if (conn == NULL) {
         return AH_EINVAL;
     }

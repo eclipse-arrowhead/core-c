@@ -50,13 +50,7 @@ static const ah_tcp_conn_cbs_t s_cbs = {
 
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_cbs_t* cbs)
 {
-    if (cln == NULL || loop == NULL || trans.vtab == NULL || cbs == NULL) {
-        return AH_EINVAL;
-    }
-    if (trans.vtab->conn_open == NULL || trans.vtab->conn_connect == NULL || trans.vtab->conn_read_start == NULL || trans.vtab->conn_read_stop == NULL) {
-        return AH_EINVAL;
-    }
-    if (trans.vtab->conn_write == NULL || trans.vtab->conn_shutdown == NULL || trans.vtab->conn_close == NULL) {
+    if (cln == NULL || cbs == NULL) {
         return AH_EINVAL;
     }
     if (cbs->on_open == NULL || cbs->on_connect == NULL || cbs->on_close == NULL || cbs->on_alloc == NULL) {

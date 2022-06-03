@@ -16,8 +16,10 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 static ah_err_t s_prep_sock_recv(ah_udp_sock_t* sock);
 
-ah_err_t ah_i_udp_sock_recv_start(ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 {
+    (void) ctx;
+
     if (sock == NULL) {
         return AH_EINVAL;
     }
@@ -119,8 +121,10 @@ report_err:
     sock->_cbs->on_recv_data(sock, (ah_buf_t) { 0u }, 0u, raddr, err);
 }
 
-ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
 {
+    (void) ctx;
+
     if (sock == NULL) {
         return AH_EINVAL;
     }
@@ -132,8 +136,10 @@ ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
+ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg)
 {
+    (void) ctx;
+
     if (sock == NULL || msg == NULL) {
         return AH_EINVAL;
     }
@@ -189,8 +195,10 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     sock->_cbs->on_send_done(sock, n_bytes_sent, evt->_object, err);
 }
 
-ah_err_t ah_i_udp_sock_close(ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_sock_close(void* ctx, ah_udp_sock_t* sock)
 {
+    (void) ctx;
+
     if (sock == NULL) {
         return AH_EINVAL;
     }

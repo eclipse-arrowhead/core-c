@@ -23,8 +23,10 @@ static ah_err_t s_prep_listener_accept(ah_tcp_listener_t* ln);
 static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn);
 static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn);
 
-ah_err_t ah_i_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
+ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
+    (void) ctx;
+
     if (conn == NULL || raddr == NULL || !ah_sockaddr_is_ip(raddr)) {
         return AH_EINVAL;
     }
@@ -101,8 +103,10 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt)
     conn->_cbs->on_connect(conn, err);
 }
 
-ah_err_t ah_i_tcp_conn_read_start(ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
 {
+    (void) ctx;
+
     if (conn == NULL) {
         return AH_EINVAL;
     }
@@ -209,8 +213,10 @@ report_err:
     conn->_cbs->on_read_data(conn, NULL, 0u, err);
 }
 
-ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
 {
+    (void) ctx;
+
     if (conn == NULL) {
         return AH_EINVAL;
     }
@@ -223,8 +229,10 @@ ah_err_t ah_i_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
+ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
+    (void) ctx;
+
     if (conn == NULL || msg == NULL) {
         return AH_EINVAL;
     }
@@ -270,8 +278,10 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt)
     conn->_cbs->on_write_done(conn, err);
 }
 
-ah_err_t ah_i_tcp_conn_close(ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn)
 {
+    (void) ctx;
+
     if (conn == NULL) {
         return AH_EINVAL;
     }
@@ -301,8 +311,10 @@ ah_err_t ah_i_tcp_conn_close(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
+ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
 {
+    (void) ctx;
+
     if (ln == NULL || conn_cbs == NULL) {
         return AH_EINVAL;
     }
@@ -485,8 +497,10 @@ close_accept_fd_and_report_err:
     goto prep_another_accept;
 }
 
-ah_err_t ah_i_tcp_listener_close(ah_tcp_listener_t* ln)
+ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln)
 {
+    (void) ctx;
+
     if (ln == NULL) {
         return AH_EINVAL;
     }

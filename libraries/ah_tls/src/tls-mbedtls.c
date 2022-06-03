@@ -18,21 +18,21 @@
 #define S_STATE_CLOSING            0x03
 #define S_STATE_CLOSED             0x00
 
-static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
-static ah_err_t s_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
-static ah_err_t s_conn_read_start(ah_tcp_conn_t* conn);
-static ah_err_t s_conn_read_stop(ah_tcp_conn_t* conn);
-static ah_err_t s_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg);
-static ah_err_t s_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
-static ah_err_t s_conn_close(ah_tcp_conn_t* conn);
+static ah_err_t s_conn_open(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
+static ah_err_t s_conn_connect(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
+static ah_err_t s_conn_read_start(void* ctx_, ah_tcp_conn_t* conn);
+static ah_err_t s_conn_read_stop(void* ctx_, ah_tcp_conn_t* conn);
+static ah_err_t s_conn_write(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg);
+static ah_err_t s_conn_shutdown(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
+static ah_err_t s_conn_close(void* ctx_, ah_tcp_conn_t* conn);
 
 static ah_err_t s_close_notify(ah_tcp_conn_t* conn, unsigned next_state);
 
 static ah_tls_ctx_t* s_conn_get_ctx(ah_tcp_conn_t* conn);
 
-static ah_err_t s_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
-static ah_err_t s_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
-static ah_err_t s_listener_close(ah_tcp_listener_t* ln);
+static ah_err_t s_listener_open(void* ctx_, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
+static ah_err_t s_listener_listen(void* ctx_, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
+static ah_err_t s_listener_close(void* ctx_, ah_tcp_listener_t* ln);
 
 int s_ssl_send(void* void_conn, const unsigned char* buf, size_t len);
 int s_ssl_recv(void* void_conn, unsigned char* buf, size_t len);
@@ -118,11 +118,11 @@ ah_extern ah_tcp_trans_t ah_tls_ctx_get_transport(ah_tls_ctx_t* ctx)
 
     return (ah_tcp_trans_t) {
         .vtab = &s_vtab,
-        .data = ctx,
+        .ctx = ctx,
     };
 }
 
-static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
+static ah_err_t s_conn_open(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -142,7 +142,7 @@ static ah_err_t s_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 
     mbedtls_ssl_set_bio(&ctx->_ssl, conn, s_ssl_send, s_ssl_recv, NULL);
 
-    return ctx->_trans.vtab->conn_open(conn, laddr);
+    return ctx->_trans.vtab->conn_open(NULL, conn, laddr);
 
 handle_non_zero_res:
     if (res == MBEDTLS_ERR_MPI_ALLOC_FAILED) {
@@ -160,10 +160,10 @@ static ah_tls_ctx_t* s_conn_get_ctx(ah_tcp_conn_t* conn)
     return ctx;
 }
 
-static ah_err_t s_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
+static ah_err_t s_conn_connect(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
-    return ctx->_trans.vtab->conn_connect(conn, raddr);
+    return ctx->_trans.vtab->conn_connect(NULL, conn, raddr);
 }
 
 int s_ssl_send(void* void_conn, const unsigned char* buf, size_t len)
@@ -205,19 +205,19 @@ int s_ssl_recv(void* void_conn, unsigned char* buf, size_t len)
     return 0; // TODO: What to return? MBEDTLS_ERR_SSL_WANT_READ?
 }
 
-static ah_err_t s_conn_read_start(ah_tcp_conn_t* conn)
+static ah_err_t s_conn_read_start(void* ctx_, ah_tcp_conn_t* conn)
 {
     (void) conn;
     return AH_EOPNOTSUPP;
 }
 
-static ah_err_t s_conn_read_stop(ah_tcp_conn_t* conn)
+static ah_err_t s_conn_read_stop(void* ctx_, ah_tcp_conn_t* conn)
 {
     (void) conn;
     return AH_EOPNOTSUPP;
 }
 
-static ah_err_t s_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
+static ah_err_t s_conn_write(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
     ah_tls_ctx_t* ctx = s_conn_get_ctx(conn);
 
@@ -238,7 +238,7 @@ static ah_err_t s_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
     }
 }
 
-static ah_err_t s_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
+static ah_err_t s_conn_shutdown(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
 {
     if ((flags & AH_TCP_SHUTDOWN_WR) != 0) {
         unsigned next_state = flags == AH_TCP_SHUTDOWN_RDWR ? S_STATE_SHUTTING_DOWN_RDWR : S_STATE_SHUTTING_DOWN_WR;
@@ -275,19 +275,19 @@ static ah_err_t s_close_notify(ah_tcp_conn_t* conn, unsigned next_state)
     }
 }
 
-static ah_err_t s_conn_close(ah_tcp_conn_t* conn)
+static ah_err_t s_conn_close(void* ctx_, ah_tcp_conn_t* conn)
 {
     return s_close_notify(conn, S_STATE_CLOSING);
 }
 
-static ah_err_t s_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
+static ah_err_t s_listener_open(void* ctx_, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
     (void) ln;
     (void) laddr;
     return AH_EOPNOTSUPP;
 }
 
-static ah_err_t s_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
+static ah_err_t s_listener_listen(void* ctx_, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
 {
     (void) ln;
     (void) backlog;
@@ -295,7 +295,7 @@ static ah_err_t s_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const
     return AH_EOPNOTSUPP;
 }
 
-static ah_err_t s_listener_close(ah_tcp_listener_t* ln)
+static ah_err_t s_listener_close(void* ctx_, ah_tcp_listener_t* ln)
 {
     (void) ln;
     return AH_EOPNOTSUPP;

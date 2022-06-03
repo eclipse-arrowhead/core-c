@@ -31,15 +31,15 @@ union ah_udp_group {
 // A UDP-based message transport.
 struct ah_udp_trans {
     const ah_udp_vtab_t* vtab;
-    void* data;
+    void* ctx;
 };
 
 struct ah_udp_vtab {
-    ah_err_t (*sock_open)(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
-    ah_err_t (*sock_recv_start)(ah_udp_sock_t* sock);
-    ah_err_t (*sock_recv_stop)(ah_udp_sock_t* sock);
-    ah_err_t (*sock_send)(ah_udp_sock_t* sock, ah_udp_msg_t* msg);
-    ah_err_t (*sock_close)(ah_udp_sock_t* sock);
+    ah_err_t (*sock_open)(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
+    ah_err_t (*sock_recv_start)(void* ctx, ah_udp_sock_t* sock);
+    ah_err_t (*sock_recv_stop)(void* ctx, ah_udp_sock_t* sock);
+    ah_err_t (*sock_send)(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg);
+    ah_err_t (*sock_close)(void* ctx, ah_udp_sock_t* sock);
 };
 
 struct ah_udp_sock {
@@ -67,6 +67,8 @@ struct ah_udp_sock_cbs {
 };
 
 ah_extern ah_udp_trans_t ah_udp_trans_get_default();
+
+ah_extern bool ah_udp_vtab_is_valid(const ah_udp_vtab_t* vtab);
 
 ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, const ah_udp_sock_cbs_t* cbs);
 ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);

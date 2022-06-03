@@ -10,11 +10,11 @@
 #include "ah/err.h"
 #include "ah/loop.h"
 
-ah_err_t ah_i_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
-ah_err_t ah_i_udp_sock_recv_start(ah_udp_sock_t* sock);
-ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock);
-ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg);
-ah_err_t ah_i_udp_sock_close(ah_udp_sock_t* sock);
+ah_err_t ah_i_udp_sock_open(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
+ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock);
+ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock);
+ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg);
+ah_err_t ah_i_udp_sock_close(void* ctx, ah_udp_sock_t* sock);
 
 ah_extern ah_udp_trans_t ah_udp_trans_get_default(void)
 {
@@ -28,8 +28,25 @@ ah_extern ah_udp_trans_t ah_udp_trans_get_default(void)
 
     return (ah_udp_trans_t) {
         .vtab = &s_vtab,
-        .data = NULL,
+        .ctx = NULL,
     };
+}
+
+ah_extern bool ah_udp_vtab_is_valid(const ah_udp_vtab_t* vtab)
+{
+    if (vtab == NULL) {
+        return false;
+    }
+    if (vtab->sock_open == NULL) {
+        return false;
+    }
+    if (vtab->sock_recv_start == NULL || vtab->sock_recv_stop == NULL || vtab->sock_send == NULL) {
+        return false;
+    }
+    if (vtab->sock_close == NULL) {
+        return false;
+    }
+    return true;
 }
 
 ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, const ah_udp_sock_cbs_t* cbs)
@@ -61,7 +78,7 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* la
     if (sock->_trans.vtab == NULL || sock->_trans.vtab->sock_open == NULL) {
         return AH_EINVAL;
     }
-    return sock->_trans.vtab->sock_open(sock, laddr);
+    return sock->_trans.vtab->sock_open(sock->_trans.ctx, sock, laddr);
 }
 
 ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
@@ -72,7 +89,7 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock)
     if (sock->_trans.vtab == NULL || sock->_trans.vtab->sock_recv_start == NULL) {
         return AH_EINVAL;
     }
-    return sock->_trans.vtab->sock_recv_start(sock);
+    return sock->_trans.vtab->sock_recv_start(sock->_trans.ctx, sock);
 }
 
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
@@ -83,7 +100,7 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock)
     if (sock->_trans.vtab == NULL || sock->_trans.vtab->sock_recv_stop == NULL) {
         return AH_EINVAL;
     }
-    return sock->_trans.vtab->sock_recv_stop(sock);
+    return sock->_trans.vtab->sock_recv_stop(sock->_trans.ctx, sock);
 }
 
 ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
@@ -94,7 +111,7 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
     if (sock->_trans.vtab == NULL || sock->_trans.vtab->sock_send == NULL) {
         return AH_EINVAL;
     }
-    return sock->_trans.vtab->sock_send(sock, msg);
+    return sock->_trans.vtab->sock_send(sock->_trans.ctx, sock, msg);
 }
 
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock)
@@ -105,7 +122,7 @@ ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock)
     if (sock->_trans.vtab == NULL || sock->_trans.vtab->sock_close == NULL) {
         return AH_EINVAL;
     }
-    return sock->_trans.vtab->sock_close(sock);
+    return sock->_trans.vtab->sock_close(sock->_trans.ctx, sock);
 }
 
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock)

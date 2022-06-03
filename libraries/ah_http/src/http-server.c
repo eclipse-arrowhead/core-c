@@ -21,16 +21,7 @@ static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
 
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_server_cbs_t* cbs)
 {
-    if (srv == NULL || loop == NULL || trans.vtab == NULL || cbs == NULL) {
-        return AH_EINVAL;
-    }
-    if (trans.vtab->conn_open == NULL || trans.vtab->conn_connect == NULL || trans.vtab->conn_read_start == NULL || trans.vtab->conn_read_stop == NULL) {
-        return AH_EINVAL;
-    }
-    if (trans.vtab->conn_write == NULL || trans.vtab->conn_shutdown == NULL || trans.vtab->conn_close == NULL) {
-        return AH_EINVAL;
-    }
-    if (trans.vtab->listener_open == NULL || trans.vtab->listener_listen == NULL || trans.vtab->listener_close == NULL) {
+    if (srv == NULL || cbs == NULL) {
         return AH_EINVAL;
     }
     if (cbs->on_open == NULL || cbs->on_listen == NULL || cbs->on_close == NULL) {

@@ -20,8 +20,10 @@ bool ah_i_udp_msg_queue_is_empty_then_add(struct ah_i_udp_msg_queue* queue, ah_u
 ah_udp_msg_t* ah_i_udp_msg_queue_get_head(struct ah_i_udp_msg_queue* queue);
 void ah_i_udp_msg_queue_remove_unsafe(struct ah_i_udp_msg_queue* queue);
 
-ah_err_t ah_i_udp_sock_recv_start(ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 {
+    (void) ctx;
+
     if (sock == NULL) {
         return AH_EINVAL;
     }
@@ -115,8 +117,10 @@ report_err:
     sock->_cbs->on_recv_data(sock, (ah_buf_t) { 0u }, 0u, raddr, err);
 }
 
-ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
 {
+    (void) ctx;
+
     if (sock == NULL) {
         return AH_EINVAL;
     }
@@ -137,8 +141,10 @@ ah_err_t ah_i_udp_sock_recv_stop(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg)
+ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg)
 {
+    (void) ctx;
+
     if (sock == NULL || msg == NULL) {
         return AH_EINVAL;
     }
@@ -231,8 +237,10 @@ report_err_and_prep_next:
     }
 }
 
-ah_err_t ah_i_udp_sock_close(ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_sock_close(void* ctx, ah_udp_sock_t* sock)
 {
+    (void) ctx;
+
     if (sock == NULL) {
         return AH_EINVAL;
     }
