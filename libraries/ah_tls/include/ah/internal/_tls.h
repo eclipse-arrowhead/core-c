@@ -30,7 +30,6 @@
  ah_tls_cert_store_t* _certs;          \
  ah_buf_t _recv_ciphertext_buf;        \
  uint8_t _state;                       \
- bool _is_read_started;                \
                                        \
  int _last_mbedtls_err;                \
  ah_err_t _pending_ah_err;             \

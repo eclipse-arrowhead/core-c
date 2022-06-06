@@ -96,6 +96,7 @@ ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
 ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn);
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn);
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn);
+ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn);
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled);

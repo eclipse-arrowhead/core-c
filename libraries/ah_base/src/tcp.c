@@ -192,6 +192,13 @@ ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
         && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) == 0u;
 }
 
+ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn)
+{
+    ah_assert(conn != NULL);
+
+    return conn->_state == AH_I_TCP_CONN_STATE_READING;
+}
+
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
 {
     ah_assert(conn != NULL);

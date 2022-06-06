@@ -139,6 +139,20 @@ ah_extern void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock)
     return sock->_user_data;
 }
 
+ah_extern bool ah_udp_sock_is_closed(const ah_udp_sock_t* sock)
+{
+    ah_assert(sock != NULL);
+
+    return sock->_state == AH_I_UDP_SOCK_STATE_CLOSED;
+}
+
+ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock)
+{
+    ah_assert(sock != NULL);
+
+    return sock->_state == AH_I_UDP_SOCK_STATE_RECEIVING;
+}
+
 ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
 {
     ah_assert(sock != NULL);

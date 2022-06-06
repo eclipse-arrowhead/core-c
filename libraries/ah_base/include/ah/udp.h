@@ -79,6 +79,8 @@ ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_t* laddr);
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock);
 ah_extern void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock);
+ah_extern bool ah_udp_sock_is_closed(const ah_udp_sock_t* sock);
+ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
 ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool is_enabled);
 ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enabled);
