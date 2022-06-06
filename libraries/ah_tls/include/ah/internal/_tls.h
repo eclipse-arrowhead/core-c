@@ -28,6 +28,7 @@
  ah_tcp_trans_t _trans;                \
  const ah_tcp_conn_cbs_t* _conn_cbs;   \
  ah_tls_cert_store_t* _certs;          \
+ ah_buf_t _recv_ciphertext_buf;        \
  uint8_t _state;                       \
  bool _is_read_started;                \
                                        \

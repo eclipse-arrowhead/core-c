@@ -54,6 +54,7 @@ ah_extern const uint8_t* ah_buf_get_base_const(const ah_buf_t* buf);
 ah_extern size_t ah_buf_get_size(const ah_buf_t* buf);
 ah_extern bool ah_buf_is_empty(const ah_buf_t* buf);
 ah_extern void ah_buf_limit_size_to(ah_buf_t* buf, size_t limit);
+ah_extern void ah_buf_skipn(ah_buf_t* buf, size_t size);
 
 ah_extern void ah_buf_rw_init_for_writing_to(ah_buf_rw_t* rw, ah_buf_t* buf);
 ah_extern void ah_buf_rw_init_for_reading_from(ah_buf_rw_t* rw, const ah_buf_t* buf);

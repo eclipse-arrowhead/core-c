@@ -14,12 +14,12 @@
 #include <mbedtls/ssl.h>
 #include <mbedtls/version.h>
 
-#define S_STATE_CLOSED             0x00
-#define S_STATE_CLOSING            0x01
-#define S_STATE_SHUTTING_DOWN_WR   0x02
-#define S_STATE_HANDSHAKING        0x03
-#define S_STATE_RW                 0x04
-#define S_STATE_R                  0x05
+#define S_STATE_CLOSED           0x00
+#define S_STATE_CLOSING          0x01
+#define S_STATE_SHUTTING_DOWN_WR 0x02
+#define S_STATE_HANDSHAKING      0x03
+#define S_STATE_RW               0x04
+#define S_STATE_R                0x05
 
 static ah_err_t s_conn_open(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 static ah_err_t s_conn_connect(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
@@ -231,17 +231,37 @@ handle_err:
 // Called to get new unencrypted data, if available.
 int s_ssl_recv(void* conn_, unsigned char* buf, size_t len)
 {
-    ah_assert_if_debug(conn_ != NULL);
-    ah_assert_if_debug(buf != NULL || len == 0u);
+    ah_err_t err;
 
-    (void) conn_;
-    (void) buf;
-    (void) len;
+    ah_tcp_conn_t* conn = conn_;
 
-    // What does this function being invoked really signify? That there is room
-    // in the decryption buffer? TODO: Figure out and implement this.
+    if (conn == NULL || (buf == NULL && len != 0u)) {
+        err = AH_ESTATE;
+        goto handle_err;
+    }
 
-    return 0; // TODO: What to return? MBEDTLS_ERR_SSL_WANT_READ?
+    ah_tls_ctx_t* ctx = ah_tls_ctx_get_from_conn(conn);
+    if (ctx == NULL) {
+        err = AH_ESTATE;
+        goto handle_err;
+    }
+
+    if (len > ah_buf_get_size(&ctx->_recv_ciphertext_buf)) {
+        len = ah_buf_get_size(&ctx->_recv_ciphertext_buf);
+    }
+    if (len > INT_MAX) {
+        len = INT_MAX;
+    }
+
+    memcpy(buf, ah_buf_get_base(&ctx->_recv_ciphertext_buf), len);
+
+    ah_buf_skipn(&ctx->_recv_ciphertext_buf, len);
+
+    return (int) len;
+
+handle_err:
+    ctx->_pending_ah_err = err;
+    return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
 }
 
 static ah_err_t s_conn_connect(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
@@ -409,6 +429,9 @@ static void s_conn_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread,
         goto handle_err;
     }
 
+    ctx->_recv_ciphertext_buf = buf;
+    ah_buf_limit_size_to(&ctx->_recv_ciphertext_buf, nread);
+
     int res;
 
     switch (ctx->_state) {
@@ -416,10 +439,12 @@ static void s_conn_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread,
         err = AH_EINTERN; // TODO: Should this be ignored rather than reported?
         goto handle_err;
 
+    state_handshaking:
     case S_STATE_HANDSHAKING:
         res = mbedtls_ssl_handshake(&ctx->_ssl);
         switch (res) {
         case 0:
+            // TODO: Call callback with handshake result.
             ctx->_state = S_STATE_RW;
             break;
 
@@ -427,24 +452,65 @@ static void s_conn_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread,
         case MBEDTLS_ERR_SSL_WANT_WRITE:
             return;
 
+        case MBEDTLS_ERR_ERROR_GENERIC_ERROR:
+            if (ctx->_pending_ah_err != AH_ENONE) {
+                err = ctx->_pending_ah_err;
+                ctx->_pending_ah_err = AH_ENONE;
+                goto handle_err;
+            }
+        // fallthrough
         default:
+            // TODO: Call callback with handshake result.
             ctx->_last_mbedtls_err = res;
             err = AH_EDEP;
             goto handle_err;
         }
-        break;
+        // fallthrough
 
     case S_STATE_CLOSING:
     case S_STATE_SHUTTING_DOWN_WR:
     case S_STATE_RW:
     case S_STATE_R:
-        (void) buf;
-        (void) nread;
+        while (ah_buf_get_size(&ctx->_recv_ciphertext_buf) > 0u) {
+            ah_buf_t recv_plaintext_buf = (ah_buf_t) { 0u };
+            conn->_cbs->on_read_alloc(conn, &recv_plaintext_buf);
 
-        // TODO: Make it possible for s_ssl_recv() to get access to buf/nread,
-        // then use mbedtls_ssl_read() to activate the decryption of that data,
-        // and then present the decrypted data via ctx->_conn_cbs->on_read_data().
+            if (ah_buf_is_empty(&recv_plaintext_buf)) {
+                err = AH_ENOBUFS;
+                goto handle_err;
+            }
 
+            // This call will make MbedTLS pull the ciphertext in `ctx->_recv_ciphertext_buf` through the appropriate
+            // decryption algorithms and write any resulting plaintext to `recv_plaintext_buf`. See also `s_ssl_recv()`.
+            res = mbedtls_ssl_read(&ctx->_ssl, ah_buf_get_base(&recv_plaintext_buf), ah_buf_get_size(&recv_plaintext_buf));
+
+            if (res <= 0) {
+                switch (res) {
+                case 0:
+                case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+                    err = ctx->_trans.vtab->conn_shutdown(ctx->_trans.ctx, conn, AH_TCP_SHUTDOWN_RD);
+                    if (err == AH_ESTATE || err == AH_ENOTCONN) {
+                        return;
+                    }
+                    if (err == AH_ENONE) {
+                        err = AH_EEOF;
+                    }
+                    goto handle_err;
+
+                case MBEDTLS_ERR_SSL_WANT_READ:
+                case MBEDTLS_ERR_SSL_WANT_WRITE:
+                    ctx->_state = S_STATE_HANDSHAKING;
+                    goto state_handshaking;
+
+                default:
+                    ctx->_last_mbedtls_err = res;
+                    err = AH_EDEP;
+                    goto handle_err;
+                }
+            }
+
+            ctx->_conn_cbs->on_read_data(conn, recv_plaintext_buf, (size_t) res, AH_ENONE);
+        }
         break;
 
     default:
@@ -496,6 +562,7 @@ static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
         res = mbedtls_ssl_handshake(&ctx->_ssl);
         switch (res) {
         case 0:
+            // TODO: Call callback with handshake result.
             ctx->_state = S_STATE_RW;
             break;
 
@@ -504,6 +571,7 @@ static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
             return;
 
         default:
+            // TODO: Call callback with handshake result.
             ctx->_last_mbedtls_err = res;
             err = AH_EDEP;
             goto handle_err;
