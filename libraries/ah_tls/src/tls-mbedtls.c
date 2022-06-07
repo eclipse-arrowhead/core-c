@@ -39,6 +39,12 @@ static ah_err_t s_listener_open(void* ctx_, ah_tcp_listener_t* ln, const ah_sock
 static ah_err_t s_listener_listen(void* ctx_, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
 static ah_err_t s_listener_close(void* ctx_, ah_tcp_listener_t* ln);
 
+static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err);
+static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err);
+static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err);
+static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
+static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
+
 static int s_ssl_send(void* conn_, const unsigned char* buf, size_t len);
 static int s_ssl_recv(void* conn_, unsigned char* buf, size_t len);
 
@@ -49,6 +55,15 @@ AH_I_RING_GEN_DISCARD(static, s_send_queue, struct ah_i_tls_send_queue)
 AH_I_RING_GEN_INIT(static, s_send_queue, struct ah_i_tls_send_queue, ah_tcp_msg_t, 4u)
 AH_I_RING_GEN_IS_EMPTY(static, s_send_queue, struct ah_i_tls_send_queue)
 AH_I_RING_GEN_TERM(static, s_send_queue, struct ah_i_tls_send_queue)
+
+static const ah_tcp_conn_cbs_t s_conn_cbs = {
+    .on_open = s_conn_on_open,
+    .on_connect = s_conn_on_connect,
+    .on_read_alloc = s_conn_on_read_alloc,
+    .on_read_data = s_conn_on_read_data,
+    .on_write_done = s_conn_on_write_done,
+    .on_close = s_conn_on_close,
+};
 
 static const ah_tcp_vtab_t s_conn_vtab = {
     .conn_open = s_conn_open,
@@ -62,6 +77,14 @@ static const ah_tcp_vtab_t s_conn_vtab = {
     .listener_open = s_listener_open,
     .listener_listen = s_listener_listen,
     .listener_close = s_listener_close,
+};
+
+static const ah_tcp_listener_cbs_t s_listener_cbs = {
+    .on_open = s_listener_on_open,
+    .on_listen = s_listener_on_listen,
+    .on_close = s_listener_on_close,
+    .on_conn_alloc = s_listener_on_conn_alloc,
+    .on_conn_accept = s_listener_on_conn_accept,
 };
 
 ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done)
@@ -106,6 +129,9 @@ ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_t
     }
     mbedtls_ssl_conf_renegotiation(&ctx->_ssl_conf, MBEDTLS_SSL_RENEGOTIATION_DISABLED);
     mbedtls_ssl_conf_rng(&ctx->_ssl_conf, mbedtls_ctr_drbg_random, &ctx->_ctr_drbg);
+
+    // Initialize SSL cache.
+    mbedtls_ssl_cache_init(&ctx->_ssl_cache);
 
     // Initialize and setup SSL transport.
     mbedtls_ssl_init(&ctx->_ssl);
@@ -196,17 +222,8 @@ static ah_err_t s_conn_open(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t
         return AH_EINVAL;
     }
 
-    static const ah_tcp_conn_cbs_t s_cbs = {
-        .on_open = s_conn_on_open,
-        .on_connect = s_conn_on_connect,
-        .on_read_alloc = s_conn_on_read_alloc,
-        .on_read_data = s_conn_on_read_data,
-        .on_write_done = s_conn_on_write_done,
-        .on_close = s_conn_on_close,
-    };
-
     ctx->_conn_cbs = conn->_cbs;
-    conn->_cbs = &s_cbs;
+    conn->_cbs = &s_conn_cbs;
 
     int res;
 
@@ -226,11 +243,7 @@ static ah_err_t s_conn_open(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t
     return ctx->_trans.vtab->conn_open(ctx->_trans.ctx, conn, laddr);
 
 handle_non_zero_res:
-    if (res == MBEDTLS_ERR_MPI_ALLOC_FAILED) {
-        return AH_ENOMEM;
-    }
-    ctx->_last_mbedtls_err = res;
-    return AH_EDEP;
+    return s_mbedtls_res_to_ah_err(ctx, res);
 }
 
 // Called with encrypted data to have it sent.
@@ -703,14 +716,52 @@ static void s_conn_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 
 static ah_err_t s_listener_open(void* ctx_, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
-    (void) ctx_;
-    (void) ln;
-    (void) laddr;
-    return AH_EOPNOTSUPP;
+    ah_tls_ctx_t* ctx = ctx_;
+    if (ctx == NULL) {
+        return AH_ESTATE;
+    }
+    if (ln == NULL) {
+        return AH_EINVAL;
+    }
+
+    ctx->_ln_cbs = ln->_cbs;
+    ln->_cbs = &s_listener_cbs;
+
+    int res;
+
+    const int endpoint = MBEDTLS_SSL_IS_SERVER;
+    const int transport = MBEDTLS_SSL_TRANSPORT_STREAM;
+    const int preset = MBEDTLS_SSL_PRESET_DEFAULT;
+    res = mbedtls_ssl_config_defaults(&ctx->_ssl_conf, endpoint, transport, preset);
+    if (res != 0) {
+        goto handle_non_zero_res;
+    }
+
+    mbedtls_ssl_conf_session_cache(&ctx->_ssl_conf, &ctx->_ssl_cache, mbedtls_ssl_cache_get, mbedtls_ssl_cache_set);
+    mbedtls_ssl_set_bio(&ctx->_ssl, ln, s_ssl_send, s_ssl_recv, NULL);
+
+    if (ctx->_trans.vtab == NULL || ctx->_trans.vtab->listener_open == NULL) {
+        return AH_ESTATE;
+    }
+    return ctx->_trans.vtab->listener_open(ctx->_trans.ctx, ln, laddr);
+
+handle_non_zero_res:
+    return s_mbedtls_res_to_ah_err(ctx, res);
 }
 
 static ah_err_t s_listener_listen(void* ctx_, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
 {
+    ah_tls_ctx_t* ctx = ctx_;
+    if (ctx == NULL) {
+        return AH_ESTATE;
+    }
+    if (ln == NULL) {
+        return AH_EINVAL;
+    }
+
+    ctx->_conn_cbs = conn_cbs;
+    ln->_conn_cbs = &s_conn_cbs;
+
     (void) ctx_;
     (void) ln;
     (void) backlog;
@@ -723,6 +774,38 @@ static ah_err_t s_listener_close(void* ctx_, ah_tcp_listener_t* ln)
     (void) ctx_;
     (void) ln;
     return AH_EOPNOTSUPP;
+}
+
+static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err)
+{
+    (void) ln;
+    (void) err;
+}
+
+static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err)
+{
+    (void) ln;
+    (void) err;
+}
+
+static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err)
+{
+    (void) ln;
+    (void) err;
+}
+
+static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn)
+{
+    (void) ln;
+    (void) conn;
+}
+
+static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
+{
+    (void) ln;
+    (void) conn;
+    (void) raddr;
+    (void) err;
 }
 
 ah_extern void ah_tls_ctx_term(ah_tls_ctx_t* ctx)

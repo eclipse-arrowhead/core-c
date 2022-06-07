@@ -27,6 +27,7 @@
 #define AH_I_TLS_CTX_FIELDS                           \
  ah_tcp_trans_t _trans;                               \
  const ah_tcp_conn_cbs_t* _conn_cbs;                  \
+ const ah_tcp_listener_cbs_t* _ln_cbs;                \
  ah_tls_cert_store_t* _certs;                         \
  ah_tls_on_handshake_done_cb _on_handshake_done;      \
  ah_buf_t _recv_ciphertext_buf;                       \
