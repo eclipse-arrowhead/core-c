@@ -107,12 +107,12 @@
  E(NOBUFS, AH_I_ERR_ONE_OF(ENOBUFS, WSAENOBUFS), "no buffer space available")                         \
  E(NODATA, AH_I_ERR_ONE_OF(ENODATA, 5516), "no data available")                                       \
  E(NODEV, AH_I_ERR_ONE_OF(ENODEV, 5517), "no such device")                                            \
- E(NOENT, AH_I_ERR_ONE_OF(ENOENT, 5518), "no such file or directory")                                 \
+ E(NOENT, AH_I_ERR_ONE_OF(ENOENT, 5518), "no such entry")                                             \
  E(NOEXEC, AH_I_ERR_ONE_OF(ENOEXEC, 5519), "executable file format error")                            \
  E(NOLCK, AH_I_ERR_ONE_OF(ENOLCK, 5520), "no locks available")                                        \
  E(NOLINK, AH_I_ERR_ONE_OF(ENOLINK, 5521), "link severed")                                            \
  E(NOMEM, AH_I_ERR_ONE_OF(ENOMEM, ERROR_NOT_ENOUGH_MEMORY), "not enough memory")                      \
- E(NOMSG, AH_I_ERR_ONE_OF(ENOMSG, 5522), "no message of the desired type")                            \
+ E(NOMSG, AH_I_ERR_ONE_OF(ENOMSG, 5522), "no such message")                                           \
  E(NOPROTOOPT, AH_I_ERR_ONE_OF(ENOPROTOOPT, WSAENOPROTOOPT), "protocol not available")                \
  E(NOSPC, AH_I_ERR_ONE_OF(ENOSPC, 5523), "no space left")                                             \
  E(NOSR, AH_I_ERR_ONE_OF(ENOSR, 5524), "no STREAM resources")                                         \

@@ -30,6 +30,7 @@
  ah_tls_cert_store_t* _certs;                         \
  ah_tls_on_handshake_done_cb _on_handshake_done;      \
  ah_buf_t _recv_ciphertext_buf;                       \
+ struct ah_i_tls_send_queue _send_ciphertext_queue;   \
  bool _is_closing_on_next_write_done             : 1; \
  bool _is_handshake_done                         : 1; \
  bool _is_handshaking_on_next_read_data          : 1; \
@@ -47,5 +48,12 @@
 
 #define AH_I_TLS_KEYS_FIELDS \
  mbedtls_pk_context _pk_cxt;
+
+struct ah_i_tls_send_queue {
+    size_t _capacity;
+    size_t _index_read;
+    size_t _index_write;
+    struct ah_tcp_msg* _entries;
+};
 
 #endif

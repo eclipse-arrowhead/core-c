@@ -8,6 +8,7 @@
 
 #include <ah/assert.h>
 #include <ah/err.h>
+#include <ah/internal/_ring-gen.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
@@ -42,6 +43,11 @@ static int s_ssl_send(void* conn_, const unsigned char* buf, size_t len);
 static int s_ssl_recv(void* conn_, unsigned char* buf, size_t len);
 
 static ah_err_t s_mbedtls_res_to_ah_err(ah_tls_ctx_t* ctx, int res);
+
+AH_I_RING_GEN_ALLOC_ENTRY(static, s_send_queue, struct ah_i_tls_send_queue, ah_tcp_msg_t, 4u)
+AH_I_RING_GEN_DISCARD(static, s_send_queue, struct ah_i_tls_send_queue)
+AH_I_RING_GEN_IS_EMPTY(static, s_send_queue, struct ah_i_tls_send_queue)
+AH_I_RING_GEN_TERM(static, s_send_queue, struct ah_i_tls_send_queue)
 
 static const ah_tcp_vtab_t s_conn_vtab = {
     .conn_open = s_conn_open,
@@ -244,7 +250,16 @@ static int s_ssl_send(void* conn_, const unsigned char* buf, size_t len)
         goto handle_err;
     }
 
-    ah_tcp_msg_t* msg = NULL; // TODO: buf and len to newly allocated msg. Free msg in on_write_done callback.
+    ah_tcp_msg_t* msg;
+    err = s_send_queue_alloc_entry(&ctx->_send_ciphertext_queue, &msg);
+    if (err != AH_ENONE) {
+        goto handle_err;
+    }
+
+    err = ah_buf_init(&msg->buf, (uint8_t*) buf, len);
+    if (err != AH_ENONE) {
+        goto handle_err;
+    }
 
     if (ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_write == NULL) {
         err = AH_ESTATE;
@@ -660,6 +675,13 @@ static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
         }
     }
 
+    if (s_send_queue_is_empty(&ctx->_send_ciphertext_queue)) {
+        err = AH_EINTERN;
+        goto handle_err;
+    }
+
+    s_send_queue_discard(&ctx->_send_ciphertext_queue);
+
 handle_err:
     ctx->_conn_cbs->on_write_done(conn, err);
 }
@@ -667,6 +689,9 @@ handle_err:
 static void s_conn_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_tls_ctx_t* ctx = ah_tls_ctx_get_from_conn(conn);
+
+    s_send_queue_term(&ctx->_send_ciphertext_queue);
+
     ctx->_conn_cbs->on_close(conn, err);
 }
 
