@@ -24,20 +24,25 @@
 #define AH_I_TLS_CRL_FIELDS \
  mbedtls_x509_crl _x509_crl;
 
-#define AH_I_TLS_CTX_FIELDS            \
- ah_tcp_trans_t _trans;                \
- const ah_tcp_conn_cbs_t* _conn_cbs;   \
- ah_tls_cert_store_t* _certs;          \
- ah_buf_t _recv_ciphertext_buf;        \
- uint8_t _state;                       \
-                                       \
- int _last_mbedtls_err;                \
- ah_err_t _pending_ah_err;             \
-                                       \
- mbedtls_ctr_drbg_context _ctr_drbg;   \
- mbedtls_entropy_context _entropy;     \
- mbedtls_ssl_context _ssl;             \
- mbedtls_ssl_cache_context _ssl_cache; \
+#define AH_I_TLS_CTX_FIELDS                           \
+ ah_tcp_trans_t _trans;                               \
+ const ah_tcp_conn_cbs_t* _conn_cbs;                  \
+ ah_tls_cert_store_t* _certs;                         \
+ ah_tls_on_handshake_done_cb _on_handshake_done;      \
+ ah_buf_t _recv_ciphertext_buf;                       \
+ bool _is_closing_on_next_write_done             : 1; \
+ bool _is_handshake_done                         : 1; \
+ bool _is_handshaking_on_next_read_data          : 1; \
+ bool _is_shutting_down_wr_on_next_write_done    : 1; \
+ bool _is_stopping_reads_on_handshake_completion : 1; \
+                                                      \
+ int _last_mbedtls_err;                               \
+ ah_err_t _pending_ah_err;                            \
+                                                      \
+ mbedtls_ctr_drbg_context _ctr_drbg;                  \
+ mbedtls_entropy_context _entropy;                    \
+ mbedtls_ssl_context _ssl;                            \
+ mbedtls_ssl_cache_context _ssl_cache;                \
  mbedtls_ssl_config _ssl_conf;
 
 #define AH_I_TLS_KEYS_FIELDS \

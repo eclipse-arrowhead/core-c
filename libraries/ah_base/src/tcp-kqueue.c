@@ -214,12 +214,9 @@ ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
     }
 
     struct kevent* kev;
-    ah_err_t err = ah_i_loop_alloc_kev(conn->_loop, &kev);
-    if (err != AH_ENONE) {
-        return err;
+    if (ah_i_loop_alloc_kev(conn->_loop, &kev) == AH_ENONE) {
+        EV_SET(kev, conn->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
     }
-
-    EV_SET(kev, conn->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
 
     conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
 

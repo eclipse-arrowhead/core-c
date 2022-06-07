@@ -170,6 +170,13 @@ ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
     return conn->_loop;
 }
 
+ah_extern ah_tcp_shutdown_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn)
+{
+    ah_assert(conn != NULL);
+
+    return conn->_shutdown_flags;
+}
+
 ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
 {
     ah_assert(conn != NULL);
@@ -190,6 +197,14 @@ ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
 
     return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
         && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) == 0u;
+}
+
+ah_extern bool ah_tcp_conn_is_readable_and_writable(const ah_tcp_conn_t* conn)
+{
+    ah_assert(conn != NULL);
+
+    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
+        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RDWR) == 0u;
 }
 
 ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn)

@@ -30,7 +30,7 @@ typedef struct ah_tls_crl ah_tls_crl_t;
 typedef struct ah_tls_ctx ah_tls_ctx_t;
 typedef struct ah_tls_key ah_tls_key_t;
 
-typedef void (*ah_tls_on_handshake_done_cb)(ah_tcp_conn_t* conn, ah_tls_cert_t* peer_chain, ah_tls_err_t err);
+typedef void (*ah_tls_on_handshake_done_cb)(ah_tcp_conn_t* conn, const ah_tls_cert_t* peer_chain, ah_err_t err);
 
 // TLS-compatible certificate (always an X.509 certificate).
 struct ah_tls_cert {
@@ -59,7 +59,7 @@ struct ah_tls_key {
     AH_I_TLS_KEYS_FIELDS
 };
 
-ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs);
+ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done);
 ah_extern ah_tcp_trans_t ah_tls_ctx_as_trans(ah_tls_ctx_t* ctx);
 ah_extern ah_tls_ctx_t* ah_tls_ctx_get_from_conn(ah_tcp_conn_t* conn);
 ah_extern ah_tls_err_t ah_tls_ctx_get_last_error(ah_tls_ctx_t* ctx);

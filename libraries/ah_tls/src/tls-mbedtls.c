@@ -13,11 +13,7 @@
 #include <mbedtls/error.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/version.h>
-
-#define S_STATE_NORMAL                    0x00
-#define S_STATE_ON_WRITE_DONE_CLOSE       0x01
-#define S_STATE_ON_WRITE_DONE_SHUTDOWN_WR 0x02
-#define S_STATE_ON_READ_DATA_HANDSHAKE    0x03
+#include <string.h>
 
 static ah_err_t s_conn_open(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 static ah_err_t s_conn_connect(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
@@ -34,7 +30,9 @@ static void s_conn_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread,
 static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_conn_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 
+static const ah_tls_cert_t* s_cert_from_mbedtls(const mbedtls_x509_crt* crt);
 static ah_err_t s_close_notify(ah_tls_ctx_t* ctx);
+static void s_handshake(ah_tcp_conn_t* conn);
 
 static ah_err_t s_listener_open(void* ctx_, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
 static ah_err_t s_listener_listen(void* ctx_, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
@@ -59,9 +57,9 @@ static const ah_tcp_vtab_t s_conn_vtab = {
     .listener_close = s_listener_close,
 };
 
-ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs)
+ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done)
 {
-    if (ctx == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || certs == NULL) {
+    if (ctx == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || certs == NULL || on_handshake_done == NULL) {
         return AH_EINVAL;
     }
     if ((certs->_own_chain == NULL) != (certs->_own_key == NULL)) {
@@ -74,7 +72,7 @@ ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_t
     *ctx = (ah_tls_ctx_t) {
         ._trans = trans,
         ._certs = certs,
-        ._state = S_STATE_NORMAL,
+        ._on_handshake_done = on_handshake_done,
     };
 
     int res;
@@ -308,14 +306,11 @@ handle_err:
 static ah_err_t s_conn_connect(void* ctx_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     ah_tls_ctx_t* ctx = ctx_;
-    if (ctx == NULL) {
+    if (ctx == NULL || ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_connect == NULL) {
         return AH_ESTATE;
     }
     if (conn == NULL) {
         return AH_EINVAL;
-    }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_connect == NULL) {
-        return AH_ESTATE;
     }
     return ctx->_trans.vtab->conn_connect(ctx->_trans.ctx, conn, raddr);
 }
@@ -323,30 +318,36 @@ static ah_err_t s_conn_connect(void* ctx_, ah_tcp_conn_t* conn, const ah_sockadd
 static ah_err_t s_conn_read_start(void* ctx_, ah_tcp_conn_t* conn)
 {
     ah_tls_ctx_t* ctx = ctx_;
-    if (ctx == NULL) {
+    if (ctx == NULL || ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_read_start == NULL) {
         return AH_ESTATE;
     }
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_start == NULL) {
-        return AH_ESTATE;
+
+    if (!ctx->_is_handshake_done) {
+        ctx->_is_stopping_reads_on_handshake_completion = false;
+        return AH_ENONE;
     }
+
     return ctx->_trans.vtab->conn_read_start(ctx->_trans.ctx, conn);
 }
 
 static ah_err_t s_conn_read_stop(void* ctx_, ah_tcp_conn_t* conn)
 {
     ah_tls_ctx_t* ctx = ctx_;
-    if (ctx == NULL) {
+    if (ctx == NULL || ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_read_stop == NULL) {
         return AH_ESTATE;
     }
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_stop == NULL) {
-        return AH_ESTATE;
+
+    if (!ctx->_is_handshake_done) {
+        ctx->_is_stopping_reads_on_handshake_completion = true;
+        return AH_ENONE;
     }
+
     return ctx->_trans.vtab->conn_read_stop(ctx->_trans.ctx, conn);
 }
 
@@ -361,37 +362,38 @@ static ah_err_t s_conn_write(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
     }
 
     int res = mbedtls_ssl_write(&ctx->_ssl, ah_buf_get_base(&msg->buf), ah_buf_get_size(&msg->buf));
-    return res < 0
-        ? s_mbedtls_res_to_ah_err(ctx, res)
-        : AH_ENONE;
+
+    if (res < 0) {
+        return s_mbedtls_res_to_ah_err(ctx, res);
+    }
+
+    // We guarantee that all of msg is written every time.
+    ah_assert_if_debug(ah_buf_get_size(&msg->buf) == (size_t) res);
+
+    return AH_ENONE;
 }
 
 static ah_err_t s_conn_shutdown(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
 {
     ah_tls_ctx_t* ctx = ctx_;
-    if (ctx == NULL) {
+    if (ctx == NULL || ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_shutdown == NULL) {
         return AH_ESTATE;
     }
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if ((conn->_shutdown_flags ^ flags) == 0u) {
-        return AH_ENONE;
-    }
 
     ah_err_t err;
 
-    if ((flags & AH_TCP_SHUTDOWN_WR) != 0) {
+    if (ah_tcp_conn_is_writable(conn) && (flags & AH_TCP_SHUTDOWN_WR) != 0) {
         err = s_close_notify(ctx);
         if (err != AH_ENONE) {
             return err;
         }
+        ctx->_is_shutting_down_wr_on_next_write_done = true;
     }
 
-    if ((flags & AH_TCP_SHUTDOWN_RD) != 0) {
-        if (ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_shutdown == NULL) {
-            return AH_ESTATE;
-        }
+    if (ah_tcp_conn_is_readable(conn) && (flags & AH_TCP_SHUTDOWN_RD) != 0) {
         err = ctx->_trans.vtab->conn_shutdown(ctx->_trans.ctx, conn, AH_TCP_SHUTDOWN_RD);
         if (err != AH_ENONE) {
             return err;
@@ -406,28 +408,34 @@ static ah_err_t s_close_notify(ah_tls_ctx_t* ctx)
     ah_assert_if_debug(ctx != NULL);
 
     int res = mbedtls_ssl_close_notify(&ctx->_ssl);
-    return res < 0
-        ? s_mbedtls_res_to_ah_err(ctx, res)
-        : AH_ENONE;
+
+    if (res < 0) {
+        return s_mbedtls_res_to_ah_err(ctx, res);
+    }
+
+    return AH_ENONE;
 }
 
 static ah_err_t s_conn_close(void* ctx_, ah_tcp_conn_t* conn)
 {
     ah_tls_ctx_t* ctx = ctx_;
-    if (ctx == NULL) {
+    if (ctx == NULL || ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_close == NULL) {
         return AH_ESTATE;
     }
     if (conn == NULL) {
         return AH_EINVAL;
     }
 
-    if ((conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) == 0u) {
-        return s_close_notify(ctx);
+    if (ah_tcp_conn_is_writable(conn)) {
+        ah_err_t err = s_close_notify(ctx);
+
+        if (err == AH_ENONE) {
+            ctx->_is_closing_on_next_write_done = true;
+        }
+
+        return err;
     }
 
-    if (ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_close == NULL) {
-        return AH_ESTATE;
-    }
     return ctx->_trans.vtab->conn_close(ctx->_trans.ctx, conn);
 }
 
@@ -440,7 +448,79 @@ static void s_conn_on_open(ah_tcp_conn_t* conn, ah_err_t err)
 static void s_conn_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_tls_ctx_t* ctx = ah_tls_ctx_get_from_conn(conn);
+
+    ctx->_is_stopping_reads_on_handshake_completion = true;
     ctx->_conn_cbs->on_connect(conn, err);
+
+    if (ah_tcp_conn_is_readable_and_writable(conn)) {
+        s_handshake(conn);
+    }
+}
+
+static void s_handshake(ah_tcp_conn_t* conn)
+{
+    ah_tls_ctx_t* ctx = ah_tls_ctx_get_from_conn(conn);
+
+    int res;
+    ah_err_t err;
+
+    res = mbedtls_ssl_handshake(&ctx->_ssl);
+
+    switch (res) {
+    case 0:
+        ctx->_is_handshake_done = true;
+
+        if (ctx->_is_stopping_reads_on_handshake_completion) {
+            ctx->_is_stopping_reads_on_handshake_completion = false;
+            err = ah_tcp_conn_read_stop(conn);
+            if (err != AH_ENONE) {
+                err = AH_EINTERN;
+                break;
+            }
+        }
+
+        ctx->_on_handshake_done(conn, s_cert_from_mbedtls(mbedtls_ssl_get_peer_cert(&ctx->_ssl)), AH_ENONE);
+
+        return;
+
+    case MBEDTLS_ERR_SSL_WANT_READ:
+        ctx->_is_handshaking_on_next_read_data = true;
+        if (ah_tcp_conn_is_reading(conn)) {
+            return;
+        }
+        err = ah_tcp_conn_read_start(conn);
+        break;
+
+    case MBEDTLS_ERR_SSL_WANT_WRITE:
+        // As of MbedTLS versions 2.28.0 and 3.1.0, this result code is only
+        // possible if either of the send or receive callbacks set via
+        // mbedtls_ssl_set_bio() return it. None of our callbacks (s_ssl_recv()
+        // and s_ssl_send()) do. We, therefore, hope that this behavior will
+        // remain consistent across future versions and treat the occurrence of
+        // this result code as an internal error.
+        err = AH_EINTERN;
+        break;
+
+    case MBEDTLS_ERR_ERROR_GENERIC_ERROR:
+        if (ctx->_pending_ah_err != AH_ENONE) {
+            err = ctx->_pending_ah_err;
+            ctx->_pending_ah_err = AH_ENONE;
+            break;
+        }
+        // fallthrough
+
+    default:
+        ctx->_last_mbedtls_err = res;
+        err = AH_EDEP;
+        break;
+    }
+
+    ctx->_on_handshake_done(conn, NULL, err);
+}
+
+static const ah_tls_cert_t* s_cert_from_mbedtls(const mbedtls_x509_crt* crt)
+{
+    return (const ah_tls_cert_t*) crt;
 }
 
 static void s_conn_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
@@ -462,82 +542,60 @@ static void s_conn_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread,
 
     int res;
 
-    switch (ctx->_state) {
-    state_handshaking:
-    case S_STATE_ON_READ_DATA_HANDSHAKE:
-        res = mbedtls_ssl_handshake(&ctx->_ssl);
-        switch (res) {
-        case 0:
-            // TODO: Call callback with handshake result.
-            ctx->_state = S_STATE_NORMAL;
-            break;
+    if (ctx->_is_handshaking_on_next_read_data) {
+        ctx->_is_handshaking_on_next_read_data = false;
 
-        case MBEDTLS_ERR_SSL_WANT_READ:
-        case MBEDTLS_ERR_SSL_WANT_WRITE:
+        s_handshake(conn);
+
+        if (!ah_tcp_conn_is_readable(conn)) {
             return;
+        }
+    }
 
-        case MBEDTLS_ERR_ERROR_GENERIC_ERROR:
-            if (ctx->_pending_ah_err != AH_ENONE) {
-                err = ctx->_pending_ah_err;
-                ctx->_pending_ah_err = AH_ENONE;
-                goto handle_err;
-            }
-        // fallthrough
-        default:
-            // TODO: Call callback with handshake result.
-            ctx->_last_mbedtls_err = res;
-            err = AH_EDEP;
+    while (ah_buf_get_size(&ctx->_recv_ciphertext_buf) > 0u) {
+        ah_buf_t recv_plaintext_buf = (ah_buf_t) { 0u };
+        conn->_cbs->on_read_alloc(conn, &recv_plaintext_buf);
+
+        if (ah_buf_is_empty(&recv_plaintext_buf)) {
+            err = AH_ENOBUFS;
             goto handle_err;
         }
-        // fallthrough
 
-    case S_STATE_NORMAL:
-    case S_STATE_ON_WRITE_DONE_CLOSE:
-    case S_STATE_ON_WRITE_DONE_SHUTDOWN_WR:
-        while (ah_buf_get_size(&ctx->_recv_ciphertext_buf) > 0u) {
-            ah_buf_t recv_plaintext_buf = (ah_buf_t) { 0u };
-            conn->_cbs->on_read_alloc(conn, &recv_plaintext_buf);
+        // This call will make MbedTLS pull the ciphertext in `ctx->_recv_ciphertext_buf` through the appropriate
+        // decryption algorithms and write any resulting plaintext to `recv_plaintext_buf`. See also `s_ssl_recv()`.
+        res = mbedtls_ssl_read(&ctx->_ssl, ah_buf_get_base(&recv_plaintext_buf), ah_buf_get_size(&recv_plaintext_buf));
 
-            if (ah_buf_is_empty(&recv_plaintext_buf)) {
-                err = AH_ENOBUFS;
+        if (res <= 0) {
+            switch (res) {
+            case 0:
+            case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+                err = ctx->_trans.vtab->conn_shutdown(ctx->_trans.ctx, conn, AH_TCP_SHUTDOWN_RD);
+                if (err == AH_ESTATE || err == AH_ENOTCONN) {
+                    return;
+                }
+                if (err == AH_ENONE) {
+                    err = AH_EEOF;
+                }
+                goto handle_err;
+
+            case MBEDTLS_ERR_SSL_WANT_READ:
+                // When more data becomes available, this function will be
+                // called again, and, consequently, so will mbedtls_ssl_read().
+                return;
+
+            case MBEDTLS_ERR_SSL_WANT_WRITE:
+                // See MBEDTLS_ERR_SSL_WANT_WRITE case in s_handshake().
+                err = AH_EINTERN;
+                goto handle_err;
+
+            default:
+                ctx->_last_mbedtls_err = res;
+                err = AH_EDEP;
                 goto handle_err;
             }
-
-            // This call will make MbedTLS pull the ciphertext in `ctx->_recv_ciphertext_buf` through the appropriate
-            // decryption algorithms and write any resulting plaintext to `recv_plaintext_buf`. See also `s_ssl_recv()`.
-            res = mbedtls_ssl_read(&ctx->_ssl, ah_buf_get_base(&recv_plaintext_buf), ah_buf_get_size(&recv_plaintext_buf));
-
-            if (res <= 0) {
-                switch (res) {
-                case 0:
-                case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
-                    err = ctx->_trans.vtab->conn_shutdown(ctx->_trans.ctx, conn, AH_TCP_SHUTDOWN_RD);
-                    if (err == AH_ESTATE || err == AH_ENOTCONN) {
-                        return;
-                    }
-                    if (err == AH_ENONE) {
-                        err = AH_EEOF;
-                    }
-                    goto handle_err;
-
-                case MBEDTLS_ERR_SSL_WANT_READ:
-                case MBEDTLS_ERR_SSL_WANT_WRITE:
-                    ctx->_state = S_STATE_ON_READ_DATA_HANDSHAKE;
-                    goto state_handshaking;
-
-                default:
-                    ctx->_last_mbedtls_err = res;
-                    err = AH_EDEP;
-                    goto handle_err;
-                }
-            }
-
-            ctx->_conn_cbs->on_read_data(conn, recv_plaintext_buf, (size_t) res, AH_ENONE);
         }
-        break;
 
-    default:
-        ah_unreachable();
+        ctx->_conn_cbs->on_read_data(conn, recv_plaintext_buf, (size_t) res, AH_ENONE);
     }
 
 handle_err:
@@ -552,35 +610,54 @@ static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
         goto handle_err;
     }
 
-    switch (ctx->_state) {
-    case S_STATE_ON_WRITE_DONE_CLOSE:
-        if (ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_close == NULL) {
-            err = AH_ESTATE;
-            goto handle_err;
-        }
-        (void) ctx->_trans.vtab->conn_close(ctx->_trans.ctx, conn);
-        ctx->_state = S_STATE_NORMAL;
-        return;
+    if (ctx->_is_shutting_down_wr_on_next_write_done) {
+        ctx->_is_shutting_down_wr_on_next_write_done = false;
 
-    case S_STATE_ON_WRITE_DONE_SHUTDOWN_WR:
-        if (ctx->_trans.vtab == NULL || ctx->_trans.vtab->conn_shutdown == NULL) {
-            err = AH_ESTATE;
-            goto handle_err;
-        }
+        ah_assert_if_debug(ctx->_trans.vtab != NULL);
+        ah_assert_if_debug(ctx->_trans.vtab->conn_shutdown != NULL);
+
         err = ctx->_trans.vtab->conn_shutdown(ctx->_trans.ctx, conn, AH_TCP_SHUTDOWN_WR);
-        if (err != AH_ENONE) {
+        switch (err) {
+        case AH_ENONE:
+            return;
+
+        case AH_EINVAL:
+            err = AH_EINTERN;
+            goto handle_err;
+
+        case AH_ESTATE:
+            // Since we were able to write something (this code is in the write
+            // completion callback), it must be that the connection has been
+            // closed. If so, then we can consider our job done and return.
+            return;
+
+        default:
             goto handle_err;
         }
-        ctx->_state = S_STATE_NORMAL;
-        return;
+    }
 
-    case S_STATE_NORMAL:
-    case S_STATE_ON_READ_DATA_HANDSHAKE:
-        // TODO: Work!
-        break;
+    if (ctx->_is_closing_on_next_write_done) {
+        ctx->_is_closing_on_next_write_done = false;
 
-    default:
-        ah_unreachable();
+        ah_assert_if_debug(ctx->_trans.vtab != NULL);
+        ah_assert_if_debug(ctx->_trans.vtab->conn_close != NULL);
+
+        err = ctx->_trans.vtab->conn_close(ctx->_trans.ctx, conn);
+        switch (err) {
+        case AH_ENONE:
+            return;
+
+        case AH_EINVAL:
+            err = AH_EINTERN;
+            goto handle_err;
+
+        case AH_ESTATE:
+            // Already closed. We're done!
+            return;
+
+        default:
+            goto handle_err;
+        }
     }
 
 handle_err:
