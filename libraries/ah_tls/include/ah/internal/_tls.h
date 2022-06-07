@@ -21,34 +21,56 @@
  mbedtls_pk_context* _own_key;     \
  mbedtls_x509_crl* _revocations;
 
-#define AH_I_TLS_CRL_FIELDS \
- mbedtls_x509_crl _x509_crl;
-
-#define AH_I_TLS_CTX_FIELDS                           \
+#define AH_I_TLS_CLIENT_FIELDS                        \
  ah_tcp_trans_t _trans;                               \
  const ah_tcp_conn_cbs_t* _conn_cbs;                  \
- const ah_tcp_listener_cbs_t* _ln_cbs;                \
- ah_tls_cert_store_t* _certs;                         \
- ah_tls_on_handshake_done_cb _on_handshake_done;      \
+                                                      \
  ah_buf_t _recv_ciphertext_buf;                       \
  struct ah_i_tls_send_queue _send_ciphertext_queue;   \
+                                                      \
  bool _is_closing_on_next_write_done             : 1; \
  bool _is_handshake_done                         : 1; \
  bool _is_handshaking_on_next_read_data          : 1; \
  bool _is_shutting_down_wr_on_next_write_done    : 1; \
  bool _is_stopping_reads_on_handshake_completion : 1; \
                                                       \
- int _last_mbedtls_err;                               \
- ah_err_t _pending_ah_err;                            \
+ struct ah_i_tls_errs _errs;                          \
                                                       \
- mbedtls_ctr_drbg_context _ctr_drbg;                  \
- mbedtls_entropy_context _entropy;                    \
- mbedtls_ssl_context _ssl;                            \
- mbedtls_ssl_cache_context _ssl_cache;                \
- mbedtls_ssl_config _ssl_conf;
+ struct ah_i_tls_ctx* _ctx;                           \
+ mbedtls_ssl_context _ssl;
+
+#define AH_I_TLS_CRL_FIELDS \
+ mbedtls_x509_crl _x509_crl;
 
 #define AH_I_TLS_KEYS_FIELDS \
  mbedtls_pk_context _pk_cxt;
+
+#define AH_I_TLS_SERVER_FIELDS         \
+ ah_tcp_trans_t _trans;                \
+ const ah_tcp_conn_cbs_t* _conn_cbs;   \
+ const ah_tcp_listener_cbs_t* _ln_cbs; \
+                                       \
+ struct ah_i_tls_errs _errs;           \
+                                       \
+ struct ah_i_tls_ctx _ctx;             \
+ mbedtls_ssl_context _ssl;             \
+ mbedtls_ssl_cache_context _ssl_cache;
+
+struct ah_tls_cert;
+struct ah_tcp_conn;
+
+struct ah_i_tls_errs {
+    int _last_mbedtls_err;
+    int _pending_ah_err;
+};
+
+struct ah_i_tls_ctx {
+    void (*_on_handshake_done_cb)(struct ah_tcp_conn* conn, const struct ah_tls_cert* peer_chain, int err);
+
+    mbedtls_ctr_drbg_context _ctr_drbg;
+    mbedtls_entropy_context _entropy;
+    mbedtls_ssl_config _ssl_conf;
+};
 
 struct ah_i_tls_send_queue {
     size_t _capacity;
