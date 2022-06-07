@@ -89,6 +89,28 @@
   }                                                               \
  }
 
+#define AH_I_RING_GEN_INIT(QUALIFIERS, NAME_PREFIX, RING_TYPE, ENTRY_TYPE, INITIAL_CAPACITY) \
+ QUALIFIERS ah_err_t NAME_PREFIX##_init(RING_TYPE* ring)                                     \
+ {                                                                                           \
+  ah_assert_if_debug(ring != NULL);                                                          \
+                                                                                             \
+  size_t capacity_in_bytes;                                                                  \
+  if (ah_mul_size(INITIAL_CAPACITY, sizeof(ENTRY_TYPE), &capacity_in_bytes) != AH_ENONE) {   \
+   return AH_ENOMEM;                                                                         \
+  }                                                                                          \
+                                                                                             \
+  ring->_entries = malloc(capacity_in_bytes);                                                \
+  if (ring->_entries == NULL) {                                                              \
+   return AH_ENOMEM;                                                                         \
+  }                                                                                          \
+                                                                                             \
+  ring->_capacity = INITIAL_CAPACITY;                                                        \
+  ring->_index_read = 0u;                                                                    \
+  ring->_index_write = 0u;                                                                   \
+                                                                                             \
+  return AH_ENONE;                                                                           \
+ }
+
 #define AH_I_RING_GEN_IS_EMPTY(QUALIFIERS, NAME_PREFIX, RING_TYPE) \
  QUALIFIERS bool NAME_PREFIX##_is_empty(RING_TYPE* ring)           \
  {                                                                 \

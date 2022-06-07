@@ -46,6 +46,7 @@ static ah_err_t s_mbedtls_res_to_ah_err(ah_tls_ctx_t* ctx, int res);
 
 AH_I_RING_GEN_ALLOC_ENTRY(static, s_send_queue, struct ah_i_tls_send_queue, ah_tcp_msg_t, 4u)
 AH_I_RING_GEN_DISCARD(static, s_send_queue, struct ah_i_tls_send_queue)
+AH_I_RING_GEN_INIT(static, s_send_queue, struct ah_i_tls_send_queue, ah_tcp_msg_t, 4u)
 AH_I_RING_GEN_IS_EMPTY(static, s_send_queue, struct ah_i_tls_send_queue)
 AH_I_RING_GEN_TERM(static, s_send_queue, struct ah_i_tls_send_queue)
 
@@ -80,6 +81,11 @@ ah_extern ah_err_t ah_tls_ctx_init(ah_tls_ctx_t* ctx, ah_tcp_trans_t trans, ah_t
         ._certs = certs,
         ._on_handshake_done = on_handshake_done,
     };
+
+    ah_err_t err = s_send_queue_init(&ctx->_send_ciphertext_queue);
+    if (err != AH_ENONE) {
+        return err;
+    }
 
     int res;
 
