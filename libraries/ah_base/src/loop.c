@@ -8,18 +8,23 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
+#include "ah/internal/_page-allocator-gen.h"
 #include "ah/intrin.h"
 #include "ah/math.h"
 #include "loop-evt.h"
 
 #include <stdlib.h>
 
-static ah_err_t s_alloc_evt_page(ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list);
-static ah_err_t s_alloc_evt_page_list(size_t cap, ah_i_loop_evt_page_t** page_list, ah_i_loop_evt_t** free_list);
-static void s_dealloc_evt_page_list(ah_i_loop_evt_page_t* evt_page_list);
 static void s_cancel_all_pending_events(ah_i_loop_evt_page_t* evt_page_list, ah_i_loop_evt_t* evt_free_list);
 
 static void s_term(ah_loop_t* loop);
+
+AH_I_PAGE_ALLOCATOR_GEN_GROW(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_page_t, ah_i_loop_evt_t, AH_I_LOOP_EVT_PAGE_CAPACITY)
+AH_I_PAGE_ALLOCATOR_GEN_TERM(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_page_t)
+
+AH_I_PAGE_ALLOCATOR_GEN_ALLOC(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t)
+AH_I_PAGE_ALLOCATOR_GEN_FREE(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t)
+AH_I_PAGE_ALLOCATOR_GEN_INIT(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t, ah_i_loop_evt_t, AH_I_LOOP_EVT_PAGE_CAPACITY)
 
 ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
 {
@@ -36,81 +41,16 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
 
     ah_assert_if_debug(opts->capacity != 0u);
 
-    ah_i_loop_evt_page_t* evt_page_list;
-    ah_i_loop_evt_t* evt_free_list;
-    err = s_alloc_evt_page_list(opts->capacity, &evt_page_list, &evt_free_list);
+    err = s_evt_allocator_init(&loop->_evt_allocator, opts->capacity);
     if (err != AH_ENONE) {
         ah_i_loop_term(loop);
         return err;
     }
 
-    loop->_evt_page_list = evt_page_list;
-    loop->_evt_free_list = evt_free_list;
     loop->_now = ah_time_now();
     loop->_state = AH_I_LOOP_STATE_INITIAL;
 
     return AH_ENONE;
-}
-
-static ah_err_t s_alloc_evt_page_list(size_t cap, ah_i_loop_evt_page_t** page_list, ah_i_loop_evt_t** free_list)
-{
-    ah_assert_if_debug(page_list != NULL);
-    ah_assert_if_debug(free_list != NULL);
-
-    ah_i_loop_evt_page_t* page_list_new = NULL;
-    ah_i_loop_evt_t* free_list_new = NULL;
-
-    for (size_t evt_cap_remaining = cap; evt_cap_remaining != 0;) {
-        ah_err_t err = s_alloc_evt_page(&page_list_new, &free_list_new);
-        if (err != AH_ENONE) {
-            s_dealloc_evt_page_list(page_list_new);
-            return err;
-        }
-        if (ah_sub_size(evt_cap_remaining, AH_I_LOOP_EVT_PAGE_CAPACITY, &evt_cap_remaining) != AH_ENONE) {
-            break;
-        }
-    }
-
-    *page_list = page_list_new;
-    *free_list = free_list_new;
-
-    return AH_ENONE;
-}
-
-static ah_err_t s_alloc_evt_page(ah_i_loop_evt_page_t** evt_page, ah_i_loop_evt_t** free_list)
-{
-    ah_assert_if_debug(evt_page != NULL);
-    ah_assert_if_debug(free_list != NULL);
-
-    ah_i_loop_evt_page_t* evt_page_next = *evt_page;
-    ah_i_loop_evt_page_t* evt_page_first = malloc(sizeof(ah_i_loop_evt_page_t));
-    if (evt_page_first == NULL) {
-        return AH_ENOMEM;
-    }
-
-    ah_i_loop_evt_t* array = evt_page_first->_evt_array;
-    for (size_t i = 1; i < AH_I_LOOP_EVT_PAGE_CAPACITY; i += 1) {
-        array[i - 1]._next_free = &array[i];
-    }
-
-    array[AH_I_LOOP_EVT_PAGE_CAPACITY - 1]._next_free = (evt_page_next != NULL) ? &evt_page_next->_evt_array[0] : NULL;
-
-    evt_page_first->_next_page = evt_page_next;
-
-    *evt_page = evt_page_first;
-    *free_list = &array[0];
-
-    return AH_ENONE;
-}
-
-static void s_dealloc_evt_page_list(ah_i_loop_evt_page_t* evt_page_list)
-{
-    ah_i_loop_evt_page_t* page = evt_page_list;
-    while (page != NULL) {
-        ah_i_loop_evt_page_t* next_page = page->_next_page;
-        free(page);
-        page = next_page;
-    }
 }
 
 ah_extern bool ah_loop_is_running(const ah_loop_t* loop)
@@ -172,8 +112,8 @@ static void s_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
-    s_cancel_all_pending_events(loop->_evt_page_list, loop->_evt_free_list);
-    s_dealloc_evt_page_list(loop->_evt_page_list);
+    s_cancel_all_pending_events(loop->_evt_allocator._page_list, loop->_evt_allocator._free_list);
+    s_evt_allocator_term(&loop->_evt_allocator);
 
     ah_i_loop_term(loop);
 
@@ -197,7 +137,7 @@ static void s_cancel_all_pending_events(ah_i_loop_evt_page_t* evt_page_list, ah_
     // Call all non-free events.
     for (ah_i_loop_evt_page_t* page = evt_page_list; page != NULL; page = page->_next_page) {
         for (size_t i = 0u; i < AH_I_LOOP_EVT_PAGE_CAPACITY; i += 1u) {
-            ah_i_loop_evt_t* evt = &page->_evt_array[i];
+            ah_i_loop_evt_t* evt = &page->_entries[i];
             if (evt->_subject == NULL) {
                 continue;
             }
@@ -284,17 +224,11 @@ ah_err_t ah_i_loop_evt_alloc(ah_loop_t* loop, ah_i_loop_evt_t** evt)
         return AH_ECANCELED;
     }
 
-    if (loop->_evt_free_list == NULL) {
-        ah_err_t err = s_alloc_evt_page(&loop->_evt_page_list, &loop->_evt_free_list);
-        if (err != AH_ENONE) {
-            return err;
-        }
+    ah_i_loop_evt_t* free_evt;
+    ah_err_t err = s_evt_allocator_alloc(&loop->_evt_allocator, &free_evt);
+    if (err != AH_ENONE) {
+        return err;
     }
-
-    ah_i_loop_evt_t* free_evt = loop->_evt_free_list;
-    ah_i_loop_evt_t* next_free = free_evt->_next_free;
-
-    loop->_evt_free_list = next_free;
 
 #ifndef NDEBUG
     // Help detect double free in debug builds.
@@ -316,6 +250,5 @@ void ah_i_loop_evt_dealloc(ah_loop_t* loop, ah_i_loop_evt_t* evt)
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(evt->_next_free == NULL); // Detect double free in debug builds.
 
-    evt->_next_free = loop->_evt_free_list;
-    loop->_evt_free_list = evt;
+    s_evt_allocator_free(&loop->_evt_allocator, evt);
 }

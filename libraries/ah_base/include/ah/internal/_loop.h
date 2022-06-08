@@ -24,30 +24,34 @@
 #define AH_I_LOOP_STATE_TERMINATING 0x08
 #define AH_I_LOOP_STATE_TERMINATED  0x10
 
-#define AH_I_LOOP_EVT_PAGE_SIZE     8192
+#define AH_I_LOOP_EVT_PAGE_SIZE     4096
 #define AH_I_LOOP_EVT_PAGE_CAPACITY ((AH_I_LOOP_EVT_PAGE_SIZE / sizeof(ah_i_loop_evt_t)) - 1)
 
-#define AH_I_LOOP_FIELDS                    \
- struct ah_i_loop_evt_page* _evt_page_list; \
- struct ah_i_loop_evt* _evt_free_list;      \
-                                            \
- ah_time_t _now;                            \
- ah_err_t _pending_err;                     \
- int _state;                                \
-                                            \
+#define AH_I_LOOP_FIELDS                        \
+ struct ah_i_loop_evt_allocator _evt_allocator; \
+                                                \
+ ah_time_t _now;                                \
+ ah_err_t _pending_err;                         \
+ int _state;                                    \
+                                                \
  AH_I_LOOP_PLATFORM_FIELDS
+
+struct ah_i_loop_evt_allocator {
+    struct ah_i_loop_evt_page* _page_list;
+    struct ah_i_loop_evt* _free_list;
+};
 
 struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS
 
     void* _subject; // Must be non-NULL while the event is in use.
-    void* _object; // Arbitrary data associated with event.
+    void* _object;  // Arbitrary data associated with event.
 
     ah_i_loop_evt_t* _next_free; // Used by loop allocator. Do not use directly.
 };
 
 struct ah_i_loop_evt_page {
-    ah_i_loop_evt_t _evt_array[AH_I_LOOP_EVT_PAGE_CAPACITY];
+    ah_i_loop_evt_t _entries[AH_I_LOOP_EVT_PAGE_CAPACITY];
     char _pad[sizeof(ah_i_loop_evt_t) - sizeof(ah_i_loop_evt_page_t*)];
     ah_i_loop_evt_page_t* _next_page;
 };

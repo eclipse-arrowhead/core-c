@@ -12,6 +12,7 @@ set(
     include/ah/defs.h
     include/ah/err.h
     include/ah/internal/_loop.h
+    include/ah/internal/_page-allocator-gen.h
     include/ah/internal/_ring-gen.h
     include/ah/internal/_sock.h
     include/ah/internal/_task.h

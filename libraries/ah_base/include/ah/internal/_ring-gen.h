@@ -13,6 +13,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+// struct RING_TYPE {
+//     size_t _capacity;
+//     size_t _index_read;
+//     size_t _index_write;
+//     ENTRY_TYPE* _entries;
+// }
+
 #define AH_I_RING_GEN_ALLOC_ENTRY(QUALIFIERS, NAME_PREFIX, RING_TYPE, ENTRY_TYPE, MIN_CAPACITY) \
  QUALIFIERS ah_err_t NAME_PREFIX##_alloc_entry(RING_TYPE* ring, ENTRY_TYPE** entry)             \
  {                                                                                              \
