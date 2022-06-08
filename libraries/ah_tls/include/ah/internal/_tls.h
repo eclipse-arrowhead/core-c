@@ -51,7 +51,6 @@
  struct ah_i_tls_errs _errs;           \
                                        \
  struct ah_i_tls_ctx _ctx;             \
- mbedtls_ssl_context _ssl;             \
  mbedtls_ssl_cache_context _ssl_cache;
 
 struct ah_tls_cert;

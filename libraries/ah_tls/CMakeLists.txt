@@ -16,7 +16,17 @@ set(
 include(FindMbedTLS)
 
 if (mbedtls_FOUND)
-    list(APPEND SOURCE_FILES src/tls-mbedtls.c)
+    list(
+        APPEND
+        SOURCE_FILES
+        src/tls-client.h
+        src/tls-client-mbedtls.c
+        src/tls-server-mbedtls.c
+        src/tls-utils.c
+        src/tls-utils.h
+        src/tls-utils-mbedtls.c
+        src/tls-utils-mbedtls.h
+    )
     list(APPEND LINKED_LIBRARIES MbedTLS::mbedtls)
 else ()
     message(FATAL_ERROR "The MbedTLS library could not be found. Required.")

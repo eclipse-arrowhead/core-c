@@ -72,4 +72,10 @@ ah_extern ah_tls_err_t ah_tls_client_get_last_error(ah_tls_client_t* client);
 ah_extern ah_tls_err_t ah_tls_client_get_last_error_from_conn(ah_tcp_conn_t* conn);
 ah_extern void ah_tls_client_term(ah_tls_client_t* client);
 
+ah_extern ah_err_t ah_tls_server_init(ah_tls_server_t* server, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done_cb);
+ah_extern ah_tls_server_t* ah_tls_server_get_from_listener(ah_tcp_listener_t* ln);
+ah_extern ah_tls_err_t ah_tls_server_get_last_error(ah_tls_server_t* server);
+ah_extern ah_tcp_trans_t ah_tls_server_as_trans(ah_tls_server_t* server);
+ah_extern void ah_tls_server_term(ah_tls_server_t* server);
+
 #endif
