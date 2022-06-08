@@ -689,6 +689,8 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
         return;
     }
 
+    // TODO: Recycle client if accepted by a server.
+
     s_send_queue_term(&client->_send_ciphertext_queue);
 
     client->_conn_cbs->on_close(conn, err);

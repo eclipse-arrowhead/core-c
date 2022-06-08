@@ -87,7 +87,7 @@ ah_extern void ah_tls_server_term(ah_tls_server_t* server)
 ah_err_t ah_i_tls_server_open(void* server_, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
     ah_tls_server_t* server = server_;
-    if (server == NULL) {
+    if (server == NULL || server->_trans.vtab == NULL || server->_trans.vtab->listener_open == NULL) {
         return AH_ESTATE;
     }
     if (ln == NULL) {
@@ -97,16 +97,13 @@ ah_err_t ah_i_tls_server_open(void* server_, ah_tcp_listener_t* ln, const ah_soc
     server->_ln_cbs = ln->_cbs;
     ln->_cbs = &s_listener_cbs;
 
-    if (server->_trans.vtab == NULL || server->_trans.vtab->listener_open == NULL) {
-        return AH_ESTATE;
-    }
     return server->_trans.vtab->listener_open(server->_trans.ctx, ln, laddr);
 }
 
 ah_err_t ah_i_tls_server_listen(void* server_, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
 {
     ah_tls_server_t* server = server_;
-    if (server == NULL) {
+    if (server == NULL || server->_trans.vtab == NULL || server->_trans.vtab->listener_listen == NULL) {
         return AH_ESTATE;
     }
     if (ln == NULL) {
@@ -114,50 +111,81 @@ ah_err_t ah_i_tls_server_listen(void* server_, ah_tcp_listener_t* ln, unsigned b
     }
 
     server->_conn_cbs = conn_cbs;
-    ln->_conn_cbs = &ah_i_tls_tcp_conn_cbs;
 
-    (void) ln;
-    (void) backlog;
-    (void) conn_cbs;
-    return AH_EOPNOTSUPP;
+    return server->_trans.vtab->listener_listen(server->_trans.ctx, ln, backlog, &ah_i_tls_tcp_conn_cbs);
 }
 
 ah_err_t ah_i_tls_server_close(void* server_, ah_tcp_listener_t* ln)
 {
-    (void) server_;
-    (void) ln;
-    return AH_EOPNOTSUPP;
+    ah_tls_server_t* server = server_;
+    if (server == NULL || server->_trans.vtab == NULL || server->_trans.vtab->listener_close == NULL) {
+        return AH_ESTATE;
+    }
+    if (ln == NULL) {
+        return AH_EINVAL;
+    }
+
+    return server->_trans.vtab->listener_close(server->_trans.ctx, ln);
 }
 
 static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    (void) ln;
-    (void) err;
+    ah_tls_server_t* server = ah_tls_server_get_from_listener(ln);
+
+    if (server == NULL) {
+        ln->_cbs->on_open(ln, AH_ESTATE);
+        return;
+    }
+
+    server->_ln_cbs->on_open(ln, err);
 }
 
 static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    (void) ln;
-    (void) err;
+    ah_tls_server_t* server = ah_tls_server_get_from_listener(ln);
+
+    if (server == NULL) {
+        ln->_cbs->on_listen(ln, AH_ESTATE);
+        return;
+    }
+
+    server->_ln_cbs->on_listen(ln, err);
 }
 
 static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    (void) ln;
-    (void) err;
+    ah_tls_server_t* server = ah_tls_server_get_from_listener(ln);
+
+    if (server == NULL) {
+        ln->_cbs->on_close(ln, AH_ESTATE);
+        return;
+    }
+
+    server->_ln_cbs->on_close(ln, err);
 }
 
 static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn)
 {
-    (void) ln;
-    (void) conn;
+    ah_tls_server_t* server = ah_tls_server_get_from_listener(ln);
+
+    if (server == NULL) {
+        ln->_cbs->on_conn_accept(ln, NULL, NULL, AH_ESTATE);
+        return;
+    }
+
+    server->_ln_cbs->on_conn_alloc(ln, conn);
 }
 
 static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
-    // mbedtls_ssl_set_bio(&server->_ssl, ln, s_ssl_send, s_ssl_recv, NULL);
-    (void) ln;
-    (void) conn;
-    (void) raddr;
-    (void) err;
+    // TODO: Allocate and setup ah_tls_client_t, associate it with conn.
+
+    ah_tls_server_t* server = ah_tls_server_get_from_listener(ln);
+
+    if (server == NULL) {
+        ln->_cbs->on_conn_accept(ln, NULL, NULL, AH_ESTATE);
+        return;
+    }
+
+    server->_ln_cbs->on_conn_accept(ln, conn, raddr, err);
 }
