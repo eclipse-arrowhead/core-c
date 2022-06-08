@@ -11,9 +11,6 @@
 
 extern const ah_tcp_vtab_t ah_i_tls_tcp_vtab;
 
-int ah_i_tls_ctx_init(struct ah_i_tls_ctx* ctx, ah_mbedtls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done_cb, int endpoint);
-void ah_i_tls_ctx_term(struct ah_i_tls_ctx* ctx);
-
-ah_err_t ah_i_tls_mbedtls_res_to_err(struct ah_i_tls_errs* errs, int res);
+ah_err_t ah_i_tls_mbedtls_res_to_err(struct ah_i_mbedtls_errs* errs, int res);
 
 #endif

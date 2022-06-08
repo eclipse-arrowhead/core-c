@@ -27,47 +27,7 @@ const ah_tcp_vtab_t ah_i_tls_tcp_vtab = {
     .listener_close = ah_i_tls_server_close,
 };
 
-int ah_i_tls_ctx_init(struct ah_i_tls_ctx* ctx, ah_mbedtls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done_cb, int endpoint)
-{
-    ah_assert_if_debug(ctx != NULL);
-
-    int res;
-
-    mbedtls_entropy_init(&ctx->_entropy);
-
-    mbedtls_ctr_drbg_init(&ctx->_ctr_drbg);
-    res = mbedtls_ctr_drbg_seed(&ctx->_ctr_drbg, mbedtls_entropy_func, &ctx->_entropy, NULL, 0u);
-    if (res != 0) {
-        return res;
-    }
-
-    mbedtls_ssl_config_init(&ctx->_ssl_conf);
-    res = mbedtls_ssl_config_defaults(&ctx->_ssl_conf, endpoint, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
-    if (res != 0) {
-        return res;
-    }
-
-    mbedtls_ssl_conf_rng(&ctx->_ssl_conf, mbedtls_ctr_drbg_random, &ctx->_ctr_drbg);
-
-    mbedtls_ssl_conf_ca_chain(&ctx->_ssl_conf, certs->authorities, certs->revocations);
-    res = mbedtls_ssl_conf_own_cert(&ctx->_ssl_conf, certs->own_chain, certs->own_key);
-    if (res != 0) {
-        return res;
-    }
-
-    ctx->_on_handshake_done_cb = on_handshake_done_cb;
-
-    return 0;
-}
-
-void ah_i_tls_ctx_term(struct ah_i_tls_ctx* ctx)
-{
-    mbedtls_ctr_drbg_free(&ctx->_ctr_drbg);
-    mbedtls_entropy_free(&ctx->_entropy);
-    mbedtls_ssl_config_free(&ctx->_ssl_conf);
-}
-
-ah_err_t ah_i_tls_mbedtls_res_to_err(struct ah_i_tls_errs* errs, int res)
+ah_err_t ah_i_tls_mbedtls_res_to_err(struct ah_i_mbedtls_errs* errs, int res)
 {
     ah_assert_if_debug(errs != NULL);
     ah_assert_if_debug(res <= 0);

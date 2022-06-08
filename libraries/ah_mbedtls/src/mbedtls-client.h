@@ -11,7 +11,7 @@
 
 extern const ah_tcp_conn_cbs_t ah_i_tls_tcp_conn_cbs;
 
-ah_err_t ah_i_tls_client_init(ah_tls_client_t* client, ah_tcp_trans_t trans, struct ah_i_tls_ctx* ctx);
+ah_err_t ah_i_tls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf);
 
 ah_err_t ah_i_tls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 ah_err_t ah_i_tls_client_connect(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
