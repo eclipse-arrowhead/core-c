@@ -21,22 +21,20 @@
  mbedtls_pk_context* _own_key;     \
  mbedtls_x509_crl* _revocations;
 
-#define AH_I_TLS_CLIENT_FIELDS                        \
- ah_tcp_trans_t _trans;                               \
- const ah_tcp_conn_cbs_t* _conn_cbs;                  \
-                                                      \
- ah_buf_t _recv_ciphertext_buf;                       \
- struct ah_i_tls_send_queue _send_ciphertext_queue;   \
-                                                      \
- bool _is_closing_on_next_write_done             : 1; \
- bool _is_handshake_done                         : 1; \
- bool _is_handshaking_on_next_read_data          : 1; \
- bool _is_shutting_down_wr_on_next_write_done    : 1; \
- bool _is_stopping_reads_on_handshake_completion : 1; \
-                                                      \
- struct ah_i_tls_errs _errs;                          \
-                                                      \
- struct ah_i_tls_ctx* _ctx;                           \
+#define AH_I_TLS_CLIENT_FIELDS                      \
+ ah_tcp_trans_t _trans;                             \
+ const ah_tcp_conn_cbs_t* _conn_cbs;                \
+                                                    \
+ ah_buf_t _recv_ciphertext_buf;                     \
+ struct ah_i_tls_send_queue _send_ciphertext_queue; \
+                                                    \
+ bool _is_handshake_done;                           \
+ bool _is_handshaking_on_next_read_data;            \
+ bool _is_stopping_reads_on_handshake_completion;   \
+                                                    \
+ struct ah_i_tls_errs _errs;                        \
+                                                    \
+ struct ah_i_tls_ctx* _ctx;                         \
  mbedtls_ssl_context _ssl;
 
 #define AH_I_TLS_CRL_FIELDS \
@@ -76,7 +74,7 @@ struct ah_i_tls_send_queue {
     size_t _capacity;
     size_t _index_read;
     size_t _index_write;
-    struct ah_tcp_msg* _entries;
+    struct ah_i_tls_send_queue_entry* _entries;
 };
 
 #endif

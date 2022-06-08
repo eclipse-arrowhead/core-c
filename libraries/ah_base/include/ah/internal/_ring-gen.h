@@ -119,16 +119,16 @@
   return ring->_index_read == ring->_index_write;                  \
  }
 
-#define AH_I_RING_GEN_PEEK(QUALIFIERS, NAME_PREFIX, RING_TYPE) \
- QUALIFIERS ENTRY_TYPE* NAME_PREFIX##_peek(RING_TYPE* ring)    \
- {                                                             \
-  ah_assert_if_debug(ring != NULL);                            \
-                                                               \
-  if (ring->_index_read == ring->_index_write) {               \
-   return NULL;                                                \
-  }                                                            \
-                                                               \
-  return &ring->_entries[ring->_index_read];                   \
+#define AH_I_RING_GEN_PEEK(QUALIFIERS, NAME_PREFIX, RING_TYPE, ENTRY_TYPE) \
+ QUALIFIERS ENTRY_TYPE* NAME_PREFIX##_peek(RING_TYPE* ring)                \
+ {                                                                         \
+  ah_assert_if_debug(ring != NULL);                                        \
+                                                                           \
+  if (ring->_index_read == ring->_index_write) {                           \
+   return NULL;                                                            \
+  }                                                                        \
+                                                                           \
+  return &ring->_entries[ring->_index_read];                               \
  }
 
 #define AH_I_RING_GEN_POP(QUALIFIERS, NAME_PREFIX, RING_TYPE, ENTRY_TYPE) \

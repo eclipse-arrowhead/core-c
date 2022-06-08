@@ -16,6 +16,16 @@
 #include <mbedtls/version.h>
 #include <string.h>
 
+#define S_SEND_QUEUE_ENTRY_KIND_UNSET       0u
+#define S_SEND_QUEUE_ENTRY_KIND_DATA        1u
+#define S_SEND_QUEUE_ENTRY_KIND_SHUTDOWN_WR 2u
+#define S_SEND_QUEUE_ENTRY_KIND_CLOSE       3u
+
+struct ah_i_tls_send_queue_entry {
+    unsigned kind;
+    struct ah_tcp_msg msg;
+};
+
 static ah_err_t s_conn_open(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 static ah_err_t s_conn_connect(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 static ah_err_t s_conn_read_start(void* client_, ah_tcp_conn_t* conn);
@@ -53,10 +63,10 @@ static void s_handshake(ah_tcp_conn_t* conn);
 static int s_ssl_send(void* conn_, const unsigned char* buf, size_t len);
 static int s_ssl_recv(void* conn_, unsigned char* buf, size_t len);
 
-AH_I_RING_GEN_ALLOC_ENTRY(static, s_send_queue, struct ah_i_tls_send_queue, ah_tcp_msg_t, 4u)
+AH_I_RING_GEN_ALLOC_ENTRY(static, s_send_queue, struct ah_i_tls_send_queue, struct ah_i_tls_send_queue_entry, 4u)
 AH_I_RING_GEN_DISCARD(static, s_send_queue, struct ah_i_tls_send_queue)
-AH_I_RING_GEN_INIT(static, s_send_queue, struct ah_i_tls_send_queue, ah_tcp_msg_t, 4u)
-AH_I_RING_GEN_IS_EMPTY(static, s_send_queue, struct ah_i_tls_send_queue)
+AH_I_RING_GEN_INIT(static, s_send_queue, struct ah_i_tls_send_queue, struct ah_i_tls_send_queue_entry, 4u)
+AH_I_RING_GEN_PEEK(static, s_send_queue, struct ah_i_tls_send_queue, struct ah_i_tls_send_queue_entry)
 AH_I_RING_GEN_TERM(static, s_send_queue, struct ah_i_tls_send_queue)
 
 static const ah_tcp_conn_cbs_t s_conn_cbs = {
@@ -258,13 +268,15 @@ static int s_ssl_send(void* conn_, const unsigned char* buf, size_t len)
         goto handle_err;
     }
 
-    ah_tcp_msg_t* msg;
-    err = s_send_queue_alloc_entry(&client->_send_ciphertext_queue, &msg);
+    struct ah_i_tls_send_queue_entry* entry;
+    err = s_send_queue_alloc_entry(&client->_send_ciphertext_queue, &entry);
     if (err != AH_ENONE) {
         goto handle_err;
     }
 
-    err = ah_buf_init(&msg->buf, (uint8_t*) buf, len);
+    entry->kind = S_SEND_QUEUE_ENTRY_KIND_UNSET;
+
+    err = ah_buf_init(&entry->msg.buf, (uint8_t*) buf, len);
     if (err != AH_ENONE) {
         goto handle_err;
     }
@@ -273,7 +285,7 @@ static int s_ssl_send(void* conn_, const unsigned char* buf, size_t len)
         err = AH_ESTATE;
         goto handle_err;
     }
-    err = client->_trans.vtab->conn_write(client->_trans.ctx, conn, msg);
+    err = client->_trans.vtab->conn_write(client->_trans.ctx, conn, &entry->msg);
     if (err != AH_ENONE) {
         goto handle_err;
     }
@@ -390,6 +402,14 @@ static ah_err_t s_conn_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t* m
         return s_mbedtls_res_to_ah_err(&client->_errs, res);
     }
 
+    // mbedtls_ssl_write() calls s_ssl_send(), which adds a new entry of unset kind to the send queue.
+    struct ah_i_tls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
+    if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_UNSET) {
+        return AH_EINTERN;
+    }
+
+    entry->kind = S_SEND_QUEUE_ENTRY_KIND_DATA;
+
     // We guarantee that all of msg is written every time.
     ah_assert_if_debug(ah_buf_get_size(&msg->buf) == (size_t) res);
 
@@ -413,7 +433,12 @@ static ah_err_t s_conn_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutd
         if (err != AH_ENONE) {
             return err;
         }
-        client->_is_shutting_down_wr_on_next_write_done = true;
+        // s_close_notify() calls s_ssl_send(), which adds a new entry of unset kind to the send queue.
+        struct ah_i_tls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
+        if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_UNSET) {
+            return AH_EINTERN;
+        }
+        entry->kind = S_SEND_QUEUE_ENTRY_KIND_SHUTDOWN_WR;
     }
 
     if (ah_tcp_conn_is_readable(conn) && (flags & AH_TCP_SHUTDOWN_RD) != 0) {
@@ -453,7 +478,12 @@ static ah_err_t s_conn_close(void* client_, ah_tcp_conn_t* conn)
         ah_err_t err = s_close_notify(client);
 
         if (err == AH_ENONE) {
-            client->_is_closing_on_next_write_done = true;
+            // s_close_notify() calls s_ssl_send(), which adds a new entry of unset kind to the send queue.
+            struct ah_i_tls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
+            if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_UNSET) {
+                return AH_EINTERN;
+            }
+            entry->kind = S_SEND_QUEUE_ENTRY_KIND_CLOSE;
         }
 
         return err;
@@ -629,13 +659,23 @@ static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_tls_client_t* client = ah_tls_client_get_from_conn(conn);
 
+    struct ah_i_tls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
+    if (entry == NULL || entry->kind == S_SEND_QUEUE_ENTRY_KIND_UNSET) {
+        if (err == AH_ENONE) {
+            err = AH_EINTERN;
+        }
+        goto handle_err;
+    }
+
+    unsigned entry_kind = entry->kind;
+
+    s_send_queue_discard(&client->_send_ciphertext_queue);
+
     if (err != AH_ENONE) {
         goto handle_err;
     }
 
-    if (client->_is_shutting_down_wr_on_next_write_done) {
-        client->_is_shutting_down_wr_on_next_write_done = false;
-
+    if (entry_kind == S_SEND_QUEUE_ENTRY_KIND_SHUTDOWN_WR) {
         ah_assert_if_debug(client->_trans.vtab != NULL);
         ah_assert_if_debug(client->_trans.vtab->conn_shutdown != NULL);
 
@@ -651,17 +691,14 @@ static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
         case AH_ESTATE:
             // Since we were able to write something (this code is in the write
             // completion callback), it must be that the connection has been
-            // closed. If so, then we can consider our job done and return.
+            // closed. If so, we consider our job done and return.
             return;
 
         default:
             goto handle_err;
         }
     }
-
-    if (client->_is_closing_on_next_write_done) {
-        client->_is_closing_on_next_write_done = false;
-
+    else if (entry_kind == S_SEND_QUEUE_ENTRY_KIND_CLOSE) {
         ah_assert_if_debug(client->_trans.vtab != NULL);
         ah_assert_if_debug(client->_trans.vtab->conn_close != NULL);
 
@@ -682,13 +719,6 @@ static void s_conn_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
             goto handle_err;
         }
     }
-
-    if (s_send_queue_is_empty(&client->_send_ciphertext_queue)) {
-        err = AH_EINTERN;
-        goto handle_err;
-    }
-
-    s_send_queue_discard(&client->_send_ciphertext_queue);
 
 handle_err:
     client->_conn_cbs->on_write_done(conn, err);
