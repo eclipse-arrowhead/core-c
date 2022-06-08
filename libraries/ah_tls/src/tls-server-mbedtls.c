@@ -12,8 +12,24 @@
 
 #include <ah/assert.h>
 #include <ah/err.h>
+#include <ah/internal/_page-allocator-gen.h>
 #include <mbedtls/error.h>
 #include <mbedtls/ssl.h>
+
+#define S_CLIENT_ALLOCATOR_PAGE_SIZE     4096
+#define S_CLIENT_ALLOCATOR_PAGE_CAPACITY ((S_CLIENT_ALLOCATOR_PAGE_SIZE / sizeof(ah_tls_client_t)) - 1)
+
+struct ah_i_tls_client_page {
+    struct ah_tls_client _entries[S_CLIENT_ALLOCATOR_PAGE_CAPACITY];
+    struct ah_i_tls_client_page* _next_page;
+};
+
+AH_I_PAGE_ALLOCATOR_GEN_GROW(static, s_client_allocator, struct ah_i_tls_client_allocator, struct ah_i_tls_client_page, ah_tls_client_t, S_CLIENT_ALLOCATOR_PAGE_CAPACITY)
+AH_I_PAGE_ALLOCATOR_GEN_TERM(static, s_client_allocator, struct ah_i_tls_client_allocator, struct ah_i_tls_client_page)
+
+AH_I_PAGE_ALLOCATOR_GEN_ALLOC(static, s_client_allocator, struct ah_i_tls_client_allocator, ah_tls_client_t)
+AH_I_PAGE_ALLOCATOR_GEN_FREE(static, s_client_allocator, struct ah_i_tls_client_allocator, ah_tls_client_t)
+AH_I_PAGE_ALLOCATOR_GEN_INIT(static, s_client_allocator, struct ah_i_tls_client_allocator, struct ah_i_tls_client_page, ah_tls_client_t, S_CLIENT_ALLOCATOR_PAGE_CAPACITY)
 
 static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err);
@@ -42,8 +58,14 @@ ah_extern ah_err_t ah_tls_server_init(ah_tls_server_t* server, ah_tcp_trans_t tr
         ._trans = trans,
     };
 
+    ah_err_t err = s_client_allocator_init(&server->_client_allocator, S_CLIENT_ALLOCATOR_PAGE_CAPACITY);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
     int res = ah_i_tls_ctx_init(&server->_ctx, certs, on_handshake_done_cb, MBEDTLS_SSL_IS_SERVER);
     if (res != 0) {
+        s_client_allocator_term(&server->_client_allocator);
         return ah_i_tls_mbedtls_res_to_err(&server->_errs, res);
     }
 
@@ -82,6 +104,14 @@ ah_extern void ah_tls_server_term(ah_tls_server_t* server)
     ah_assert_if_debug(server != NULL);
 
     ah_i_tls_ctx_term(&server->_ctx);
+}
+
+void ah_i_tls_server_free_accepted_client(ah_tls_server_t* server, ah_tls_client_t* client)
+{
+    ah_assert_if_debug(server != NULL);
+    ah_assert_if_debug(client != NULL);
+
+    s_client_allocator_free(&server->_client_allocator, client);
 }
 
 ah_err_t ah_i_tls_server_open(void* server_, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
@@ -178,8 +208,6 @@ static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
 
 static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
-    // TODO: Allocate and setup ah_tls_client_t, associate it with conn.
-
     ah_tls_server_t* server = ah_tls_server_get_from_listener(ln);
 
     if (server == NULL) {
@@ -187,5 +215,24 @@ static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
         return;
     }
 
+    if (err != AH_ENONE) {
+        goto handle_err;
+    }
+
+    ah_tls_client_t* client;
+    err = s_client_allocator_alloc(&server->_client_allocator, &client);
+    if (err != AH_ENONE) {
+        goto handle_err;
+    }
+
+    err = ah_i_tls_client_init(client, server->_trans, &server->_ctx);
+    if (err != AH_ENONE) {
+        s_client_allocator_free(&server->_client_allocator, client);
+        goto handle_err;
+    }
+
+    client->_server = server;
+
+handle_err:
     server->_ln_cbs->on_conn_accept(ln, conn, raddr, err);
 }

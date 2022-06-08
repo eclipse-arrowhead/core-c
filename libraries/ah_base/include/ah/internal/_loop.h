@@ -52,7 +52,6 @@ struct ah_i_loop_evt {
 
 struct ah_i_loop_evt_page {
     ah_i_loop_evt_t _entries[AH_I_LOOP_EVT_PAGE_CAPACITY];
-    char _pad[sizeof(ah_i_loop_evt_t) - sizeof(ah_i_loop_evt_page_t*)];
     ah_i_loop_evt_page_t* _next_page;
 };
 

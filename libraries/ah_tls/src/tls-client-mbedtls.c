@@ -4,6 +4,9 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
+#include "tls-client.h"
+
+#include "tls-server.h"
 #include "tls-utils-mbedtls.h"
 #include "tls-utils.h"
 
@@ -65,37 +68,16 @@ ah_extern ah_err_t ah_tls_client_init(ah_tls_client_t* client, ah_tcp_trans_t tr
         return AH_EINVAL;
     }
 
-    int res;
-
     struct ah_i_tls_ctx* ctx = malloc(sizeof(struct ah_i_tls_ctx));
     if (ctx == NULL) {
         return AH_ENOMEM;
     }
-    res = ah_i_tls_ctx_init(ctx, certs, on_handshake_done_cb, MBEDTLS_SSL_IS_CLIENT);
+    int res = ah_i_tls_ctx_init(ctx, certs, on_handshake_done_cb, MBEDTLS_SSL_IS_CLIENT);
     if (res != 0) {
-        goto handle_non_zero_res;
+        return ah_i_tls_mbedtls_res_to_err(&client->_errs, res);
     }
 
-    *client = (ah_tls_client_t) {
-        ._trans = trans,
-        ._ctx = ctx,
-    };
-
-    ah_err_t err = s_send_queue_init(&client->_send_ciphertext_queue);
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    mbedtls_ssl_init(&client->_ssl);
-    res = mbedtls_ssl_setup(&client->_ssl, &ctx->_ssl_conf);
-    if (res != 0) {
-        goto handle_non_zero_res;
-    }
-
-    return AH_ENONE;
-
-handle_non_zero_res:
-    return ah_i_tls_mbedtls_res_to_err(&client->_errs, res);
+    return ah_i_tls_client_init(client, trans, ctx);
 }
 
 ah_extern ah_tls_client_t* ah_tls_client_get_from_conn(ah_tcp_conn_t* conn)
@@ -138,6 +120,36 @@ ah_extern void ah_tls_client_term(ah_tls_client_t* client)
 #ifndef NDEBUG
     client->_ctx = NULL;
 #endif
+}
+
+ah_err_t ah_i_tls_client_init(ah_tls_client_t* client, ah_tcp_trans_t trans, struct ah_i_tls_ctx* ctx)
+{
+    ah_assert_if_debug(client != NULL);
+    ah_assert_if_debug(ah_tcp_vtab_is_valid(trans.vtab));
+    ah_assert_if_debug(ctx != NULL);
+
+    int res;
+
+    *client = (ah_tls_client_t) {
+        ._trans = trans,
+        ._ctx = ctx,
+    };
+
+    ah_err_t err = s_send_queue_init(&client->_send_ciphertext_queue);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    mbedtls_ssl_init(&client->_ssl);
+    res = mbedtls_ssl_setup(&client->_ssl, &ctx->_ssl_conf);
+    if (res != 0) {
+        goto handle_non_zero_res;
+    }
+
+    return AH_ENONE;
+
+handle_non_zero_res:
+    return ah_i_tls_mbedtls_res_to_err(&client->_errs, res);
 }
 
 ah_err_t ah_i_tls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
@@ -689,9 +701,12 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
         return;
     }
 
-    // TODO: Recycle client if accepted by a server.
-
+    mbedtls_ssl_free(&client->_ssl);
     s_send_queue_term(&client->_send_ciphertext_queue);
+
+    if (client->_server != NULL) {
+        ah_i_tls_server_free_accepted_client(client->_server, client);
+    }
 
     client->_conn_cbs->on_close(conn, err);
 }

@@ -34,8 +34,11 @@
                                                     \
  struct ah_i_tls_errs _errs;                        \
                                                     \
+ struct ah_tls_server* _server;                     \
  struct ah_i_tls_ctx* _ctx;                         \
- mbedtls_ssl_context _ssl;
+ mbedtls_ssl_context _ssl;                          \
+                                                    \
+ struct ah_tls_client* _next_free;
 
 #define AH_I_TLS_CRL_FIELDS \
  mbedtls_x509_crl _x509_crl;
@@ -51,14 +54,16 @@
  struct ah_i_tls_errs _errs;           \
                                        \
  struct ah_i_tls_ctx _ctx;             \
- mbedtls_ssl_cache_context _ssl_cache;
+ mbedtls_ssl_cache_context _ssl_cache; \
+                                       \
+ struct ah_i_tls_client_allocator _client_allocator;
 
 struct ah_tls_cert;
 struct ah_tcp_conn;
 
-struct ah_i_tls_errs {
-    int _last_mbedtls_err;
-    int _pending_ah_err;
+struct ah_i_tls_client_allocator {
+    struct ah_i_tls_client_page* _page_list;
+    struct ah_tls_client* _free_list;
 };
 
 struct ah_i_tls_ctx {
@@ -67,6 +72,11 @@ struct ah_i_tls_ctx {
     mbedtls_ctr_drbg_context _ctr_drbg;
     mbedtls_entropy_context _entropy;
     mbedtls_ssl_config _ssl_conf;
+};
+
+struct ah_i_tls_errs {
+    int _last_mbedtls_err;
+    int _pending_ah_err;
 };
 
 struct ah_i_tls_send_queue {

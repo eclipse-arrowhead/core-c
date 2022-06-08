@@ -7,6 +7,8 @@
 #ifndef AH_INTERNAL_PAGE_ALLOCATOR_GEN_H_
 #define AH_INTERNAL_PAGE_ALLOCATOR_GEN_H_
 
+#include "../math.h"
+
 // struct ALLOCATOR_TYPE {
 //     PAGE_TYPE* _page_list;
 //     ENTRY_TYPE* _free_list;
