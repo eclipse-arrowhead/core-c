@@ -7,7 +7,7 @@
 #ifndef SRC_TLS_CLIENT_H_
 #define SRC_TLS_CLIENT_H_
 
-#include "ah/tls.h"
+#include "ah/mbedtls.h"
 
 extern const ah_tcp_conn_cbs_t ah_i_tls_tcp_conn_cbs;
 

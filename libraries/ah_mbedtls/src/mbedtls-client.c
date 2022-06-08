@@ -4,11 +4,10 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "tls-client.h"
+#include "mbedtls-client.h"
 
-#include "tls-server.h"
-#include "tls-utils-mbedtls.h"
-#include "tls-utils.h"
+#include "mbedtls-server.h"
+#include "mbedtls-utils.h"
 
 #include <ah/assert.h>
 #include <ah/err.h>
@@ -56,15 +55,12 @@ const ah_tcp_conn_cbs_t ah_i_tls_tcp_conn_cbs = {
     .on_close = s_on_close,
 };
 
-ah_extern ah_err_t ah_tls_client_init(ah_tls_client_t* client, ah_tcp_trans_t trans, ah_tls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done_cb)
+ah_extern ah_err_t ah_tls_client_init(ah_tls_client_t* client, ah_tcp_trans_t trans, ah_mbedtls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done_cb)
 {
     if (client == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || certs == NULL || on_handshake_done_cb == NULL) {
         return AH_EINVAL;
     }
-    if ((certs->_own_chain == NULL) != (certs->_own_key == NULL)) {
-        return AH_EINVAL;
-    }
-    if (certs->_own_chain == NULL && certs->_authorities == NULL) {
+    if (certs->authorities == NULL || ((certs->own_chain == NULL) != (certs->own_key == NULL))) {
         return AH_EINVAL;
     }
 
@@ -88,7 +84,7 @@ ah_extern ah_tls_client_t* ah_tls_client_get_from_conn(ah_tcp_conn_t* conn)
     return conn->_trans.ctx;
 }
 
-ah_extern ah_tls_err_t ah_tls_client_get_last_error(ah_tls_client_t* client)
+ah_extern int ah_tls_client_get_last_mbedtls_err(ah_tls_client_t* client)
 {
     if (client == NULL) {
         return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
@@ -96,9 +92,40 @@ ah_extern ah_tls_err_t ah_tls_client_get_last_error(ah_tls_client_t* client)
     return client->_errs._last_mbedtls_err;
 }
 
-ah_extern ah_tls_err_t ah_tls_client_get_last_error_from_conn(ah_tcp_conn_t* conn)
+ah_extern int ah_tls_client_get_last_mbedtls_err_from_conn(ah_tcp_conn_t* conn)
 {
-    return ah_tls_client_get_last_error(ah_tls_client_get_from_conn(conn));
+    return ah_tls_client_get_last_mbedtls_err(ah_tls_client_get_from_conn(conn));
+}
+
+ah_extern mbedtls_ctr_drbg_context* ah_tls_client_get_drbg_context(ah_tls_client_t* client)
+{
+    ah_assert(client != NULL);
+    ah_assert(client->_ctx != NULL);
+
+    return &client->_ctx->_ctr_drbg;
+}
+
+ah_extern mbedtls_entropy_context* ah_tls_client_get_entropy_context(ah_tls_client_t* client)
+{
+    ah_assert(client != NULL);
+    ah_assert(client->_ctx != NULL);
+
+    return &client->_ctx->_entropy;
+}
+
+ah_extern mbedtls_ssl_config* ah_tls_client_get_ssl_config(ah_tls_client_t* client)
+{
+    ah_assert(client != NULL);
+    ah_assert(client->_ctx != NULL);
+
+    return &client->_ctx->_ssl_conf;
+}
+
+ah_extern mbedtls_ssl_context* ah_tls_client_get_ssl_context(ah_tls_client_t* client)
+{
+    ah_assert(client != NULL);
+
+    return &client->_ssl;
 }
 
 ah_extern ah_tcp_trans_t ah_tls_client_as_trans(ah_tls_client_t* client)
@@ -489,7 +516,7 @@ static void s_handshake(ah_tcp_conn_t* conn)
             }
         }
 
-        client->_ctx->_on_handshake_done_cb(conn, ah_i_tls_cert_from_mbedtls(mbedtls_ssl_get_peer_cert(&client->_ssl)), AH_ENONE);
+        client->_ctx->_on_handshake_done_cb(conn, mbedtls_ssl_get_peer_cert(&client->_ssl), AH_ENONE);
 
         return;
 

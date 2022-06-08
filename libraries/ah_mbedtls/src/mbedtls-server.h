@@ -7,7 +7,7 @@
 #ifndef SRC_TLS_SERVER_H_
 #define SRC_TLS_SERVER_H_
 
-#include "ah/tls.h"
+#include "ah/mbedtls.h"
 
 void ah_i_tls_server_free_accepted_client(ah_tls_server_t* server, ah_tls_client_t* client);
 

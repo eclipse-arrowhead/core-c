@@ -4,18 +4,30 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#include "tls-utils-mbedtls.h"
+#include "mbedtls-utils.h"
+
+#include "mbedtls-client.h"
+#include "mbedtls-server.h"
 
 #include <ah/assert.h>
 #include <ah/err.h>
 #include <mbedtls/error.h>
 
-const ah_tls_cert_t* ah_i_tls_cert_from_mbedtls(const mbedtls_x509_crt* crt)
-{
-    return (const ah_tls_cert_t*) crt;
-}
+const ah_tcp_vtab_t ah_i_tls_tcp_vtab = {
+    .conn_open = ah_i_tls_client_open,
+    .conn_connect = ah_i_tls_client_connect,
+    .conn_read_start = ah_i_tls_client_read_start,
+    .conn_read_stop = ah_i_tls_client_read_stop,
+    .conn_write = ah_i_tls_client_write,
+    .conn_shutdown = ah_i_tls_client_shutdown,
+    .conn_close = ah_i_tls_client_close,
 
-ah_tls_err_t ah_i_tls_ctx_init(struct ah_i_tls_ctx* ctx, ah_tls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done_cb, int endpoint)
+    .listener_open = ah_i_tls_server_open,
+    .listener_listen = ah_i_tls_server_listen,
+    .listener_close = ah_i_tls_server_close,
+};
+
+int ah_i_tls_ctx_init(struct ah_i_tls_ctx* ctx, ah_mbedtls_cert_store_t* certs, ah_tls_on_handshake_done_cb on_handshake_done_cb, int endpoint)
 {
     ah_assert_if_debug(ctx != NULL);
 
@@ -37,8 +49,8 @@ ah_tls_err_t ah_i_tls_ctx_init(struct ah_i_tls_ctx* ctx, ah_tls_cert_store_t* ce
 
     mbedtls_ssl_conf_rng(&ctx->_ssl_conf, mbedtls_ctr_drbg_random, &ctx->_ctr_drbg);
 
-    mbedtls_ssl_conf_ca_chain(&ctx->_ssl_conf, certs->_authorities, certs->_revocations);
-    res = mbedtls_ssl_conf_own_cert(&ctx->_ssl_conf, certs->_own_chain, certs->_own_key);
+    mbedtls_ssl_conf_ca_chain(&ctx->_ssl_conf, certs->authorities, certs->revocations);
+    res = mbedtls_ssl_conf_own_cert(&ctx->_ssl_conf, certs->own_chain, certs->own_key);
     if (res != 0) {
         return res;
     }

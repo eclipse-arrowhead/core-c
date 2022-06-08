@@ -12,7 +12,7 @@
 int main(void)
 {
     (void) printf(
-        "Arrowhead TLS C Library Unit Tests\n"
+        "Arrowhead MbedTLS C Library Unit Tests\n"
         "- Source Commit: %s\n"
         "- Platform:      %s\n",
         ah_lib_commit_str(), ah_lib_platform_str());
