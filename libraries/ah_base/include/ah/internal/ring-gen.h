@@ -27,7 +27,7 @@
                                                                                                 \
   size_t new_index_write = ring->_index_write + 1u;                                             \
   if (new_index_write == ring->_capacity) {                                                     \
-   new_index_write == 0u;                                                                       \
+   new_index_write = 0u;                                                                        \
   }                                                                                             \
                                                                                                 \
   if (ring->_index_read == new_index_write) {                                                   \

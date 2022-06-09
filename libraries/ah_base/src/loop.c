@@ -8,7 +8,7 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/internal/_page-allocator-gen.h"
+#include "ah/internal/page-allocator-gen.h"
 #include "ah/intrin.h"
 #include "ah/math.h"
 #include "loop-evt.h"

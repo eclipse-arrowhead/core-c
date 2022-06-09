@@ -60,6 +60,7 @@
  E(DUP, 5403, "duplicate exists")                                                                     \
  E(EOF, 5401, "unexpected end of stream")                                                             \
  E(INTERN, 5404, "internal error")                                                                    \
+ E(RECONN, 5406, "reconnecting")                                                                      \
  E(STATE, 5402, "state invalid")                                                                      \
                                                                                                       \
  E(2BIG, AH_I_ERR_ONE_OF(E2BIG, 5501), "argument list too long")                                      \

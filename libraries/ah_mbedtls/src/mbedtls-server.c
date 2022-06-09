@@ -11,7 +11,7 @@
 
 #include <ah/assert.h>
 #include <ah/err.h>
-#include <ah/internal/_page-allocator-gen.h>
+#include <ah/internal/page-allocator-gen.h>
 #include <mbedtls/error.h>
 #include <mbedtls/ssl.h>
 
@@ -59,20 +59,18 @@ ah_extern ah_err_t ah_mbedtls_server_init(ah_mbedtls_server_t* server, ah_tcp_tr
     return s_client_allocator_init(&server->_client_allocator, S_CLIENT_ALLOCATOR_PAGE_CAPACITY);
 }
 
-ah_extern ah_mbedtls_server_t* ah_mbedtls_server_get_from_listener(ah_tcp_listener_t* ln)
-{
-    if (ln == NULL || ln->_trans.vtab != &ah_i_tls_tcp_vtab) {
-        return NULL;
-    }
-    return ln->_trans.ctx;
-}
-
 ah_extern int ah_mbedtls_server_get_last_err(ah_mbedtls_server_t* server)
 {
-    if (server == NULL) {
-        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
-    }
+    ah_assert(server != NULL);
+
     return server->_errs._last_mbedtls_err;
+}
+
+ah_extern mbedtls_ssl_config* ah_mbedtls_server_get_ssl_config(ah_mbedtls_server_t* server)
+{
+    ah_assert(server != NULL);
+
+    return server->_ssl_conf;
 }
 
 ah_extern ah_tcp_trans_t ah_mbedtls_server_as_trans(ah_mbedtls_server_t* server)
@@ -88,6 +86,32 @@ ah_extern void ah_mbedtls_server_term(ah_mbedtls_server_t* server)
     ah_assert_if_debug(server != NULL);
 
     s_client_allocator_term(&server->_client_allocator);
+}
+
+ah_extern ah_mbedtls_server_t* ah_mbedtls_listener_get_server(ah_tcp_listener_t* ln)
+{
+    if (ln == NULL || ln->_trans.vtab != &ah_i_tls_tcp_vtab) {
+        return NULL;
+    }
+    return ln->_trans.ctx;
+}
+
+ah_extern int ah_mbedtls_listener_get_last_err(ah_tcp_listener_t* ln)
+{
+    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
+    if (server == NULL) {
+        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
+    }
+    return ah_mbedtls_server_get_last_err(server);
+}
+
+ah_extern mbedtls_ssl_config* ah_mbedtls_listener_get_ssl_config(ah_tcp_listener_t* ln)
+{
+    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
+    if (server == NULL) {
+        return NULL;
+    }
+    return ah_mbedtls_server_get_ssl_config(server);
 }
 
 void ah_i_tls_server_free_accepted_client(ah_mbedtls_server_t* server, ah_mbedtls_client_t* client)
@@ -144,7 +168,7 @@ ah_err_t ah_i_tls_server_close(void* server_, ah_tcp_listener_t* ln)
 
 static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    ah_mbedtls_server_t* server = ah_mbedtls_server_get_from_listener(ln);
+    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
 
     if (server == NULL) {
         ln->_cbs->on_open(ln, AH_ESTATE);
@@ -156,7 +180,7 @@ static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err)
 
 static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    ah_mbedtls_server_t* server = ah_mbedtls_server_get_from_listener(ln);
+    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
 
     if (server == NULL) {
         ln->_cbs->on_listen(ln, AH_ESTATE);
@@ -168,7 +192,7 @@ static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err)
 
 static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err)
 {
-    ah_mbedtls_server_t* server = ah_mbedtls_server_get_from_listener(ln);
+    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
 
     if (server == NULL) {
         ln->_cbs->on_close(ln, AH_ESTATE);
@@ -180,7 +204,7 @@ static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err)
 
 static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn)
 {
-    ah_mbedtls_server_t* server = ah_mbedtls_server_get_from_listener(ln);
+    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
 
     if (server == NULL) {
         ln->_cbs->on_conn_accept(ln, NULL, NULL, AH_ESTATE);
@@ -192,7 +216,7 @@ static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
 
 static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
-    ah_mbedtls_server_t* server = ah_mbedtls_server_get_from_listener(ln);
+    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
 
     if (server == NULL) {
         ln->_cbs->on_conn_accept(ln, NULL, NULL, AH_ESTATE);

@@ -12,13 +12,13 @@ set(
     include/ah/defs.h
     include/ah/err.h
     include/ah/internal/_loop.h
-    include/ah/internal/_page-allocator-gen.h
-    include/ah/internal/_ring-gen.h
     include/ah/internal/_sock.h
     include/ah/internal/_task.h
     include/ah/internal/_tcp.h
     include/ah/internal/_time.h
     include/ah/internal/_udp.h
+    include/ah/internal/page-allocator-gen.h
+    include/ah/internal/ring-gen.h
     include/ah/intrin.h
     include/ah/ip.h
     include/ah/lib.h

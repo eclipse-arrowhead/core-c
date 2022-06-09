@@ -11,7 +11,7 @@
 
 #include <ah/assert.h>
 #include <ah/err.h>
-#include <ah/internal/_ring-gen.h>
+#include <ah/internal/ring-gen.h>
 #include <mbedtls/error.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/version.h>
@@ -64,25 +64,18 @@ ah_extern ah_err_t ah_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_tr
     return ah_i_tls_client_init(client, trans, ssl_conf);
 }
 
-ah_extern ah_mbedtls_client_t* ah_mbedtls_client_get_from_conn(ah_tcp_conn_t* conn)
-{
-    if (conn == NULL || conn->_trans.vtab != &ah_i_tls_tcp_vtab) {
-        return NULL;
-    }
-    return conn->_trans.ctx;
-}
-
 ah_extern int ah_mbedtls_client_get_last_err(ah_mbedtls_client_t* client)
 {
-    if (client == NULL) {
-        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
-    }
+    ah_assert(client != NULL);
+
     return client->_errs._last_mbedtls_err;
 }
 
-ah_extern int ah_mbedtls_client_get_last_err_from_conn(ah_tcp_conn_t* conn)
+ah_extern mbedtls_ssl_context* ah_mbedtls_client_get_ssl_context(ah_mbedtls_client_t* client)
 {
-    return ah_mbedtls_client_get_last_err(ah_mbedtls_client_get_from_conn(conn));
+    ah_assert(client != NULL);
+
+    return &client->_ssl;
 }
 
 ah_extern ah_tcp_trans_t ah_mbedtls_client_as_trans(ah_mbedtls_client_t* client)
@@ -95,7 +88,7 @@ ah_extern ah_tcp_trans_t ah_mbedtls_client_as_trans(ah_mbedtls_client_t* client)
 
 ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* client)
 {
-    ah_assert_if_debug(client != NULL);
+    ah_assert(client != NULL);
 
     mbedtls_ssl_free(&client->_ssl);
     s_send_queue_term(&client->_send_ciphertext_queue);
@@ -103,6 +96,32 @@ ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* client)
     if (client->_server != NULL) {
         ah_i_tls_server_free_accepted_client(client->_server, client);
     }
+}
+
+ah_extern ah_mbedtls_client_t* ah_mbedtls_conn_get_client(ah_tcp_conn_t* conn)
+{
+    if (conn == NULL || conn->_trans.vtab != &ah_i_tls_tcp_vtab) {
+        return NULL;
+    }
+    return conn->_trans.ctx;
+}
+
+ah_extern int ah_mbedtls_conn_get_last_err(ah_tcp_conn_t* conn)
+{
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
+    if (client == NULL) {
+        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
+    }
+    return ah_mbedtls_client_get_last_err(client);
+}
+
+ah_extern mbedtls_ssl_context* ah_mbedtls_conn_get_ssl_context(ah_tcp_conn_t* conn)
+{
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
+    if (client == NULL) {
+        return NULL;
+    }
+    return ah_mbedtls_client_get_ssl_context(client);
 }
 
 ah_err_t ah_i_tls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf)
@@ -162,7 +181,7 @@ static int s_ssl_send(void* conn_, const unsigned char* buf, size_t len)
 
     ah_tcp_conn_t* conn = conn_;
 
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
     if (client == NULL) {
         err = AH_ESTATE;
         goto handle_err;
@@ -214,7 +233,7 @@ static int s_ssl_recv(void* conn_, unsigned char* buf, size_t len)
 
     ah_tcp_conn_t* conn = conn_;
 
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
     if (client == NULL) {
         err = AH_ESTATE;
         goto handle_err;
@@ -307,8 +326,11 @@ ah_err_t ah_i_tls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t*
     }
 
     int res = mbedtls_ssl_write(&client->_ssl, ah_buf_get_base(&msg->buf), ah_buf_get_size(&msg->buf));
-
-    if (res < 0) {
+    if (res == MBEDTLS_ERR_SSL_WANT_READ || res == MBEDTLS_ERR_SSL_WANT_WRITE) {
+        s_handshake(conn);
+        return AH_ERECONN;
+    }
+    else if (res < 0) {
         return ah_i_tls_mbedtls_res_to_err(&client->_errs, res);
     }
 
@@ -317,7 +339,6 @@ ah_err_t ah_i_tls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t*
     if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_UNSET) {
         return AH_EINTERN;
     }
-
     entry->kind = S_SEND_QUEUE_ENTRY_KIND_DATA;
 
     // We guarantee that all of msg is written every time.
@@ -404,7 +425,7 @@ ah_err_t ah_i_tls_client_close(void* client_, ah_tcp_conn_t* conn)
 
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
 
     if (client == NULL) {
         conn->_cbs->on_open(conn, AH_ESTATE);
@@ -416,7 +437,7 @@ static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err)
 
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
 
     if (client == NULL) {
         conn->_cbs->on_connect(conn, AH_ESTATE);
@@ -433,7 +454,7 @@ static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
 
 static void s_handshake(ah_tcp_conn_t* conn)
 {
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
 
     if (client == NULL) {
         conn->_cbs->on_write_done(conn, AH_ESTATE);
@@ -499,7 +520,7 @@ static void s_handshake(ah_tcp_conn_t* conn)
 
 static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
 
     if (client == NULL) {
         conn->_cbs->on_read_data(conn, (ah_buf_t) { 0u }, 0u, AH_ESTATE);
@@ -511,7 +532,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 
 static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err)
 {
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
 
     if (client == NULL) {
         conn->_cbs->on_read_data(conn, (ah_buf_t) { 0u }, 0u, AH_ESTATE);
@@ -589,7 +610,7 @@ handle_err:
 
 static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
 
     if (client == NULL) {
         conn->_cbs->on_write_done(conn, AH_ESTATE);
@@ -663,7 +684,7 @@ handle_err:
 
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
-    ah_mbedtls_client_t* client = ah_mbedtls_client_get_from_conn(conn);
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
 
     if (client == NULL) {
         conn->_cbs->on_close(conn, AH_ESTATE);

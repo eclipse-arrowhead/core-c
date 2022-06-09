@@ -29,5 +29,5 @@ set(
     test/main.c
 )
 
-add_executable(ah_tls_tests ${TEST_FILES})
-target_link_libraries(ah_tls_tests PRIVATE ah_base ah_mbedtls ah_unit)
+add_executable(ah_mbedtls_tests ${TEST_FILES})
+target_link_libraries(ah_mbedtls_tests PRIVATE ah_base ah_mbedtls ah_unit)
