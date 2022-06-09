@@ -27,6 +27,7 @@ target_link_libraries(ah_mbedtls PRIVATE ah_base MbedTLS::mbedtls)
 set(
     TEST_FILES
     test/main.c
+    test/test-mbedtls.c
 )
 
 add_executable(ah_mbedtls_tests ${TEST_FILES})

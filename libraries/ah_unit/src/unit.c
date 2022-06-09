@@ -227,3 +227,34 @@ bool ah_i_unit_assert_unsigned_eq(struct ah_i_unit unit, uintmax_t a, uintmax_t 
 
     return false;
 }
+
+void ah_i_unit_print(struct ah_i_unit unit, const char* message)
+{
+    if (unit.external == NULL) {
+        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
+        return;
+    }
+
+    (void) printf("INFO %s (%s:%d) %s\n", unit.func, unit.file, unit.line, message);
+}
+
+void ah_i_unit_printf(struct ah_i_unit unit, const char* format, ...)
+{
+    if (unit.external == NULL) {
+        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
+        return;
+    }
+    if (format == NULL) {
+        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; format == NULL\n", unit.func, unit.file, unit.line);
+        return;
+    }
+
+    (void) printf("INFO %s (%s:%d) ", unit.func, unit.file, unit.line);
+
+    va_list args;
+    va_start(args, format);
+    (void) vprintf(format, args);
+    va_end(args);
+
+    (void) putchar('\n');
+}

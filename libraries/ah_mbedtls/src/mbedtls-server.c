@@ -239,6 +239,7 @@ static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
         goto handle_err;
     }
 
+    client->_on_handshake_done_cb = server->_on_handshake_done_cb;
     client->_server = server;
 
 handle_err:

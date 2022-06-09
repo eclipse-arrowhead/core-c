@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void test_mbedtls(ah_unit_t* unit);
+
 int main(void)
 {
     (void) printf(
@@ -18,6 +20,8 @@ int main(void)
         ah_lib_commit_str(), ah_lib_platform_str());
 
     struct ah_unit unit = { 0 };
+
+    test_mbedtls(&unit);
 
     ah_unit_print_results(&unit);
 

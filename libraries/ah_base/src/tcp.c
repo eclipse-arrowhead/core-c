@@ -259,7 +259,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
     if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_open == NULL) {
         return AH_ESTATE;
     }
-    return ln->_trans.vtab->listener_open(NULL, ln, laddr);
+    return ln->_trans.vtab->listener_open(ln->_trans.ctx, ln, laddr);
 }
 
 ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
@@ -270,7 +270,7 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
     if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_listen == NULL) {
         return AH_ESTATE;
     }
-    return ln->_trans.vtab->listener_listen(NULL, ln, backlog, conn_cbs);
+    return ln->_trans.vtab->listener_listen(ln->_trans.ctx, ln, backlog, conn_cbs);
 }
 
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln)
@@ -281,7 +281,7 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln)
     if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_close == NULL) {
         return AH_ESTATE;
     }
-    return ln->_trans.vtab->listener_close(NULL, ln);
+    return ln->_trans.vtab->listener_close(ln->_trans.ctx, ln);
 }
 
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln)

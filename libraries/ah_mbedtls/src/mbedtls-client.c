@@ -479,7 +479,13 @@ static void s_handshake(ah_tcp_conn_t* conn)
             }
         }
 
-        client->_on_handshake_done_cb(conn, mbedtls_ssl_get_peer_cert(&client->_ssl), AH_ENONE);
+        const mbedtls_x509_crt* peer_cert;
+#if defined(MBEDTLS_X509_CRT_PARSE_C)
+        peer_cert = mbedtls_ssl_get_peer_cert(&client->_ssl);
+#else
+        peer_cert = NULL;
+#endif
+        client->_on_handshake_done_cb(conn, peer_cert, AH_ENONE);
 
         return;
 
@@ -488,8 +494,11 @@ static void s_handshake(ah_tcp_conn_t* conn)
         if (ah_tcp_conn_is_reading(conn)) {
             return;
         }
-        err = ah_tcp_conn_read_start(conn);
-        break;
+        err = client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
+        if (err != AH_ENONE) {
+            break;
+        }
+        return;
 
     case MBEDTLS_ERR_SSL_WANT_WRITE:
         // As of MbedTLS versions 2.28.0 and 3.1.0, this result code is only
