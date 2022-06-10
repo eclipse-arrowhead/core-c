@@ -11,6 +11,7 @@
 #include <ah/tcp.h>
 #include <ah/unit.h>
 #include <mbedtls/certs.h>
+#include <mbedtls/debug.h>
 #include <mbedtls/error.h>
 
 struct s_tcp_conn_user_data {
@@ -69,6 +70,7 @@ static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
 static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
+static void s_print_mbedtls_err_if_any(ah_unit_t* unit, ah_tcp_conn_t* conn, ah_err_t err);
 static const ah_tcp_conn_cbs_t s_conn_cbs = {
     .on_open = s_on_conn_open,
     .on_connect = s_on_conn_connect,
@@ -142,14 +144,9 @@ static void s_on_conn_handshake_done(ah_tcp_conn_t* conn, const mbedtls_x509_crt
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_t* unit = user_data->unit;
-    char errbuf[256u];
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        if (err == AH_EDEP) {
-            int res = ah_mbedtls_conn_get_last_err(conn);
-            mbedtls_strerror(res, errbuf, sizeof(errbuf));
-            ah_unit_printf(unit, "AH_EDEP caused by: %d; %s", res, errbuf);
-        }
+        s_print_mbedtls_err_if_any(unit, conn, err);
         return;
     }
 
@@ -178,16 +175,22 @@ static void s_on_conn_handshake_done(ah_tcp_conn_t* conn, const mbedtls_x509_crt
     if (!ah_buf_is_empty(&user_data->send_msg.buf)) {
         err = ah_tcp_conn_write(conn, &user_data->send_msg);
         if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-            if (err == AH_EDEP) {
-                int res = ah_mbedtls_conn_get_last_err(conn);
-                mbedtls_strerror(res, errbuf, sizeof(errbuf));
-                ah_unit_printf(unit, "AH_EDEP caused by: %d; %s", res, errbuf);
-            }
+            s_print_mbedtls_err_if_any(unit, conn, err);
             return;
         }
     }
 
     user_data->did_call_handshake_done_cb = true;
+}
+static void s_print_mbedtls_err_if_any(ah_unit_t* unit, ah_tcp_conn_t* conn, ah_err_t err)
+{
+    if (err == AH_EDEP) {
+        int res = ah_mbedtls_conn_get_last_err(conn);
+
+        char errbuf[256u];
+        mbedtls_strerror(res, errbuf, sizeof(errbuf));
+        ah_unit_printf(unit, "AH_EDEP caused by: %d; %s", res, errbuf);
+    }
 }
 
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
@@ -221,7 +224,7 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
-    *buf = ah_buf_from(malloc(256u), 256u);
+    *buf = ah_buf_from(malloc(4096u), 4096u);
 
     user_data->did_call_read_alloc_cb = true;
 }
@@ -233,6 +236,7 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread,
     ah_unit_t* unit = user_data->unit;
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        s_print_mbedtls_err_if_any(unit, conn, err);
         return;
     }
 
@@ -383,11 +387,25 @@ static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
     user_data->did_call_conn_accept_cb = true;
 }
 
+static void s_mbedtls_debug_client(void* ctx, int level, const char* file, int line, const char* str)
+{
+    fprintf((FILE*) ctx, "CLIENT <%d> %s:%04d: %s", level, file, line, str);
+}
+
+static void s_mbedtls_debug_server(void* ctx, int level, const char* file, int line, const char* str)
+{
+    fprintf((FILE*) ctx, "SERVER <%d> %s:%04d: %s", level, file, line, str);
+}
+
 static void s_should_read_and_write_data(ah_unit_t* unit)
 {
     char errbuf[256u];
     ah_err_t err;
     int res;
+
+#if defined(MBEDTLS_DEBUG_C)
+    mbedtls_debug_set_threshold(4);
+#endif
 
     // Setup user data.
 
@@ -480,6 +498,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     mbedtls_ssl_conf_session_cache(&ln_ssl_conf, &ln_ssl_cache, mbedtls_ssl_cache_get, mbedtls_ssl_cache_set);
 #endif
     mbedtls_ssl_conf_ca_chain(&ln_ssl_conf, ln_own_cert.next, NULL);
+    mbedtls_ssl_conf_dbg(&ln_ssl_conf, s_mbedtls_debug_server, stdout);
     res = mbedtls_ssl_conf_own_cert(&ln_ssl_conf, &ln_own_cert, &ln_own_pk);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
@@ -552,6 +571,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_ssl_conf_authmode(&conn_ssl_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     mbedtls_ssl_conf_ca_chain(&conn_ssl_conf, &conn_cacert, NULL);
+    mbedtls_ssl_conf_dbg(&conn_ssl_conf, s_mbedtls_debug_client, stdout);
     res = mbedtls_ssl_conf_own_cert(&conn_ssl_conf, &conn_own_cert, &conn_own_pk);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));

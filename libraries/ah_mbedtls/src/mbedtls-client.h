@@ -21,6 +21,8 @@ ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_ms
 ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_err_t ah_i_mbedtls_client_close(void* client_, ah_tcp_conn_t* conn);
 
+void ah_i_mbedtls_handshake(ah_tcp_conn_t* conn);
+
 int ah_i_mbedtls_ssl_on_send(void* conn_, const unsigned char* buf, size_t len);
 int ah_i_mbedtls_ssl_on_recv(void* conn_, unsigned char* buf, size_t len);
 

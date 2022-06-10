@@ -34,7 +34,6 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 
 static ah_err_t s_close_notify(ah_mbedtls_client_t* client);
-static void s_handshake(ah_tcp_conn_t* conn);
 
 AH_I_RING_GEN_ALLOC_ENTRY(static, s_send_queue, struct ah_i_mbedtls_send_queue, struct ah_i_mbedtls_send_queue_entry, 4u)
 AH_I_RING_GEN_DISCARD(static, s_send_queue, struct ah_i_mbedtls_send_queue)
@@ -209,83 +208,8 @@ static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
     client->_conn_cbs->on_connect(conn, err);
 
     if (ah_tcp_conn_is_readable_and_writable(conn)) {
-        s_handshake(conn);
+        ah_i_mbedtls_handshake(conn);
     }
-}
-
-static void s_handshake(ah_tcp_conn_t* conn)
-{
-    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
-
-    if (client == NULL) {
-        conn->_cbs->on_write_done(conn, AH_ESTATE);
-        return;
-    }
-
-    int res;
-    ah_err_t err;
-
-    res = mbedtls_ssl_handshake(&client->_ssl);
-
-    switch (res) {
-    case 0:
-        client->_is_handshake_done = true;
-
-        if (client->_is_stopping_reads_on_handshake_completion) {
-            client->_is_stopping_reads_on_handshake_completion = false;
-            err = ah_tcp_conn_read_stop(conn);
-            if (err != AH_ENONE) {
-                err = AH_EINTERN;
-                break;
-            }
-        }
-
-        const mbedtls_x509_crt* peer_cert;
-#if defined(MBEDTLS_X509_CRT_PARSE_C)
-        peer_cert = mbedtls_ssl_get_peer_cert(&client->_ssl);
-#else
-        peer_cert = NULL;
-#endif
-        client->_on_handshake_done_cb(conn, peer_cert, AH_ENONE);
-
-        return;
-
-    case MBEDTLS_ERR_SSL_WANT_READ:
-        client->_is_handshaking_on_next_read_data = true;
-        if (ah_tcp_conn_is_reading(conn)) {
-            return;
-        }
-        err = client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
-        if (err != AH_ENONE) {
-            break;
-        }
-        return;
-
-    case MBEDTLS_ERR_SSL_WANT_WRITE:
-        // As of MbedTLS versions 2.28.0 and 3.1.0, this result code is only
-        // possible if either of the send or receive callbacks set via
-        // mbedtls_ssl_set_bio() return it. None of our callbacks (s_ssl_recv()
-        // and ah_i_mbedtls_ssl_on_send()) do. We, therefore, hope that this behavior will
-        // remain consistent across future versions and treat the occurrence of
-        // this result code as an internal error.
-        err = AH_EINTERN;
-        break;
-
-    case MBEDTLS_ERR_ERROR_GENERIC_ERROR:
-        if (client->_errs._pending_ah_err != AH_ENONE) {
-            err = client->_errs._pending_ah_err;
-            client->_errs._pending_ah_err = AH_ENONE;
-            break;
-        }
-        // fallthrough
-
-    default:
-        client->_errs._last_mbedtls_err = res;
-        err = AH_EDEP;
-        break;
-    }
-
-    client->_on_handshake_done_cb(conn, NULL, err);
 }
 
 ah_err_t ah_i_mbedtls_client_read_start(void* client_, ah_tcp_conn_t* conn)
@@ -339,7 +263,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
     if (client->_is_handshaking_on_next_read_data) {
         client->_is_handshaking_on_next_read_data = false;
 
-        s_handshake(conn);
+        ah_i_mbedtls_handshake(conn);
 
         if (!ah_tcp_conn_is_readable(conn)) {
             return;
@@ -428,7 +352,7 @@ ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_ms
 
     int res = mbedtls_ssl_write(&client->_ssl, ah_buf_get_base(&msg->buf), ah_buf_get_size(&msg->buf));
     if (res == MBEDTLS_ERR_SSL_WANT_READ || res == MBEDTLS_ERR_SSL_WANT_WRITE) {
-        s_handshake(conn);
+        ah_i_mbedtls_handshake(conn);
         return AH_ERECONN;
     }
     else if (res < 0) {
@@ -519,7 +443,7 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
     }
 
     if (!client->_is_handshake_done) {
-        s_handshake(conn);
+        ah_i_mbedtls_handshake(conn);
         return;
     }
 
@@ -617,7 +541,82 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
     client->_conn_cbs->on_close(conn, err);
 }
 
-// Called with encrypted data to have it sent.
+void ah_i_mbedtls_handshake(ah_tcp_conn_t* conn)
+{
+    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
+
+    if (client == NULL) {
+        conn->_cbs->on_write_done(conn, AH_ESTATE);
+        return;
+    }
+
+    int res;
+    ah_err_t err;
+
+    res = mbedtls_ssl_handshake(&client->_ssl);
+
+    switch (res) {
+    case 0:
+        client->_is_handshake_done = true;
+
+        if (client->_is_stopping_reads_on_handshake_completion) {
+            client->_is_stopping_reads_on_handshake_completion = false;
+            err = ah_tcp_conn_read_stop(conn);
+            if (err != AH_ENONE) {
+                err = AH_EINTERN;
+                break;
+            }
+        }
+
+        const mbedtls_x509_crt* peer_cert;
+#if defined(MBEDTLS_X509_CRT_PARSE_C)
+        peer_cert = mbedtls_ssl_get_peer_cert(&client->_ssl);
+#else
+        peer_cert = NULL;
+#endif
+        client->_on_handshake_done_cb(conn, peer_cert, AH_ENONE);
+
+        return;
+
+    case MBEDTLS_ERR_SSL_WANT_READ:
+        client->_is_handshaking_on_next_read_data = true;
+        if (ah_tcp_conn_is_reading(conn)) {
+            return;
+        }
+        err = client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
+        if (err != AH_ENONE) {
+            break;
+        }
+        return;
+
+    case MBEDTLS_ERR_SSL_WANT_WRITE:
+        // As of MbedTLS versions 2.28.0 and 3.1.0, this result code is only
+        // possible if either of the send or receive callbacks set via
+        // mbedtls_ssl_set_bio() return it. None of our callbacks (s_ssl_recv()
+        // and ah_i_mbedtls_ssl_on_send()) do. We, therefore, hope that this behavior will
+        // remain consistent across future versions and treat the occurrence of
+        // this result code as an internal error.
+        err = AH_EINTERN;
+        break;
+
+    case MBEDTLS_ERR_ERROR_GENERIC_ERROR:
+        if (client->_errs._pending_ah_err != AH_ENONE) {
+            err = client->_errs._pending_ah_err;
+            client->_errs._pending_ah_err = AH_ENONE;
+            break;
+        }
+        // fallthrough
+
+    default:
+        client->_errs._last_mbedtls_err = res;
+        err = AH_EDEP;
+        break;
+    }
+
+    client->_on_handshake_done_cb(conn, NULL, err);
+}
+
+// Called to send handshake data or encrypted payload data.
 int ah_i_mbedtls_ssl_on_send(void* conn_, const unsigned char* buf, size_t len)
 {
     ah_err_t err;
@@ -669,7 +668,7 @@ handle_err:
     return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
 }
 
-// Called to get new unencrypted data, if available.
+// Called to get handshake data or encrypted payload data, if available.
 int ah_i_mbedtls_ssl_on_recv(void* conn_, unsigned char* buf, size_t len)
 {
     ah_err_t err;

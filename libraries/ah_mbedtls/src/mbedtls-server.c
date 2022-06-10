@@ -19,7 +19,7 @@
 #if AH_CONF_IS_CONSTRAINED
 # define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 4u
 #else
-# define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 128u
+# define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 64u
 #endif
 
 struct ah_i_tls_client_page {
@@ -258,9 +258,5 @@ handle_err:
         return;
     }
 
-    err = client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
-    if (err != AH_ENONE) {
-        s_client_allocator_free(&server->_client_allocator, client);
-        client->_on_handshake_done_cb(conn, NULL, err);
-    }
+    ah_i_mbedtls_handshake(conn);
 }
