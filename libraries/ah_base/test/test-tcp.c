@@ -12,7 +12,7 @@
 #include "ah/unit.h"
 
 struct s_tcp_conn_user_data {
-    ah_buf_t* free_buf;
+    ah_buf_t* free_bufs;
 
     const ah_sockaddr_t* ln_addr;
     ah_tcp_listener_t* ln;
@@ -161,12 +161,12 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
-    if (!ah_unit_assert(user_data->unit, user_data->free_buf != NULL, "connection read buffer cannot be allocated")) {
+    if (!ah_unit_assert(user_data->unit, user_data->free_bufs != NULL, "connection read buffer cannot be allocated")) {
         return;
     }
 
-    *buf = *user_data->free_buf;
-    user_data->free_buf = NULL;
+    *buf = *user_data->free_bufs;
+    user_data->free_bufs = NULL;
 
     user_data->did_call_read_alloc_cb = true;
 }
@@ -342,7 +342,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     }
 
     struct s_tcp_conn_user_data conn_user_data = {
-        .free_buf = &free_buf,
+        .free_bufs = &free_buf,
         .close_call_counter = &close_call_counter,
         .unit = unit,
     };

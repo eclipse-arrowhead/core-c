@@ -14,7 +14,7 @@
 #include <mbedtls/error.h>
 
 struct s_tcp_conn_user_data {
-    ah_buf_t* free_buf;
+    ah_buf_t* free_bufs[2];
 
     const ah_sockaddr_t* ln_addr;
     ah_tcp_listener_t* ln;
@@ -218,12 +218,20 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
-    if (!ah_unit_assert(user_data->unit, user_data->free_buf != NULL, "connection read buffer cannot be allocated")) {
+    ah_unit_t* unit = user_data->unit;
+
+    if (user_data->free_bufs[0u] != NULL) {
+        *buf = *user_data->free_bufs[0u];
+        user_data->free_bufs[0u] = NULL;
+    }
+    else if (user_data->free_bufs[1u] != NULL) {
+        *buf = *user_data->free_bufs[1u];
+        user_data->free_bufs[1u] = NULL;
+    }
+    else {
+        ah_unit_fail(unit, "connection read buffer cannot be allocated");
         return;
     }
-
-    *buf = *user_data->free_buf;
-    user_data->free_buf = NULL;
 
     user_data->did_call_read_alloc_cb = true;
 }
@@ -395,22 +403,30 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     size_t close_call_counter = 0u;
 
-    uint8_t free_buf_base[24] = { 0u };
-    ah_buf_t free_buf;
-    err = ah_buf_init(&free_buf, free_buf_base, sizeof(free_buf_base));
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
-    }
+    uint8_t free_buf0_base[256u] = { 0u };
+    ah_buf_t free_buf0 = ah_buf_from(free_buf0_base, sizeof(free_buf0_base));
+
+    uint8_t free_buf1_base[256u] = { 0u };
+    ah_buf_t free_buf1 = ah_buf_from(free_buf1_base, sizeof(free_buf1_base));
 
     struct s_tcp_conn_user_data conn_user_data = {
-        .free_buf = &free_buf,
+        .free_bufs = {
+            [0u] = &free_buf0,
+            [1u] = &free_buf1,
+        },
         .close_call_counter = &close_call_counter,
         .unit = unit,
     };
 
+    uint8_t free_buf2_base[256u] = { 0u };
+    ah_buf_t free_buf2 = ah_buf_from(free_buf2_base, sizeof(free_buf2_base));
+
     struct s_tcp_listener_user_data ln_user_data = {
         .free_conn = &(ah_tcp_conn_t) { 0u },
         .accept_user_data = (struct s_tcp_conn_user_data) {
+            .free_bufs = {
+                [0u] = &free_buf2,
+            },
             .close_call_counter = &close_call_counter,
             .send_msg = (ah_tcp_msg_t) {
                 .buf = ah_buf_from((uint8_t*) "Hello, Arrowhead!", 18u),
@@ -553,7 +569,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_ssl_config conn_ssl_conf;
     mbedtls_ssl_config_init(&conn_ssl_conf);
-    res = mbedtls_ssl_config_defaults(&conn_ssl_conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+    res = mbedtls_ssl_config_defaults(&conn_ssl_conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_ssl_config_defaults() returned %d; %s", res, errbuf);

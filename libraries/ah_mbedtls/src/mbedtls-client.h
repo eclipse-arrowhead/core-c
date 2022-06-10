@@ -9,16 +9,16 @@
 
 #include "ah/mbedtls.h"
 
-extern const ah_tcp_conn_cbs_t ah_i_tls_tcp_conn_cbs;
+extern const ah_tcp_conn_cbs_t ah_i_mbedtls_tcp_conn_cbs;
 
-ah_err_t ah_i_tls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf);
+ah_err_t ah_i_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf);
 
-ah_err_t ah_i_tls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
-ah_err_t ah_i_tls_client_connect(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
-ah_err_t ah_i_tls_client_read_start(void* client_, ah_tcp_conn_t* conn);
-ah_err_t ah_i_tls_client_read_stop(void* client_, ah_tcp_conn_t* conn);
-ah_err_t ah_i_tls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg);
-ah_err_t ah_i_tls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
-ah_err_t ah_i_tls_client_close(void* client_, ah_tcp_conn_t* conn);
+ah_err_t ah_i_mbedtls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
+ah_err_t ah_i_mbedtls_client_connect(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
+ah_err_t ah_i_mbedtls_client_read_start(void* client_, ah_tcp_conn_t* conn);
+ah_err_t ah_i_mbedtls_client_read_stop(void* client_, ah_tcp_conn_t* conn);
+ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg);
+ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
+ah_err_t ah_i_mbedtls_client_close(void* client_, ah_tcp_conn_t* conn);
 
 #endif

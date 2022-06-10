@@ -17,10 +17,9 @@
 #include <mbedtls/version.h>
 #include <string.h>
 
-#define S_SEND_QUEUE_ENTRY_KIND_UNSET       0u
-#define S_SEND_QUEUE_ENTRY_KIND_DATA        1u
-#define S_SEND_QUEUE_ENTRY_KIND_SHUTDOWN_WR 2u
-#define S_SEND_QUEUE_ENTRY_KIND_CLOSE       3u
+#define S_SEND_QUEUE_ENTRY_KIND_NORMAL      0u
+#define S_SEND_QUEUE_ENTRY_KIND_SHUTDOWN_WR 1u
+#define S_SEND_QUEUE_ENTRY_KIND_CLOSE       2u
 
 struct ah_i_mbedtls_send_queue_entry {
     unsigned kind;
@@ -46,7 +45,7 @@ AH_I_RING_GEN_INIT(static, s_send_queue, struct ah_i_mbedtls_send_queue, struct 
 AH_I_RING_GEN_PEEK(static, s_send_queue, struct ah_i_mbedtls_send_queue, struct ah_i_mbedtls_send_queue_entry)
 AH_I_RING_GEN_TERM(static, s_send_queue, struct ah_i_mbedtls_send_queue)
 
-const ah_tcp_conn_cbs_t ah_i_tls_tcp_conn_cbs = {
+const ah_tcp_conn_cbs_t ah_i_mbedtls_tcp_conn_cbs = {
     .on_open = s_on_open,
     .on_connect = s_on_connect,
     .on_read_alloc = s_on_read_alloc,
@@ -61,7 +60,7 @@ ah_extern ah_err_t ah_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_tr
         return AH_EINVAL;
     }
 
-    return ah_i_tls_client_init(client, trans, ssl_conf);
+    return ah_i_mbedtls_client_init(client, trans, ssl_conf);
 }
 
 ah_extern int ah_mbedtls_client_get_last_err(ah_mbedtls_client_t* client)
@@ -81,7 +80,7 @@ ah_extern mbedtls_ssl_context* ah_mbedtls_client_get_ssl_context(ah_mbedtls_clie
 ah_extern ah_tcp_trans_t ah_mbedtls_client_as_trans(ah_mbedtls_client_t* client)
 {
     return (ah_tcp_trans_t) {
-        .vtab = &ah_i_tls_tcp_vtab,
+        .vtab = &ah_i_mbedtls_tcp_vtab,
         .ctx = client,
     };
 }
@@ -100,7 +99,7 @@ ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* client)
 
 ah_extern ah_mbedtls_client_t* ah_mbedtls_conn_get_client(ah_tcp_conn_t* conn)
 {
-    if (conn == NULL || conn->_trans.vtab != &ah_i_tls_tcp_vtab) {
+    if (conn == NULL || conn->_trans.vtab != &ah_i_mbedtls_tcp_vtab) {
         return NULL;
     }
     return conn->_trans.ctx;
@@ -124,7 +123,7 @@ ah_extern mbedtls_ssl_context* ah_mbedtls_conn_get_ssl_context(ah_tcp_conn_t* co
     return ah_mbedtls_client_get_ssl_context(client);
 }
 
-ah_err_t ah_i_tls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf)
+ah_err_t ah_i_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf)
 {
     ah_assert_if_debug(client != NULL);
     ah_assert_if_debug(ah_tcp_vtab_is_valid(trans.vtab));
@@ -150,10 +149,10 @@ ah_err_t ah_i_tls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans,
     return AH_ENONE;
 
 handle_non_zero_res:
-    return ah_i_tls_mbedtls_res_to_err(&client->_errs, res);
+    return ah_i_mbedtls_res_to_err(&client->_errs, res);
 }
 
-ah_err_t ah_i_tls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_mbedtls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
     ah_mbedtls_client_t* client = client_;
     if (client == NULL) {
@@ -164,7 +163,7 @@ ah_err_t ah_i_tls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_socka
     }
 
     client->_conn_cbs = conn->_cbs;
-    conn->_cbs = &ah_i_tls_tcp_conn_cbs;
+    conn->_cbs = &ah_i_mbedtls_tcp_conn_cbs;
 
     mbedtls_ssl_set_bio(&client->_ssl, conn, s_ssl_send, s_ssl_recv, NULL);
 
@@ -203,7 +202,7 @@ static int s_ssl_send(void* conn_, const unsigned char* buf, size_t len)
         goto handle_err;
     }
 
-    entry->kind = S_SEND_QUEUE_ENTRY_KIND_UNSET;
+    entry->kind = S_SEND_QUEUE_ENTRY_KIND_NORMAL;
 
     err = ah_buf_init(&entry->msg.buf, (uint8_t*) buf, len);
     if (err != AH_ENONE) {
@@ -267,7 +266,7 @@ handle_err:
     return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
 }
 
-ah_err_t ah_i_tls_client_connect(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
+ah_err_t ah_i_mbedtls_client_connect(void* client_, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     ah_mbedtls_client_t* client = client_;
     if (client == NULL || client->_trans.vtab == NULL || client->_trans.vtab->conn_connect == NULL) {
@@ -279,7 +278,7 @@ ah_err_t ah_i_tls_client_connect(void* client_, ah_tcp_conn_t* conn, const ah_so
     return client->_trans.vtab->conn_connect(client->_trans.ctx, conn, raddr);
 }
 
-ah_err_t ah_i_tls_client_read_start(void* client_, ah_tcp_conn_t* conn)
+ah_err_t ah_i_mbedtls_client_read_start(void* client_, ah_tcp_conn_t* conn)
 {
     ah_mbedtls_client_t* client = client_;
     if (client == NULL || client->_trans.vtab == NULL || client->_trans.vtab->conn_read_start == NULL) {
@@ -297,7 +296,7 @@ ah_err_t ah_i_tls_client_read_start(void* client_, ah_tcp_conn_t* conn)
     return client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
 }
 
-ah_err_t ah_i_tls_client_read_stop(void* client_, ah_tcp_conn_t* conn)
+ah_err_t ah_i_mbedtls_client_read_stop(void* client_, ah_tcp_conn_t* conn)
 {
     ah_mbedtls_client_t* client = client_;
     if (client == NULL || client->_trans.vtab == NULL || client->_trans.vtab->conn_read_stop == NULL) {
@@ -315,7 +314,7 @@ ah_err_t ah_i_tls_client_read_stop(void* client_, ah_tcp_conn_t* conn)
     return client->_trans.vtab->conn_read_stop(client->_trans.ctx, conn);
 }
 
-ah_err_t ah_i_tls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
+ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
 {
     ah_mbedtls_client_t* client = client_;
     if (client == NULL) {
@@ -331,15 +330,15 @@ ah_err_t ah_i_tls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t*
         return AH_ERECONN;
     }
     else if (res < 0) {
-        return ah_i_tls_mbedtls_res_to_err(&client->_errs, res);
+        return ah_i_mbedtls_res_to_err(&client->_errs, res);
     }
 
     // mbedtls_ssl_write() calls s_ssl_send(), which adds a new entry of unset kind to the send queue.
     struct ah_i_mbedtls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
-    if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_UNSET) {
+    if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
         return AH_EINTERN;
     }
-    entry->kind = S_SEND_QUEUE_ENTRY_KIND_DATA;
+    entry->kind = S_SEND_QUEUE_ENTRY_KIND_NORMAL;
 
     // We guarantee that all of msg is written every time.
     ah_assert_if_debug(ah_buf_get_size(&msg->buf) == (size_t) res);
@@ -347,7 +346,7 @@ ah_err_t ah_i_tls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_msg_t*
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
+ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
 {
     ah_mbedtls_client_t* client = client_;
     if (client == NULL || client->_trans.vtab == NULL || client->_trans.vtab->conn_shutdown == NULL) {
@@ -366,7 +365,7 @@ ah_err_t ah_i_tls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shu
         }
         // s_close_notify() calls s_ssl_send(), which adds a new entry of unset kind to the send queue.
         struct ah_i_mbedtls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
-        if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_UNSET) {
+        if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
             return AH_EINTERN;
         }
         entry->kind = S_SEND_QUEUE_ENTRY_KIND_SHUTDOWN_WR;
@@ -389,13 +388,13 @@ static ah_err_t s_close_notify(ah_mbedtls_client_t* client)
     int res = mbedtls_ssl_close_notify(&client->_ssl);
 
     if (res < 0) {
-        return ah_i_tls_mbedtls_res_to_err(&client->_errs, res);
+        return ah_i_mbedtls_res_to_err(&client->_errs, res);
     }
 
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tls_client_close(void* client_, ah_tcp_conn_t* conn)
+ah_err_t ah_i_mbedtls_client_close(void* client_, ah_tcp_conn_t* conn)
 {
     ah_mbedtls_client_t* client = client_;
     if (client == NULL || client->_trans.vtab == NULL || client->_trans.vtab->conn_close == NULL) {
@@ -411,7 +410,7 @@ ah_err_t ah_i_tls_client_close(void* client_, ah_tcp_conn_t* conn)
         if (err == AH_ENONE) {
             // s_close_notify() calls s_ssl_send(), which adds a new entry of unset kind to the send queue.
             struct ah_i_mbedtls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
-            if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_UNSET) {
+            if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
                 return AH_EINTERN;
             }
             entry->kind = S_SEND_QUEUE_ENTRY_KIND_CLOSE;
@@ -627,7 +626,7 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
     }
 
     struct ah_i_mbedtls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
-    if (entry == NULL || entry->kind == S_SEND_QUEUE_ENTRY_KIND_UNSET) {
+    if (entry == NULL) {
         if (err == AH_ENONE) {
             err = AH_EINTERN;
         }

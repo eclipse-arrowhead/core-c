@@ -13,21 +13,21 @@
 #include <ah/err.h>
 #include <mbedtls/error.h>
 
-const ah_tcp_vtab_t ah_i_tls_tcp_vtab = {
-    .conn_open = ah_i_tls_client_open,
-    .conn_connect = ah_i_tls_client_connect,
-    .conn_read_start = ah_i_tls_client_read_start,
-    .conn_read_stop = ah_i_tls_client_read_stop,
-    .conn_write = ah_i_tls_client_write,
-    .conn_shutdown = ah_i_tls_client_shutdown,
-    .conn_close = ah_i_tls_client_close,
+const ah_tcp_vtab_t ah_i_mbedtls_tcp_vtab = {
+    .conn_open = ah_i_mbedtls_client_open,
+    .conn_connect = ah_i_mbedtls_client_connect,
+    .conn_read_start = ah_i_mbedtls_client_read_start,
+    .conn_read_stop = ah_i_mbedtls_client_read_stop,
+    .conn_write = ah_i_mbedtls_client_write,
+    .conn_shutdown = ah_i_mbedtls_client_shutdown,
+    .conn_close = ah_i_mbedtls_client_close,
 
     .listener_open = ah_i_tls_server_open,
     .listener_listen = ah_i_tls_server_listen,
     .listener_close = ah_i_tls_server_close,
 };
 
-ah_err_t ah_i_tls_mbedtls_res_to_err(struct ah_i_mbedtls_errs* errs, int res)
+ah_err_t ah_i_mbedtls_res_to_err(struct ah_i_mbedtls_errs* errs, int res)
 {
     ah_assert_if_debug(errs != NULL);
     ah_assert_if_debug(res <= 0);

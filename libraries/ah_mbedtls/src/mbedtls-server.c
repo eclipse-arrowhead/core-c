@@ -17,9 +17,9 @@
 #include <mbedtls/ssl.h>
 
 #if AH_CONF_IS_CONSTRAINED
-#define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 4u
+# define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 4u
 #else
-#define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 128u
+# define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 128u
 #endif
 
 struct ah_i_tls_client_page {
@@ -80,7 +80,7 @@ ah_extern mbedtls_ssl_config* ah_mbedtls_server_get_ssl_config(ah_mbedtls_server
 ah_extern ah_tcp_trans_t ah_mbedtls_server_as_trans(ah_mbedtls_server_t* server)
 {
     return (ah_tcp_trans_t) {
-        .vtab = &ah_i_tls_tcp_vtab,
+        .vtab = &ah_i_mbedtls_tcp_vtab,
         .ctx = server,
     };
 }
@@ -94,7 +94,7 @@ ah_extern void ah_mbedtls_server_term(ah_mbedtls_server_t* server)
 
 ah_extern ah_mbedtls_server_t* ah_mbedtls_listener_get_server(ah_tcp_listener_t* ln)
 {
-    if (ln == NULL || ln->_trans.vtab != &ah_i_tls_tcp_vtab) {
+    if (ln == NULL || ln->_trans.vtab != &ah_i_mbedtls_tcp_vtab) {
         return NULL;
     }
     return ln->_trans.ctx;
@@ -154,7 +154,7 @@ ah_err_t ah_i_tls_server_listen(void* server_, ah_tcp_listener_t* ln, unsigned b
 
     server->_conn_cbs = conn_cbs;
 
-    return server->_trans.vtab->listener_listen(server->_trans.ctx, ln, backlog, &ah_i_tls_tcp_conn_cbs);
+    return server->_trans.vtab->listener_listen(server->_trans.ctx, ln, backlog, &ah_i_mbedtls_tcp_conn_cbs);
 }
 
 ah_err_t ah_i_tls_server_close(void* server_, ah_tcp_listener_t* ln)
@@ -237,15 +237,29 @@ static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
         goto handle_err;
     }
 
-    err = ah_i_tls_client_init(client, server->_trans, server->_ssl_conf);
+    err = ah_i_mbedtls_client_init(client, server->_trans, server->_ssl_conf);
     if (err != AH_ENONE) {
         s_client_allocator_free(&server->_client_allocator, client);
         goto handle_err;
     }
 
+    client->_conn_cbs = server->_conn_cbs;
+    client->_is_handshaking_on_next_read_data = true;
     client->_on_handshake_done_cb = server->_on_handshake_done_cb;
     client->_server = server;
 
+    conn->_trans.ctx = client;
+
 handle_err:
     server->_ln_cbs->on_conn_accept(ln, conn, raddr, err);
+
+    if (err != AH_ENONE || !ah_tcp_conn_is_readable_and_writable(conn)) {
+        return;
+    }
+
+    err = client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
+    if (err != AH_ENONE) {
+        s_client_allocator_free(&server->_client_allocator, client);
+        client->_on_handshake_done_cb(conn, NULL, err);
+    }
 }
