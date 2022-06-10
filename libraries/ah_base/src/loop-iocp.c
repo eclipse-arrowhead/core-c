@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 
-#define S_COMPLETION_ENTRY_BUFFER_SIZE 32u
+#define S_COMPLETION_ENTRY_BUFFER_SIZE 128u
 
 static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb, size_t initial_capacity);
 static ah_task_t* s_task_queue_dequeue_if_at_or_after(struct ah_i_loop_task_queue* queue, ah_time_t baseline);

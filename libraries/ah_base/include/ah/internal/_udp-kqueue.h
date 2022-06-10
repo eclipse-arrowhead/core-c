@@ -12,6 +12,12 @@
  struct msghdr _msghdr;
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS \
- int _fd;
+ int _fd;                             \
+ struct ah_i_udp_msg_queue _msg_queue;
+
+struct ah_i_udp_msg_queue {
+    ah_udp_msg_t* _head;
+    ah_udp_msg_t* _end;
+};
 
 #endif

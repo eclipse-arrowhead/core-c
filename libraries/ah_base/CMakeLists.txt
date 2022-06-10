@@ -9,6 +9,7 @@ set(
     include/ah/abort.h
     include/ah/assert.h
     include/ah/buf.h
+    include/ah/conf.h
     include/ah/defs.h
     include/ah/err.h
     include/ah/internal/_loop.h

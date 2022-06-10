@@ -10,13 +10,17 @@
 #include "mbedtls-utils.h"
 
 #include <ah/assert.h>
+#include <ah/conf.h>
 #include <ah/err.h>
 #include <ah/internal/page-allocator-gen.h>
 #include <mbedtls/error.h>
 #include <mbedtls/ssl.h>
 
-#define S_CLIENT_ALLOCATOR_PAGE_SIZE     4096
-#define S_CLIENT_ALLOCATOR_PAGE_CAPACITY ((S_CLIENT_ALLOCATOR_PAGE_SIZE / sizeof(ah_mbedtls_client_t)) - 1)
+#if AH_CONF_IS_CONSTRAINED
+#define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 4u
+#else
+#define S_CLIENT_ALLOCATOR_PAGE_CAPACITY 128u
+#endif
 
 struct ah_i_tls_client_page {
     struct ah_mbedtls_client _entries[S_CLIENT_ALLOCATOR_PAGE_CAPACITY];

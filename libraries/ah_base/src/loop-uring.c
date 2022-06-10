@@ -7,11 +7,18 @@
 #include "ah/loop.h"
 
 #include "ah/assert.h"
+#include "ah/conf.h"
 #include "ah/err.h"
 
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
+
+#if AH_CONF_IS_CONSTRAINED
+#define S_DEFAULT_CAPACITY 32u
+#else
+#define S_DEFAULT_CAPACITY 1024u
+#endif
 
 ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
 {
@@ -19,7 +26,7 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
     ah_assert_if_debug(opts != NULL);
 
     if (opts->capacity == 0u) {
-        opts->capacity = 1024u;
+        opts->capacity = S_DEFAULT_CAPACITY;
     }
 
     if (opts->capacity > UINT_MAX) {
