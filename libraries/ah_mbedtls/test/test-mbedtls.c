@@ -14,8 +14,6 @@
 #include <mbedtls/error.h>
 
 struct s_tcp_conn_user_data {
-    ah_buf_t* free_bufs[2];
-
     const ah_sockaddr_t* ln_addr;
     ah_tcp_listener_t* ln;
 
@@ -144,8 +142,14 @@ static void s_on_conn_handshake_done(ah_tcp_conn_t* conn, const mbedtls_x509_crt
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_t* unit = user_data->unit;
+    char errbuf[256u];
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        if (err == AH_EDEP) {
+            int res = ah_mbedtls_conn_get_last_err(conn);
+            mbedtls_strerror(res, errbuf, sizeof(errbuf));
+            ah_unit_printf(unit, "AH_EDEP caused by: %d; %s", res, errbuf);
+        }
         return;
     }
 
@@ -175,7 +179,6 @@ static void s_on_conn_handshake_done(ah_tcp_conn_t* conn, const mbedtls_x509_crt
         err = ah_tcp_conn_write(conn, &user_data->send_msg);
         if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
             if (err == AH_EDEP) {
-                char errbuf[256u];
                 int res = ah_mbedtls_conn_get_last_err(conn);
                 mbedtls_strerror(res, errbuf, sizeof(errbuf));
                 ah_unit_printf(unit, "AH_EDEP caused by: %d; %s", res, errbuf);
@@ -218,20 +221,7 @@ static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
-    ah_unit_t* unit = user_data->unit;
-
-    if (user_data->free_bufs[0u] != NULL) {
-        *buf = *user_data->free_bufs[0u];
-        user_data->free_bufs[0u] = NULL;
-    }
-    else if (user_data->free_bufs[1u] != NULL) {
-        *buf = *user_data->free_bufs[1u];
-        user_data->free_bufs[1u] = NULL;
-    }
-    else {
-        ah_unit_fail(unit, "connection read buffer cannot be allocated");
-        return;
-    }
+    *buf = ah_buf_from(malloc(256u), 256u);
 
     user_data->did_call_read_alloc_cb = true;
 }
@@ -403,30 +393,14 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     size_t close_call_counter = 0u;
 
-    uint8_t free_buf0_base[256u] = { 0u };
-    ah_buf_t free_buf0 = ah_buf_from(free_buf0_base, sizeof(free_buf0_base));
-
-    uint8_t free_buf1_base[256u] = { 0u };
-    ah_buf_t free_buf1 = ah_buf_from(free_buf1_base, sizeof(free_buf1_base));
-
     struct s_tcp_conn_user_data conn_user_data = {
-        .free_bufs = {
-            [0u] = &free_buf0,
-            [1u] = &free_buf1,
-        },
         .close_call_counter = &close_call_counter,
         .unit = unit,
     };
 
-    uint8_t free_buf2_base[256u] = { 0u };
-    ah_buf_t free_buf2 = ah_buf_from(free_buf2_base, sizeof(free_buf2_base));
-
     struct s_tcp_listener_user_data ln_user_data = {
         .free_conn = &(ah_tcp_conn_t) { 0u },
         .accept_user_data = (struct s_tcp_conn_user_data) {
-            .free_bufs = {
-                [0u] = &free_buf2,
-            },
             .close_call_counter = &close_call_counter,
             .send_msg = (ah_tcp_msg_t) {
                 .buf = ah_buf_from((uint8_t*) "Hello, Arrowhead!", 18u),
