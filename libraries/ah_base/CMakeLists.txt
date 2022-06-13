@@ -7,13 +7,13 @@ set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(
     SOURCE_FILES
     include/ah/abort.h
+    include/ah/alloc.h
     include/ah/assert.h
     include/ah/buf.h
     include/ah/conf.h
     include/ah/defs.h
     include/ah/err.h
     include/ah/internal/_loop.h
-    include/ah/internal/_palloc.h
     include/ah/internal/_sock.h
     include/ah/internal/_task.h
     include/ah/internal/_tcp.h
@@ -26,7 +26,6 @@ set(
     include/ah/lib.h
     include/ah/loop.h
     include/ah/math.h
-    include/ah/palloc.h
     include/ah/sock.h
     include/ah/task.h
     include/ah/tcp.h
@@ -40,7 +39,6 @@ set(
     src/loop-evt.h
     src/loop.c
     src/math.c
-    src/palloc.c
     src/sock.c
     src/task.c
     src/tcp.c

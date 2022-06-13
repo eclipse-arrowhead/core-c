@@ -7,6 +7,7 @@
 #ifndef AH_INTERNAL_PAGE_ALLOCATOR_GEN_H_
 #define AH_INTERNAL_PAGE_ALLOCATOR_GEN_H_
 
+#include "../alloc.h"
 #include "../math.h"
 
 // struct ALLOCATOR_TYPE {
@@ -59,7 +60,7 @@
  {                                                                                                                  \
   ah_assert_if_debug(allocator != NULL);                                                                            \
                                                                                                                     \
-  PAGE_TYPE* page = malloc(sizeof(PAGE_TYPE));                                                                      \
+  PAGE_TYPE* page = ah_malloc(sizeof(PAGE_TYPE));                                                                   \
   if (page == NULL) {                                                                                               \
    return AH_ENOMEM;                                                                                                \
   }                                                                                                                 \
@@ -107,7 +108,7 @@
   PAGE_TYPE* page = allocator->_page_list;                                               \
   while (page != NULL) {                                                                 \
    PAGE_TYPE* next_page = page->_next_page;                                              \
-   free(page);                                                                           \
+   ah_free(page);                                                                        \
    page = next_page;                                                                     \
   }                                                                                      \
  }

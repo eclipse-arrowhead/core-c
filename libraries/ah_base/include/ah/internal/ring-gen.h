@@ -7,6 +7,7 @@
 #ifndef AH_INTERNAL_RING_GEN_H_
 #define AH_INTERNAL_RING_GEN_H_
 
+#include "../alloc.h"
 #include "../assert.h"
 #include "../math.h"
 
@@ -48,7 +49,7 @@
     return AH_ENOMEM;                                                                           \
    }                                                                                            \
                                                                                                 \
-   ENTRY_TYPE* entries = malloc(capacity_in_bytes);                                             \
+   ENTRY_TYPE* entries = ah_malloc(capacity_in_bytes);                                          \
    if (entries == NULL) {                                                                       \
     return AH_ENOMEM;                                                                           \
    }                                                                                            \
@@ -65,7 +66,7 @@
     memcpy(entries, &ring->_entries[ring->_index_read], n_entries * sizeof(ENTRY_TYPE));        \
    }                                                                                            \
                                                                                                 \
-   free(ring->_entries);                                                                        \
+   ah_free(ring->_entries);                                                                     \
                                                                                                 \
    ring->_capacity = capacity;                                                                  \
    ring->_entries = entries;                                                                    \
@@ -106,7 +107,7 @@
    return AH_ENOMEM;                                                                         \
   }                                                                                          \
                                                                                              \
-  ring->_entries = malloc(capacity_in_bytes);                                                \
+  ring->_entries = ah_malloc(capacity_in_bytes);                                             \
   if (ring->_entries == NULL) {                                                              \
    return AH_ENOMEM;                                                                         \
   }                                                                                          \
@@ -175,7 +176,7 @@
  {                                                             \
   ah_assert_if_debug(ring != NULL);                            \
                                                                \
-  free(ring->_entries);                                        \
+  ah_free(ring->_entries);                                     \
  }
 
 #endif

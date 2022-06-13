@@ -6,6 +6,7 @@
 
 #include "ah/loop.h"
 
+#include "ah/alloc.h"
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/math.h"
@@ -173,7 +174,7 @@ static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_c
 
     struct ah_i_loop_task_entry* entries;
 
-    entries = calloc(initial_capacity, sizeof(struct ah_i_loop_task_entry));
+    entries = ah_calloc(initial_capacity, sizeof(struct ah_i_loop_task_entry));
     if (entries == NULL) {
         return AH_ENOMEM;
     }
@@ -262,7 +263,7 @@ static void s_task_queue_term(struct ah_i_loop_task_queue* queue, ah_alloc_cb al
     ah_assert_if_debug(queue != NULL);
     ah_assert_if_debug(alloc_cb != NULL);
 
-    free(queue->_entries);
+    ah_free(queue->_entries);
 
 #ifndef NDEBUG
     *queue = (struct ah_i_loop_task_queue) { 0u };

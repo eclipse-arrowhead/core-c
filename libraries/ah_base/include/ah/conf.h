@@ -19,18 +19,49 @@
 # define AH_CONF_IS_CONSTRAINED 1
 #endif
 
+#ifndef AH_CONF_CALLOC
+# define AH_CONF_CALLOC calloc
+# ifndef AH_I_CONF_INCLUDE_STDLIB_H
+#  define AH_I_CONF_INCLUDE_STDLIB_H
+# endif
+#endif
+
+#ifndef AH_CONF_FREE
+# define AH_CONF_FREE free
+# ifndef AH_I_CONF_INCLUDE_STDLIB_H
+#  define AH_I_CONF_INCLUDE_STDLIB_H
+# endif
+#endif
+
 #ifndef AH_CONF_IS_CONSTRAINED
 # define AH_CONF_IS_CONSTRAINED 0
 #endif
 
-#ifndef AH_CONF_PALLOC_DEFAULT_PAGE_SIZE
-# if AH_CONF_IS_CONSTRAINED
-#  define AH_CONF_PALLOC_DEFAULT_PAGE_SIZE 256u
-# else
-#  define AH_CONF_PALLOC_DEFAULT_PAGE_SIZE 65536u
+#ifndef AH_CONF_MALLOC
+# define AH_CONF_MALLOC malloc
+# ifndef AH_I_CONF_INCLUDE_STDLIB_H
+#  define AH_I_CONF_INCLUDE_STDLIB_H
 # endif
-#elif AH_CONF_PALLOC_DEFAULT_PAGE_SIZE <= 0
-# error "AH_CONF_PALLOC_DEFAULT_PAGE_SIZE must be defined as a positive integer, preferrably being a power of 2."
+#endif
+
+#ifndef AH_CONF_PALLOC
+# define AH_CONF_PALLOC() AH_CONF_MALLOC(AH_CONF_PSIZE)
+#endif
+
+#ifndef AH_CONF_PFREE
+# define AH_CONF_PFREE AH_CONF_FREE
+#endif
+
+#ifndef AH_CONF_PSIZE
+# if AH_CONF_IS_CONSTRAINED
+#  define AH_CONF_PSIZE 256u
+# else
+#  define AH_CONF_PSIZE 65536u
+# endif
+#endif
+
+#ifdef AH_I_CONF_INCLUDE_STDLIB_H
+# include <stdlib.h>
 #endif
 
 #endif

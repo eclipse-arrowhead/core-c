@@ -87,8 +87,6 @@ typedef struct ah_ipaddr_v4 ah_ipaddr_v4_t;
 typedef struct ah_ipaddr_v6 ah_ipaddr_v6_t;
 typedef struct ah_loop ah_loop_t;
 typedef struct ah_loop_opts ah_loop_opts_t;
-typedef struct ah_palloc ah_palloc_t;
-typedef struct ah_palloc_vtab ah_palloc_vtab_t;
 typedef struct ah_sockaddr_any ah_sockaddr_any_t;
 typedef struct ah_sockaddr_ip ah_sockaddr_ip_t;
 typedef struct ah_sockaddr_ipv4 ah_sockaddr_ipv4_t;
