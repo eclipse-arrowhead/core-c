@@ -19,8 +19,8 @@ set(
     include/ah/internal/_tcp.h
     include/ah/internal/_time.h
     include/ah/internal/_udp.h
-    include/ah/internal/page-allocator-gen.h
-    include/ah/internal/ring-gen.h
+    include/ah/internal/collections/slab.h
+    include/ah/internal/collections/ring.h
     include/ah/intrin.h
     include/ah/ip.h
     include/ah/lib.h

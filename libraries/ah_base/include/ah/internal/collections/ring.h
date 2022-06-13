@@ -4,12 +4,12 @@
 //
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_RING_GEN_H_
-#define AH_INTERNAL_RING_GEN_H_
+#ifndef AH_INTERNAL_COLLECTIONS_RING_H_
+#define AH_INTERNAL_COLLECTIONS_RING_H_
 
-#include "../alloc.h"
-#include "../assert.h"
-#include "../math.h"
+#include "../../alloc.h"
+#include "../../assert.h"
+#include "../../math.h"
 
 #include <stdbool.h>
 #include <stdlib.h>

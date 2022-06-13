@@ -6,13 +6,13 @@
 
 #include "ah/mbedtls.h"
 
+#include "ah/internal/collections/slab.h"
 #include "mbedtls-client.h"
 #include "mbedtls-utils.h"
 
 #include <ah/assert.h>
 #include <ah/conf.h>
 #include <ah/err.h>
-#include <ah/internal/page-allocator-gen.h>
 #include <mbedtls/error.h>
 #include <mbedtls/ssl.h>
 
@@ -27,12 +27,12 @@ struct ah_i_tls_client_page {
     struct ah_i_tls_client_page* _next_page;
 };
 
-AH_I_PAGE_ALLOCATOR_GEN_GROW(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, struct ah_i_tls_client_page, ah_mbedtls_client_t, S_CLIENT_ALLOCATOR_PAGE_CAPACITY)
-AH_I_PAGE_ALLOCATOR_GEN_TERM(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, struct ah_i_tls_client_page)
+AH_I_SLAB_GEN_GROW(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, struct ah_i_tls_client_page, ah_mbedtls_client_t, S_CLIENT_ALLOCATOR_PAGE_CAPACITY)
+AH_I_SLAB_GEN_TERM(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, struct ah_i_tls_client_page)
 
-AH_I_PAGE_ALLOCATOR_GEN_ALLOC(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, ah_mbedtls_client_t)
-AH_I_PAGE_ALLOCATOR_GEN_FREE(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, ah_mbedtls_client_t)
-AH_I_PAGE_ALLOCATOR_GEN_INIT(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, struct ah_i_tls_client_page, ah_mbedtls_client_t, S_CLIENT_ALLOCATOR_PAGE_CAPACITY)
+AH_I_SLAB_GEN_ALLOC(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, ah_mbedtls_client_t)
+AH_I_SLAB_GEN_FREE(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, ah_mbedtls_client_t)
+AH_I_SLAB_GEN_INIT(static, s_client_allocator, struct ah_i_mbedtls_client_allocator, struct ah_i_tls_client_page, ah_mbedtls_client_t, S_CLIENT_ALLOCATOR_PAGE_CAPACITY)
 
 static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err);

@@ -8,7 +8,7 @@
 
 #include "ah/assert.h"
 #include "ah/err.h"
-#include "ah/internal/page-allocator-gen.h"
+#include "ah/internal/collections/slab.h"
 #include "ah/intrin.h"
 #include "ah/math.h"
 #include "loop-evt.h"
@@ -19,12 +19,12 @@ static void s_cancel_all_pending_events(ah_i_loop_evt_page_t* evt_page_list, ah_
 
 static void s_term(ah_loop_t* loop);
 
-AH_I_PAGE_ALLOCATOR_GEN_GROW(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_page_t, ah_i_loop_evt_t, AH_I_LOOP_EVT_PAGE_CAPACITY)
-AH_I_PAGE_ALLOCATOR_GEN_TERM(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_page_t)
+AH_I_SLAB_GEN_GROW(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_page_t, ah_i_loop_evt_t, AH_I_LOOP_EVT_PAGE_CAPACITY)
+AH_I_SLAB_GEN_TERM(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_page_t)
 
-AH_I_PAGE_ALLOCATOR_GEN_ALLOC(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t)
-AH_I_PAGE_ALLOCATOR_GEN_FREE(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t)
-AH_I_PAGE_ALLOCATOR_GEN_INIT(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t, ah_i_loop_evt_t, AH_I_LOOP_EVT_PAGE_CAPACITY)
+AH_I_SLAB_GEN_ALLOC(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t)
+AH_I_SLAB_GEN_FREE(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t)
+AH_I_SLAB_GEN_INIT(static, s_evt_allocator, struct ah_i_loop_evt_allocator, ah_i_loop_evt_t, ah_i_loop_evt_t, AH_I_LOOP_EVT_PAGE_CAPACITY)
 
 ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
 {

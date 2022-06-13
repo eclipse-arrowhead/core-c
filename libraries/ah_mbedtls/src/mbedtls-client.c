@@ -6,12 +6,12 @@
 
 #include "mbedtls-client.h"
 
+#include "ah/internal/collections/ring.h"
 #include "mbedtls-server.h"
 #include "mbedtls-utils.h"
 
 #include <ah/assert.h>
 #include <ah/err.h>
-#include <ah/internal/ring-gen.h>
 #include <mbedtls/error.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/version.h>
