@@ -25,7 +25,7 @@
 #define S_IN_STATE_CHUNK_DATA 0x20
 #define S_IN_STATE_TRAILER    0x40
 
-#define S_IN_STATE_IS_REUSING_BUF_RW(STATE) \
+#define S_IN_STATE_IS_REUSING_RW(STATE) \
  (((STATE) & (S_IN_STATE_LINE | S_IN_STATE_HEADERS | S_IN_STATE_CHUNK_LINE | S_IN_STATE_TRAILER)) != 0u)
 
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
@@ -116,8 +116,8 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
 
     ah_err_t err;
 
-    if (S_IN_STATE_IS_REUSING_BUF_RW(cln->_in_state)) {
-        ah_buf_rw_get_writable_as_buf(&cln->_in_buf_rw, buf);
+    if (S_IN_STATE_IS_REUSING_RW(cln->_in_state)) {
+        ah_rw_get_writable_as_buf(&cln->_in_rw, buf);
         return;
     }
 
@@ -130,7 +130,7 @@ static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
         goto report_err_and_close_conn;
     }
 
-    ah_buf_rw_init_for_writing_to(&cln->_in_buf_rw, buf);
+    ah_rw_init_for_writing_to(&cln->_in_rw, buf);
 
     return;
 
@@ -147,10 +147,10 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
         goto report_err_and_close_conn;
     }
 
-    ah_assert_if_debug(cln->_in_buf_rw.wr == ah_buf_get_base_const(&buf));
+    ah_assert_if_debug(cln->_in_rw.w == ah_buf_get_base_const(&buf));
     (void) buf;
 
-    if (!ah_buf_rw_juken(&cln->_in_buf_rw, nread)) {
+    if (!ah_rw_juken(&cln->_in_rw, nread)) {
         err = AH_EDOM;
         goto report_err_and_close_conn;
     }
@@ -171,10 +171,10 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
         const char* line;
         ah_http_ver_t version;
         if (cln->_is_local) {
-            err = ah_i_http_parse_stat_line(&cln->_in_buf_rw, &line, &version);
+            err = ah_i_http_parse_stat_line(&cln->_in_rw, &line, &version);
         }
         else {
-            err = ah_i_http_parse_req_line(&cln->_in_buf_rw, &line, &version);
+            err = ah_i_http_parse_req_line(&cln->_in_rw, &line, &version);
         }
         if (err != AH_ENONE) {
             goto handle_head_parse_err;
@@ -205,7 +205,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
 
         for (;;) {
             ah_http_header_t header;
-            err = ah_i_http_parse_header(&cln->_in_buf_rw, &header);
+            err = ah_i_http_parse_header(&cln->_in_rw, &header);
             if (err != AH_ENONE) {
                 goto handle_head_parse_err;
             }
@@ -298,7 +298,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
         size_t size;
         const char* ext;
 
-        err = ah_i_http_parse_chunk_line(&cln->_in_buf_rw, &size, &ext);
+        err = ah_i_http_parse_chunk_line(&cln->_in_rw, &size, &ext);
         if (err != AH_ENONE) {
             goto handle_chunk_or_trailer_parse_err;
         }
@@ -327,13 +327,13 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
     case S_IN_STATE_DATA:
     case S_IN_STATE_CHUNK_DATA: {
         ah_buf_t readable_buf;
-        ah_buf_rw_get_readable_as_buf(&cln->_in_buf_rw, &readable_buf);
+        ah_rw_get_readable_as_buf(&cln->_in_rw, &readable_buf);
 
         if (ah_buf_get_size(&readable_buf) == 0u) {
             return;
         }
 
-        (void) ah_buf_rw_skipn(&cln->_in_buf_rw, ah_buf_get_size(&readable_buf));
+        (void) ah_rw_skipn(&cln->_in_rw, ah_buf_get_size(&readable_buf));
 
         ah_buf_limit_size_to(&readable_buf, cln->_in_n_expected_bytes);
         cln->_in_n_expected_bytes -= ah_buf_get_size(&readable_buf);
@@ -358,7 +358,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
     case S_IN_STATE_TRAILER: {
         for (;;) {
             ah_http_header_t header;
-            err = ah_i_http_parse_header(&cln->_in_buf_rw, &header);
+            err = ah_i_http_parse_header(&cln->_in_rw, &header);
             if (err != AH_ENONE) {
                 goto handle_chunk_or_trailer_parse_err;
             }
@@ -399,7 +399,7 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
             cln->_in_n_expected_responses -= 1u;
 
             if (cln->_in_n_expected_responses == 0u) {
-                if (ah_buf_rw_get_readable_size(&cln->_in_buf_rw) != 0u) {
+                if (ah_rw_get_readable_size(&cln->_in_rw) != 0u) {
                     err = AH_ESTATE;
                     goto report_err_and_close_conn;
                 }
@@ -435,7 +435,7 @@ handle_head_parse_err:
     if (err != AH_EAGAIN) {
         goto report_err_and_close_conn;
     }
-    if (ah_buf_rw_get_writable_size(&cln->_in_buf_rw) == 0u) {
+    if (ah_rw_get_writable_size(&cln->_in_rw) == 0u) {
         err = AH_EOVERFLOW; // Current buffer not large enough to hold request/status line or headers.
         goto report_err_and_close_conn;
     }
@@ -458,14 +458,14 @@ static ah_err_t s_realloc_res_rw(ah_http_client_t* cln)
         return AH_ENOBUFS;
     }
 
-    ah_buf_rw_t new_rw;
-    ah_buf_rw_init_for_writing_to(&new_rw, &new_buf);
+    ah_rw_t new_rw;
+    ah_rw_init_for_writing_to(&new_rw, &new_buf);
 
-    if (!ah_buf_rw_copyn(&cln->_in_buf_rw, &new_rw, ah_buf_rw_get_readable_size(&cln->_in_buf_rw))) {
+    if (!ah_rw_copyn(&cln->_in_rw, &new_rw, ah_rw_get_readable_size(&cln->_in_rw))) {
         return AH_EOVERFLOW;
     }
 
-    cln->_in_buf_rw = new_rw;
+    cln->_in_rw = new_rw;
 
     return AH_ENONE;
 }
@@ -505,18 +505,18 @@ try_next:
         goto report_err_and_try_next;
     }
 
-    ah_buf_rw_t rw;
-    ah_buf_rw_init_for_writing_to(&rw, &msg->_head.buf);
+    ah_rw_t rw;
+    ah_rw_init_for_writing_to(&rw, &msg->_head.buf);
 
     // Write request/status line to head buffer.
     if (cln->_is_local) {
         (void) ah_i_http_write_cstr(&rw, msg->line);
-        (void) ah_buf_rw_write1(&rw, ' ');
+        (void) ah_rw_write1(&rw, ' ');
     }
     (void) ah_i_http_write_cstr(&rw, "HTTP/1.");
-    (void) ah_buf_rw_write1(&rw, '0' + msg->version.minor);
+    (void) ah_rw_write1(&rw, '0' + msg->version.minor);
     if (!cln->_is_local) {
-        (void) ah_buf_rw_write1(&rw, ' ');
+        (void) ah_rw_write1(&rw, ' ');
         (void) ah_i_http_write_cstr(&rw, msg->line);
     }
     (void) ah_i_http_write_crlf(&rw);
@@ -543,14 +543,14 @@ try_next:
             }
 
             ah_buf_t buf;
-            ah_buf_rw_get_writable_as_buf(&rw, &buf);
+            ah_rw_get_writable_as_buf(&rw, &buf);
 
             size_t nwritten = ah_buf_get_size(&buf);
             err = ah_sockaddr_stringify(&raddr, (char*) ah_buf_get_base(&buf), &nwritten);
             if (err != AH_ENONE) {
                 goto report_err_and_try_next;
             }
-            (void) ah_buf_rw_juken(&rw, nwritten);
+            (void) ah_rw_juken(&rw, nwritten);
 
             (void) ah_i_http_write_crlf(&rw);
         }
@@ -560,7 +560,7 @@ try_next:
     if (msg->headers != NULL) {
         for (header = &msg->headers[0u]; header->name != NULL; header = &header[1u]) {
             (void) ah_i_http_write_cstr(&rw, header->name);
-            (void) ah_buf_rw_write1(&rw, ':');
+            (void) ah_rw_write1(&rw, ':');
             (void) ah_i_http_write_cstr(&rw, header->value);
             (void) ah_i_http_write_crlf(&rw);
         }
@@ -591,7 +591,7 @@ try_next:
     }
 
     // Prepare message with request line and headers.
-    ah_buf_rw_get_readable_as_buf(&rw, &msg->_head.buf);
+    ah_rw_get_readable_as_buf(&rw, &msg->_head.buf);
 
     // Send message with request line and headers.
     err = ah_tcp_conn_write(&cln->_conn, &msg->_head);
@@ -751,8 +751,8 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
         goto report_err_and_try_next;
     }
 
-    ah_buf_rw_t rw;
-    ah_buf_rw_init_for_writing_to(&rw, &chunk->_line.buf);
+    ah_rw_t rw;
+    ah_rw_init_for_writing_to(&rw, &chunk->_line.buf);
 
     // Write chunk line to buffer.
     (void) ah_i_http_write_size_as_string(&rw, ah_buf_get_size(&chunk->data.buf), 16u);
@@ -765,7 +765,7 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
     }
 
     // Prepare message with chunk line.
-    ah_buf_rw_get_readable_as_buf(&rw, &chunk->_line.buf);
+    ah_rw_get_readable_as_buf(&rw, &chunk->_line.buf);
 
     // Send message with chunk line.
     err = ah_tcp_conn_write(&cln->_conn, &chunk->_line);
@@ -813,11 +813,11 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
         goto report_err_and_try_next;
     }
 
-    ah_buf_rw_t rw;
-    ah_buf_rw_init_for_writing_to(&rw, &trailer->_msg.buf);
+    ah_rw_t rw;
+    ah_rw_init_for_writing_to(&rw, &trailer->_msg.buf);
 
     // Write trailer chunk line to buffer.
-    (void) ah_buf_rw_write1(&rw, '0');
+    (void) ah_rw_write1(&rw, '0');
     if (trailer->ext != NULL) {
         (void) ah_i_http_write_cstr(&rw, trailer->ext);
     }
@@ -831,7 +831,7 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
         ah_http_header_t* header = &trailer->headers[0u];
         for (; header->name != NULL; header = &header[1u]) {
             (void) ah_i_http_write_cstr(&rw, header->name);
-            (void) ah_buf_rw_write1(&rw, ':');
+            (void) ah_rw_write1(&rw, ':');
             (void) ah_i_http_write_cstr(&rw, header->value);
             (void) ah_i_http_write_crlf(&rw);
         }
@@ -839,7 +839,7 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     (void) ah_i_http_write_crlf(&rw);
 
     // Prepare message with complete trailer.
-    ah_buf_rw_get_readable_as_buf(&rw, &trailer->_msg.buf);
+    ah_rw_get_readable_as_buf(&rw, &trailer->_msg.buf);
 
     // Send message with complete trailer.
     err = ah_tcp_conn_write(&cln->_conn, &trailer->_msg);

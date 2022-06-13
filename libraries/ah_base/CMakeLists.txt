@@ -26,6 +26,7 @@ set(
     include/ah/lib.h
     include/ah/loop.h
     include/ah/math.h
+    include/ah/rw.h
     include/ah/sock.h
     include/ah/task.h
     include/ah/tcp.h
@@ -39,6 +40,7 @@ set(
     src/loop-evt.h
     src/loop.c
     src/math.c
+    src/rw.c
     src/sock.c
     src/task.c
     src/tcp.c
