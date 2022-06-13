@@ -23,4 +23,14 @@
 # define AH_CONF_IS_CONSTRAINED 0
 #endif
 
+#ifndef AH_CONF_PALLOC_DEFAULT_PAGE_SIZE
+# if AH_CONF_IS_CONSTRAINED
+#  define AH_CONF_PALLOC_DEFAULT_PAGE_SIZE 256u
+# else
+#  define AH_CONF_PALLOC_DEFAULT_PAGE_SIZE 65536u
+# endif
+#elif AH_CONF_PALLOC_DEFAULT_PAGE_SIZE <= 0
+# error "AH_CONF_PALLOC_DEFAULT_PAGE_SIZE must be defined as a positive integer, preferrably being a power of 2."
+#endif
+
 #endif
