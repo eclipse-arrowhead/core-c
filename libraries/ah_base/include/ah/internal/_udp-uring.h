@@ -8,12 +8,14 @@
 #define AH_INTERNAL_URING_UDP_H_
 
 #define AH_I_UDP_MSG_PLATFORM_FIELDS \
- struct msghdr _msghdr;
+ struct msghdr _msghdr;              \
+ ah_udp_sock_t* _sock;
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS \
  int _fd;                             \
  ah_sockaddr_t _recv_addr;            \
  ah_buf_t _recv_buf;                  \
+ ah_i_loop_evt_t* _recv_evt;          \
  struct msghdr _recv_msghdr;
 
 #endif

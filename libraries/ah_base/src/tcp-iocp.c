@@ -94,7 +94,12 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt)
         if (conn->_cbs->on_write_done == NULL) {
             shutdown_flags |= AH_TCP_SHUTDOWN_WR;
         }
-        err = ah_tcp_conn_shutdown(conn, shutdown_flags);
+        if (shutdown_flags != 0) {
+            err = ah_tcp_conn_shutdown(conn, shutdown_flags);
+        }
+        else {
+            err = AH_ENONE;
+        }
     }
     else {
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;

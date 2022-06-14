@@ -38,8 +38,7 @@
 struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS
 
-    void* _subject; // Must be non-NULL while the event is in use.
-    void* _object;  // Arbitrary data associated with event.
+    void* _subject;
 };
 
 ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts);

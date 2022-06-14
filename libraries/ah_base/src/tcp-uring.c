@@ -74,7 +74,12 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         if (conn->_cbs->on_write_done == NULL) {
             shutdown_flags |= AH_TCP_SHUTDOWN_WR;
         }
-        err = ah_tcp_conn_shutdown(conn, shutdown_flags);
+        if (shutdown_flags != 0) {
+            err = ah_tcp_conn_shutdown(conn, shutdown_flags);
+        }
+        else {
+            err = AH_ENONE;
+        }
     }
     else {
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
@@ -132,6 +137,8 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
         return AH_ENOBUFS;
     }
 
+    conn->_recv_evt = evt;
+
     io_uring_prep_recv(sqe, conn->_fd, ah_buf_get_base(&conn->_recv_buf), ah_buf_get_size(&conn->_recv_buf), 0);
     io_uring_sqe_set_data(sqe, evt);
 
@@ -145,6 +152,8 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
+
+    conn->_recv_evt = NULL;
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;
@@ -198,8 +207,15 @@ ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return conn->_state == AH_I_TCP_CONN_STATE_CONNECTED ? AH_ESTATE : AH_ENONE;
     }
-
     conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
+
+    if (conn->_recv_evt != NULL) {
+        struct io_uring_sqe* sqe;
+        if (ah_i_loop_alloc_sqe(conn->_loop, &sqe) == AH_ENONE) {
+            io_uring_prep_cancel(sqe, conn->_recv_evt, 0);
+            conn->_recv_evt = NULL;
+        }
+    }
 
     return AH_ENONE;
 }
@@ -333,12 +349,9 @@ ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned bac
     if (ln == NULL || conn_cbs == NULL) {
         return AH_EINVAL;
     }
-
-    ah_assert_if_debug(conn_cbs->on_close != NULL);
-    ah_assert_if_debug(conn_cbs->on_read_alloc != NULL);
-    ah_assert_if_debug(conn_cbs->on_read_data != NULL);
-    ah_assert_if_debug(conn_cbs->on_write_done != NULL);
-
+    if (conn_cbs->on_close == NULL || conn_cbs->on_read_alloc == NULL || conn_cbs->on_read_data == NULL || conn_cbs->on_write_done == NULL) {
+        return AH_EINVAL;
+    }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {
         return AH_ESTATE;
     }

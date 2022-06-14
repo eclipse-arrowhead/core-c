@@ -118,12 +118,14 @@ static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    ah_unit_t* unit = user_data->unit;
+
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     err = ah_tcp_conn_read_start(conn);
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 

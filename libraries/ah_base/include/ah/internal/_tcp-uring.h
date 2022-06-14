@@ -11,7 +11,8 @@
 
 #define AH_I_TCP_CONN_PLATFORM_FIELDS \
  int _fd;                             \
- ah_buf_t _recv_buf;
+ ah_buf_t _recv_buf;                  \
+ ah_i_loop_evt_t* _recv_evt;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS \
  int _fd;                                 \
