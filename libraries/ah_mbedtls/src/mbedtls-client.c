@@ -6,7 +6,6 @@
 
 #include "mbedtls-client.h"
 
-#include "ah/internal/collections/ring.h"
 #include "mbedtls-server.h"
 #include "mbedtls-utils.h"
 
@@ -34,12 +33,6 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 
 static ah_err_t s_close_notify(ah_mbedtls_client_t* client);
-
-AH_I_RING_GEN_ALLOC_ENTRY(static, s_send_queue, struct ah_i_mbedtls_send_queue, struct ah_i_mbedtls_send_queue_entry, 4u)
-AH_I_RING_GEN_DISCARD(static, s_send_queue, struct ah_i_mbedtls_send_queue)
-AH_I_RING_GEN_INIT(static, s_send_queue, struct ah_i_mbedtls_send_queue, struct ah_i_mbedtls_send_queue_entry, 4u)
-AH_I_RING_GEN_PEEK(static, s_send_queue, struct ah_i_mbedtls_send_queue, struct ah_i_mbedtls_send_queue_entry)
-AH_I_RING_GEN_TERM(static, s_send_queue, struct ah_i_mbedtls_send_queue)
 
 const ah_tcp_conn_cbs_t ah_i_mbedtls_tcp_conn_cbs = {
     .on_open = s_on_open,
@@ -86,7 +79,7 @@ ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* client)
     ah_assert(client != NULL);
 
     mbedtls_ssl_free(&client->_ssl);
-    s_send_queue_term(&client->_send_ciphertext_queue);
+    ah_i_ring_term(&client->_send_ciphertext_queue);
 
     if (client->_server != NULL) {
         ah_i_tls_server_free_accepted_client(client->_server, client);
@@ -133,7 +126,7 @@ ah_err_t ah_i_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t tr
         ._on_handshake_done_cb = on_handshake_done_cb,
     };
 
-    ah_err_t err = s_send_queue_init(&client->_send_ciphertext_queue);
+    ah_err_t err = ah_i_ring_init(&client->_send_ciphertext_queue, 4u, sizeof(struct ah_i_mbedtls_send_queue_entry));
     if (err != AH_ENONE) {
         return err;
     }
@@ -360,7 +353,7 @@ ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_ms
     }
 
     // mbedtls_ssl_write() calls ah_i_mbedtls_ssl_on_send(), which adds a new entry of unset kind to the send queue.
-    struct ah_i_mbedtls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
+    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_send_ciphertext_queue);
     if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
         return AH_EINTERN;
     }
@@ -381,7 +374,7 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
         return;
     }
 
-    struct ah_i_mbedtls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
+    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_send_ciphertext_queue);
     if (entry == NULL) {
         if (err == AH_ENONE) {
             err = AH_EINTERN;
@@ -391,7 +384,7 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
 
     unsigned entry_kind = entry->kind;
 
-    s_send_queue_discard(&client->_send_ciphertext_queue);
+    ah_i_ring_skip(&client->_send_ciphertext_queue);
 
     if (err != AH_ENONE) {
         goto handle_err;
@@ -469,7 +462,7 @@ ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp
             return err;
         }
         // s_close_notify() calls ah_i_mbedtls_ssl_on_send(), which adds a new entry of unset kind to the send queue.
-        struct ah_i_mbedtls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
+        struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_send_ciphertext_queue);
         if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
             return AH_EINTERN;
         }
@@ -514,7 +507,7 @@ ah_err_t ah_i_mbedtls_client_close(void* client_, ah_tcp_conn_t* conn)
 
         if (err == AH_ENONE) {
             // s_close_notify() calls ah_i_mbedtls_ssl_on_send(), which adds a new entry of unset kind to the send queue.
-            struct ah_i_mbedtls_send_queue_entry* entry = s_send_queue_peek(&client->_send_ciphertext_queue);
+            struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_send_ciphertext_queue);
             if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
                 return AH_EINTERN;
             }
@@ -639,9 +632,9 @@ int ah_i_mbedtls_ssl_on_send(void* conn_, const unsigned char* buf, size_t len)
         goto handle_err;
     }
 
-    struct ah_i_mbedtls_send_queue_entry* entry;
-    err = s_send_queue_alloc_entry(&client->_send_ciphertext_queue, &entry);
-    if (err != AH_ENONE) {
+    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_alloc(&client->_send_ciphertext_queue);
+    if (entry == NULL) {
+        err = AH_ENOMEM;
         goto handle_err;
     }
 

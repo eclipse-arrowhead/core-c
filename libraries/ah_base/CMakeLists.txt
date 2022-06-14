@@ -34,6 +34,7 @@ set(
     include/ah/udp.h
     src/abort.c
     src/buf.c
+    src/collections/ring.c
     src/collections/slab.c
     src/err.c
     src/ip.c

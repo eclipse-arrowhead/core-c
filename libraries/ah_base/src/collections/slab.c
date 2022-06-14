@@ -23,6 +23,9 @@ ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, si
 
     const size_t slot_size = slot_data_size + offsetof(struct ah_i_slab_slot, _entry);
     const size_t cache_slot_capacity = S_CACHE_SLOT_CAPACITY_IN_BYTES / slot_size;
+    if (cache_slot_capacity == 0u) {
+        return AH_EOVERFLOW;
+    }
 
     *slab = (struct ah_i_slab) {
         ._cache_slot_capacity = cache_slot_capacity,
