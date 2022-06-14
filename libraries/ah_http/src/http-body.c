@@ -15,7 +15,7 @@ ah_extern ah_http_body_t ah_http_body_empty()
 
 ah_extern ah_http_body_t ah_http_body_from_buf(ah_buf_t buf)
 {
-    return (ah_http_body_t) { ._as_msg._kind = AH_I_HTTP_BODY_KIND_MSG, ._as_msg._msg.buf = buf };
+    return (ah_http_body_t) { ._as_out._kind = AH_I_HTTP_BODY_KIND_MSG, ._as_out._out.buf = buf };
 }
 
 ah_extern ah_http_body_t ah_http_body_override(void)

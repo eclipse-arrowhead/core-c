@@ -32,7 +32,7 @@ struct s_tcp_listener_user_data {
 
     ah_tcp_conn_t* free_conn;
     struct s_tcp_conn_user_data accept_user_data;
-    ah_tcp_msg_t conn_msg;
+    ah_tcp_out_t conn_msg;
 
     bool did_call_open_cb;
     bool did_call_listen_cb;

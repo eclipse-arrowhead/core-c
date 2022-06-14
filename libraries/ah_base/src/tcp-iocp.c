@@ -234,11 +234,11 @@ ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
+ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
 {
     (void) ctx;
 
-    if (conn == NULL || msg == NULL) {
+    if (conn == NULL || out == NULL) {
         return AH_EINVAL;
     }
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
@@ -255,7 +255,7 @@ ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
     evt->_cb = s_on_conn_write;
     evt->_subject = conn;
 
-    int res = WSASend(conn->_fd, ah_i_buf_into_wsabuf(&msg->buf), 1u, NULL, 0u, &evt->_overlapped, NULL);
+    int res = WSASend(conn->_fd, ah_i_buf_into_wsabuf(&out->buf), 1u, NULL, 0u, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err == WSA_IO_PENDING) {

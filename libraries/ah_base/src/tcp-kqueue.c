@@ -21,10 +21,10 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev);
 
 static ah_err_t s_prep_conn_write(ah_tcp_conn_t* conn);
 
-static bool s_msg_queue_is_empty(struct ah_i_tcp_msg_queue* queue);
-static bool s_msg_queue_is_empty_then_add(struct ah_i_tcp_msg_queue* queue, ah_tcp_msg_t* msg);
-static ah_tcp_msg_t* s_msg_queue_get_head(struct ah_i_tcp_msg_queue* queue);
-static void s_msg_queue_remove_unsafe(struct ah_i_tcp_msg_queue* queue);
+static bool s_out_queue_is_empty(struct ah_i_tcp_out_queue* queue);
+static bool s_out_queue_is_empty_then_add(struct ah_i_tcp_out_queue* queue, ah_tcp_out_t* out);
+static ah_tcp_out_t* s_out_queue_get_head(struct ah_i_tcp_out_queue* queue);
+static void s_out_queue_remove_unsafe(struct ah_i_tcp_out_queue* queue);
 
 ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
@@ -227,20 +227,20 @@ ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
+ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
 {
     (void) ctx;
 
-    if (conn == NULL || msg == NULL) {
+    if (conn == NULL || out == NULL) {
         return AH_EINVAL;
     }
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED || (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) != 0) {
         return AH_ESTATE;
     }
 
-    msg->_buf_offset = 0u;
+    out->_buf_offset = 0u;
 
-    if (s_msg_queue_is_empty_then_add(&conn->_msg_queue, msg)) {
+    if (s_out_queue_is_empty_then_add(&conn->_out_queue, out)) {
         return s_prep_conn_write(conn);
     }
 
@@ -281,7 +281,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     ah_err_t err;
 
-    ah_tcp_msg_t* msg = s_msg_queue_get_head(&conn->_msg_queue);
+    ah_tcp_out_t* out = s_out_queue_get_head(&conn->_out_queue);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -294,13 +294,13 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err_and_prep_next;
     }
 
-    if (msg->_buf_offset > ah_buf_get_size(&msg->buf)) {
+    if (out->_buf_offset > ah_buf_get_size(&out->buf)) {
         err = AH_EINTERN;
         goto report_err_and_prep_next;
     }
 
-    void* buffer = &ah_buf_get_base(&msg->buf)[msg->_buf_offset];
-    size_t length = ah_buf_get_size(&msg->buf) - msg->_buf_offset;
+    void* buffer = &ah_buf_get_base(&out->buf)[out->_buf_offset];
+    size_t length = ah_buf_get_size(&out->buf) - out->_buf_offset;
 
     ssize_t res = send(conn->_fd, buffer, length, 0);
     if (ah_unlikely(res < 0)) {
@@ -308,21 +308,21 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err_and_prep_next;
     }
 
-    if (((size_t) res) < ah_buf_get_size(&msg->buf)) {
-        ((ah_tcp_msg_t*) msg)->_buf_offset = (size_t) res;
+    if (((size_t) res) < ah_buf_get_size(&out->buf)) {
+        ((ah_tcp_out_t*) out)->_buf_offset = (size_t) res;
         goto prep_next;
     }
 
     err = AH_ENONE;
 
 report_err_and_prep_next:
-    s_msg_queue_remove_unsafe(&conn->_msg_queue);
+    s_out_queue_remove_unsafe(&conn->_out_queue);
     conn->_cbs->on_write_done(conn, err);
 
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return;
     }
-    if (s_msg_queue_is_empty(&conn->_msg_queue)) {
+    if (s_out_queue_is_empty(&conn->_out_queue)) {
         return;
     }
 
@@ -506,33 +506,33 @@ ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln)
     return AH_ENONE;
 }
 
-bool s_msg_queue_is_empty(struct ah_i_tcp_msg_queue* queue)
+bool s_out_queue_is_empty(struct ah_i_tcp_out_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
 
     return queue->_head == NULL;
 }
 
-bool s_msg_queue_is_empty_then_add(struct ah_i_tcp_msg_queue* queue, ah_tcp_msg_t* msg)
+bool s_out_queue_is_empty_then_add(struct ah_i_tcp_out_queue* queue, ah_tcp_out_t* out)
 {
     ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(msg != NULL);
+    ah_assert_if_debug(out != NULL);
 
-    msg->_next = NULL;
+    out->_next = NULL;
 
     if (queue->_head == NULL) {
-        queue->_head = msg;
-        queue->_end = msg;
+        queue->_head = out;
+        queue->_end = out;
         return true;
     }
 
-    queue->_end->_next = msg;
-    queue->_end = msg;
+    queue->_end->_next = out;
+    queue->_end = out;
 
     return false;
 }
 
-ah_tcp_msg_t* s_msg_queue_get_head(struct ah_i_tcp_msg_queue* queue)
+ah_tcp_out_t* s_out_queue_get_head(struct ah_i_tcp_out_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
     ah_assert_if_debug(queue->_head != NULL);
@@ -546,7 +546,7 @@ void s_msg_queue_remove_unsafe(struct ah_i_tcp_msg_queue* queue)
     ah_assert_if_debug(queue->_head != NULL);
     ah_assert_if_debug(queue->_end != NULL);
 
-    ah_tcp_msg_t* msg = queue->_head;
+    ah_tcp_out_t* msg = queue->_head;
     queue->_head = msg->_next;
 
 #ifndef NDEBUG

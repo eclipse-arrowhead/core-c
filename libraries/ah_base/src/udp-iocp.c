@@ -140,18 +140,18 @@ ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg)
+ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
 {
     (void) ctx;
 
-    if (sock == NULL || msg == NULL) {
+    if (sock == NULL || out == NULL) {
         return AH_EINVAL;
     }
     if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_send_done == NULL) {
         return AH_ESTATE;
     }
 
-    if (ah_i_udp_msg_queue_is_empty_then_add(&sock->_msg_queue, msg)) {
+    if (ah_i_udp_out_queue_is_empty_then_add(&sock->_out_queue, out)) {
         return s_prep_sock_send(sock);
     }
 
@@ -170,9 +170,9 @@ static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
     evt->_cb = s_on_sock_send;
     evt->_subject = sock;
 
-    ah_udp_msg_t* msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
+    ah_udp_out_t* out = ah_i_udp_out_queue_get_head(&sock->_out_queue);
 
-    int res = WSASendMsg(sock->_fd, &msg->_wsamsg, 0u, NULL, &evt->_overlapped, NULL);
+    int res = WSASendMsg(sock->_fd, &out->_wsamsg, 0u, NULL, &evt->_overlapped, NULL);
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err == WSA_IO_PENDING) {
@@ -198,10 +198,10 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt)
         nsent = 0u;
     }
 
-    ah_udp_msg_t* msg;
+    ah_udp_out_t* out;
 
 report_err_and_prep_next:
-    msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
+    out = ah_i_udp_out_queue_get_head(&sock->_msg_queue);
     ah_i_udp_msg_queue_remove_unsafe(&sock->_msg_queue);
 
     sock->_cbs->on_send_done(sock, nsent, ah_i_sockaddr_from_bsd(msg->_wsamsg.name), err);

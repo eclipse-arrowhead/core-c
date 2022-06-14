@@ -38,7 +38,7 @@ struct ah_udp_vtab {
     ah_err_t (*sock_open)(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
     ah_err_t (*sock_recv_start)(void* ctx, ah_udp_sock_t* sock);
     ah_err_t (*sock_recv_stop)(void* ctx, ah_udp_sock_t* sock);
-    ah_err_t (*sock_send)(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg);
+    ah_err_t (*sock_send)(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out);
     ah_err_t (*sock_close)(void* ctx, ah_udp_sock_t* sock);
 };
 
@@ -46,18 +46,26 @@ struct ah_udp_sock {
     AH_I_UDP_SOCK_FIELDS
 };
 
-// An outgoing UDP message.
-struct ah_udp_msg {
+// In incoming UDP message.
+struct ah_udp_in {
     ah_buf_t buf;
     const ah_sockaddr_t* raddr;
 
-    AH_I_UDP_MSG_FIELDS
+    AH_I_UDP_IN_FIELDS
+};
+
+// An outgoing UDP message.
+struct ah_udp_out {
+    ah_buf_t buf;
+    const ah_sockaddr_t* raddr;
+
+    AH_I_UDP_OUT_FIELDS
 };
 
 struct ah_udp_sock_cbs {
     void (*on_open)(ah_udp_sock_t* sock, ah_err_t err);
-    void (*on_recv)(ah_udp_sock_t* sock, uint8_t* data, size_t size, const ah_sockaddr_t* raddr, ah_err_t err); // If NULL, every attempt to receive data will fail with AH_ESTATE.
-    void (*on_send)(ah_udp_sock_t* sock, size_t size, const ah_sockaddr_t* raddr, ah_err_t err);                // If NULL, all attempts to send data will fail with AH_ESTATE.
+    void (*on_recv)(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);   // If NULL, every attempt to start receiving data will fail with AH_ESTATE.
+    void (*on_send)(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err); // If NULL, every attempt to send data will fail with AH_ESTATE.
     void (*on_close)(ah_udp_sock_t* sock, ah_err_t err);
 };
 
@@ -69,7 +77,7 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp
 ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
-ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_msg_t* msg);
+ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_t* laddr);
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock);
@@ -83,5 +91,9 @@ ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_
 ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data);
 ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
+
+ah_extern void ah_udp_in_forget(ah_udp_in_t* in);
+ah_extern void ah_udp_in_free(ah_udp_in_t* in);
+ah_extern void ah_udp_in_reset(ah_udp_in_t* in);
 
 #endif

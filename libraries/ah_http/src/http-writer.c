@@ -8,7 +8,7 @@
 
 #include <ah/assert.h>
 
-bool ah_i_http_write_crlf(ah_rw_t* rw)
+bool ah_i_http_write_crlf(ah_prw_t* rw)
 {
     ah_assert_if_debug(rw != NULL);
 
@@ -23,7 +23,7 @@ bool ah_i_http_write_crlf(ah_rw_t* rw)
     return true;
 }
 
-bool ah_i_http_write_cstr(ah_rw_t* rw, const char* cstr)
+bool ah_i_http_write_cstr(ah_prw_t* rw, const char* cstr)
 {
     ah_assert_if_debug(rw != NULL);
 
@@ -45,7 +45,7 @@ bool ah_i_http_write_cstr(ah_rw_t* rw, const char* cstr)
     return false;
 }
 
-bool ah_i_http_write_size_as_string(ah_rw_t* rw, size_t size, unsigned base)
+bool ah_i_http_write_size_as_string(ah_prw_t* rw, size_t size, unsigned base)
 {
     ah_assert_if_debug(rw != NULL);
     ah_assert_if_debug(base >= 10u && base <= 16u);

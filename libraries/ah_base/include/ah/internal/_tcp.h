@@ -48,7 +48,9 @@
  uint8_t _state;                     \
  AH_I_TCP_LISTENER_PLATFORM_FIELDS
 
-#define AH_I_TCP_MSG_FIELDS \
- AH_I_TCP_MSG_PLATFORM_FIELDS
+#define AH_I_TCP_IN_FIELDS
+
+#define AH_I_TCP_OUT_FIELDS \
+ AH_I_TCP_OUT_PLATFORM_FIELDS
 
 #endif

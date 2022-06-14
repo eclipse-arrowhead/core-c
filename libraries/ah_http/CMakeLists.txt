@@ -9,7 +9,7 @@ set(
     src/http-body.c
     src/http-client.c
     src/http-client.h
-    src/http-msg-queue.h
+    src/http-out-queue.h
     src/http-writer.c
     src/http-writer.h
     src/http-parser.c

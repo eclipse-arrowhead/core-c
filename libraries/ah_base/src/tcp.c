@@ -14,7 +14,7 @@ ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t*
 ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn);
 ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn);
-ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_msg_t* msg);
+ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out);
 ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn);
 
@@ -127,7 +127,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     return conn->_trans.vtab->conn_read_stop(conn->_trans.ctx, conn);
 }
 
-ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
+ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out)
 {
     if (conn == NULL) {
         return AH_EINVAL;
@@ -135,7 +135,7 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_msg_t* msg)
     if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_write == NULL) {
         return AH_ESTATE;
     }
-    return conn->_trans.vtab->conn_write(conn->_trans.ctx, conn, msg);
+    return conn->_trans.vtab->conn_write(conn->_trans.ctx, conn, out);
 }
 
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
@@ -225,6 +225,25 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
 
     conn->_user_data = user_data;
 }
+
+ah_extern void ah_tcp_in_forget(ah_tcp_in_t* in)
+{
+    (void) in;
+    ah_unreachable(); // TODO: Implement.
+}
+
+ah_extern void ah_tcp_in_free(ah_tcp_in_t* in)
+{
+    (void) in;
+    ah_unreachable(); // TODO: Implement.
+}
+
+ah_extern void ah_tcp_in_reset(ah_tcp_in_t* in)
+{
+    (void) in;
+    ah_unreachable(); // TODO: Implement.
+}
+
 
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs)
 {

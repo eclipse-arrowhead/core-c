@@ -7,7 +7,7 @@
 #ifndef AH_INTERNAL_URING_UDP_H_
 #define AH_INTERNAL_URING_UDP_H_
 
-#define AH_I_UDP_MSG_PLATFORM_FIELDS \
+#define AH_I_UDP_OUT_PLATFORM_FIELDS \
  struct msghdr _msghdr;              \
  ah_udp_sock_t* _sock;
 

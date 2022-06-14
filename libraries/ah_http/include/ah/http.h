@@ -17,7 +17,7 @@ typedef struct ah_http_chunk ah_http_chunk_t;
 typedef struct ah_http_client ah_http_client_t;
 typedef struct ah_http_client_cbs ah_http_client_cbs_t;
 typedef struct ah_http_header ah_http_header_t;
-typedef struct ah_http_msg ah_http_msg_t;
+typedef struct ah_http_out ah_http_out_t;
 typedef struct ah_http_server ah_http_server_t;
 typedef struct ah_http_server_cbs ah_http_server_cbs_t;
 typedef struct ah_http_trailer ah_http_trailer_t;
@@ -34,13 +34,8 @@ struct ah_http_client {
 struct ah_http_client_cbs {
     void (*on_open)(ah_http_client_t* cln, ah_err_t err);    // Never called for accepted clients.
     void (*on_connect)(ah_http_client_t* cln, ah_err_t err); // Never called for accepted clients.
-    void (*on_close)(ah_http_client_t* cln, ah_err_t err);
 
-    // If `reuse` is true, any block of memory previously provided via `buf` may
-    // be used again without disrupting `cln`.
-    void (*on_alloc)(ah_http_client_t* cln, ah_buf_t* buf, bool reuse);
-
-    void (*on_send_done)(ah_http_client_t* cln, ah_http_msg_t* msg, ah_err_t err);
+    void (*on_send)(ah_http_client_t* cln, ah_http_out_t* out, ah_err_t err);
 
     void (*on_recv_line)(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
     void (*on_recv_header)(ah_http_client_t* cln, ah_http_header_t header);
@@ -51,6 +46,8 @@ struct ah_http_client_cbs {
     // If `err` is not AH_ENONE or if connection keep-alive is disabled, the
     // client will be closed right after this function returns.
     void (*on_recv_end)(ah_http_client_t* cln, ah_err_t err);
+
+    void (*on_close)(ah_http_client_t* cln, ah_err_t err);
 };
 
 // An HTTP server.
@@ -62,10 +59,8 @@ struct ah_http_server {
 struct ah_http_server_cbs {
     void (*on_open)(ah_http_server_t* srv, ah_err_t err);
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
+    void (*on_accept)(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err);
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
-
-    void (*on_client_alloc)(ah_http_server_t* srv, ah_http_client_t** client);
-    void (*on_client_accept)(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err);
 };
 
 // An HTTP version indicator.
@@ -80,7 +75,7 @@ struct ah_http_chunk {
     // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
     const char* ext;
 
-    ah_tcp_msg_t data;
+    ah_tcp_out_t data;
 
     AH_I_HTTP_CHUNK_FIELDS
 };
@@ -108,7 +103,7 @@ union ah_http_body {
 };
 
 // An outgoing HTTP request or response.
-struct ah_http_msg {
+struct ah_http_out {
     const char* line; // "<method> <target>" or "<code> <reason phrase>".
     ah_http_ver_t version;
     ah_http_header_t* headers; // Array terminated by { NULL, * } pair.
@@ -120,8 +115,8 @@ struct ah_http_msg {
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_cbs_t* cbs);
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
-ah_extern ah_err_t ah_http_client_send(ah_http_client_t* cln, ah_http_msg_t* msg);
-ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_msg_t* data);
+ah_extern ah_err_t ah_http_client_send(ah_http_client_t* cln, ah_http_out_t* out);
+ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_out_t* data);
 ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_t* chunk);
 ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_trailer_t* trailer); // Implies *_end().

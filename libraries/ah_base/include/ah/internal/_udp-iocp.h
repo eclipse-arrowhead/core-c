@@ -11,7 +11,7 @@
 
 #include <mswsock.h>
 
-#define AH_I_UDP_MSG_PLATFORM_FIELDS \
+#define AH_I_UDP_OUT_PLATFORM_FIELDS \
  WSAMSG _wsamsg;
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS \

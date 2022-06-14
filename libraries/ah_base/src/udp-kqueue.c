@@ -15,10 +15,10 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev);
 
 static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock);
 
-bool ah_i_udp_msg_queue_is_empty(struct ah_i_udp_msg_queue* queue);
-bool ah_i_udp_msg_queue_is_empty_then_add(struct ah_i_udp_msg_queue* queue, ah_udp_msg_t* msg);
-ah_udp_msg_t* ah_i_udp_msg_queue_get_head(struct ah_i_udp_msg_queue* queue);
-void ah_i_udp_msg_queue_remove_unsafe(struct ah_i_udp_msg_queue* queue);
+bool ah_i_udp_out_queue_is_empty(struct ah_i_udp_out_queue* queue);
+bool ah_i_udp_out_queue_is_empty_then_add(struct ah_i_udp_out_queue* queue, ah_udp_out_t* out);
+ah_udp_out_t* ah_i_udp_out_queue_get_head(struct ah_i_udp_out_queue* queue);
+void ah_i_udp_out_queue_remove_unsafe(struct ah_i_udp_out_queue* queue);
 
 ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 {
@@ -141,25 +141,25 @@ ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg)
+ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
 {
     (void) ctx;
 
-    if (sock == NULL || msg == NULL) {
+    if (sock == NULL || out == NULL) {
         return AH_EINVAL;
     }
     if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_send_done == NULL) {
         return AH_ESTATE;
     }
 
-    msg->_msghdr = (struct msghdr) {
-        .msg_name = (void*) ah_i_sockaddr_const_into_bsd(msg->raddr),
-        .msg_namelen = ah_i_sockaddr_get_size(msg->raddr),
-        .msg_iov = ah_i_buf_into_iovec(&msg->buf),
+    out->_msghdr = (struct msghdr) {
+        .msg_name = (void*) ah_i_sockaddr_const_into_bsd(out->raddr),
+        .msg_namelen = ah_i_sockaddr_get_size(out->raddr),
+        .msg_iov = ah_i_buf_into_iovec(&out->buf),
         .msg_iovlen = 1u,
     };
 
-    if (ah_i_udp_msg_queue_is_empty_then_add(&sock->_msg_queue, msg)) {
+    if (ah_i_udp_out_queue_is_empty_then_add(&sock->_out_queue, out)) {
         return s_prep_sock_send(sock);
     }
 
@@ -199,7 +199,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_err_t err;
     ssize_t res = 0;
 
-    ah_udp_msg_t* msg = ah_i_udp_msg_queue_get_head(&sock->_msg_queue);
+    ah_udp_out_t* out = ah_i_udp_out_queue_get_head(&sock->_out_queue);
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -211,7 +211,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err_and_prep_next;
     }
 
-    res = sendmsg(sock->_fd, &msg->_msghdr, 0);
+    res = sendmsg(sock->_fd, &out->_msghdr, 0);
     if (ah_unlikely(res < 0)) {
         err = errno;
         res = 0;
@@ -221,13 +221,13 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     err = AH_ENONE;
 
 report_err_and_prep_next:
-    ah_i_udp_msg_queue_remove_unsafe(&sock->_msg_queue);
-    sock->_cbs->on_send_done(sock, (size_t) res, ah_i_sockaddr_const_from_bsd(msg->_msghdr.msg_name), err);
+    ah_i_udp_out_queue_remove_unsafe(&sock->_out_queue);
+    sock->_cbs->on_send_done(sock, (size_t) res, ah_i_sockaddr_const_from_bsd(out->_msghdr.msg_name), err);
 
     if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN) {
         return;
     }
-    if (ah_i_udp_msg_queue_is_empty(&sock->_msg_queue)) {
+    if (ah_i_udp_out_queue_is_empty(&sock->_out_queue)) {
         return;
     }
 
@@ -270,33 +270,33 @@ ah_err_t ah_i_udp_sock_close(void* ctx, ah_udp_sock_t* sock)
     return err;
 }
 
-bool ah_i_udp_msg_queue_is_empty(struct ah_i_udp_msg_queue* queue)
+bool ah_i_udp_out_queue_is_empty(struct ah_i_udp_out_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
 
     return queue->_head == NULL;
 }
 
-bool ah_i_udp_msg_queue_is_empty_then_add(struct ah_i_udp_msg_queue* queue, ah_udp_msg_t* msg)
+bool ah_i_udp_out_queue_is_empty_then_add(struct ah_i_udp_out_queue* queue, ah_udp_out_t* out)
 {
     ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(msg != NULL);
+    ah_assert_if_debug(out != NULL);
 
-    msg->_next = NULL;
+    out->_next = NULL;
 
     if (queue->_head == NULL) {
-        queue->_head = msg;
-        queue->_end = msg;
+        queue->_head = out;
+        queue->_end = out;
         return true;
     }
 
-    queue->_end->_next = msg;
-    queue->_end = msg;
+    queue->_end->_next = out;
+    queue->_end = out;
 
     return false;
 }
 
-ah_udp_msg_t* ah_i_udp_msg_queue_get_head(struct ah_i_udp_msg_queue* queue)
+ah_udp_out_t* ah_i_udp_out_queue_get_head(struct ah_i_udp_out_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
     ah_assert_if_debug(queue->_head != NULL);
@@ -304,18 +304,18 @@ ah_udp_msg_t* ah_i_udp_msg_queue_get_head(struct ah_i_udp_msg_queue* queue)
     return queue->_head;
 }
 
-void ah_i_udp_msg_queue_remove_unsafe(struct ah_i_udp_msg_queue* queue)
+void ah_i_udp_out_queue_remove_unsafe(struct ah_i_udp_out_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
     ah_assert_if_debug(queue->_head != NULL);
     ah_assert_if_debug(queue->_end != NULL);
 
-    ah_udp_msg_t* msg = queue->_head;
-    queue->_head = msg->_next;
+    ah_udp_out_t* out = queue->_head;
+    queue->_head = out->_next;
 
 #ifndef NDEBUG
 
-    msg->_next = NULL;
+    out->_next = NULL;
 
     if (queue->_head == NULL) {
         queue->_end = NULL;

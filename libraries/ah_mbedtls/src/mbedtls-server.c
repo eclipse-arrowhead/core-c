@@ -26,7 +26,7 @@ static const ah_tcp_listener_cbs_t s_listener_cbs = {
     .on_listen = s_listener_on_listen,
     .on_close = s_listener_on_close,
     .on_conn_alloc = s_listener_on_conn_alloc,
-    .on_conn_accept = s_listener_on_conn_accept,
+    .on_accept = s_listener_on_conn_accept,
 };
 
 ah_extern ah_err_t ah_mbedtls_server_init(ah_mbedtls_server_t* server, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf, ah_mbedtls_on_handshake_done_cb on_handshake_done_cb)
@@ -192,7 +192,7 @@ static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn
     ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
 
     if (server == NULL) {
-        ln->_cbs->on_conn_accept(ln, NULL, NULL, AH_ESTATE);
+        ln->_cbs->on_accept(ln, NULL, NULL, AH_ESTATE);
         return;
     }
 
@@ -204,7 +204,7 @@ static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
     ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
 
     if (server == NULL) {
-        ln->_cbs->on_conn_accept(ln, NULL, NULL, AH_ESTATE);
+        ln->_cbs->on_accept(ln, NULL, NULL, AH_ESTATE);
         return;
     }
 
@@ -233,7 +233,7 @@ static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
     mbedtls_ssl_set_bio(&client->_ssl, conn, ah_i_mbedtls_ssl_on_send, ah_i_mbedtls_ssl_on_recv, NULL);
 
 handle_err:
-    server->_ln_cbs->on_conn_accept(ln, conn, raddr, err);
+    server->_ln_cbs->on_accept(ln, conn, raddr, err);
 
     if (err != AH_ENONE || !ah_tcp_conn_is_readable_and_writable(conn)) {
         return;

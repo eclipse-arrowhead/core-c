@@ -16,13 +16,13 @@
  int _fd;                                 \
  struct ah_i_loop_evt* _listen_evt;
 
-#define AH_I_TCP_MSG_PLATFORM_FIELDS \
- ah_tcp_msg_t* _next;                \
+#define AH_I_TCP_OUT_PLATFORM_FIELDS \
+ ah_tcp_out_t* _next;                \
  size_t _buf_offset;
 
 struct ah_i_tcp_msg_queue {
-    struct ah_tcp_msg* _head;
-    struct ah_tcp_msg* _end;
+    struct ah_tcp_out* _head;
+    struct ah_tcp_out* _end;
 };
 
 #endif

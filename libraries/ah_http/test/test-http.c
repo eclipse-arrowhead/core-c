@@ -79,7 +79,7 @@ static const ah_http_client_cbs_t s_client_cbs = {
     .on_connect = on_client_connect,
     .on_close = on_client_close,
     .on_alloc = on_client_alloc,
-    .on_send_done = on_client_send_done,
+    .on_send = on_client_send_done,
     .on_recv_line = on_client_recv_line,
     .on_recv_header = on_client_recv_header,
     .on_recv_headers = on_client_recv_headers,
@@ -93,7 +93,7 @@ static const ah_http_server_cbs_t s_server_cbs = {
     .on_listen = s_on_server_listen,
     .on_close = s_on_server_close,
     .on_client_alloc = s_on_server_client_alloc,
-    .on_client_accept = s_on_server_client_accept,
+    .on_accept = s_on_server_client_accept,
 };
 
 void on_client_open(ah_http_client_t* cln, ah_err_t err)

@@ -146,11 +146,11 @@ ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg)
+ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
 {
     (void) ctx;
 
-    if (sock == NULL || msg == NULL) {
+    if (sock == NULL || out == NULL) {
         return AH_EINVAL;
     }
     if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_send == NULL) {
@@ -166,9 +166,9 @@ ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_msg_t* msg)
     }
 
     evt->_cb = s_on_sock_send;
-    evt->_subject = msg;
+    evt->_subject = out;
 
-    msg->_msghdr.msg_name = (void*) ah_i_sockaddr_const_into_bsd(msg->raddr);
+    out->_msghdr.msg_name = (void*) ah_i_sockaddr_const_into_bsd(msg->raddr);
     msg->_msghdr.msg_namelen = ah_i_sockaddr_get_size(msg->raddr);
     msg->_msghdr.msg_iov = ah_i_buf_into_iovec((ah_buf_t*) &msg->buf);
     msg->_msghdr.msg_iovlen = 1u;
