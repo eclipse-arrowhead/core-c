@@ -72,9 +72,6 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
     if (cbs->on_open == NULL || cbs->on_connect == NULL || cbs->on_close == NULL) {
         return AH_EINVAL;
     }
-    if ((cbs->on_read_alloc == NULL) != (cbs->on_read_data == NULL)) {
-        return AH_EINVAL;
-    }
 
     *conn = (ah_tcp_conn_t) {
         ._loop = loop,
@@ -237,7 +234,7 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
     if (cbs->on_open == NULL || cbs->on_listen == NULL || cbs->on_close == NULL) {
         return AH_EINVAL;
     }
-    if (cbs->on_conn_alloc == NULL || cbs->on_conn_accept == NULL) {
+    if (cbs->on_accept == NULL) {
         return AH_EINVAL;
     }
 
@@ -248,7 +245,7 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
         ._state = AH_I_TCP_LISTENER_STATE_CLOSED,
     };
 
-    return AH_ENONE;
+    return ah_i_slab_init(&ln->_conn_slab, 1u, sizeof(ah_tcp_conn_t));
 }
 
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)

@@ -19,7 +19,7 @@ struct ah_i_slab {
 
 struct ah_i_slab_slot {
     struct ah_i_slab_slot* _next_free;
-    uint8_t _entry[];
+    uint8_t _entry_as_raw_bytes[];
 };
 
 struct ah_i_slab_cache {

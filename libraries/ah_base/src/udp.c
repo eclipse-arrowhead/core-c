@@ -57,9 +57,6 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp
     if (cbs->on_open == NULL || cbs->on_close == NULL) {
         return AH_EINVAL;
     }
-    if ((cbs->on_recv_alloc == NULL) != (cbs->on_recv_data == NULL)) {
-        return AH_EINVAL;
-    }
 
     *sock = (ah_udp_sock_t) {
         ._loop = loop,

@@ -68,10 +68,10 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
         ah_tcp_shutdown_t shutdown_flags = 0u;
 
-        if (conn->_cbs->on_read_data == NULL) {
+        if (conn->_cbs->on_read == NULL) {
             shutdown_flags |= AH_TCP_SHUTDOWN_RD;
         }
-        if (conn->_cbs->on_write_done == NULL) {
+        if (conn->_cbs->on_write == NULL) {
             shutdown_flags |= AH_TCP_SHUTDOWN_WR;
         }
         if (shutdown_flags != 0) {
@@ -125,21 +125,16 @@ static ah_err_t s_prep_conn_read(ah_tcp_conn_t* conn)
     evt->_cb = s_on_conn_read;
     evt->_subject = conn;
 
-    conn->_recv_buf = (ah_buf_t) { 0u };
-    conn->_cbs->on_read_alloc(conn, &conn->_recv_buf);
+    conn->_read_evt = evt;
+    conn->_read_page = ah_palloc();
 
-    if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
-        return AH_ENONE;
-    }
-
-    if (ah_buf_is_empty(&conn->_recv_buf)) {
+    if (conn->_read_page == NULL) {
         conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
-        return AH_ENOBUFS;
+        return AH_ENOMEM;
     }
 
-    conn->_recv_evt = evt;
 
-    io_uring_prep_recv(sqe, conn->_fd, ah_buf_get_base(&conn->_recv_buf), ah_buf_get_size(&conn->_recv_buf), 0);
+    io_uring_prep_recv(sqe, conn->_fd, conn->_read_page, AH_PSIZE, 0);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -153,7 +148,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
 
-    conn->_recv_evt = NULL;
+    conn->_read_evt = NULL;
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;
@@ -166,20 +161,23 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
-    if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) != 0 && cqe->res == 0)) {
+    if (ah_unlikely(cqe->res == 0)) {
         conn->_shutdown_flags |= AH_TCP_SHUTDOWN_RD;
         err = AH_EEOF;
         goto report_err;
     }
 
-    if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) < (size_t) cqe->res)) {
+    if (ah_unlikely(AH_PSIZE < (size_t) cqe->res)) {
         err = AH_EDOM;
         goto report_err;
     }
 
-    conn->_cbs->on_read_data(conn, conn->_recv_buf, cqe->res, AH_ENONE);
+    conn->_cbs->on_read(conn, conn->_read_page, cqe->res, AH_ENONE);
+
+    ah_pfree(conn->_read_page);
+
 #ifndef NDEBUG
-    conn->_recv_buf = (ah_buf_t) { 0u };
+    conn->_read_page = NULL;
 #endif
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
@@ -194,7 +192,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     return;
 
 report_err:
-    conn->_cbs->on_read_data(conn, (ah_buf_t) { 0u }, 0u, err);
+    conn->_cbs->on_read(conn, NULL, 0u, err);
 }
 
 ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
@@ -209,11 +207,11 @@ ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
     }
     conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
 
-    if (conn->_recv_evt != NULL) {
+    if (conn->_read_evt != NULL) {
         struct io_uring_sqe* sqe;
         if (ah_i_loop_alloc_sqe(conn->_loop, &sqe) == AH_ENONE) {
-            io_uring_prep_cancel(sqe, conn->_recv_evt, 0);
-            conn->_recv_evt = NULL;
+            io_uring_prep_cancel(sqe, conn->_read_evt, 0);
+            conn->_read_evt = NULL;
         }
     }
 
@@ -269,7 +267,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         err = AH_ENONE;
     }
 
-    conn->_cbs->on_write_done(conn, err);
+    conn->_cbs->on_write(conn, err);
 }
 
 ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn)
@@ -334,12 +332,16 @@ static void s_on_conn_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
 
+    conn->_shutdown_flags = AH_TCP_SHUTDOWN_RDWR;
 #ifndef NDEBUG
     conn->_fd = 0;
 #endif
 
-    conn->_shutdown_flags = AH_TCP_SHUTDOWN_RDWR;
     conn->_cbs->on_close(conn, -(cqe->res));
+
+    if (conn->_owning_slab != NULL) {
+        ah_i_slab_free(conn->_owning_slab, conn);
+    }
 }
 
 ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
@@ -349,7 +351,7 @@ ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned bac
     if (ln == NULL || conn_cbs == NULL) {
         return AH_EINVAL;
     }
-    if (conn_cbs->on_close == NULL || conn_cbs->on_read_alloc == NULL || conn_cbs->on_read_data == NULL || conn_cbs->on_write_done == NULL) {
+    if (conn_cbs->on_close == NULL || conn_cbs->on_read == NULL || conn_cbs->on_write == NULL) {
         return AH_EINVAL;
     }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {
@@ -397,26 +399,26 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_assert_if_debug(ln != NULL);
 
     if (ah_unlikely(cqe->res < 0)) {
-        ln->_cbs->on_conn_accept(ln, NULL, NULL, -cqe->res);
+        ln->_cbs->on_accept(ln, NULL, NULL, -cqe->res);
         goto prep_another_accept;
     }
 
-    ah_tcp_conn_t* conn = NULL;
-    ln->_cbs->on_conn_alloc(ln, &conn);
+    ah_tcp_conn_t* conn = ah_i_slab_alloc(&ln->_conn_slab);
     if (conn == NULL) {
-        ln->_cbs->on_conn_accept(ln, NULL, NULL, AH_ENOBUFS);
+        ln->_cbs->on_accept(ln, NULL, NULL, AH_ENOMEM);
         goto prep_another_accept;
     }
 
     *conn = (ah_tcp_conn_t) {
         ._loop = ln->_loop,
         ._trans = ln->_trans,
+        ._owning_slab = &ln->_conn_slab,
         ._cbs = ln->_conn_cbs,
         ._state = AH_I_TCP_CONN_STATE_CONNECTED,
         ._fd = cqe->res,
     };
 
-    ln->_cbs->on_conn_accept(ln, conn, &ln->_raddr, AH_ENONE);
+    ln->_cbs->on_accept(ln, conn, &ln->_raddr, AH_ENONE);
 
     ah_err_t err;
     ah_i_loop_evt_t* evt0;
@@ -492,6 +494,7 @@ ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln)
 #endif
 
     ln->_cbs->on_close(ln, err);
+    ah_i_slab_term(&ln->_conn_slab, NULL);
 
     return AH_ENONE;
 }
@@ -509,4 +512,5 @@ static void s_on_listener_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 #endif
 
     ln->_cbs->on_close(ln, -(cqe->res));
+    ah_i_slab_term(&ln->_conn_slab, NULL);
 }

@@ -11,6 +11,9 @@
 #include "ah/err.h"
 
 #include <stdbool.h>
+#ifndef NDEBUG
+# include <string.h>
+#endif
 
 #define S_CACHE_SLOT_CAPACITY_IN_BYTES (AH_PSIZE - offsetof(struct ah_i_slab_cache, _slots_as_raw_bytes))
 
@@ -19,9 +22,9 @@ bool s_try_grow(struct ah_i_slab* slab);
 ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, size_t slot_data_size)
 {
     ah_assert_if_debug(slab != NULL);
-    ah_assert_if_debug(slot_data_size != 0u && slot_data_size <= (SIZE_MAX - offsetof(struct ah_i_slab_slot, _entry)));
+    ah_assert_if_debug(slot_data_size != 0u && slot_data_size <= (SIZE_MAX - offsetof(struct ah_i_slab_slot, _entry_as_raw_bytes)));
 
-    const size_t slot_size = slot_data_size + offsetof(struct ah_i_slab_slot, _entry);
+    const size_t slot_size = slot_data_size + offsetof(struct ah_i_slab_slot, _entry_as_raw_bytes);
     const size_t cache_slot_capacity = S_CACHE_SLOT_CAPACITY_IN_BYTES / slot_size;
     if (cache_slot_capacity == 0u) {
         return AH_EOVERFLOW;
@@ -90,9 +93,11 @@ void* ah_i_slab_alloc(struct ah_i_slab* slab)
     }
 
     slab->_free_list = slot->_next_free;
+#ifndef NDEBUG
     slot->_next_free = NULL;
+#endif
 
-    return slot->_entry;
+    return slot->_entry_as_raw_bytes;
 }
 
 void ah_i_slab_free(struct ah_i_slab* slab, void* entry)
@@ -100,8 +105,12 @@ void ah_i_slab_free(struct ah_i_slab* slab, void* entry)
     ah_assert_if_debug(slab != NULL);
     ah_assert_if_debug(entry != NULL);
 
-    struct ah_i_slab_slot* slot = (struct ah_i_slab_slot*) &((unsigned char*) entry)[-((ptrdiff_t) offsetof(struct ah_i_slab_slot, _entry))];
+    struct ah_i_slab_slot* slot = (struct ah_i_slab_slot*) &((unsigned char*) entry)[-((ptrdiff_t) offsetof(struct ah_i_slab_slot, _entry_as_raw_bytes))];
     ah_assert_if_debug(slot->_next_free == NULL);
+
+#ifndef NDEBUG
+    memset(slot, 0, slab->_slot_size);
+#endif
 
     slot->_next_free = slab->_free_list;
     slab->_free_list = slot;
@@ -123,7 +132,7 @@ void ah_i_slab_term(struct ah_i_slab* slab, void (*allocated_entry_cb)(void*))
             for (size_t i = 0u; i < slab->_cache_slot_capacity; i += 1u) {
                 struct ah_i_slab_slot* slot = (struct ah_i_slab_slot*) &cache->_slots_as_raw_bytes[i * slab->_slot_size];
                 if (slot->_next_free != (struct ah_i_slab_slot*) 1u) {
-                    allocated_entry_cb(slot->_entry);
+                    allocated_entry_cb(slot->_entry_as_raw_bytes);
                 }
 #ifndef NDEBUG
                 else {

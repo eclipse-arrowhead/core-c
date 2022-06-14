@@ -8,6 +8,7 @@
 #define AH_INTERNAL_TCP_H_
 
 #include "../defs.h"
+#include "collections/slab.h"
 
 #if AH_USE_IOCP
 # include "_tcp-iocp.h"
@@ -30,6 +31,7 @@
 #define AH_I_TCP_CONN_FIELDS        \
  ah_loop_t* _loop;                  \
  ah_tcp_trans_t _trans;             \
+ struct ah_i_slab* _owning_slab;    \
  const ah_tcp_conn_cbs_t* _cbs;     \
  void* _user_data;                  \
  ah_tcp_shutdown_t _shutdown_flags; \
@@ -39,6 +41,7 @@
 #define AH_I_TCP_LISTENER_FIELDS     \
  ah_loop_t* _loop;                   \
  ah_tcp_trans_t _trans;              \
+ struct ah_i_slab _conn_slab;        \
  const ah_tcp_listener_cbs_t* _cbs;  \
  const ah_tcp_conn_cbs_t* _conn_cbs; \
  void* _user_data;                   \

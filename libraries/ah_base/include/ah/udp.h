@@ -56,14 +56,9 @@ struct ah_udp_msg {
 
 struct ah_udp_sock_cbs {
     void (*on_open)(ah_udp_sock_t* sock, ah_err_t err);
+    void (*on_recv)(ah_udp_sock_t* sock, uint8_t* data, size_t size, const ah_sockaddr_t* raddr, ah_err_t err); // If NULL, every attempt to receive data will fail with AH_ESTATE.
+    void (*on_send)(ah_udp_sock_t* sock, size_t size, const ah_sockaddr_t* raddr, ah_err_t err);                // If NULL, all attempts to send data will fail with AH_ESTATE.
     void (*on_close)(ah_udp_sock_t* sock, ah_err_t err);
-
-    // If both are NULL, every attempt to receive data will fail with AH_ESTATE. Either both or none must be non-NULL.
-    void (*on_recv_alloc)(ah_udp_sock_t* sock, ah_buf_t* buf);
-    void (*on_recv_data)(ah_udp_sock_t* sock, ah_buf_t buf, size_t nrecv, const ah_sockaddr_t* raddr, ah_err_t err);
-
-    // If NULL, all attempts to send data will fail with AH_ESTATE.
-    void (*on_send_done)(ah_udp_sock_t* sock, size_t nsent, const ah_sockaddr_t* raddr, ah_err_t err);
 };
 
 ah_extern ah_udp_trans_t ah_udp_trans_get_default();

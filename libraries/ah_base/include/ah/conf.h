@@ -68,7 +68,11 @@
 #endif
 
 #ifndef AH_CONF_PALLOC
-# define AH_CONF_PALLOC() AH_CONF_MALLOC(AH_CONF_PSIZE)
+# ifndef NDEBUG
+#  define AH_CONF_PALLOC() AH_CONF_CALLOC(1u, AH_CONF_PSIZE)
+# else
+#  define AH_CONF_PALLOC() AH_CONF_MALLOC(AH_CONF_PSIZE)
+# endif
 #endif
 
 #ifndef AH_CONF_PFREE

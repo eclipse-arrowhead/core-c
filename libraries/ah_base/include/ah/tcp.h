@@ -45,16 +45,10 @@ struct ah_tcp_conn {
 };
 
 struct ah_tcp_conn_cbs {
-    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err);    // Never called for accepted connections.
-    void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err); // Never called for accepted connections.
-
-    // If both are NULL, receiving is shutdown automatically. Either both or none must be non-NULL.
-    void (*on_read_alloc)(ah_tcp_conn_t* conn, ah_buf_t* buf);
-    void (*on_read_data)(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err);
-
-    // If NULL, sending is shutdown automatically.
-    void (*on_write_done)(ah_tcp_conn_t* conn, ah_err_t err);
-
+    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err);                             // Never called for accepted connections.
+    void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err);                          // Never called for accepted connections.
+    void (*on_read)(ah_tcp_conn_t* conn, uint8_t* data, size_t size, ah_err_t err); // If NULL, reading is shutdown automatically.
+    void (*on_write)(ah_tcp_conn_t* conn, ah_err_t err);                            // If NULL, writing is shutdown automatically.
     void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
 };
 
@@ -65,10 +59,8 @@ struct ah_tcp_listener {
 struct ah_tcp_listener_cbs {
     void (*on_open)(ah_tcp_listener_t* ln, ah_err_t err);
     void (*on_listen)(ah_tcp_listener_t* ln, ah_err_t err);
+    void (*on_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
     void (*on_close)(ah_tcp_listener_t* ln, ah_err_t err);
-
-    void (*on_conn_alloc)(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
-    void (*on_conn_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 };
 
 // A buffer part of a stream of outgoing TCP bytes.

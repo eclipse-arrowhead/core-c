@@ -11,10 +11,10 @@
 
 #define AH_PSIZE AH_CONF_PSIZE
 
-#define ah_calloc(nmemb, size) AH_CONF_CALLOC((nmemb), (size))
-#define ah_free(ptr)           AH_CONF_FREE((ptr))
-#define ah_malloc(size)        AH_CONF_MALLOC((size))
-#define ah_palloc()            AH_CONF_PALLOC()
-#define ah_pfree(page)         AH_CONF_PFREE((page))
+#define ah_calloc(n, size) AH_CONF_CALLOC((n), (size))
+#define ah_free(ptr)       AH_CONF_FREE((ptr))
+#define ah_malloc(size)    AH_CONF_MALLOC((size))
+#define ah_palloc()        AH_CONF_PALLOC()
+#define ah_pfree(page)     AH_CONF_PFREE((page))
 
 #endif
