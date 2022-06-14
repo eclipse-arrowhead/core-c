@@ -18,6 +18,9 @@
 #if !defined(AH_CONF_IS_CONSTRAINED) && defined(__arm__) && !defined(__aarch64__)
 # define AH_CONF_IS_CONSTRAINED 1
 #endif
+#ifndef AH_CONF_IS_CONSTRAINED
+# define AH_CONF_IS_CONSTRAINED 0
+#endif
 
 #ifndef AH_CONF_CALLOC
 # define AH_CONF_CALLOC calloc
@@ -33,8 +36,28 @@
 # endif
 #endif
 
-#ifndef AH_CONF_IS_CONSTRAINED
-# define AH_CONF_IS_CONSTRAINED 0
+#ifndef AH_CONF_IOCP_COMPLETION_ENTRY_BUFFER_SIZE
+# if AH_CONF_IS_CONSTRAINED
+#  define AH_CONF_IOCP_COMPLETION_ENTRY_BUFFER_SIZE 4u
+# else
+#  define AH_CONF_IOCP_COMPLETION_ENTRY_BUFFER_SIZE 128u
+# endif
+#endif
+
+#ifndef AH_CONF_IOCP_DEFAULT_CAPACITY
+# if AH_CONF_IS_CONSTRAINED
+#  define AH_CONF_IOCP_DEFAULT_CAPACITY 32u
+# else
+#  define AH_CONF_IOCP_DEFAULT_CAPACITY 1024u
+# endif
+#endif
+
+#ifndef AH_CONF_KQUEUE_DEFAULT_CAPACITY
+# if AH_CONF_IS_CONSTRAINED
+#  define AH_CONF_KQUEUE_DEFAULT_CAPACITY 32u
+# else
+#  define AH_CONF_KQUEUE_DEFAULT_CAPACITY 1024u
+# endif
 #endif
 
 #ifndef AH_CONF_MALLOC
@@ -57,6 +80,14 @@
 #  define AH_CONF_PSIZE 256u
 # else
 #  define AH_CONF_PSIZE 65536u
+# endif
+#endif
+
+#ifndef AH_CONF_URING_DEFAULT_CAPACITY
+# if AH_CONF_IS_CONSTRAINED
+#  define AH_CONF_URING_DEFAULT_CAPACITY 32u
+# else
+#  define AH_CONF_URING_DEFAULT_CAPACITY 1024u
 # endif
 #endif
 

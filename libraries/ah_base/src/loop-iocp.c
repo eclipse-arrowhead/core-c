@@ -8,6 +8,7 @@
 
 #include "ah/alloc.h"
 #include "ah/assert.h"
+#include "ah/conf.h"
 #include "ah/err.h"
 #include "ah/math.h"
 #include "ah/task.h"
@@ -15,8 +16,6 @@
 #include <winsock2.h>
 
 #include <stdlib.h>
-
-#define S_COMPLETION_ENTRY_BUFFER_SIZE 128u
 
 static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb, size_t initial_capacity);
 static ah_task_t* s_task_queue_dequeue_if_at_or_after(struct ah_i_loop_task_queue* queue, ah_time_t baseline);
@@ -30,7 +29,7 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
     ah_assert_if_debug(opts != NULL);
 
     if (opts->capacity == 0u) {
-        opts->capacity = 1024u;
+        opts->capacity = AH_CONF_IOCP_DEFAULT_CAPACITY;
     }
 
     ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->alloc_cb, opts->capacity / 4u);
@@ -63,7 +62,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
         return err;
     }
 
-    OVERLAPPED_ENTRY entries[S_COMPLETION_ENTRY_BUFFER_SIZE];
+    OVERLAPPED_ENTRY entries[AH_CONF_IOCP_COMPLETION_ENTRY_BUFFER_SIZE];
     ULONG n_removed;
 
     do {
@@ -116,7 +115,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
         }
 
         if (!GetQueuedCompletionStatusEx(loop->_iocp_handle, entries,
-                S_COMPLETION_ENTRY_BUFFER_SIZE, &n_removed, timeout_ms, false)) {
+                AH_CONF_IOCP_COMPLETION_ENTRY_BUFFER_SIZE, &n_removed, timeout_ms, false)) {
             err = GetLastError();
             if (err != WAIT_TIMEOUT) {
                 return err;
@@ -152,7 +151,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
                 return AH_ENONE;
             }
         }
-    } while (n_removed == S_COMPLETION_ENTRY_BUFFER_SIZE);
+    } while (n_removed == AH_CONF_IOCP_COMPLETION_ENTRY_BUFFER_SIZE);
 
     return AH_ENONE;
 }

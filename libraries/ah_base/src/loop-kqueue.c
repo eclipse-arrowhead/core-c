@@ -8,6 +8,7 @@
 
 #include "ah/alloc.h"
 #include "ah/assert.h"
+#include "ah/conf.h"
 #include "ah/err.h"
 
 #include <fcntl.h>
@@ -21,7 +22,7 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
     ah_assert_if_debug(opts != NULL);
 
     if (opts->capacity == 0u) {
-        opts->capacity = 1024u;
+        opts->capacity = AH_CONF_KQUEUE_DEFAULT_CAPACITY;
     }
 
     if (opts->capacity > INT_MAX) {
@@ -39,8 +40,6 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
         err = errno;
         goto close_fd_and_return_err;
     }
-
-
 
     struct kevent* kqueue_changelist = ah_calloc(opts->capacity, sizeof(struct kevent));
     if (kqueue_changelist == NULL) {
