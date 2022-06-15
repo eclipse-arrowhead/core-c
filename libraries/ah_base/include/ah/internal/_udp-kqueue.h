@@ -7,17 +7,14 @@
 #ifndef AH_INTERNAL_KQUEUE_UDP_H_
 #define AH_INTERNAL_KQUEUE_UDP_H_
 
+#include "collections/list.h"
+
 #define AH_I_UDP_OUT_PLATFORM_FIELDS \
  struct ah_udp_out* _next;           \
  struct msghdr _msghdr;
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS \
  int _fd;                             \
- struct ah_i_udp_out_queue _out_queue;
-
-struct ah_i_udp_out_queue {
-    ah_udp_out_t* _head;
-    ah_udp_out_t* _end;
-};
+ struct ah_i_list _out_queue;
 
 #endif

@@ -7,9 +7,11 @@
 #ifndef AH_INTERNAL_KQUEUE_TCP_H_
 #define AH_INTERNAL_KQUEUE_TCP_H_
 
+#include "collections/list.h"
+
 #define AH_I_TCP_CONN_PLATFORM_FIELDS  \
  int _fd;                              \
- struct ah_i_tcp_msg_queue _msg_queue; \
+ struct ah_i_list _out_queue; \
  struct ah_i_loop_evt* _read_evt;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS \
@@ -19,10 +21,5 @@
 #define AH_I_TCP_OUT_PLATFORM_FIELDS \
  ah_tcp_out_t* _next;                \
  size_t _buf_offset;
-
-struct ah_i_tcp_msg_queue {
-    struct ah_tcp_out* _head;
-    struct ah_tcp_out* _end;
-};
 
 #endif

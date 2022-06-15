@@ -19,6 +19,7 @@ set(
     include/ah/internal/_tcp.h
     include/ah/internal/_time.h
     include/ah/internal/_udp.h
+    include/ah/internal/collections/list.h
     include/ah/internal/collections/ring.h
     include/ah/internal/collections/slab.h
     include/ah/intrin.h
@@ -34,6 +35,7 @@ set(
     include/ah/udp.h
     src/abort.c
     src/buf.c
+    src/collections/list.c
     src/collections/ring.c
     src/collections/slab.c
     src/err.c

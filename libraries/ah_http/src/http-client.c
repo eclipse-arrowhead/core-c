@@ -6,7 +6,7 @@
 
 #include "ah/http.h"
 
-#include "http-msg-queue.h"
+#include "http-out-queue.h"
 #include "http-parser.h"
 #include "http-utils.h"
 #include "http-writer.h"
