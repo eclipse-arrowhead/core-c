@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 #define AH_I_LIST_ENTRY_UNWRAP(ENTRY, WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME) \
- ((WRAPPING_TYPE*) &((unsigned char *) ENTRY)[(-((intptr_t) offsetof(WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME)))])
+ ((WRAPPING_TYPE*) &((unsigned char *) (ENTRY))[(-((intptr_t) offsetof(WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME)))])
 
 struct ah_i_list {
     struct ah_i_list_entry* _first;

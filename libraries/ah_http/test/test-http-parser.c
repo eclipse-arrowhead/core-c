@@ -16,7 +16,7 @@ static void s_should_parse_headers(ah_unit_t* unit);
 static void s_should_parse_request_lines(ah_unit_t* unit);
 static void s_should_parse_status_lines(ah_unit_t* unit);
 
-static ah_prw_t s_rw_from(char* str, void* writable_memory, size_t writable_memory_size);
+static ah_rw_t s_rw_from(char* str, void* writable_memory, size_t writable_memory_size);
 
 void test_http_parser(ah_unit_t* unit)
 {
@@ -30,7 +30,7 @@ static void s_should_parse_chunks(ah_unit_t* unit)
 {
     ah_err_t err;
     uint8_t rw_mem[48u];
-    ah_prw_t rw;
+    ah_rw_t rw;
 
     size_t size;
     const char* ext;
@@ -60,7 +60,7 @@ static void s_should_parse_chunks(ah_unit_t* unit)
     (void) ah_unit_assert_cstr_eq(unit, ";key0=\" val0 \";key1=\"\tval1\\\"\t\"", ext);
 }
 
-static ah_prw_t s_rw_from(char* str, void* writable_memory, size_t writable_memory_size)
+static ah_rw_t s_rw_from(char* str, void* writable_memory, size_t writable_memory_size)
 {
     ah_assert_if_debug(str != NULL);
 
@@ -70,7 +70,7 @@ static ah_prw_t s_rw_from(char* str, void* writable_memory, size_t writable_memo
     uint8_t* off = (uint8_t*) strncpy(writable_memory, str, len + 1u);
     uint8_t* end = &off[len];
 
-    return (ah_prw_t) {
+    return (ah_rw_t) {
         .r = off,
         .w = end,
         .e = end,
@@ -82,7 +82,7 @@ static void s_should_parse_headers(ah_unit_t* unit)
     ah_err_t err;
     ah_http_header_t header;
     uint8_t rw_mem[192u];
-    ah_prw_t rw = s_rw_from(
+    ah_rw_t rw = s_rw_from(
         "Accept: application/json, application/cbor\r\n"
         "Content-Type: application/json; charset=utf-8\r\n"
         "Content-Length:   143  \r\n"
@@ -121,7 +121,7 @@ static void s_should_parse_request_lines(ah_unit_t* unit)
 {
     ah_err_t err;
     uint8_t rw_mem[48u];
-    ah_prw_t rw;
+    ah_rw_t rw;
 
     const char* line;
     ah_http_ver_t version;
@@ -158,7 +158,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
 {
     ah_err_t err;
     uint8_t rw_mem[48u];
-    ah_prw_t rw;
+    ah_rw_t rw;
 
     const char* line;
     ah_http_ver_t version;

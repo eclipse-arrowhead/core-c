@@ -15,7 +15,7 @@
 #include <stddef.h>
 #include <string.h>
 
-static ah_err_t s_parse_version(ah_prw_t* rw, ah_http_ver_t* version);
+static ah_err_t s_parse_version(ah_rw_t* rw, ah_http_ver_t* version);
 
 static bool s_is_digit(uint8_t ch);
 static bool s_is_ows(uint8_t ch);
@@ -24,15 +24,15 @@ static bool s_is_tchar(uint8_t ch);
 static bool s_is_vchar_obs_text_htab_sp(uint8_t ch);
 static bool s_is_vchar_obs_text(uint8_t ch);
 
-static ah_err_t s_skip_ch(ah_prw_t* rw, char ch);
-static ah_err_t s_skip_crlf(ah_prw_t* rw);
-static void s_skip_ows(ah_prw_t* rw);
+static ah_err_t s_skip_ch(ah_rw_t* rw, char ch);
+static ah_err_t s_skip_crlf(ah_rw_t* rw);
+static void s_skip_ows(ah_rw_t* rw);
 
-static size_t s_skip_while(ah_prw_t* rw, bool (*predicate)(uint8_t));
-static const char* s_take_while(ah_prw_t* rw, bool (*predicate)(uint8_t));
+static size_t s_skip_while(ah_rw_t* rw, bool (*predicate)(uint8_t));
+static const char* s_take_while(ah_rw_t* rw, bool (*predicate)(uint8_t));
 static uint8_t s_to_lower_ascii(uint8_t ch);
 
-ah_err_t ah_i_http_parse_chunk_line(ah_prw_t* rw, size_t* size, const char** ext)
+ah_err_t ah_i_http_parse_chunk_line(ah_rw_t* rw, size_t* size, const char** ext)
 {
     ah_assert_if_debug(rw != NULL);
     ah_assert_if_debug(size != NULL);
@@ -107,7 +107,7 @@ finish:
     return AH_ENONE;
 }
 
-ah_err_t ah_i_http_parse_header(ah_prw_t* rw, ah_http_header_t* header)
+ah_err_t ah_i_http_parse_header(ah_rw_t* rw, ah_http_header_t* header)
 {
     ah_assert_if_debug(rw != NULL);
     ah_assert_if_debug(header != NULL);
@@ -191,7 +191,7 @@ ah_err_t ah_i_http_parse_header(ah_prw_t* rw, ah_http_header_t* header)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_http_parse_req_line(ah_prw_t* rw, const char** line, ah_http_ver_t* version)
+ah_err_t ah_i_http_parse_req_line(ah_rw_t* rw, const char** line, ah_http_ver_t* version)
 {
     ah_assert_if_debug(rw != NULL);
     ah_assert_if_debug(line != NULL);
@@ -245,7 +245,7 @@ ah_err_t ah_i_http_parse_req_line(ah_prw_t* rw, const char** line, ah_http_ver_t
     return AH_ENONE;
 }
 
-ah_err_t ah_i_http_parse_stat_line(ah_prw_t* rw, const char** line, ah_http_ver_t* version)
+ah_err_t ah_i_http_parse_stat_line(ah_rw_t* rw, const char** line, ah_http_ver_t* version)
 {
     ah_assert_if_debug(rw != NULL);
     ah_assert_if_debug(line != NULL);
@@ -293,7 +293,7 @@ ah_err_t ah_i_http_parse_stat_line(ah_prw_t* rw, const char** line, ah_http_ver_
     return AH_ENONE;
 }
 
-static ah_err_t s_parse_version(ah_prw_t* rw, ah_http_ver_t* version)
+static ah_err_t s_parse_version(ah_rw_t* rw, ah_http_ver_t* version)
 {
     if (ah_rw_get_readable_size(rw) < 8u) {
         return AH_EAGAIN;
@@ -482,7 +482,7 @@ static bool s_is_vchar_obs_text_htab_sp(uint8_t ch)
     return (ch >= 0x20 && ch != 0x7F) || ch == '\t';
 }
 
-static ah_err_t s_skip_ch(ah_prw_t* rw, char ch)
+static ah_err_t s_skip_ch(ah_rw_t* rw, char ch)
 {
     uint8_t ch0;
     if (!ah_rw_peek1(rw, &ch0)) {
@@ -498,7 +498,7 @@ static ah_err_t s_skip_ch(ah_prw_t* rw, char ch)
     return AH_ENONE;
 }
 
-static ah_err_t s_skip_crlf(ah_prw_t* rw)
+static ah_err_t s_skip_crlf(ah_rw_t* rw)
 {
     if (ah_rw_get_readable_size(rw) < 2u) {
         return AH_EAGAIN;
@@ -512,7 +512,7 @@ static ah_err_t s_skip_crlf(ah_prw_t* rw)
     return AH_ENONE;
 }
 
-static void s_skip_ows(ah_prw_t* rw)
+static void s_skip_ows(ah_rw_t* rw)
 {
     uint8_t ch;
     while (ah_rw_peek1(rw, &ch) && s_is_ows(ch)) {
@@ -520,7 +520,7 @@ static void s_skip_ows(ah_prw_t* rw)
     }
 }
 
-static size_t s_skip_while(ah_prw_t* rw, bool (*predicate)(uint8_t))
+static size_t s_skip_while(ah_rw_t* rw, bool (*predicate)(uint8_t))
 {
     uint8_t ch;
     size_t i = 0u;
@@ -530,7 +530,7 @@ static size_t s_skip_while(ah_prw_t* rw, bool (*predicate)(uint8_t))
     return i;
 }
 
-static const char* s_take_while(ah_prw_t* rw, bool (*predicate)(uint8_t))
+static const char* s_take_while(ah_rw_t* rw, bool (*predicate)(uint8_t))
 {
     const char* str = (const char*) rw->r;
 

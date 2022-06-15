@@ -23,8 +23,6 @@ typedef struct ah_http_server_cbs ah_http_server_cbs_t;
 typedef struct ah_http_trailer ah_http_trailer_t;
 typedef struct ah_http_ver ah_http_ver_t;
 
-typedef union ah_http_body ah_http_body_t;
-
 // An HTTP client.
 struct ah_http_client {
     AH_I_HTTP_CLIENT_FIELDS
@@ -41,7 +39,7 @@ struct ah_http_client_cbs {
     void (*on_recv_header)(ah_http_client_t* cln, ah_http_header_t header);
     void (*on_recv_headers)(ah_http_client_t* cln);                                  // Optional.
     void (*on_recv_chunk_line)(ah_http_client_t* cln, size_t size, const char* ext); // Optional.
-    void (*on_recv_data)(ah_http_client_t* cln, const ah_buf_t* rbuf);
+    void (*on_recv_data)(ah_http_client_t* cln, ah_tcp_in_t* in);
 
     // If `err` is not AH_ENONE or if connection keep-alive is disabled, the
     // client will be closed right after this function returns.
@@ -97,19 +95,14 @@ struct ah_http_trailer {
     AH_I_HTTP_TRAILER_FIELDS
 };
 
-// The body of an outgoing HTTP request or response.
-union ah_http_body {
-    AH_I_HTTP_BODY_FIELDS
-};
-
 // An outgoing HTTP request or response.
 struct ah_http_out {
     const char* line; // "<method> <target>" or "<code> <reason phrase>".
     ah_http_ver_t version;
     ah_http_header_t* headers; // Array terminated by { NULL, * } pair.
-    ah_http_body_t body;
+    ah_buf_t body; // If size is zero, ah_http_cilent_send_{data,end,chunk,trailer}() may be used.
 
-    AH_I_HTTP_MSG_FIELDS
+    AH_I_HTTP_OUT_FIELDS
 };
 
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_cbs_t* cbs);
@@ -137,9 +130,5 @@ ah_extern ah_err_t ah_http_server_get_laddr(const ah_http_server_t* srv, ah_sock
 ah_extern ah_loop_t* ah_http_server_get_loop(const ah_http_server_t* srv);
 ah_extern void* ah_http_server_get_user_data(const ah_http_server_t* srv);
 ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data);
-
-ah_extern ah_http_body_t ah_http_body_empty(void);
-ah_extern ah_http_body_t ah_http_body_from_buf(ah_buf_t buf);
-ah_extern ah_http_body_t ah_http_body_override(void); // Enables use of *_send_{chunk,data,end,trailer} functions.
 
 #endif
