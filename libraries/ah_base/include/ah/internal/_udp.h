@@ -21,19 +21,24 @@
 #define AH_I_UDP_SOCK_STATE_OPEN      1u // Sends allowed.
 #define AH_I_UDP_SOCK_STATE_RECEIVING 2u // Sends allowed.
 
-#define AH_I_UDP_IN_FIELDS \
- uint8_t _flags;
+#define AH_I_UDP_IN_FIELDS
 
 #define AH_I_UDP_OUT_FIELDS \
  AH_I_UDP_OUT_PLATFORM_FIELDS
 
 #define AH_I_UDP_SOCK_FIELDS    \
  ah_loop_t* _loop;              \
+                                \
  ah_udp_trans_t _trans;         \
  const ah_udp_sock_cbs_t* _cbs; \
- void* _user_data;              \
+                                \
+ ah_udp_in_t* _in;              \
+                                \
  bool _is_ipv6;                 \
  uint8_t _state;                \
- AH_I_UDP_SOCK_PLATFORM_FIELDS
+                                \
+ AH_I_UDP_SOCK_PLATFORM_FIELDS  \
+                                \
+ void* _user_data;
 
 #endif

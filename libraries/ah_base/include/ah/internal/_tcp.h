@@ -30,25 +30,35 @@
 
 #define AH_I_TCP_CONN_FIELDS        \
  ah_loop_t* _loop;                  \
- ah_tcp_trans_t _trans;             \
  struct ah_i_slab* _owning_slab;    \
+                                    \
+ ah_tcp_trans_t _trans;             \
  const ah_tcp_conn_cbs_t* _cbs;     \
- void* _user_data;                  \
+                                    \
+ ah_tcp_in_t* _in;                  \
+                                    \
  ah_tcp_shutdown_t _shutdown_flags; \
  uint8_t _state;                    \
- AH_I_TCP_CONN_PLATFORM_FIELDS
+                                    \
+ AH_I_TCP_CONN_PLATFORM_FIELDS      \
+                                    \
+ void* _user_data;
+
+#define AH_I_TCP_IN_FIELDS
 
 #define AH_I_TCP_LISTENER_FIELDS     \
  ah_loop_t* _loop;                   \
- ah_tcp_trans_t _trans;              \
  struct ah_i_slab _conn_slab;        \
+                                     \
+ ah_tcp_trans_t _trans;              \
  const ah_tcp_listener_cbs_t* _cbs;  \
  const ah_tcp_conn_cbs_t* _conn_cbs; \
- void* _user_data;                   \
+                                     \
  uint8_t _state;                     \
- AH_I_TCP_LISTENER_PLATFORM_FIELDS
-
-#define AH_I_TCP_IN_FIELDS
+                                     \
+ AH_I_TCP_LISTENER_PLATFORM_FIELDS   \
+                                     \
+ void* _user_data;
 
 #define AH_I_TCP_OUT_FIELDS \
  AH_I_TCP_OUT_PLATFORM_FIELDS

@@ -51,8 +51,8 @@ void test_tcp(ah_unit_t* unit)
 
 static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_conn_read(ah_tcp_conn_t* conn, uint8_t* data, size_t size, ah_err_t err);
-static void s_on_conn_write(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
+static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err);
@@ -151,7 +151,7 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_conn_read(ah_tcp_conn_t* conn, uint8_t* data, size_t size, ah_err_t err)
+static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
@@ -161,15 +161,15 @@ static void s_on_conn_read(ah_tcp_conn_t* conn, uint8_t* data, size_t size, ah_e
         return;
     }
 
-    if (!ah_unit_assert(unit, data != NULL, "data == NULL")) {
+    if (!ah_unit_assert(unit, in != NULL, "in == NULL")) {
         return;
     }
 
-    if (!ah_unit_assert_unsigned_eq(unit, 18u, size)) {
+    if (!ah_unit_assert_unsigned_eq(unit, 18u, in->nread)) {
         return;
     }
 
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) data)) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base(&in->buf))) {
         return;
     }
 
@@ -181,21 +181,27 @@ static void s_on_conn_read(ah_tcp_conn_t* conn, uint8_t* data, size_t size, ah_e
     user_data->did_call_read_cb = true;
 }
 
-static void s_on_conn_write(ah_tcp_conn_t* conn, ah_err_t err)
+static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    ah_unit_t* unit = user_data->unit;
+
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
+
+    if (!ah_unit_assert(unit, out != NULL, "out == NULL")) {
         return;
     }
 
     err = ah_tcp_conn_close(conn);
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     err = ah_tcp_listener_close(user_data->ln);
-    if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 

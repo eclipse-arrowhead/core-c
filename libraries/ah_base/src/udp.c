@@ -156,21 +156,3 @@ ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
 
     sock->_user_data = user_data;
 }
-
-ah_extern void ah_udp_in_forget(ah_udp_in_t* in)
-{
-    (void) in;
-    ah_unreachable(); // TODO: Implement.
-}
-
-ah_extern void ah_udp_in_free(ah_udp_in_t* in)
-{
-    (void) in;
-    ah_unreachable(); // TODO: Implement.
-}
-
-ah_extern void ah_udp_in_reset(ah_udp_in_t* in)
-{
-    (void) in;
-    ah_unreachable(); // TODO: Implement.
-}

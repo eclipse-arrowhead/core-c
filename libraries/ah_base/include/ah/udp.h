@@ -48,16 +48,20 @@ struct ah_udp_sock {
 
 // In incoming UDP message.
 struct ah_udp_in {
-    ah_buf_t buf;
     const ah_sockaddr_t* raddr;
+
+    ah_buf_t buf;
+    size_t nread;
 
     AH_I_UDP_IN_FIELDS
 };
 
 // An outgoing UDP message.
 struct ah_udp_out {
-    ah_buf_t buf;
     const ah_sockaddr_t* raddr;
+
+    ah_buf_t buf;
+    size_t nsent;
 
     AH_I_UDP_OUT_FIELDS
 };
@@ -91,9 +95,5 @@ ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_
 ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data);
 ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
-
-ah_extern void ah_udp_in_forget(ah_udp_in_t* in);
-ah_extern void ah_udp_in_free(ah_udp_in_t* in);
-ah_extern void ah_udp_in_reset(ah_udp_in_t* in);
 
 #endif

@@ -226,25 +226,6 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
     conn->_user_data = user_data;
 }
 
-ah_extern void ah_tcp_in_forget(ah_tcp_in_t* in)
-{
-    (void) in;
-    ah_unreachable(); // TODO: Implement.
-}
-
-ah_extern void ah_tcp_in_free(ah_tcp_in_t* in)
-{
-    (void) in;
-    ah_unreachable(); // TODO: Implement.
-}
-
-ah_extern void ah_tcp_in_reset(ah_tcp_in_t* in)
-{
-    (void) in;
-    ah_unreachable(); // TODO: Implement.
-}
-
-
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs)
 {
     if (ln == NULL || loop == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || cbs == NULL) {

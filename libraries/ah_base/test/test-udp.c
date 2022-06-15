@@ -31,7 +31,7 @@ struct s_udp_sock_user_data {
     ah_udp_sock_t* rsock;
     ah_sockaddr_t laddr;
 
-    ah_udp_msg_t* send_msg;
+    ah_udp_out_t* out;
 
     size_t* close_call_counter;
 
@@ -45,8 +45,8 @@ struct s_udp_sock_user_data {
 
 static void s_on_open(ah_udp_sock_t* sock, ah_err_t err);
 static void s_on_close(ah_udp_sock_t* sock, ah_err_t err);
-static void s_on_recv(ah_udp_sock_t* sock, uint8_t* data, size_t size, const ah_sockaddr_t* raddr, ah_err_t err);
-static void s_on_send(ah_udp_sock_t* sock, size_t size, const ah_sockaddr_t* raddr, ah_err_t err);
+static void s_on_recv(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
+static void s_on_send(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err);
 
 static const ah_udp_sock_cbs_t s_sock_cbs = {
     .on_open = s_on_open,
@@ -81,8 +81,8 @@ static void s_on_open(ah_udp_sock_t* sock, ah_err_t err)
         }
     }
 
-    if (user_data->send_msg != NULL) {
-        err = ah_udp_sock_send(sock, user_data->send_msg);
+    if (user_data->out != NULL) {
+        err = ah_udp_sock_send(sock, user_data->out);
     }
     else {
         err = ah_udp_sock_recv_start(sock);
@@ -121,7 +121,7 @@ static void s_on_close(ah_udp_sock_t* sock, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_recv(ah_udp_sock_t* sock, uint8_t* data, size_t size, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_on_recv(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
 
@@ -130,13 +130,13 @@ static void s_on_recv(ah_udp_sock_t* sock, uint8_t* data, size_t size, const ah_
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
-    if (!ah_unit_assert(unit, raddr != NULL, "raddr == NULL")) {
+    if (!ah_unit_assert(unit, in != NULL, "raddr == NULL")) {
         return;
     }
-    if (!ah_unit_assert_unsigned_eq(unit, 18u, size)) {
+    if (!ah_unit_assert_unsigned_eq(unit, 18u, in->nread)) {
         return;
     }
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) data)) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base(&in->buf))) {
         return;
     }
 
@@ -148,7 +148,7 @@ static void s_on_recv(ah_udp_sock_t* sock, uint8_t* data, size_t size, const ah_
     user_data->did_call_recv_cb = true;
 }
 
-static void s_on_send(ah_udp_sock_t* sock, size_t size, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_on_send(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
     if (user_data == NULL) {
@@ -164,11 +164,18 @@ static void s_on_send(ah_udp_sock_t* sock, size_t size, const ah_sockaddr_t* rad
         return;
     }
 
-    if (!ah_unit_assert_unsigned_eq(unit, 18u, size)) {
+    if (!ah_unit_assert(unit, out != NULL, "out == NULL")) {
         return;
     }
 
-    if (!ah_unit_assert(unit, raddr != NULL, "raddr == NULL")) {
+    if (!ah_unit_assert_unsigned_eq(unit, 18u, out->nsent)) {
+        return;
+    }
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base(&out->buf))) {
+        return;
+    }
+
+    if (!ah_unit_assert(unit, out->raddr != NULL, "out->raddr == NULL")) {
         return;
     }
 
@@ -212,13 +219,13 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     // Setup sender socket.
 
-    ah_udp_msg_t send_msg = {
+    ah_udp_out_t send_out = {
         .buf = ah_buf_from((uint8_t*) "Hello, Arrowhead!", 18u),
         .raddr = &recv_sock_user_data.laddr,
     };
 
     struct s_udp_sock_user_data send_sock_user_data = {
-        .send_msg = &send_msg,
+        .out = &send_out,
         .close_call_counter = &close_call_counter,
         .unit = unit,
     };

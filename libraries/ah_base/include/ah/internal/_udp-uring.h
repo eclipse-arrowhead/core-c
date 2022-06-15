@@ -15,7 +15,6 @@
  int _fd;                             \
  ah_sockaddr_t _recv_addr;            \
  ah_i_loop_evt_t* _recv_evt;          \
- struct iovec _recv_iovec;            \
  struct msghdr _recv_msghdr;
 
 #endif

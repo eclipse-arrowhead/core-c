@@ -47,8 +47,10 @@ set(
     src/rw.c
     src/sock.c
     src/task.c
+    src/tcp-in.h
     src/tcp.c
     src/time.c
+    src/udp-in.h
     src/udp.c
 )
 
