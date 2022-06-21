@@ -10,7 +10,7 @@
 #include "collections/list.h"
 
 #define AH_I_UDP_OUT_PLATFORM_FIELDS \
- struct ah_udp_out* _next;           \
+ struct ah_i_list_entry _list_entry; \
  struct msghdr _msghdr;
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS \

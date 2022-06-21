@@ -9,16 +9,12 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "udp-in.h"
 
 static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev);
 static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev);
 
-static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock);
-
-bool ah_i_udp_out_queue_is_empty(struct ah_i_udp_out_queue* queue);
-bool ah_i_udp_out_queue_is_empty_then_add(struct ah_i_udp_out_queue* queue, ah_udp_out_t* out);
-ah_udp_out_t* ah_i_udp_out_queue_get_head(struct ah_i_udp_out_queue* queue);
-void ah_i_udp_out_queue_remove_unsafe(struct ah_i_udp_out_queue* queue);
+static ah_err_t s_sock_send_prep(ah_udp_sock_t* sock);
 
 ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 {
@@ -27,15 +23,23 @@ ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_recv_data == NULL) {
+    if (sock->_state != AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_recv == NULL) {
         return AH_ESTATE;
     }
+
+    ah_udp_in_t* in = ah_i_udp_in_alloc();
+    if (in == NULL) {
+        return AH_ENOMEM;
+    }
+
+    sock->_in = in;
 
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
     ah_err_t err = ah_i_loop_evt_alloc_with_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
+        ah_i_udp_in_free(in);
         return err;
     }
 
@@ -62,8 +66,6 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     ah_err_t err;
-    ah_buf_t buf = (ah_buf_t) { 0u };
-    ah_sockaddr_t* raddr = NULL;
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -75,32 +77,22 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err;
     }
 
-    sock->_cbs->on_recv_alloc(sock, &buf);
+    ah_sockaddr_t raddr;
 
-    if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
-        return;
-    }
+    struct sockaddr* name = ah_i_sockaddr_into_bsd(&raddr);
+    socklen_t namelen = sizeof(raddr);
 
-    ah_sockaddr_t raddr_buf;
-    struct sockaddr* name = ah_i_sockaddr_into_bsd(&raddr_buf);
-    socklen_t namelen = sizeof(raddr_buf);
-
-    ssize_t nread = recvfrom(sock->_fd, ah_buf_get_base(&buf), ah_buf_get_size(&buf), 0, name, &namelen);
-    if (nread < 0) {
-        err = errno;
+    ssize_t nread = recvfrom(sock->_fd, ah_buf_get_base(&sock->_in->buf), ah_buf_get_size(&sock->_in->buf), 0, name, &namelen);
+    if (nread <= 0) {
+        // We know there are bytes left to read, so zero bytes being read should not be possible.
+        err = nread == 0 ? AH_EINTERN : errno;
         goto report_err;
     }
 
-    raddr = &raddr_buf;
+    sock->_in->nread = (size_t) nread;
+    sock->_in->raddr = &raddr;
 
-    if (nread == 0) {
-        // We know there are bytes left to read, so the only thing that
-        // could cause 0 bytes being read is bufs having no allocated space.
-        err = AH_ENOBUFS;
-        goto report_err;
-    }
-
-    sock->_cbs->on_recv_data(sock, buf, nread, raddr, 0);
+    sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
 
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return;
@@ -114,7 +106,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    sock->_cbs->on_recv_data(sock, (ah_buf_t) { 0u }, 0u, raddr, err);
+    sock->_cbs->on_recv(sock, NULL, err);
 }
 
 ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
@@ -127,16 +119,17 @@ ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return AH_ESTATE;
     }
+    sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
 
-    struct kevent* kev;
-    ah_err_t err = ah_i_loop_alloc_kev(sock->_loop, &kev);
-    if (err != AH_ENONE) {
-        return err;
+    if (sock->_in != NULL) {
+        ah_i_udp_in_free(sock->_in);
+        sock->_in = NULL;
     }
 
-    EV_SET(kev, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
-
-    sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
+    struct kevent* kev;
+    if (ah_i_loop_alloc_kev(sock->_loop, &kev) == AH_ENONE) {
+        EV_SET(kev, sock->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
+    }
 
     return AH_ENONE;
 }
@@ -148,7 +141,7 @@ ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
     if (sock == NULL || out == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_send_done == NULL) {
+    if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_send == NULL) {
         return AH_ESTATE;
     }
 
@@ -159,14 +152,18 @@ ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
         .msg_iovlen = 1u,
     };
 
-    if (ah_i_udp_out_queue_is_empty_then_add(&sock->_out_queue, out)) {
-        return s_prep_sock_send(sock);
+    const bool is_preparing_another_write = ah_i_list_is_empty(&sock->_out_queue);
+
+    ah_i_list_push(&sock->_out_queue, &out->_list_entry);
+
+    if (is_preparing_another_write) {
+        return s_sock_send_prep(sock);
     }
 
     return AH_ENONE;
 }
 
-static ah_err_t s_prep_sock_send(ah_udp_sock_t* sock)
+static ah_err_t s_sock_send_prep(ah_udp_sock_t* sock)
 {
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
@@ -199,7 +196,12 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_err_t err;
     ssize_t res = 0;
 
-    ah_udp_out_t* out = ah_i_udp_out_queue_get_head(&sock->_out_queue);
+    ah_udp_out_t* out = AH_I_LIST_PEEK(&sock->_out_queue, ah_udp_out_t, _list_entry);
+
+    if (ah_unlikely(out == NULL)) {
+        err = AH_EINTERN;
+        goto report_err_and_prep_next;
+    }
 
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
         err = (ah_err_t) kev->data;
@@ -221,17 +223,20 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev)
     err = AH_ENONE;
 
 report_err_and_prep_next:
-    ah_i_udp_out_queue_remove_unsafe(&sock->_out_queue);
-    sock->_cbs->on_send_done(sock, (size_t) res, ah_i_sockaddr_const_from_bsd(out->_msghdr.msg_name), err);
+    ah_i_list_skip(&sock->_out_queue);
+
+    out->nsent = (size_t) res;
+
+    sock->_cbs->on_send(sock, out, err);
 
     if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN) {
         return;
     }
-    if (ah_i_udp_out_queue_is_empty(&sock->_out_queue)) {
+    if (ah_i_list_is_empty(&sock->_out_queue)) {
         return;
     }
 
-    err = s_prep_sock_send(sock);
+    err = s_sock_send_prep(sock);
     if (err != AH_ENONE) {
         goto report_err_and_prep_next;
     }
@@ -265,61 +270,11 @@ ah_err_t ah_i_udp_sock_close(void* ctx, ah_udp_sock_t* sock)
     sock->_fd = 0;
 #endif
 
+    if (sock->_in != NULL) {
+        ah_i_udp_in_free(sock->_in);
+    }
+
     sock->_cbs->on_close(sock, err);
 
     return err;
-}
-
-bool ah_i_udp_out_queue_is_empty(struct ah_i_udp_out_queue* queue)
-{
-    ah_assert_if_debug(queue != NULL);
-
-    return queue->_head == NULL;
-}
-
-bool ah_i_udp_out_queue_is_empty_then_add(struct ah_i_udp_out_queue* queue, ah_udp_out_t* out)
-{
-    ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(out != NULL);
-
-    out->_next = NULL;
-
-    if (queue->_head == NULL) {
-        queue->_head = out;
-        queue->_end = out;
-        return true;
-    }
-
-    queue->_end->_next = out;
-    queue->_end = out;
-
-    return false;
-}
-
-ah_udp_out_t* ah_i_udp_out_queue_get_head(struct ah_i_udp_out_queue* queue)
-{
-    ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(queue->_head != NULL);
-
-    return queue->_head;
-}
-
-void ah_i_udp_out_queue_remove_unsafe(struct ah_i_udp_out_queue* queue)
-{
-    ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(queue->_head != NULL);
-    ah_assert_if_debug(queue->_end != NULL);
-
-    ah_udp_out_t* out = queue->_head;
-    queue->_head = out->_next;
-
-#ifndef NDEBUG
-
-    out->_next = NULL;
-
-    if (queue->_head == NULL) {
-        queue->_end = NULL;
-    }
-
-#endif
 }
