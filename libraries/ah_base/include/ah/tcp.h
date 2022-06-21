@@ -14,10 +14,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define AH_TCP_CONN_IN_MODE_RESETTING 0u
+#define AH_TCP_CONN_IN_MODE_APPENDING 1u
+#define AH_TCP_CONN_IN_MODE_REPLACING 2u
+
 #define AH_TCP_SHUTDOWN_RD   1u
 #define AH_TCP_SHUTDOWN_WR   2u
 #define AH_TCP_SHUTDOWN_RDWR 3u
 
+typedef uint8_t ah_tcp_conn_in_mode_t;
 typedef uint8_t ah_tcp_shutdown_t;
 
 // A TCP-based transport.
@@ -90,6 +95,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
+ah_extern ah_tcp_conn_in_mode_t ah_tcp_conn_get_in_mode(const ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr);
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
@@ -101,9 +107,12 @@ ah_extern bool ah_tcp_conn_is_readable_and_writable(const ah_tcp_conn_t* conn);
 ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn);
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
 ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled);
+ah_extern void ah_tcp_conn_set_in_mode(ah_tcp_conn_t* conn, ah_tcp_conn_in_mode_t mode);
 ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
+
+ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
 
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs);
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);

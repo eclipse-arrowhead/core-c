@@ -162,7 +162,15 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     size_t n_bytes_left = kev->data;
 
     while (n_bytes_left != 0u) {
-        ssize_t nread = recv(conn->_fd, ah_buf_get_base(&conn->_in->buf), ah_buf_get_size(&conn->_in->buf), 0u);
+        if (conn->_in->nread >= ah_buf_get_size(&conn->_in->buf)) {
+            err = AH_EOVERFLOW;
+            goto report_err;
+        }
+
+        void* buffer = &ah_buf_get_base(&conn->_in->buf)[conn->_in->nread];
+        size_t length = ah_buf_get_size(&conn->_in->buf) - conn->_in->nread;
+
+        ssize_t nread = recv(conn->_fd, buffer, length, 0u);
         if (nread < 0) {
             err = errno;
             goto report_err;
@@ -177,9 +185,11 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             goto report_err;
         }
 
-        conn->_in->nread = (size_t) nread;
+        conn->_in->nread += (size_t) nread;
 
         conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
+
+        ah_i_tcp_in_refresh(&conn->_in, conn->_in_mode);
 
         if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
             return;

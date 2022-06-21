@@ -9,6 +9,7 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "udp-in.h"
 
 ah_err_t ah_i_udp_sock_open(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
 ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock);
@@ -122,6 +123,13 @@ ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock)
     return sock->_trans.vtab->sock_close(sock->_trans.ctx, sock);
 }
 
+ah_extern ah_udp_sock_in_mode_t ah_udp_sock_get_in_mode(const ah_udp_sock_t* sock)
+{
+    ah_assert(sock != NULL);
+
+    return sock->_in_mode;
+}
+
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock)
 {
     ah_assert(sock != NULL);
@@ -150,9 +158,23 @@ ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock)
     return sock->_state == AH_I_UDP_SOCK_STATE_RECEIVING;
 }
 
+ah_extern void ah_udp_sock_set_in_mode(ah_udp_sock_t* sock, ah_udp_sock_in_mode_t mode)
+{
+    ah_assert(sock != NULL);
+
+    sock->_in_mode = mode;
+}
+
 ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
 {
     ah_assert(sock != NULL);
 
     sock->_user_data = user_data;
+}
+
+ah_extern void ah_udp_in_free(ah_udp_in_t* in)
+{
+    if (in != NULL) {
+        ah_i_udp_in_free(in);
+    }
 }

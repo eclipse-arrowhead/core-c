@@ -72,27 +72,36 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err;
     }
 
-    if (kev->data == 0) {
+    if (ah_unlikely(kev->data == 0)) {
         err = AH_EEOF;
         goto report_err;
     }
 
+    if (ah_unlikely(sock->_in->nread >= ah_buf_get_size(&sock->_in->buf))) {
+        err = AH_EOVERFLOW;
+        goto report_err;
+    }
+
+    void* buffer = &ah_buf_get_base(&sock->_in->buf)[sock->_in->nread];
+    size_t length = ah_buf_get_size(&sock->_in->buf) - sock->_in->nread;
+
     ah_sockaddr_t raddr;
+    struct sockaddr* address = ah_i_sockaddr_into_bsd(&raddr);
+    socklen_t address_len = sizeof(raddr);
 
-    struct sockaddr* name = ah_i_sockaddr_into_bsd(&raddr);
-    socklen_t namelen = sizeof(raddr);
-
-    ssize_t nread = recvfrom(sock->_fd, ah_buf_get_base(&sock->_in->buf), ah_buf_get_size(&sock->_in->buf), 0, name, &namelen);
+    ssize_t nread = recvfrom(sock->_fd, buffer, length, 0, address, &address_len);
     if (nread <= 0) {
         // We know there are bytes left to read, so zero bytes being read should not be possible.
         err = nread == 0 ? AH_EINTERN : errno;
         goto report_err;
     }
 
-    sock->_in->nread = (size_t) nread;
+    sock->_in->nread += (size_t) nread;
     sock->_in->raddr = &raddr;
 
     sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
+
+    ah_i_udp_in_refresh(&sock->_in, sock->_in_mode);
 
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return;

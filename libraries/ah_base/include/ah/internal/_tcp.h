@@ -39,6 +39,7 @@
                                     \
  ah_tcp_shutdown_t _shutdown_flags; \
  uint8_t _state;                    \
+ uint8_t _in_mode;                  \
                                     \
  AH_I_TCP_CONN_PLATFORM_FIELDS      \
                                     \

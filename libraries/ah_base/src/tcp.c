@@ -9,6 +9,7 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
+#include "tcp-in.h"
 
 ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
@@ -160,6 +161,13 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
     return conn->_trans.vtab->conn_close(conn->_trans.ctx, conn);
 }
 
+ah_extern ah_tcp_conn_in_mode_t ah_tcp_conn_get_in_mode(const ah_tcp_conn_t* conn)
+{
+    ah_assert(conn != NULL);
+
+    return conn->_in_mode;
+}
+
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
 {
     ah_assert(conn != NULL);
@@ -219,11 +227,25 @@ ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
         && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) == 0u;
 }
 
+ah_extern void ah_tcp_conn_set_in_mode(ah_tcp_conn_t* conn, ah_tcp_conn_in_mode_t mode)
+{
+    ah_assert(conn != NULL);
+
+    conn->_in_mode = mode;
+}
+
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
 {
     ah_assert(conn != NULL);
 
     conn->_user_data = user_data;
+}
+
+ah_extern void ah_tcp_in_free(ah_tcp_in_t* in)
+{
+    if (in != NULL) {
+        ah_i_tcp_in_free(in);
+    }
 }
 
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs)

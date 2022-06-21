@@ -125,6 +125,11 @@ static ah_err_t s_conn_read_prep(ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
 
+    if (conn->_in->nread >= conn->_in->buf._size) {
+        conn->_cbs->on_read(conn, NULL, AH_EOVERFLOW);
+        return AH_ENONE;
+    }
+
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
@@ -138,7 +143,10 @@ static ah_err_t s_conn_read_prep(ah_tcp_conn_t* conn)
 
     conn->_read_evt = evt;
 
-    io_uring_prep_recv(sqe, conn->_fd, conn->_in->buf._base, conn->_in->buf._size, 0);
+    void* buf = &conn->_in->buf._base[conn->_in->nread];
+    size_t len = conn->_in->buf._size - conn->_in->nread;
+
+    io_uring_prep_recv(sqe, conn->_fd, buf, len, 0);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
@@ -176,8 +184,11 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
-    conn->_in->nread = (size_t) cqe->res;
+    conn->_in->nread += (size_t) cqe->res;
+
     conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
+
+    ah_i_tcp_in_refresh(&conn->_in, conn->_in_mode);
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;

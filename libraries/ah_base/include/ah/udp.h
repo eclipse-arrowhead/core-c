@@ -13,6 +13,11 @@
 
 #include <stdbool.h>
 
+#define AH_UDP_SOCK_IN_MODE_RESETTING 0u
+#define AH_UDP_SOCK_IN_MODE_REPLACING 1u
+
+typedef uint8_t ah_udp_sock_in_mode_t;
+
 struct ah_udp_group_ipv4 {
     ah_ipaddr_v4_t group_addr;
     ah_ipaddr_v4_t interface_addr; // Default if zeroed.
@@ -83,11 +88,13 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
+ah_extern ah_udp_sock_in_mode_t ah_udp_sock_get_in_mode(const ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_t* laddr);
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock);
 ah_extern void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock);
 ah_extern bool ah_udp_sock_is_closed(const ah_udp_sock_t* sock);
 ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock);
+ah_extern void ah_udp_sock_set_in_mode(ah_udp_sock_t* sock, ah_udp_sock_in_mode_t mode);
 ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
 ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool is_enabled);
 ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enabled);
@@ -95,5 +102,7 @@ ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_
 ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data);
 ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
+
+ah_extern void ah_udp_in_free(ah_udp_in_t* in);
 
 #endif
