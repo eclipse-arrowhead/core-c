@@ -10,7 +10,6 @@
 #include "ah/tcp.h"
 
 ah_tcp_in_t* ah_i_tcp_in_alloc(void);
-void ah_i_tcp_in_refresh(ah_tcp_in_t** in, ah_tcp_conn_in_mode_t mode);
 void ah_i_tcp_in_free(ah_tcp_in_t* in);
 
 #endif

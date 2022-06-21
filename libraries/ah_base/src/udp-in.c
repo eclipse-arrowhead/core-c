@@ -27,30 +27,6 @@ ah_udp_in_t* ah_i_udp_in_alloc()
     return in;
 }
 
-void ah_i_udp_in_refresh(ah_udp_in_t** in, ah_udp_sock_in_mode_t mode)
-{
-    ah_assert_if_debug(in != NULL);
-
-    switch (mode) {
-    case AH_UDP_SOCK_IN_MODE_RESETTING: {
-        uint8_t* page = (void*) in;
-        **in = (ah_udp_in_t) {
-            .buf = ah_buf_from(&page[sizeof(ah_udp_in_t)], AH_PSIZE - sizeof(ah_udp_in_t)),
-            .nread = 0u,
-        };
-        break;
-    }
-
-    case AH_UDP_SOCK_IN_MODE_REPLACING: {
-        *in = ah_i_udp_in_alloc();
-        break;
-    }
-
-    default:
-        ah_unreachable();
-    }
-}
-
 void ah_i_udp_in_free(ah_udp_in_t* in)
 {
     ah_assert_if_debug(in != NULL);

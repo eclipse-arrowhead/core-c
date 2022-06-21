@@ -10,7 +10,6 @@
 #include "ah/udp.h"
 
 ah_udp_in_t* ah_i_udp_in_alloc();
-void ah_i_udp_in_refresh(ah_udp_in_t** in, ah_udp_sock_in_mode_t mode);
 void ah_i_udp_in_free(ah_udp_in_t* in);
 
 #endif

@@ -13,10 +13,7 @@
 
 #include <stdbool.h>
 
-#define AH_UDP_SOCK_IN_MODE_RESETTING 0u
-#define AH_UDP_SOCK_IN_MODE_REPLACING 1u
-
-typedef uint8_t ah_udp_sock_in_mode_t;
+#define AH_UDP_IN_FORGET SIZE_MAX
 
 struct ah_udp_group_ipv4 {
     ah_ipaddr_v4_t group_addr;
@@ -73,8 +70,16 @@ struct ah_udp_out {
 
 struct ah_udp_sock_cbs {
     void (*on_open)(ah_udp_sock_t* sock, ah_err_t err);
-    void (*on_recv)(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);   // If NULL, every attempt to start receiving data will fail with AH_ESTATE.
-    void (*on_send)(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err); // If NULL, every attempt to send data will fail with AH_ESTATE.
+
+    // If NULL, every attempt to start receiving data will fail with AH_ESTATE.
+    // Returns number of bytes to retain in `in` until the next read, or
+    // \c AH_UDP_IN_FORGET if wanting to take over ownership of `in` and
+    // deallocate it manually using ah_udp_in_free().
+    size_t (*on_recv)(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
+
+    // If NULL, every attempt to send data will fail with AH_ESTATE.
+    void (*on_send)(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err);
+
     void (*on_close)(ah_udp_sock_t* sock, ah_err_t err);
 };
 
@@ -88,13 +93,11 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
-ah_extern ah_udp_sock_in_mode_t ah_udp_sock_get_in_mode(const ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_t* laddr);
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock);
 ah_extern void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock);
 ah_extern bool ah_udp_sock_is_closed(const ah_udp_sock_t* sock);
 ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock);
-ah_extern void ah_udp_sock_set_in_mode(ah_udp_sock_t* sock, ah_udp_sock_in_mode_t mode);
 ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
 ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool is_enabled);
 ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enabled);

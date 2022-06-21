@@ -34,7 +34,6 @@
                                 \
  ah_udp_in_t* _in;              \
                                 \
- uint8_t _in_mode;              \
  bool _is_ipv6;                 \
  uint8_t _state;                \
                                 \

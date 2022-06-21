@@ -123,13 +123,6 @@ ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock)
     return sock->_trans.vtab->sock_close(sock->_trans.ctx, sock);
 }
 
-ah_extern ah_udp_sock_in_mode_t ah_udp_sock_get_in_mode(const ah_udp_sock_t* sock)
-{
-    ah_assert(sock != NULL);
-
-    return sock->_in_mode;
-}
-
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock)
 {
     ah_assert(sock != NULL);
@@ -156,13 +149,6 @@ ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock)
     ah_assert(sock != NULL);
 
     return sock->_state == AH_I_UDP_SOCK_STATE_RECEIVING;
-}
-
-ah_extern void ah_udp_sock_set_in_mode(ah_udp_sock_t* sock, ah_udp_sock_in_mode_t mode)
-{
-    ah_assert(sock != NULL);
-
-    sock->_in_mode = mode;
 }
 
 ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)

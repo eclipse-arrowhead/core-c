@@ -161,13 +161,6 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
     return conn->_trans.vtab->conn_close(conn->_trans.ctx, conn);
 }
 
-ah_extern ah_tcp_conn_in_mode_t ah_tcp_conn_get_in_mode(const ah_tcp_conn_t* conn)
-{
-    ah_assert(conn != NULL);
-
-    return conn->_in_mode;
-}
-
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
 {
     ah_assert(conn != NULL);
@@ -225,13 +218,6 @@ ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
 
     return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
         && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) == 0u;
-}
-
-ah_extern void ah_tcp_conn_set_in_mode(ah_tcp_conn_t* conn, ah_tcp_conn_in_mode_t mode)
-{
-    ah_assert(conn != NULL);
-
-    conn->_in_mode = mode;
 }
 
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)

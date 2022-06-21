@@ -187,9 +187,23 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         conn->_in->nread += (size_t) nread;
 
-        conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
+        size_t n_to_retain = conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
 
-        ah_i_tcp_in_refresh(&conn->_in, conn->_in_mode);
+        if (n_to_retain == AH_TCP_IN_FORGET) {
+            if (conn->_state == AH_I_TCP_CONN_STATE_READING) {
+                ah_tcp_in_t* in_new = ah_i_tcp_in_alloc();
+                if (in_new == NULL) {
+                    err = AH_ENOMEM;
+                    goto report_err;
+                }
+                conn->_in = in_new;
+            }
+        }
+        else {
+            if (n_to_retain <= conn->_in->nread) {
+                conn->_in->nread = n_to_retain;
+            }
+        }
 
         if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
             return;
@@ -207,7 +221,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    conn->_cbs->on_read(conn, NULL, err);
+    (void) conn->_cbs->on_read(conn, NULL, err);
 }
 
 ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)

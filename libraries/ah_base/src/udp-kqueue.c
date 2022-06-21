@@ -99,9 +99,23 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     sock->_in->nread += (size_t) nread;
     sock->_in->raddr = &raddr;
 
-    sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
+    size_t n_to_retain = sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
 
-    ah_i_udp_in_refresh(&sock->_in, sock->_in_mode);
+    if (n_to_retain == AH_UDP_IN_FORGET) {
+        if (sock->_state == AH_I_UDP_SOCK_STATE_RECEIVING) {
+            ah_udp_in_t* in_new = ah_i_udp_in_alloc();
+            if (in_new == NULL) {
+                err = AH_ENOMEM;
+                goto report_err;
+            }
+            sock->_in = in_new;
+        }
+    }
+    else {
+        if (n_to_retain <= sock->_in->nread) {
+            sock->_in->nread = n_to_retain;
+        }
+    }
 
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return;
@@ -115,7 +129,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    sock->_cbs->on_recv(sock, NULL, err);
+    (void) sock->_cbs->on_recv(sock, NULL, err);
 }
 
 ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)

@@ -28,7 +28,7 @@ struct s_tcp_conn_user_data {
 
 struct s_tcp_listener_user_data {
     ah_sockaddr_t addr;
-    ah_tcp_conn_t *conn;
+    ah_tcp_conn_t* conn;
 
     ah_tcp_conn_t* free_conn;
     struct s_tcp_conn_user_data accept_user_data;
@@ -51,7 +51,7 @@ void test_tcp(ah_unit_t* unit)
 
 static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
+static size_t s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
 static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err);
 
@@ -151,34 +151,36 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
+static size_t s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_t* unit = user_data->unit;
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
+        return 0u;
     }
 
     if (!ah_unit_assert(unit, in != NULL, "in == NULL")) {
-        return;
+        return 0u;
     }
 
     if (!ah_unit_assert_unsigned_eq(unit, 18u, in->nread)) {
-        return;
+        return 0u;
     }
 
     if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base(&in->buf))) {
-        return;
+        return 0u;
     }
 
     ah_err_t err0 = ah_tcp_conn_close(conn);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
-        return;
+        return 0u;
     }
 
     user_data->did_call_read_cb = true;
+
+    return 0u;
 }
 
 static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
