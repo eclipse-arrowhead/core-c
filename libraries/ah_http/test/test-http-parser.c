@@ -164,7 +164,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     ah_http_ver_t version;
 
     rw = s_rw_from("HTTP/1.1 200 OK\r\n", rw_mem, sizeof(rw_mem));
-    err = ah_i_http_parse_stat_line(&rw, &line, &version);
+    err = ah_i_http_parse_stat_line(NULL, NULL, NULL, &line, &version);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -173,7 +173,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_cstr_eq(unit, "200 OK", line);
 
     rw = s_rw_from("HTTP/1.0 201 \r\n", rw_mem, sizeof(rw_mem));
-    err = ah_i_http_parse_stat_line(&rw, &line, &version);
+    err = ah_i_http_parse_stat_line(NULL, NULL, NULL, &line, &version);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -182,7 +182,7 @@ static void s_should_parse_status_lines(ah_unit_t* unit)
     (void) ah_unit_assert_cstr_eq(unit, "201 ", line);
 
     rw = s_rw_from("HTTP/1.1 500 Internal server errör \r\n", rw_mem, sizeof(rw_mem));
-    err = ah_i_http_parse_stat_line(&rw, &line, &version);
+    err = ah_i_http_parse_stat_line(NULL, NULL, NULL, &line, &version);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

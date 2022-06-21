@@ -12,23 +12,21 @@
 #include <ah/unit.h>
 
 struct s_http_client_user_data {
-    ah_buf_t* on_alloc_provide_buf;
-    ah_http_msg_t* on_connect_send_msg;
-    ah_http_msg_t* on_recv_end_send_msg;
+    ah_http_out_t* on_connect_send_msg;
+    ah_http_out_t* on_recv_end_send_msg;
     ah_sockaddr_t* on_open_connect_to_raddr;
     size_t* close_call_counter;
 
     bool did_call_open_cb;
     bool did_call_connect_cb;
-    bool did_call_close_cb;
-    bool did_call_alloc_cb;
-    bool did_call_send_done_cb;
+    bool did_call_send_cb;
     bool did_call_recv_line_cb;
     bool did_call_recv_header_cb;
     bool did_call_recv_headers_cb;
     bool did_call_recv_chunk_line_cb;
     bool did_call_recv_data_cb;
     bool did_call_recv_end_cb;
+    bool did_call_close_cb;
 
     ah_unit_t* unit;
 };
@@ -37,14 +35,12 @@ struct s_http_server_user_data {
     ah_sockaddr_t on_open_store_laddr;
 
     ah_http_client_t* on_listen_open_lclient;
-    ah_http_client_t* on_client_alloc_provide_rclient;
     struct s_http_client_user_data on_client_accept_provide_user_data;
 
     bool did_call_open_cb;
     bool did_call_listen_cb;
+    bool did_call_accept_cb;
     bool did_call_close_cb;
-    bool did_call_client_alloc_cb;
-    bool did_call_client_accept_cb;
 
     ah_unit_t* unit;
 };
@@ -59,26 +55,23 @@ void test_http(ah_unit_t* unit)
 void on_client_open(ah_http_client_t* cln, ah_err_t err);
 void on_client_connect(ah_http_client_t* cln, ah_err_t err);
 void on_client_close(ah_http_client_t* cln, ah_err_t err);
-void on_client_alloc(ah_http_client_t* cln, ah_buf_t* buf, bool reuse);
-void on_client_send_done(ah_http_client_t* cln, ah_http_msg_t* msg, ah_err_t err);
+void on_client_send_done(ah_http_client_t* cln, ah_http_out_t* msg, ah_err_t err);
 void on_client_recv_line(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
 void on_client_recv_header(ah_http_client_t* cln, ah_http_header_t header);
 void on_client_recv_headers(ah_http_client_t* cln);
 void on_client_recv_chunk_line(ah_http_client_t* cln, size_t size, const char* ext);
-void on_client_recv_data(ah_http_client_t* cln, const ah_buf_t* rbuf);
+void on_client_recv_data(ah_http_client_t* cln, ah_tcp_in_t* in);
 void on_client_recv_end(ah_http_client_t* cln, ah_err_t err);
 
 void s_on_server_open(ah_http_server_t* srv, ah_err_t err);
 void s_on_server_listen(ah_http_server_t* srv, ah_err_t err);
+void s_on_server_accept(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err);
 void s_on_server_close(ah_http_server_t* srv, ah_err_t err);
-void s_on_server_client_alloc(ah_http_server_t* srv, ah_http_client_t** client);
-void s_on_server_client_accept(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err);
 
 static const ah_http_client_cbs_t s_client_cbs = {
     .on_open = on_client_open,
     .on_connect = on_client_connect,
     .on_close = on_client_close,
-    .on_alloc = on_client_alloc,
     .on_send = on_client_send_done,
     .on_recv_line = on_client_recv_line,
     .on_recv_header = on_client_recv_header,
@@ -91,9 +84,8 @@ static const ah_http_client_cbs_t s_client_cbs = {
 static const ah_http_server_cbs_t s_server_cbs = {
     .on_open = s_on_server_open,
     .on_listen = s_on_server_listen,
+    .on_accept = s_on_server_accept,
     .on_close = s_on_server_close,
-    .on_client_alloc = s_on_server_client_alloc,
-    .on_accept = s_on_server_client_accept,
 };
 
 void on_client_open(ah_http_client_t* cln, ah_err_t err)
@@ -159,27 +151,7 @@ void on_client_close(ah_http_client_t* cln, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-void on_client_alloc(ah_http_client_t* cln, ah_buf_t* buf, bool reuse)
-{
-    struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
-    ah_unit_t* unit = user_data->unit;
-
-    if (!ah_unit_assert(unit, buf != NULL, "buf == NULL")) {
-        return;
-    }
-    if (!ah_unit_assert(unit, reuse, "reuse == false")) {
-        return;
-    }
-
-    if (!ah_unit_assert(unit, user_data->on_alloc_provide_buf != NULL, "user_data->on_alloc_provide_buf == NULL")) {
-        return;
-    }
-    *buf = *user_data->on_alloc_provide_buf;
-
-    user_data->did_call_alloc_cb = true;
-}
-
-void on_client_send_done(ah_http_client_t* cln, ah_http_msg_t* msg, ah_err_t err)
+void on_client_send_done(ah_http_client_t* cln, ah_http_out_t* msg, ah_err_t err)
 {
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
     ah_unit_t* unit = user_data->unit;
@@ -195,7 +167,7 @@ void on_client_send_done(ah_http_client_t* cln, ah_http_msg_t* msg, ah_err_t err
         (void) ah_unit_assert_cstr_eq(unit, "200 OK", msg->line);
     }
 
-    user_data->did_call_send_done_cb = true;
+    user_data->did_call_send_cb = true;
 }
 
 void on_client_recv_line(ah_http_client_t* cln, const char* line, ah_http_ver_t version)
@@ -237,16 +209,16 @@ void on_client_recv_chunk_line(ah_http_client_t* cln, size_t size, const char* e
     user_data->did_call_recv_chunk_line_cb = true;
 }
 
-void on_client_recv_data(ah_http_client_t* cln, const ah_buf_t* rbuf)
+void on_client_recv_data(ah_http_client_t* cln, ah_tcp_in_t* in)
 {
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
     ah_unit_t* unit = user_data->unit;
 
     if (user_data->on_connect_send_msg != NULL) {
-        if (!ah_unit_assert_unsigned_eq(unit, 28u, ah_buf_get_size(rbuf))) {
+        if (!ah_unit_assert_unsigned_eq(unit, 28u, in->nread)) {
             return;
         }
-        ah_unit_assert_mem_eq(unit, "{\"text\":\"Hello, Arrowhead!\"}", ah_buf_get_base_const(rbuf), 28u);
+        ah_unit_assert_mem_eq(unit, "{\"text\":\"Hello, Arrowhead!\"}", ah_buf_get_base_const(&in->buf), 28u);
     }
 
     user_data->did_call_recv_data_cb = true;
@@ -342,22 +314,7 @@ void s_on_server_close(ah_http_server_t* srv, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-void s_on_server_client_alloc(ah_http_server_t* srv, ah_http_client_t** client)
-{
-    struct s_http_server_user_data* user_data = ah_http_server_get_user_data(srv);
-    ah_unit_t* unit = user_data->unit;
-
-    if (!ah_unit_assert(unit, client != NULL, "client == NULL")) {
-        return;
-    }
-
-    *client = user_data->on_client_alloc_provide_rclient;
-    user_data->on_client_alloc_provide_rclient = NULL;
-
-    user_data->did_call_client_alloc_cb = true;
-}
-
-void s_on_server_client_accept(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err)
+void s_on_server_accept(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err)
 {
     struct s_http_server_user_data* user_data = ah_http_server_get_user_data(srv);
     ah_unit_t* unit = user_data->unit;
@@ -374,7 +331,7 @@ void s_on_server_client_accept(ah_http_server_t* srv, ah_http_client_t* client, 
 
     ah_http_client_set_user_data(client, &user_data->on_client_accept_provide_user_data);
 
-    user_data->did_call_client_accept_cb = true;
+    user_data->did_call_accept_cb = true;
 }
 
 static void s_should_send_and_receive_short_message(ah_unit_t* unit)
@@ -385,21 +342,16 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
 
     size_t close_call_counter = 0u;
 
-    uint8_t rclient_free_buf_base[256] = { 0u };
-    ah_buf_t rclient_free_buf = ah_buf_from(rclient_free_buf_base, sizeof(rclient_free_buf_base));
-
     struct s_http_server_user_data server_user_data = {
-        .on_client_alloc_provide_rclient = &(ah_http_client_t) { 0u },
         .on_client_accept_provide_user_data = (struct s_http_client_user_data) {
-            .on_alloc_provide_buf = &rclient_free_buf,
-            .on_recv_end_send_msg = &(ah_http_msg_t) {
+            .on_recv_end_send_msg = &(ah_http_out_t) {
                 .line = "200 OK",
                 .version = { 1u, 1u },
                 .headers = (ah_http_header_t[]) {
                     { "content-type", "application/json" },
                     { NULL, NULL },
                 },
-                .body = ah_http_body_from_buf(ah_buf_from((uint8_t*) "{\"text\":\"Hello, Arrowhead!\"}", 28u)),
+                .body = ah_buf_from((uint8_t*) "{\"text\":\"Hello, Arrowhead!\"}", 28u),
             },
             .close_call_counter = &close_call_counter,
             .unit = unit,
@@ -407,13 +359,9 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
         .unit = unit,
     };
 
-    uint8_t lclient_free_buf_base[256] = { 0u };
-    ah_buf_t lclient_free_buf = ah_buf_from(lclient_free_buf_base, sizeof(lclient_free_buf_base));
-
     struct s_http_client_user_data lclient_user_data = {
         .on_open_connect_to_raddr = &server_user_data.on_open_store_laddr,
-        .on_alloc_provide_buf = &lclient_free_buf,
-        .on_connect_send_msg = &(ah_http_msg_t) {
+        .on_connect_send_msg = &(ah_http_out_t) {
             .line = "GET /things/1234",
             .version = { 1u, 1u },
             .headers = (ah_http_header_t[]) {
@@ -421,7 +369,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
                 { "connection", "close" },
                 { NULL, NULL },
             },
-            .body = ah_http_body_empty(),
+            .body = (ah_buf_t) { 0u },
         },
         .close_call_counter = &close_call_counter,
         .unit = unit,
@@ -479,8 +427,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
     (void) ah_unit_assert(unit, lclient_data->did_call_open_cb, "`lclient` s_on_client_open() not called");
     (void) ah_unit_assert(unit, lclient_data->did_call_connect_cb, "`lclient` s_on_client_connect() not called");
     (void) ah_unit_assert(unit, lclient_data->did_call_close_cb, "`lclient` s_on_client_close() not called");
-    (void) ah_unit_assert(unit, lclient_data->did_call_alloc_cb, "`lclient` s_on_client_alloc() not called");
-    (void) ah_unit_assert(unit, lclient_data->did_call_send_done_cb, "`lclient` s_on_client_send_done() not called");
+    (void) ah_unit_assert(unit, lclient_data->did_call_send_cb, "`lclient` s_on_client_send_done() not called");
     (void) ah_unit_assert(unit, lclient_data->did_call_recv_line_cb, "`lclient` s_on_client_recv_line() not called");
     (void) ah_unit_assert(unit, lclient_data->did_call_recv_header_cb, "`lclient` s_on_client_recv_header() not called");
     (void) ah_unit_assert(unit, lclient_data->did_call_recv_headers_cb, "`lclient` s_on_client_recv_headers() not called");
@@ -492,15 +439,13 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
     (void) ah_unit_assert(unit, server_data->did_call_open_cb, "s_on_server_open() not called");
     (void) ah_unit_assert(unit, server_data->did_call_listen_cb, "s_on_server_listen() not called");
     (void) ah_unit_assert(unit, server_data->did_call_close_cb, "s_on_server_close() not called");
-    (void) ah_unit_assert(unit, server_data->did_call_client_alloc_cb, "s_on_server_client_alloc() not called");
-    (void) ah_unit_assert(unit, server_data->did_call_client_accept_cb, "s_on_server_client_accept() not called");
+    (void) ah_unit_assert(unit, server_data->did_call_accept_cb, "s_on_server_accept() not called");
 
     struct s_http_client_user_data* rclient_data = &server_data->on_client_accept_provide_user_data;
     (void) ah_unit_assert(unit, !rclient_data->did_call_open_cb, "`rclient` s_on_client_open() was called");
     (void) ah_unit_assert(unit, !rclient_data->did_call_connect_cb, "`rclient` s_on_client_connect() was called");
     (void) ah_unit_assert(unit, rclient_data->did_call_close_cb, "`rclient` s_on_client_close() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_alloc_cb, "`rclient` s_on_client_alloc() not called");
-    (void) ah_unit_assert(unit, rclient_data->did_call_send_done_cb, "`rclient` s_on_client_send_done() not called");
+    (void) ah_unit_assert(unit, rclient_data->did_call_send_cb, "`rclient` s_on_client_send_done() not called");
     (void) ah_unit_assert(unit, rclient_data->did_call_recv_line_cb, "`rclient` s_on_client_recv_line() not called");
     (void) ah_unit_assert(unit, rclient_data->did_call_recv_header_cb, "`rclient` s_on_client_recv_header() not called");
     (void) ah_unit_assert(unit, rclient_data->did_call_recv_headers_cb, "`rclient` s_on_client_recv_headers() not called");

@@ -6,10 +6,8 @@ set(
     SOURCE_FILES
     include/ah/http.h
     include/ah/internal/_http.h
-    src/http-body.c
     src/http-client.c
     src/http-client.h
-    src/http-out-queue.h
     src/http-writer.c
     src/http-writer.h
     src/http-parser.c

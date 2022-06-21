@@ -14,21 +14,21 @@
 #include <ah/tcp.h>
 #include <stddef.h>
 
-#define AH_I_HTTP_BODY_KIND_EMPTY    0u
-#define AH_I_HTTP_BODY_KIND_OVERRIDE 1u
-#define AH_I_HTTP_BODY_KIND_MSG      2u
-
-#define AH_I_HTTP_CLIENT_FIELDS         \
- ah_tcp_conn_t _conn;                   \
- const ah_sockaddr_t* _raddr;           \
- const struct ah_http_client_cbs* _cbs; \
- struct ah_i_list _out_queue;           \
- ah_rw_t _in_rw;                        \
- size_t _in_n_expected_bytes;           \
- size_t _in_n_expected_responses;       \
- uint8_t _in_state;                     \
- bool _is_keeping_connection_open;      \
- bool _is_local;                        \
+#define AH_I_HTTP_CLIENT_FIELDS                 \
+ ah_tcp_conn_t _conn;                           \
+ const ah_sockaddr_t* _raddr;                   \
+                                                \
+ const struct ah_http_client_cbs* _cbs;         \
+                                                \
+ struct ah_i_list _out_queue;                   \
+                                                \
+ struct ah_i_http_in_scratchpad _in_scratchpad; \
+ size_t _in_n_expected_bytes;                   \
+ size_t _in_n_expected_responses;               \
+ uint8_t _in_state;                             \
+                                                \
+ bool _is_keeping_connection_open;              \
+ bool _is_local;                                \
  bool _is_preventing_realloc;
 
 #define AH_I_HTTP_SERVER_FIELDS    \
@@ -46,5 +46,10 @@
 
 #define AH_I_HTTP_TRAILER_FIELDS \
  ah_tcp_out_t _out;
+
+struct ah_i_http_in_scratchpad {
+    uint8_t* page;
+    ah_psize_t offset;
+};
 
 #endif

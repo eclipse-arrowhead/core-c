@@ -6,7 +6,6 @@
 
 #include "ah/http.h"
 
-#include "http-out-queue.h"
 #include "http-parser.h"
 #include "http-utils.h"
 #include "http-writer.h"
@@ -24,9 +23,6 @@
 #define S_IN_STATE_CHUNK_LINE 0x10
 #define S_IN_STATE_CHUNK_DATA 0x20
 #define S_IN_STATE_TRAILER    0x40
-
-#define S_IN_STATE_IS_REUSING_RW(STATE) \
- (((STATE) & (S_IN_STATE_LINE | S_IN_STATE_HEADERS | S_IN_STATE_CHUNK_LINE | S_IN_STATE_TRAILER)) != 0u)
 
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
@@ -105,39 +101,22 @@ static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
         return;
     }
 
+    cln->_in_buf = ah_palloc();
+    if (cln->_in_buf == NULL) {
+        err = AH_ENOMEM;
+        goto handle_err;
+    }
+
     err = ah_tcp_conn_read_start(conn);
     if (err != AH_ENONE) {
-        cln->_cbs->on_recv_end(cln, err);
+        ah_pfree(cln->_in_buf);
+        goto handle_err;
     }
-}
-
-static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
-{
-    ah_http_client_t* cln = ah_i_http_conn_to_client(conn);
-
-    ah_err_t err;
-
-    if (S_IN_STATE_IS_REUSING_RW(cln->_in_state)) {
-        ah_rw_get_writable_as_buf(&cln->_in_rw, buf);
-        return;
-    }
-
-    cln->_cbs->on_alloc(cln, buf, true);
-    if (!ah_tcp_conn_is_readable(&cln->_conn)) {
-        return;
-    }
-    if (ah_buf_is_empty(buf)) {
-        err = AH_ENOBUFS;
-        goto report_err_and_close_conn;
-    }
-
-    ah_rw_init_for_writing_to(&cln->_in_rw, buf);
 
     return;
 
-report_err_and_close_conn:
+handle_err:
     cln->_cbs->on_recv_end(cln, err);
-    (void) ah_tcp_conn_close(conn);
 }
 
 static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
@@ -148,14 +127,6 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
         goto report_err_and_close_conn;
     }
 
-    ah_assert_if_debug(cln->_in_rw.w == data);
-    (void) data;
-
-    if (!ah_rw_juken(&cln->_in_rw, in)) {
-        err = AH_EDOM;
-        goto report_err_and_close_conn;
-    }
-
     switch (cln->_in_state) {
     case S_IN_STATE_INIT: {
         if (cln->_is_local && cln->_in_n_expected_responses == 0u) {
@@ -163,6 +134,8 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
             goto report_err_and_close_conn;
         }
 
+        cln->_in_offset = 0u;
+        cln->_in_scratchpad.offset = 0u;
         cln->_in_state = S_IN_STATE_LINE;
         goto state_stat_line;
     }
@@ -172,7 +145,7 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
         const char* line;
         ah_http_ver_t version;
         if (cln->_is_local) {
-            err = ah_i_http_parse_stat_line(&cln->_in_rw, &line, &version);
+            err = ah_i_http_parse_stat_line(NULL, NULL, NULL, &in->buf, &cln->_in_offset);
         }
         else {
             err = ah_i_http_parse_req_line(&cln->_in_rw, &line, &version);
