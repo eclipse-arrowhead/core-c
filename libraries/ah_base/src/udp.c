@@ -158,9 +158,28 @@ ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
     sock->_user_data = user_data;
 }
 
-ah_extern void ah_udp_in_free(ah_udp_in_t* in)
+ah_extern ah_err_t ah_udp_in_detach(ah_udp_in_t* in)
 {
-    if (in != NULL) {
-        ah_i_udp_in_free(in);
+    if (in == NULL) {
+        return AH_EINVAL;
     }
+    if (in->_owner_ptr == NULL) {
+        return AH_ESTATE;
+    }
+
+    return ah_i_udp_in_detach(in);
+}
+
+ah_extern ah_err_t ah_udp_in_free(ah_udp_in_t* in)
+{
+    if (in == NULL) {
+        return AH_EINVAL;
+    }
+    if (in->_owner_ptr != NULL) {
+        return AH_ESTATE;
+    }
+
+    ah_i_udp_in_free(in);
+
+    return AH_ENONE;
 }

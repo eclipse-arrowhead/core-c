@@ -113,19 +113,19 @@ ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
         return AH_ESTATE;
     }
 
-    ah_tcp_in_t* in = ah_i_tcp_in_alloc();
-    if (in == NULL) {
-        return AH_ENOMEM;
-    }
+    ah_err_t err;
 
-    conn->_in = in;
+    err = ah_i_tcp_in_alloc_for(&conn->_in);
+    if (err != AH_ENONE) {
+        return err;
+    }
 
     ah_i_loop_evt_t* evt;
     struct kevent* kev;
 
-    ah_err_t err = ah_i_loop_evt_alloc_with_kev(conn->_loop, &evt, &kev);
+    err = ah_i_loop_evt_alloc_with_kev(conn->_loop, &evt, &kev);
     if (err != AH_ENONE) {
-        ah_i_tcp_in_free(in);
+        ah_i_tcp_in_free(conn->_in);
         return err;
     }
 
@@ -162,47 +162,32 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     size_t n_bytes_left = kev->data;
 
     while (n_bytes_left != 0u) {
-        if (conn->_in->nread >= ah_buf_get_size(&conn->_in->buf)) {
+        ah_buf_t dst = ah_rw_get_writable_as_buf(&conn->_in->rw);
+        if (ah_buf_is_empty(&dst)) {
             err = AH_EOVERFLOW;
             goto report_err;
         }
 
-        void* buffer = &ah_buf_get_base(&conn->_in->buf)[conn->_in->nread];
-        size_t length = ah_buf_get_size(&conn->_in->buf) - conn->_in->nread;
-
-        ssize_t nread = recv(conn->_fd, buffer, length, 0u);
+        ssize_t nread = recv(conn->_fd, ah_buf_get_base(&dst), ah_buf_get_size(&dst), 0u);
         if (nread < 0) {
             err = errno;
             goto report_err;
         }
-
         if (nread == 0) {
             break;
         }
+        conn->_in->rw.w = &conn->_in->rw.w[(size_t) nread];
+        ah_assert_if_debug(conn->_in->rw.w <= conn->_in->rw.e);
 
-        if (ah_unlikely(ah_buf_get_size(&conn->_in->buf) < (size_t) nread)) {
+        if (ah_unlikely(ah_buf_get_size(&dst) < (size_t) nread)) {
             err = AH_EDOM;
             goto report_err;
         }
 
-        conn->_in->nread += (size_t) nread;
+        conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
 
-        size_t n_to_retain = conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
-
-        if (n_to_retain == AH_TCP_IN_FORGET) {
-            if (conn->_state == AH_I_TCP_CONN_STATE_READING) {
-                ah_tcp_in_t* in_new = ah_i_tcp_in_alloc();
-                if (in_new == NULL) {
-                    err = AH_ENOMEM;
-                    goto report_err;
-                }
-                conn->_in = in_new;
-            }
-        }
-        else {
-            if (n_to_retain <= conn->_in->nread) {
-                conn->_in->nread = n_to_retain;
-            }
+        if (!ah_rw_is_readable(&conn->_in->rw)) {
+            ah_i_tcp_in_reset(conn->_in);
         }
 
         if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
@@ -221,7 +206,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
     return;
 
 report_err:
-    (void) conn->_cbs->on_read(conn, NULL, err);
+    conn->_cbs->on_read(conn, NULL, err);
 }
 
 ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
@@ -264,7 +249,7 @@ ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
 
     const bool is_preparing_another_write = ah_i_list_is_empty(&conn->_out_queue);
 
-    ah_i_list_push(&conn->_out_queue, &out->_list_entry);
+    ah_i_list_push(&conn->_out_queue, out, offsetof(ah_tcp_out_t, _list_entry));
 
     if (is_preparing_another_write) {
         return s_conn_write_prep(conn);
@@ -307,7 +292,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     ah_err_t err;
 
-    ah_tcp_out_t* out = AH_I_LIST_PEEK(&conn->_out_queue, ah_tcp_out_t, _list_entry);
+    ah_tcp_out_t* out = ah_i_list_peek(&conn->_out_queue, offsetof(ah_tcp_out_t, _list_entry));
 
     if (ah_unlikely(out == NULL)) {
         err = AH_EINTERN;

@@ -44,7 +44,8 @@
                                     \
  void* _user_data;
 
-#define AH_I_TCP_IN_FIELDS
+#define AH_I_TCP_IN_FIELDS \
+ ah_tcp_in_t** _owner_ptr;
 
 #define AH_I_TCP_LISTENER_FIELDS     \
  ah_loop_t* _loop;                   \
@@ -61,6 +62,8 @@
  void* _user_data;
 
 #define AH_I_TCP_OUT_FIELDS \
+ void* _owner;              \
+                            \
  AH_I_TCP_OUT_PLATFORM_FIELDS
 
 #endif

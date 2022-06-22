@@ -45,7 +45,7 @@ struct s_udp_sock_user_data {
 
 static void s_on_open(ah_udp_sock_t* sock, ah_err_t err);
 static void s_on_close(ah_udp_sock_t* sock, ah_err_t err);
-static size_t s_on_recv(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
+static void s_on_recv(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
 static void s_on_send(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err);
 
 static const ah_udp_sock_cbs_t s_sock_cbs = {
@@ -121,32 +121,32 @@ static void s_on_close(ah_udp_sock_t* sock, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static size_t s_on_recv(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err)
+static void s_on_recv(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err)
 {
     struct s_udp_sock_user_data* user_data = ah_udp_sock_get_user_data(sock);
 
     ah_unit_t* unit = user_data->unit;
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return 0u;
+        (void) ah_udp_sock_close(sock);
+        return;
     }
     if (!ah_unit_assert(unit, in != NULL, "raddr == NULL")) {
-        return 0u;
+        return;
     }
     if (!ah_unit_assert_unsigned_eq(unit, 18u, in->nread)) {
-        return 0u;
+        return;
     }
     if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base(&in->buf))) {
-        return 0u;
+        return;
     }
 
     ah_err_t err0 = ah_udp_sock_close(sock);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
-        return 0u;
+        return;
     }
 
     user_data->did_call_recv_cb = true;
-    return 0u;
 }
 
 static void s_on_send(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err)
@@ -162,6 +162,7 @@ static void s_on_send(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err)
     }
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        (void) ah_udp_sock_close(sock);
         return;
     }
 

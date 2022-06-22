@@ -9,7 +9,9 @@
 
 #include "ah/udp.h"
 
-ah_udp_in_t* ah_i_udp_in_alloc();
+ah_err_t ah_i_udp_in_alloc_for(ah_udp_in_t** owner_ptr);
+ah_err_t ah_i_udp_in_detach(ah_udp_in_t* in);
 void ah_i_udp_in_free(ah_udp_in_t* in);
+void ah_i_udp_in_reset(ah_udp_in_t* in);
 
 #endif

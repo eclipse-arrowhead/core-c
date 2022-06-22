@@ -81,9 +81,9 @@
 
 #ifndef AH_CONF_PSIZE
 # if AH_CONF_IS_CONSTRAINED
-#  define AH_CONF_PSIZE 256u
+#  define AH_CONF_PSIZE 1024u
 # else
-#  define AH_CONF_PSIZE 32768u
+#  define AH_CONF_PSIZE 8192u
 # endif
 #endif
 

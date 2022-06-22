@@ -8,8 +8,6 @@
 
 #include "ah/assert.h"
 
-#include <stdlib.h>
-
 bool ah_i_list_is_empty(struct ah_i_list* list)
 {
     ah_assert_if_debug(list != NULL);
@@ -17,31 +15,18 @@ bool ah_i_list_is_empty(struct ah_i_list* list)
     return list->_first == NULL;
 }
 
-void ah_i_list_push(struct ah_i_list* list, struct ah_i_list_entry* entry)
+void* ah_i_list_peek(struct ah_i_list* list, ptrdiff_t list_entry_offset)
 {
     ah_assert_if_debug(list != NULL);
-    ah_assert_if_debug(entry != NULL);
-
-    entry->_next = NULL;
 
     if (list->_first == NULL) {
-        list->_first = entry;
-        list->_last = entry;
+        return NULL;
     }
-    else {
-        list->_last->_next = entry;
-        list->_last = entry;
-    }
+
+    return &((uint8_t*) list->_first)[-list_entry_offset];
 }
 
-struct ah_i_list_entry* ah_i_list_peek(struct ah_i_list* list)
-{
-    ah_assert_if_debug(list != NULL);
-
-    return list->_first;
-}
-
-struct ah_i_list_entry* ah_i_list_pop(struct ah_i_list* list)
+void* ah_i_list_pop(struct ah_i_list* list, ptrdiff_t list_entry_offset)
 {
     ah_assert_if_debug(list != NULL);
 
@@ -62,7 +47,26 @@ struct ah_i_list_entry* ah_i_list_pop(struct ah_i_list* list)
 
 #endif
 
-    return entry;
+    return &((uint8_t*) entry)[-list_entry_offset];;
+}
+
+void ah_i_list_push(struct ah_i_list* list, void* entry, ptrdiff_t list_entry_offset)
+{
+    ah_assert_if_debug(list != NULL);
+    ah_assert_if_debug(entry != NULL);
+
+    struct ah_i_list_entry* entry0 = (void*) &((uint8_t*) entry)[list_entry_offset];
+
+    entry0->_next = NULL;
+
+    if (list->_first == NULL) {
+        list->_first = entry0;
+        list->_last = entry0;
+    }
+    else {
+        list->_last->_next = entry0;
+        list->_last = entry0;
+    }
 }
 
 void ah_i_list_skip(struct ah_i_list* list)

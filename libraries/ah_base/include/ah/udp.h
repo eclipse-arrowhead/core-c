@@ -13,8 +13,6 @@
 
 #include <stdbool.h>
 
-#define AH_UDP_IN_FORGET SIZE_MAX
-
 struct ah_udp_group_ipv4 {
     ah_ipaddr_v4_t group_addr;
     ah_ipaddr_v4_t interface_addr; // Default if zeroed.
@@ -48,7 +46,7 @@ struct ah_udp_sock {
     AH_I_UDP_SOCK_FIELDS
 };
 
-// In incoming UDP message.
+// An incoming UDP message.
 struct ah_udp_in {
     const ah_sockaddr_t* raddr;
 
@@ -72,10 +70,7 @@ struct ah_udp_sock_cbs {
     void (*on_open)(ah_udp_sock_t* sock, ah_err_t err);
 
     // If NULL, every attempt to start receiving data will fail with AH_ESTATE.
-    // Returns number of bytes to retain in `in` until the next read, or
-    // \c AH_UDP_IN_FORGET if wanting to take over ownership of `in` and
-    // deallocate it manually using ah_udp_in_free().
-    size_t (*on_recv)(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
+    void (*on_recv)(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
 
     // If NULL, every attempt to send data will fail with AH_ESTATE.
     void (*on_send)(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err);
@@ -106,6 +101,9 @@ ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data);
 ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 
-ah_extern void ah_udp_in_free(ah_udp_in_t* in);
+ah_extern ah_err_t ah_udp_in_detach(ah_udp_in_t* in);
+
+// Must only be called after successful call to ah_udp_in_detach() with same `in`.
+ah_extern ah_err_t ah_udp_in_free(ah_udp_in_t* in);
 
 #endif

@@ -227,10 +227,63 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
     conn->_user_data = user_data;
 }
 
-ah_extern void ah_tcp_in_free(ah_tcp_in_t* in)
+ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in)
 {
-    if (in != NULL) {
-        ah_i_tcp_in_free(in);
+    if (in == NULL) {
+        return AH_EINVAL;
+    }
+    if (in->_owner_ptr == NULL) {
+        return AH_ESTATE;
+    }
+
+    return ah_i_tcp_in_detach(in);
+}
+
+ah_extern ah_err_t ah_tcp_in_free(ah_tcp_in_t* in)
+{
+    if (in == NULL) {
+        return AH_EINVAL;
+    }
+    if (in->_owner_ptr != NULL) {
+        return AH_ESTATE;
+    }
+
+    ah_i_tcp_in_free(in);
+
+    return AH_ENONE;
+}
+
+ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in)
+{
+    if (in == NULL) {
+        return AH_EINVAL;
+    }
+
+    ah_i_tcp_in_repackage(in);
+
+    return AH_ENONE;
+}
+
+ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void)
+{
+    uint8_t* page = ah_palloc();
+    if (page == NULL) {
+        return NULL;
+    }
+
+    ah_tcp_out_t* out = (void*) page;
+
+    *out = (ah_tcp_out_t) {
+        .buf = ah_buf_from(&page[sizeof(ah_tcp_out_t)], AH_PSIZE),
+    };
+
+    return out;
+}
+
+ah_extern void ah_tcp_out_free(ah_tcp_out_t* out)
+{
+    if (out != NULL) {
+        ah_pfree(out);
     }
 }
 

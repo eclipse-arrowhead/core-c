@@ -21,7 +21,8 @@
 #define AH_I_UDP_SOCK_STATE_OPEN      1u // Sends allowed.
 #define AH_I_UDP_SOCK_STATE_RECEIVING 2u // Sends allowed.
 
-#define AH_I_UDP_IN_FIELDS
+#define AH_I_UDP_IN_FIELDS \
+ ah_udp_in_t** _owner_ptr;
 
 #define AH_I_UDP_OUT_FIELDS \
  AH_I_UDP_OUT_PLATFORM_FIELDS

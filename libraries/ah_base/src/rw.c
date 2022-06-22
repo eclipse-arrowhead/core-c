@@ -11,42 +11,43 @@
 
 #include <string.h>
 
-ah_extern void ah_rw_init_for_writing_to(ah_rw_t* rw, ah_buf_t* buf)
+ah_extern ah_rw_t ah_rw_from_writable(void* base, size_t size)
 {
-    ah_assert(rw != NULL);
-    ah_assert(buf != NULL);
-
-    uint8_t* base = ah_buf_get_base(buf);
-    uint8_t* end = &base[ah_buf_get_size(buf)]; // This is safe as long as `buf` is valid.
-
-    *rw = (ah_rw_t) {
-        .r = base,
-        .w = base,
-        .e = end,
+    return (ah_rw_t) {
+        .r = &((uint8_t*) base)[0u],
+        .w = &((uint8_t*) base)[0u],
+        .e = &((uint8_t*) base)[size],
     };
 }
 
-ah_extern void ah_rw_init_for_reading_from(ah_rw_t* rw, const ah_buf_t* buf)
+ah_extern ah_rw_t ah_rw_from_writable_buf(ah_buf_t* buf)
 {
-    ah_assert(rw != NULL);
     ah_assert(buf != NULL);
 
-    uint8_t* base = (uint8_t*) ah_buf_get_base_const(buf);
-    uint8_t* end = &base[ah_buf_get_size(buf)]; // This is safe as long as `buf` is valid.
+    return ah_rw_from_writable(ah_buf_get_base(buf), ah_buf_get_size(buf));
+}
 
-    *rw = (ah_rw_t) {
-        .r = base,
-        .w = (uint8_t*) end,
-        .e = end,
+ah_extern ah_rw_t ah_rw_from_readable(const void* base, size_t size)
+{
+    return (ah_rw_t) {
+        .r = &((uint8_t*) base)[0u],
+        .w = &((uint8_t*) base)[size],
+        .e = &((uint8_t*) base)[size],
     };
 }
 
-ah_extern void ah_rw_get_readable_as_buf(const ah_rw_t* rw, ah_buf_t* buf)
+ah_extern ah_rw_t ah_rw_from_readable_buf(const ah_buf_t* buf)
 {
-    ah_assert(rw != NULL);
     ah_assert(buf != NULL);
 
-    *buf = (ah_buf_t) {
+    return ah_rw_from_readable(ah_buf_get_base_const(buf), ah_buf_get_size(buf));
+}
+
+ah_extern ah_buf_t ah_rw_get_readable_as_buf(const ah_rw_t* rw)
+{
+    ah_assert(rw != NULL);
+
+    return (ah_buf_t) {
         ._base = (uint8_t*) rw->r,
         ._size = (size_t) (rw->w - rw->r),
     };
@@ -59,12 +60,11 @@ ah_extern size_t ah_rw_get_readable_size(const ah_rw_t* rw)
     return (size_t) (rw->w - rw->r);
 }
 
-ah_extern void ah_rw_get_writable_as_buf(const ah_rw_t* rw, ah_buf_t* buf)
+ah_extern ah_buf_t ah_rw_get_writable_as_buf(const ah_rw_t* rw)
 {
     ah_assert(rw != NULL);
-    ah_assert(buf != NULL);
 
-    *buf = (ah_buf_t) {
+    return (ah_buf_t) {
         ._base = (uint8_t*) rw->w,
         ._size = (size_t) (rw->e - rw->w),
     };
@@ -84,6 +84,20 @@ ah_extern bool ah_rw_is_containing_buf(const ah_rw_t* rw, const ah_buf_t* buf)
 
     const uint8_t* base = ah_buf_get_base_const(buf);
     return rw->r <= base && rw->e >= &base[ah_buf_get_size(buf)];
+}
+
+ah_extern bool ah_rw_is_readable(const ah_rw_t* rw)
+{
+    ah_assert(rw != NULL);
+
+    return rw->r < rw->w;
+}
+
+ah_extern bool ah_rw_is_writable(const ah_rw_t* rw)
+{
+    ah_assert(rw != NULL);
+
+    return rw->w < rw->e;
 }
 
 ah_extern bool ah_rw_copy1(ah_rw_t* src, ah_rw_t* dst)
@@ -206,6 +220,13 @@ ah_extern bool ah_rw_skipn(ah_rw_t* rw, size_t size)
     rw->r = &rw->r[size];
 
     return true;
+}
+
+ah_extern void ah_rw_skip_all(ah_rw_t* rw)
+{
+    ah_assert(rw != NULL);
+
+    rw->r = rw->e;
 }
 
 ah_extern bool ah_rw_write1(ah_rw_t* rw, uint8_t byte)

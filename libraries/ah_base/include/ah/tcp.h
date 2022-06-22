@@ -9,18 +9,16 @@
 
 #include "buf.h"
 #include "internal/_tcp.h"
+#include "rw.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#define AH_TCP_IN_FORGET SIZE_MAX
-
 #define AH_TCP_SHUTDOWN_RD   1u
 #define AH_TCP_SHUTDOWN_WR   2u
 #define AH_TCP_SHUTDOWN_RDWR 3u
 
-typedef uint8_t ah_tcp_read_mode_t;
 typedef uint8_t ah_tcp_shutdown_t;
 
 // A TCP-based transport.
@@ -54,11 +52,8 @@ struct ah_tcp_conn_cbs {
     // Never called for accepted connections.
     void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err);
 
-    // If NULL, reading is shutdown automatically. Returns number of bytes to
-    // retain in `in` until the next read, or \c AH_TCP_IN_FORGET if wanting to
-    // take over ownership of `in` and deallocate it manually using
-    // ah_tcp_in_free().
-    size_t (*on_read)(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
+    // If NULL, reading is shutdown automatically.
+    void (*on_read)(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
 
     // If NULL, writing is shutdown automatically.
     void (*on_write)(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
@@ -79,8 +74,7 @@ struct ah_tcp_listener_cbs {
 
 // A buffer part of a stream of incoming TCP bytes.
 struct ah_tcp_in {
-    ah_buf_t buf;
-    size_t nread;
+    ah_rw_t rw;
 
     AH_I_TCP_IN_FIELDS
 };
@@ -119,7 +113,15 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 
-ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
+ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in);
+
+// Must only be called after successful call to ah_tcp_in_detach() with same `in`.
+ah_extern ah_err_t ah_tcp_in_free(ah_tcp_in_t* in);
+
+ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
+
+ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void);
+ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
 
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs);
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);

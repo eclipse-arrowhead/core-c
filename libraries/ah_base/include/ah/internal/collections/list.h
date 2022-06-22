@@ -8,16 +8,8 @@
 #define AH_INTERNAL_COLLECTIONS_LIST_H_
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-
-#define AH_I_LIST_ENTRY_UNWRAP(ENTRY, WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME) \
- ((WRAPPING_TYPE*) &((unsigned char *) (ENTRY))[(-((intptr_t) offsetof(WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME)))])
-
-#define AH_I_LIST_PEEK(LIST, WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME) \
- ah_i_list_is_empty((LIST)) ? NULL : AH_I_LIST_ENTRY_UNWRAP(ah_i_list_peek((LIST)), WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME)
-
-#define AH_I_LIST_POP(LIST, WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME) \
- ah_i_list_is_empty((LIST)) ? NULL : AH_I_LIST_ENTRY_UNWRAP(ah_i_list_pop((LIST)), WRAPPING_TYPE, WRAPPING_TYPE_ENTRY_FIELD_NAME)
 
 struct ah_i_list {
     struct ah_i_list_entry* _first;
@@ -29,9 +21,9 @@ struct ah_i_list_entry {
 };
 
 bool ah_i_list_is_empty(struct ah_i_list* list);
-struct ah_i_list_entry* ah_i_list_peek(struct ah_i_list* list);
-struct ah_i_list_entry* ah_i_list_pop(struct ah_i_list* list);
-void ah_i_list_push(struct ah_i_list* list, struct ah_i_list_entry* entry);
+void* ah_i_list_peek(struct ah_i_list* list, ptrdiff_t list_entry_offset);
+void* ah_i_list_pop(struct ah_i_list* list, ptrdiff_t list_entry_offset);
+void ah_i_list_push(struct ah_i_list* list, void* entry, ptrdiff_t list_entry_offset);
 void ah_i_list_skip(struct ah_i_list* list);
 
 #endif

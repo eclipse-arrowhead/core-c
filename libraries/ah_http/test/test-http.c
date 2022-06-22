@@ -12,8 +12,11 @@
 #include <ah/unit.h>
 
 struct s_http_client_user_data {
-    ah_http_out_t* on_connect_send_msg;
-    ah_http_out_t* on_recv_end_send_msg;
+    ah_http_head_t* on_connect_send_head;
+
+    ah_http_head_t* on_recv_end_send_head;
+    ah_tcp_out_t* on_recv_end_send_data;
+
     ah_sockaddr_t* on_open_connect_to_raddr;
     size_t* close_call_counter;
 
@@ -55,7 +58,7 @@ void test_http(ah_unit_t* unit)
 void on_client_open(ah_http_client_t* cln, ah_err_t err);
 void on_client_connect(ah_http_client_t* cln, ah_err_t err);
 void on_client_close(ah_http_client_t* cln, ah_err_t err);
-void on_client_send_done(ah_http_client_t* cln, ah_http_out_t* msg, ah_err_t err);
+void on_client_send_done(ah_http_client_t* cln, ah_http_head_t* msg, ah_err_t err);
 void on_client_recv_line(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
 void on_client_recv_header(ah_http_client_t* cln, ah_http_header_t header);
 void on_client_recv_headers(ah_http_client_t* cln);
@@ -116,8 +119,12 @@ void on_client_connect(ah_http_client_t* cln, ah_err_t err)
         return;
     }
 
-    if (user_data->on_connect_send_msg != NULL) {
-        err = ah_http_client_send(cln, user_data->on_connect_send_msg);
+    if (user_data->on_connect_send_head != NULL) {
+        err = ah_http_client_send_head(cln, user_data->on_connect_send_head);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
+        err = ah_http_client_send_end(cln);
         if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
             return;
         }
@@ -151,7 +158,7 @@ void on_client_close(ah_http_client_t* cln, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-void on_client_send_done(ah_http_client_t* cln, ah_http_out_t* msg, ah_err_t err)
+void on_client_send_done(ah_http_client_t* cln, ah_http_head_t* msg, ah_err_t err)
 {
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
     ah_unit_t* unit = user_data->unit;
@@ -160,10 +167,10 @@ void on_client_send_done(ah_http_client_t* cln, ah_http_out_t* msg, ah_err_t err
         return;
     }
 
-    if (user_data->on_connect_send_msg != NULL) {
+    if (user_data->on_connect_send_head != NULL) {
         (void) ah_unit_assert_cstr_eq(unit, "GET /things/1234", msg->line);
     }
-    if (user_data->on_recv_end_send_msg != NULL) {
+    if (user_data->on_recv_end_send_head != NULL) {
         (void) ah_unit_assert_cstr_eq(unit, "200 OK", msg->line);
     }
 
@@ -175,10 +182,10 @@ void on_client_recv_line(ah_http_client_t* cln, const char* line, ah_http_ver_t 
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
     ah_unit_t* unit = user_data->unit;
 
-    if (user_data->on_connect_send_msg == NULL) {
+    if (user_data->on_connect_send_head == NULL) {
         (void) ah_unit_assert_cstr_eq(unit, "GET /things/1234", line);
     }
-    if (user_data->on_recv_end_send_msg == NULL) {
+    if (user_data->on_recv_end_send_head == NULL) {
         (void) ah_unit_assert_cstr_eq(unit, "200 OK", line);
     }
 
@@ -214,11 +221,13 @@ void on_client_recv_data(ah_http_client_t* cln, ah_tcp_in_t* in)
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
     ah_unit_t* unit = user_data->unit;
 
-    if (user_data->on_connect_send_msg != NULL) {
-        if (!ah_unit_assert_unsigned_eq(unit, 28u, in->nread)) {
-            return;
+    if (user_data->on_connect_send_head != NULL) {
+        if (ah_rw_get_readable_size(&in->rw) < 28u) {
+            return; // Wait for more data to arrive.
         }
-        ah_unit_assert_mem_eq(unit, "{\"text\":\"Hello, Arrowhead!\"}", ah_buf_get_base_const(&in->buf), 28u);
+        if (ah_unit_assert_mem_eq(unit, "{\"text\":\"Hello, Arrowhead!\"}", in->rw.r, 28u)) {
+            ah_rw_skipn(&in->rw, 28);
+        }
     }
 
     user_data->did_call_recv_data_cb = true;
@@ -237,8 +246,18 @@ void on_client_recv_end(ah_http_client_t* cln, ah_err_t err)
         return;
     }
 
-    if (user_data->on_recv_end_send_msg != NULL) {
-        err = ah_http_client_send(cln, user_data->on_recv_end_send_msg);
+    if (user_data->on_recv_end_send_head != NULL) {
+        err = ah_http_client_send_head(cln, user_data->on_recv_end_send_head);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
+        if (user_data->on_recv_end_send_data != NULL) {
+            err = ah_http_client_send_data(cln, user_data->on_recv_end_send_data);
+            if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+                return;
+            }
+        }
+        err = ah_http_client_send_end(cln);
         if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
             return;
         }
@@ -344,14 +363,17 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
 
     struct s_http_server_user_data server_user_data = {
         .on_client_accept_provide_user_data = (struct s_http_client_user_data) {
-            .on_recv_end_send_msg = &(ah_http_out_t) {
+            .on_recv_end_send_head = &(ah_http_head_t) {
                 .line = "200 OK",
                 .version = { 1u, 1u },
                 .headers = (ah_http_header_t[]) {
+                    { "content-length", "28" },
                     { "content-type", "application/json" },
                     { NULL, NULL },
                 },
-                .body = ah_buf_from((uint8_t*) "{\"text\":\"Hello, Arrowhead!\"}", 28u),
+            },
+            .on_recv_end_send_data = &(ah_tcp_out_t) {
+                .buf = ah_buf_from((uint8_t*) "{\"text\":\"Hello, Arrowhead!\"}", 28u),
             },
             .close_call_counter = &close_call_counter,
             .unit = unit,
@@ -361,7 +383,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
 
     struct s_http_client_user_data lclient_user_data = {
         .on_open_connect_to_raddr = &server_user_data.on_open_store_laddr,
-        .on_connect_send_msg = &(ah_http_out_t) {
+        .on_connect_send_head = &(ah_http_head_t) {
             .line = "GET /things/1234",
             .version = { 1u, 1u },
             .headers = (ah_http_header_t[]) {
@@ -369,7 +391,6 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
                 { "connection", "close" },
                 { NULL, NULL },
             },
-            .body = (ah_buf_t) { 0u },
         },
         .close_call_counter = &close_call_counter,
         .unit = unit,

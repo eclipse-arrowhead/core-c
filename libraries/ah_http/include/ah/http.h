@@ -17,7 +17,7 @@ typedef struct ah_http_chunk ah_http_chunk_t;
 typedef struct ah_http_client ah_http_client_t;
 typedef struct ah_http_client_cbs ah_http_client_cbs_t;
 typedef struct ah_http_header ah_http_header_t;
-typedef struct ah_http_out ah_http_out_t;
+typedef struct ah_http_head ah_http_head_t;
 typedef struct ah_http_server ah_http_server_t;
 typedef struct ah_http_server_cbs ah_http_server_cbs_t;
 typedef struct ah_http_trailer ah_http_trailer_t;
@@ -33,7 +33,7 @@ struct ah_http_client_cbs {
     void (*on_open)(ah_http_client_t* cln, ah_err_t err);    // Never called for accepted clients.
     void (*on_connect)(ah_http_client_t* cln, ah_err_t err); // Never called for accepted clients.
 
-    void (*on_send)(ah_http_client_t* cln, ah_http_out_t* out, ah_err_t err);
+    void (*on_send)(ah_http_client_t* cln, ah_http_head_t* head, ah_err_t err);
 
     void (*on_recv_line)(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
     void (*on_recv_header)(ah_http_client_t* cln, ah_http_header_t header);
@@ -67,6 +67,21 @@ struct ah_http_ver {
     uint8_t minor;
 };
 
+// An HTTP header.
+struct ah_http_header {
+    const char* name;
+    const char* value;
+};
+
+// The meta-information of an outgoing HTTP request or response.
+struct ah_http_head {
+    const char* line; // "<method> <target>" or "<code> <reason phrase>".
+    ah_http_ver_t version;
+    ah_http_header_t* headers; // Array terminated by { NULL, * } pair.
+
+    AH_I_HTTP_HEAD_FIELDS
+};
+
 // An outgoing HTTP chunk.
 struct ah_http_chunk {
     // Must be NULL, an empty string, or adhere to the chunk-ext syntax, as
@@ -76,12 +91,6 @@ struct ah_http_chunk {
     ah_tcp_out_t data;
 
     AH_I_HTTP_CHUNK_FIELDS
-};
-
-// An HTTP header.
-struct ah_http_header {
-    const char* name;
-    const char* value;
 };
 
 // The ending part of an outgoing chunked message transmission.
@@ -95,20 +104,10 @@ struct ah_http_trailer {
     AH_I_HTTP_TRAILER_FIELDS
 };
 
-// An outgoing HTTP request or response.
-struct ah_http_out {
-    const char* line; // "<method> <target>" or "<code> <reason phrase>".
-    ah_http_ver_t version;
-    ah_http_header_t* headers; // Array terminated by { NULL, * } pair.
-    ah_buf_t body; // If size is zero, ah_http_cilent_send_{data,end,chunk,trailer}() may be used.
-
-    AH_I_HTTP_OUT_FIELDS
-};
-
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_cbs_t* cbs);
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
-ah_extern ah_err_t ah_http_client_send(ah_http_client_t* cln, ah_http_out_t* out);
+ah_extern ah_err_t ah_http_client_send_head(ah_http_client_t* cln, ah_http_head_t* head);
 ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_out_t* data);
 ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_t* chunk);

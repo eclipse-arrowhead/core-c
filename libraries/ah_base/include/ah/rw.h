@@ -19,7 +19,7 @@
 //                          |           |                       |
 //                          V           V                       V
 //              +---+---+---+---+---+---+---+---+---+---+---+---+
-// Memory block | 1 | 7 | 3 | 2 | 4 | 1 | X | X | X | X | X | X |
+// Memory block | 1 | 7 | 3 | 2 | 4 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 //              +---+---+---+---+---+---+---+---+---+---+---+---+
 //                           :.........: :.....................:
 //                                :                 :
@@ -30,13 +30,20 @@ struct ah_rw {
     uint8_t* e; // End.
 };
 
-ah_extern void ah_rw_init_for_writing_to(ah_rw_t* rw, ah_buf_t* buf);
-ah_extern void ah_rw_init_for_reading_from(ah_rw_t* rw, const ah_buf_t* buf);
-ah_extern void ah_rw_get_readable_as_buf(const ah_rw_t* rw, ah_buf_t* buf);
+ah_extern ah_rw_t ah_rw_from_writable(void* base, size_t size);
+ah_extern ah_rw_t ah_rw_from_writable_buf(ah_buf_t* buf);
+ah_extern ah_rw_t ah_rw_from_readable(const void* base, size_t size);
+ah_extern ah_rw_t ah_rw_from_readable_buf(const ah_buf_t* buf);
+
+ah_extern ah_buf_t ah_rw_get_readable_as_buf(const ah_rw_t* rw);
 ah_extern size_t ah_rw_get_readable_size(const ah_rw_t* rw);
-ah_extern void ah_rw_get_writable_as_buf(const ah_rw_t* rw, ah_buf_t* buf);
+ah_extern ah_buf_t ah_rw_get_writable_as_buf(const ah_rw_t* rw);
 ah_extern size_t ah_rw_get_writable_size(const ah_rw_t* rw);
+
 ah_extern bool ah_rw_is_containing_buf(const ah_rw_t* rw, const ah_buf_t* buf);
+ah_extern bool ah_rw_is_readable(const ah_rw_t* rw);
+ah_extern bool ah_rw_is_writable(const ah_rw_t* rw);
+
 ah_extern bool ah_rw_copy1(ah_rw_t* src, ah_rw_t* dst);
 ah_extern bool ah_rw_copyn(ah_rw_t* src, ah_rw_t* dst, size_t size);
 ah_extern bool ah_rw_peek1(ah_rw_t* rw, uint8_t* dst);
@@ -45,6 +52,7 @@ ah_extern bool ah_rw_read1(ah_rw_t* rw, uint8_t* dst);
 ah_extern bool ah_rw_readn(ah_rw_t* rw, uint8_t* dst, size_t size);
 ah_extern bool ah_rw_skip1(ah_rw_t* rw);
 ah_extern bool ah_rw_skipn(ah_rw_t* rw, size_t size);
+ah_extern void ah_rw_skip_all(ah_rw_t* rw);
 ah_extern bool ah_rw_writen(ah_rw_t* rw, uint8_t* src, size_t size);
 ah_extern bool ah_rw_write1(ah_rw_t* rw, uint8_t byte);
 ah_extern bool ah_rw_juke1(ah_rw_t* rw);
