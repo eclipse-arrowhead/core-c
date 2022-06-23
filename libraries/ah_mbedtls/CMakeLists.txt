@@ -22,7 +22,7 @@ endif ()
 add_library(ah_mbedtls STATIC ${SOURCE_FILES})
 target_include_directories(ah_mbedtls
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(ah_mbedtls PRIVATE ah_base MbedTLS::mbedtls)
+target_link_libraries(ah_mbedtls PUBLIC ah_base MbedTLS::mbedtls)
 
 set(
     TEST_FILES
@@ -31,4 +31,4 @@ set(
 )
 
 add_executable(ah_mbedtls_tests ${TEST_FILES})
-target_link_libraries(ah_mbedtls_tests PRIVATE ah_base ah_mbedtls ah_unit)
+target_link_libraries(ah_mbedtls_tests PRIVATE ah_mbedtls ah_unit)
