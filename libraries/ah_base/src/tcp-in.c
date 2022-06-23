@@ -25,6 +25,10 @@ ah_err_t ah_i_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
     uint8_t* base = &page[sizeof(ah_tcp_in_t)];
     uint8_t* end = &page[AH_PSIZE];
 
+    if (base >= end) {
+        return AH_EOVERFLOW;
+    }
+
     *in = (ah_tcp_in_t) {
         .rw.r = base,
         .rw.w = base,

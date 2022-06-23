@@ -28,6 +28,11 @@ ah_err_t ah_i_udp_in_alloc_for(ah_udp_in_t** owner_ptr)
         ._owner_ptr = owner_ptr,
     };
 
+    if (ah_buf_get_size(&in->buf) > AH_PSIZE) {
+        ah_pfree(page);
+        return AH_EOVERFLOW;
+    }
+
     *owner_ptr = in;
 
     return AH_ENONE;

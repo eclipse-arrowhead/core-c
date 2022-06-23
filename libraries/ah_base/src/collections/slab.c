@@ -15,18 +15,18 @@
 # include <string.h>
 #endif
 
-#define S_CACHE_SLOT_CAPACITY_IN_BYTES (AH_PSIZE - offsetof(struct ah_i_slab_cache, _slots_as_raw_bytes))
+#define S_CACHE_SLOT_CAPACITY_IN_BYTES (AH_PSIZE - sizeof(struct ah_i_slab_cache))
 
 bool s_try_grow(struct ah_i_slab* slab);
 
 ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, size_t slot_data_size)
 {
     ah_assert_if_debug(slab != NULL);
-    ah_assert_if_debug(slot_data_size != 0u && slot_data_size <= (SIZE_MAX - offsetof(struct ah_i_slab_slot, _entry_as_raw_bytes)));
+    ah_assert_if_debug(slot_data_size != 0u && slot_data_size <= (SIZE_MAX - sizeof(struct ah_i_slab_slot)));
 
-    const size_t slot_size = slot_data_size + offsetof(struct ah_i_slab_slot, _entry_as_raw_bytes);
+    const size_t slot_size = slot_data_size + sizeof(struct ah_i_slab_slot);
     const size_t cache_slot_capacity = S_CACHE_SLOT_CAPACITY_IN_BYTES / slot_size;
-    if (cache_slot_capacity == 0u) {
+    if (cache_slot_capacity == 0u || cache_slot_capacity > AH_PSIZE) {
         return AH_EOVERFLOW;
     }
 
