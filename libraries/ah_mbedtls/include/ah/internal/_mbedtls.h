@@ -18,12 +18,12 @@
  ah_tcp_trans_t _trans;                                 \
  const ah_tcp_conn_cbs_t* _conn_cbs;                    \
                                                         \
- ah_buf_t _recv_ciphertext_buf;                         \
- struct ah_i_ring _send_ciphertext_queue;               \
+ ah_tcp_in_t* _in_ciphertext;                            \
+ ah_tcp_in_t* _in_plaintext;                            \
+                                                        \
+ struct ah_i_ring _out_queue_ciphertext;                \
                                                         \
  bool _is_handshake_done;                               \
- bool _is_handshaking_on_next_read_data;                \
- bool _is_stopping_reads_on_handshake_completion;       \
                                                         \
  struct ah_i_mbedtls_errs _errs;                        \
  ah_mbedtls_on_handshake_done_cb _on_handshake_done_cb; \

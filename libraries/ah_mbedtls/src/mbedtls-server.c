@@ -17,16 +17,14 @@
 
 static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err);
+static void s_listener_on_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err);
-static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
-static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
 static const ah_tcp_listener_cbs_t s_listener_cbs = {
     .on_open = s_listener_on_open,
     .on_listen = s_listener_on_listen,
+    .on_accept = s_listener_on_accept,
     .on_close = s_listener_on_close,
-    .on_conn_alloc = s_listener_on_conn_alloc,
-    .on_accept = s_listener_on_conn_accept,
 };
 
 ah_extern ah_err_t ah_mbedtls_server_init(ah_mbedtls_server_t* server, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf, ah_mbedtls_on_handshake_done_cb on_handshake_done_cb)
@@ -175,31 +173,7 @@ ah_err_t ah_i_tls_server_close(void* server_, ah_tcp_listener_t* ln)
     return server->_trans.vtab->listener_close(server->_trans.ctx, ln);
 }
 
-static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err)
-{
-    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
-
-    if (server == NULL) {
-        ln->_cbs->on_close(ln, AH_ESTATE);
-        return;
-    }
-
-    server->_ln_cbs->on_close(ln, err);
-}
-
-static void s_listener_on_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn)
-{
-    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
-
-    if (server == NULL) {
-        ln->_cbs->on_accept(ln, NULL, NULL, AH_ESTATE);
-        return;
-    }
-
-    server->_ln_cbs->on_conn_alloc(ln, conn);
-}
-
-static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_listener_on_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
 
@@ -225,7 +199,6 @@ static void s_listener_on_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn
     }
 
     client->_conn_cbs = server->_conn_cbs;
-    client->_is_handshaking_on_next_read_data = true;
     client->_server = server;
 
     conn->_trans.ctx = client;
@@ -240,4 +213,16 @@ handle_err:
     }
 
     ah_i_mbedtls_handshake(conn);
+}
+
+static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err)
+{
+    ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
+
+    if (server == NULL) {
+        ln->_cbs->on_close(ln, AH_ESTATE);
+        return;
+    }
+
+    server->_ln_cbs->on_close(ln, err);
 }

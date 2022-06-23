@@ -27,9 +27,8 @@ struct ah_i_mbedtls_send_queue_entry {
 
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
-static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err);
-static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
+static void s_on_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err);
 
 static ah_err_t s_close_notify(ah_mbedtls_client_t* client);
@@ -37,9 +36,8 @@ static ah_err_t s_close_notify(ah_mbedtls_client_t* client);
 const ah_tcp_conn_cbs_t ah_i_mbedtls_tcp_conn_cbs = {
     .on_open = s_on_open,
     .on_connect = s_on_connect,
-    .on_read_alloc = s_on_read_alloc,
-    .on_read = s_on_read_data_,
-    .on_write = s_on_write_done,
+    .on_read = s_on_read,
+    .on_write = s_on_write,
     .on_close = s_on_close,
 };
 
@@ -79,7 +77,7 @@ ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* client)
     ah_assert(client != NULL);
 
     mbedtls_ssl_free(&client->_ssl);
-    ah_i_ring_term(&client->_send_ciphertext_queue);
+    ah_i_ring_term(&client->_out_queue_ciphertext);
 
     if (client->_server != NULL) {
         ah_i_tls_server_free_accepted_client(client->_server, client);
@@ -126,7 +124,7 @@ ah_err_t ah_i_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t tr
         ._on_handshake_done_cb = on_handshake_done_cb,
     };
 
-    ah_err_t err = ah_i_ring_init(&client->_send_ciphertext_queue, 4u, sizeof(struct ah_i_mbedtls_send_queue_entry));
+    ah_err_t err = ah_i_ring_init(&client->_out_queue_ciphertext, 4u, sizeof(struct ah_i_mbedtls_send_queue_entry));
     if (err != AH_ENONE) {
         return err;
     }
@@ -167,11 +165,7 @@ ah_err_t ah_i_mbedtls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_s
 static void s_on_open(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
-
-    if (client == NULL) {
-        conn->_cbs->on_open(conn, AH_ESTATE);
-        return;
-    }
+    ah_assert_if_debug(client != NULL);
 
     client->_conn_cbs->on_open(conn, err);
 }
@@ -191,18 +185,10 @@ ah_err_t ah_i_mbedtls_client_connect(void* client_, ah_tcp_conn_t* conn, const a
 static void s_on_connect(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
+    ah_assert_if_debug(client != NULL);
 
-    if (client == NULL) {
-        conn->_cbs->on_connect(conn, AH_ESTATE);
-        return;
-    }
-
-    client->_is_stopping_reads_on_handshake_completion = true;
+    client->_is_handshake_done = false;
     client->_conn_cbs->on_connect(conn, err);
-
-    if (ah_tcp_conn_is_readable_and_writable(conn)) {
-        ah_i_mbedtls_handshake(conn);
-    }
 }
 
 ah_err_t ah_i_mbedtls_client_read_start(void* client_, ah_tcp_conn_t* conn)
@@ -215,66 +201,53 @@ ah_err_t ah_i_mbedtls_client_read_start(void* client_, ah_tcp_conn_t* conn)
         return AH_EINVAL;
     }
 
-    if (!client->_is_handshake_done) {
-        client->_is_stopping_reads_on_handshake_completion = false;
-        return AH_ENONE;
+    ah_err_t err;
+
+    err = ah_tcp_in_alloc_for(&client->_in_plaintext);
+    if (err != AH_ENONE) {
+        return err;
     }
 
-    return client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
+    err = client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
+    if (err != AH_ENONE) {
+        ah_tcp_in_free(client->_in_plaintext);
+        return err;
+    }
+
+    ah_i_mbedtls_handshake(conn);
+
+    return AH_ENONE;
 }
 
-static void s_on_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
+static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
-
-    if (client == NULL) {
-        conn->_cbs->on_read(conn, (ah_buf_t) { 0u }, 0u, AH_ESTATE);
-        return;
-    }
-
-    client->_conn_cbs->on_read_alloc(conn, buf);
-}
-
-static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err)
-{
-    ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
-
-    if (client == NULL) {
-        conn->_cbs->on_read(conn, (ah_buf_t) { 0u }, 0u, AH_ESTATE);
-        return;
-    }
+    ah_assert_if_debug(client != NULL);
 
     if (err != AH_ENONE) {
         goto handle_err;
     }
 
-    client->_recv_ciphertext_buf = buf;
-    ah_buf_limit_size_to(&client->_recv_ciphertext_buf, nread);
+    client->_in_ciphertext = in;
 
-    int res;
-
-    if (client->_is_handshaking_on_next_read_data) {
-        client->_is_handshaking_on_next_read_data = false;
-
+handshake_again:
+    if (!client->_is_handshake_done) {
         ah_i_mbedtls_handshake(conn);
 
-        if (!ah_tcp_conn_is_readable(conn)) {
+        if (!client->_is_handshake_done) {
             return;
         }
     }
 
-    while (ah_buf_get_size(&client->_recv_ciphertext_buf) > 0u) {
-        ah_buf_t recv_plaintext_buf = (ah_buf_t) { 0u };
-        client->_conn_cbs->on_read_alloc(conn, &recv_plaintext_buf);
+    while (ah_rw_is_readable(&client->_in_ciphertext->rw)) {
+        void* buf = client->_in_plaintext->rw.w;
+        size_t len = ah_rw_get_writable_size(&client->_in_plaintext->rw);
 
-        if (ah_buf_is_empty(&recv_plaintext_buf)) {
-            err = AH_ENOBUFS;
-            goto handle_err;
-        }
-
-        // This call will make MbedTLS pull the ciphertext in `client->_recv_ciphertext_buf` through the appropriate
-        // decryption algorithms and write any resulting plaintext to `recv_plaintext_buf`. See also `s_ssl_recv()`.
-        res = mbedtls_ssl_read(&client->_ssl, ah_buf_get_base(&recv_plaintext_buf), ah_buf_get_size(&recv_plaintext_buf));
+        // This call will make MbedTLS pull the ciphertext in
+        // `client->_in_ciphertext` through the appropriate decryption
+        // algorithms and write the result to `client->_in_plaintext`. See also
+        // `ah_i_mbedtls_ssl_on_recv()`.
+        int res = mbedtls_ssl_read(&client->_ssl, buf, len);
 
         if (res <= 0) {
             switch (res) {
@@ -290,14 +263,9 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
                 goto handle_err;
 
             case MBEDTLS_ERR_SSL_WANT_READ:
-                // When more data becomes available, this function will be
-                // called again, and, consequently, so will mbedtls_ssl_read().
-                return;
-
             case MBEDTLS_ERR_SSL_WANT_WRITE:
-                // See MBEDTLS_ERR_SSL_WANT_WRITE case in s_handshake().
-                err = AH_EINTERN;
-                goto handle_err;
+                client->_is_handshake_done = false;
+                goto handshake_again;
 
             default:
                 client->_errs._last_mbedtls_err = res;
@@ -306,13 +274,18 @@ static void s_on_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_e
             }
         }
 
-        client->_conn_cbs->on_read(conn, recv_plaintext_buf, (size_t) res, AH_ENONE);
+        if (!ah_rw_juken(&client->_in_plaintext->rw, (size_t) res)) {
+            err = AH_EINTERN;
+            goto handle_err;
+        }
+
+        client->_conn_cbs->on_read(conn, client->_in_plaintext, AH_ENONE);
     }
 
     return;
 
 handle_err:
-    client->_conn_cbs->on_read(conn, (ah_buf_t) { 0u }, 0u, err);
+    client->_conn_cbs->on_read(conn, NULL, err);
 }
 
 ah_err_t ah_i_mbedtls_client_read_stop(void* client_, ah_tcp_conn_t* conn)
@@ -325,12 +298,14 @@ ah_err_t ah_i_mbedtls_client_read_stop(void* client_, ah_tcp_conn_t* conn)
         return AH_EINVAL;
     }
 
-    if (!client->_is_handshake_done) {
-        client->_is_stopping_reads_on_handshake_completion = true;
-        return AH_ENONE;
+    ah_err_t err = client->_trans.vtab->conn_read_stop(client->_trans.ctx, conn);
+    if (err != AH_ENONE) {
+        return err;
     }
 
-    return client->_trans.vtab->conn_read_stop(client->_trans.ctx, conn);
+    ah_tcp_in_free(client->_in_plaintext);
+
+    return AH_ENONE;
 }
 
 ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
@@ -352,29 +327,25 @@ ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_ou
         return ah_i_mbedtls_res_to_err(&client->_errs, res);
     }
 
-    // mbedtls_ssl_write() calls ah_i_mbedtls_ssl_on_send(), which adds a new entry of unset kind to the send queue.
-    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_send_ciphertext_queue);
+    // mbedtls_ssl_write() calls ah_i_mbedtls_ssl_on_send(), which adds a new
+    // entry of the normal kind to the send queue.
+    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_out_queue_ciphertext);
     if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
         return AH_EINTERN;
     }
-    entry->kind = S_SEND_QUEUE_ENTRY_KIND_NORMAL;
 
-    // We guarantee that all of out is written every time.
+    // We guarantee that all data in out is written every time.
     ah_assert_if_debug(ah_buf_get_size(&out->buf) == (size_t) res);
 
     return AH_ENONE;
 }
 
-static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
+static void s_on_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
 {
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
+    ah_assert_if_debug(client != NULL);
 
-    if (client == NULL) {
-        conn->_cbs->on_write(conn, AH_ESTATE);
-        return;
-    }
-
-    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_send_ciphertext_queue);
+    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_out_queue_ciphertext);
     if (entry == NULL) {
         if (err == AH_ENONE) {
             err = AH_EINTERN;
@@ -382,15 +353,13 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
         goto handle_err;
     }
 
-    unsigned entry_kind = entry->kind;
-
-    ah_i_ring_skip(&client->_send_ciphertext_queue);
+    ah_i_ring_skip(&client->_out_queue_ciphertext);
 
     if (err != AH_ENONE) {
         goto handle_err;
     }
 
-    if (entry_kind == S_SEND_QUEUE_ENTRY_KIND_SHUTDOWN_WR) {
+    if (entry->kind == S_SEND_QUEUE_ENTRY_KIND_SHUTDOWN_WR) {
         ah_assert_if_debug(client->_trans.vtab != NULL);
         ah_assert_if_debug(client->_trans.vtab->conn_shutdown != NULL);
 
@@ -413,7 +382,7 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
             goto handle_err;
         }
     }
-    else if (entry_kind == S_SEND_QUEUE_ENTRY_KIND_CLOSE) {
+    else if (entry->kind == S_SEND_QUEUE_ENTRY_KIND_CLOSE) {
         ah_assert_if_debug(client->_trans.vtab != NULL);
         ah_assert_if_debug(client->_trans.vtab->conn_close != NULL);
 
@@ -441,7 +410,7 @@ static void s_on_write_done(ah_tcp_conn_t* conn, ah_err_t err)
     }
 
 handle_err:
-    client->_conn_cbs->on_write(conn, err);
+    client->_conn_cbs->on_write(conn, out, err);
 }
 
 ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
@@ -462,7 +431,7 @@ ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp
             return err;
         }
         // s_close_notify() calls ah_i_mbedtls_ssl_on_send(), which adds a new entry of unset kind to the send queue.
-        struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_send_ciphertext_queue);
+        struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_out_queue_ciphertext);
         if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
             return AH_EINTERN;
         }
@@ -507,7 +476,7 @@ ah_err_t ah_i_mbedtls_client_close(void* client_, ah_tcp_conn_t* conn)
 
         if (err == AH_ENONE) {
             // s_close_notify() calls ah_i_mbedtls_ssl_on_send(), which adds a new entry of unset kind to the send queue.
-            struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_send_ciphertext_queue);
+            struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_peek(&client->_out_queue_ciphertext);
             if (entry == NULL || entry->kind != S_SEND_QUEUE_ENTRY_KIND_NORMAL) {
                 return AH_EINTERN;
             }
@@ -523,13 +492,11 @@ ah_err_t ah_i_mbedtls_client_close(void* client_, ah_tcp_conn_t* conn)
 static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 {
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
+    ah_assert_if_debug(client != NULL);
 
-    if (client == NULL) {
-        conn->_cbs->on_close(conn, AH_ESTATE);
-        return;
+    if (client->_server != NULL) {
+        ah_mbedtls_client_term(client);
     }
-
-    ah_mbedtls_client_term(client);
 
     client->_conn_cbs->on_close(conn, err);
 }
@@ -537,11 +504,7 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 void ah_i_mbedtls_handshake(ah_tcp_conn_t* conn)
 {
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
-
-    if (client == NULL) {
-        conn->_cbs->on_write(conn, AH_ESTATE);
-        return;
-    }
+    ah_assert_if_debug(client != NULL);
 
     int res;
     ah_err_t err;
@@ -551,15 +514,6 @@ void ah_i_mbedtls_handshake(ah_tcp_conn_t* conn)
     switch (res) {
     case 0:
         client->_is_handshake_done = true;
-
-        if (client->_is_stopping_reads_on_handshake_completion) {
-            client->_is_stopping_reads_on_handshake_completion = false;
-            err = ah_tcp_conn_read_stop(conn);
-            if (err != AH_ENONE) {
-                err = AH_EINTERN;
-                break;
-            }
-        }
 
         const mbedtls_x509_crt* peer_cert;
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
@@ -572,25 +526,8 @@ void ah_i_mbedtls_handshake(ah_tcp_conn_t* conn)
         return;
 
     case MBEDTLS_ERR_SSL_WANT_READ:
-        client->_is_handshaking_on_next_read_data = true;
-        if (ah_tcp_conn_is_reading(conn)) {
-            return;
-        }
-        err = client->_trans.vtab->conn_read_start(client->_trans.ctx, conn);
-        if (err != AH_ENONE) {
-            break;
-        }
-        return;
-
     case MBEDTLS_ERR_SSL_WANT_WRITE:
-        // As of MbedTLS versions 2.28.0 and 3.1.0, this result code is only
-        // possible if either of the send or receive callbacks set via
-        // mbedtls_ssl_set_bio() return it. None of our callbacks (s_ssl_recv()
-        // and ah_i_mbedtls_ssl_on_send()) do. We, therefore, hope that this behavior will
-        // remain consistent across future versions and treat the occurrence of
-        // this result code as an internal error.
-        err = AH_EINTERN;
-        break;
+        return;
 
     case MBEDTLS_ERR_ERROR_GENERIC_ERROR:
         if (client->_errs._pending_ah_err != AH_ENONE) {
@@ -632,7 +569,7 @@ int ah_i_mbedtls_ssl_on_send(void* conn_, const unsigned char* buf, size_t len)
         goto handle_err;
     }
 
-    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_alloc(&client->_send_ciphertext_queue);
+    struct ah_i_mbedtls_send_queue_entry* entry = ah_i_ring_alloc(&client->_out_queue_ciphertext);
     if (entry == NULL) {
         err = AH_ENOMEM;
         goto handle_err;
@@ -679,7 +616,7 @@ int ah_i_mbedtls_ssl_on_recv(void* conn_, unsigned char* buf, size_t len)
         goto handle_err;
     }
 
-    size_t n_available_bytes = ah_buf_get_size(&client->_recv_ciphertext_buf);
+    size_t n_available_bytes = ah_rw_get_readable_size(&client->_in_ciphertext->rw);
     if (n_available_bytes == 0u) {
         return MBEDTLS_ERR_SSL_WANT_READ;
     }
@@ -691,9 +628,12 @@ int ah_i_mbedtls_ssl_on_recv(void* conn_, unsigned char* buf, size_t len)
         len = INT_MAX;
     }
 
-    memcpy(buf, ah_buf_get_base(&client->_recv_ciphertext_buf), len);
+    memcpy(buf, client->_in_ciphertext->rw.r, len);
 
-    ah_buf_skipn(&client->_recv_ciphertext_buf, len);
+    if (!ah_rw_skipn(&client->_in_ciphertext->rw, len)) {
+        err = AH_EINTERN;
+        goto handle_err;
+    }
 
     return (int) len;
 

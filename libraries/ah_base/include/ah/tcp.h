@@ -113,10 +113,11 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 
+ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr);
 ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in);
 
 // Must only be called after successful call to ah_tcp_in_detach() with same `in`.
-ah_extern ah_err_t ah_tcp_in_free(ah_tcp_in_t* in);
+ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
 
 ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
 

@@ -239,18 +239,19 @@ ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in)
     return ah_i_tcp_in_detach(in);
 }
 
-ah_extern ah_err_t ah_tcp_in_free(ah_tcp_in_t* in)
+ah_extern void ah_tcp_in_free(ah_tcp_in_t* in)
 {
-    if (in == NULL) {
+    if (in != NULL) {
+        ah_i_tcp_in_free(in);
+    }
+}
+
+ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
+{
+    if (owner_ptr == NULL) {
         return AH_EINVAL;
     }
-    if (in->_owner_ptr != NULL) {
-        return AH_ESTATE;
-    }
-
-    ah_i_tcp_in_free(in);
-
-    return AH_ENONE;
+    return ah_i_tcp_in_alloc_for(owner_ptr);
 }
 
 ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in)
@@ -274,8 +275,13 @@ ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void)
     ah_tcp_out_t* out = (void*) page;
 
     *out = (ah_tcp_out_t) {
-        .buf = ah_buf_from(&page[sizeof(ah_tcp_out_t)], AH_PSIZE),
+        .buf = ah_buf_from(&page[sizeof(ah_tcp_out_t)], AH_PSIZE - sizeof(ah_tcp_out_t)),
     };
+
+    if (ah_buf_get_size(&out->buf) > AH_PSIZE) {
+        ah_pfree(page);
+        return NULL;
+    }
 
     return out;
 }

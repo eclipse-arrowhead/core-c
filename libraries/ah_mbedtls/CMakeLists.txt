@@ -26,6 +26,8 @@ target_link_libraries(ah_mbedtls PUBLIC ah_base MbedTLS::mbedtls)
 
 set(
     TEST_FILES
+    test/certs.c
+    test/certs.h
     test/main.c
     test/test-mbedtls.c
 )

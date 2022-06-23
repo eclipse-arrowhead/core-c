@@ -5,12 +5,13 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/mbedtls.h"
+#include "ah/sock.h"
+#include "certs.h"
 
 #include <ah/err.h>
 #include <ah/loop.h>
 #include <ah/tcp.h>
 #include <ah/unit.h>
-#include <mbedtls/certs.h>
 #include <mbedtls/debug.h>
 #include <mbedtls/error.h>
 
@@ -26,7 +27,6 @@ struct s_tcp_conn_user_data {
     bool did_call_connect_cb;
     bool did_call_handshake_done_cb;
     bool did_call_close_cb;
-    bool did_call_read_alloc_cb;
     bool did_call_read_cb;
     bool did_call_write_cb;
 
@@ -37,13 +37,11 @@ struct s_tcp_listener_user_data {
     ah_sockaddr_t addr;
     ah_tcp_conn_t* conn;
 
-    ah_tcp_conn_t* free_conn;
     struct s_tcp_conn_user_data accept_user_data;
 
     bool did_call_open_cb;
     bool did_call_listen_cb;
     bool did_call_close_cb;
-    bool did_call_conn_alloc_cb;
     bool did_call_accept_cb;
 
     ah_unit_t* unit;
@@ -60,14 +58,12 @@ static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err);
 static void s_on_conn_handshake_done(ah_tcp_conn_t* conn, const mbedtls_x509_crt* peer_chain, ah_err_t err);
 static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf);
-static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err);
-static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
+static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
 
 static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err);
 static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err);
-static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn);
 static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
 static void s_print_mbedtls_err_if_any(ah_unit_t* unit, ah_tcp_conn_t* conn, ah_err_t err);
@@ -75,16 +71,14 @@ static const ah_tcp_conn_cbs_t s_conn_cbs = {
     .on_open = s_on_conn_open,
     .on_connect = s_on_conn_connect,
     .on_close = s_on_conn_close,
-    .on_read_alloc = s_on_conn_read_alloc,
-    .on_read = s_on_conn_read_data,
-    .on_write = s_on_conn_write_done,
+    .on_read = s_on_conn_read,
+    .on_write = s_on_conn_write,
 };
 
 static const ah_tcp_listener_cbs_t s_listener_cbs = {
     .on_open = s_on_listener_open,
     .on_listen = s_on_listener_listen,
     .on_close = s_on_listener_close,
-    .on_conn_alloc = s_on_listener_conn_alloc,
     .on_accept = s_on_listener_conn_accept,
 };
 
@@ -153,14 +147,14 @@ static void s_on_conn_handshake_done(ah_tcp_conn_t* conn, const mbedtls_x509_crt
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
     if (ah_buf_is_empty(&user_data->send_msg.buf)) {
         // Peer is connection/client.
-        if (ah_unit_assert_unsigned_eq(unit, peer_chain->raw.len, mbedtls_test_srv_crt_len)) {
-            (void) ah_unit_assert_mem_eq(unit, peer_chain->raw.p, mbedtls_test_srv_crt, peer_chain->raw.len);
+        if (ah_unit_assert_unsigned_eq(unit, peer_chain->raw.len, ah_i_mbedtls_test_srv_crt_size)) {
+            (void) ah_unit_assert_mem_eq(unit, peer_chain->raw.p, ah_i_mbedtls_test_srv_crt_data, peer_chain->raw.len);
         }
     }
     else {
         // Peer is listener/server.
-        if (ah_unit_assert_unsigned_eq(unit, peer_chain->raw.len, mbedtls_test_cli_crt_len)) {
-            (void) ah_unit_assert_mem_eq(unit, peer_chain->raw.p, mbedtls_test_cli_crt, peer_chain->raw.len);
+        if (ah_unit_assert_unsigned_eq(unit, peer_chain->raw.len, ah_i_mbedtls_test_cln_crt_size)) {
+            (void) ah_unit_assert_mem_eq(unit, peer_chain->raw.p, ah_i_mbedtls_test_cln_crt_data, peer_chain->raw.len);
         }
     }
 #else
@@ -220,16 +214,7 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_conn_read_alloc(ah_tcp_conn_t* conn, ah_buf_t* buf)
-{
-    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
-
-    *buf = ah_buf_from(malloc(4096u), 4096u);
-
-    user_data->did_call_read_alloc_cb = true;
-}
-
-static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread, ah_err_t err)
+static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
@@ -240,20 +225,19 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread,
         return;
     }
 
-    if (!ah_unit_assert(unit, ah_buf_get_base_const(&buf) != NULL, "ah_buf_get_base_const(buf) == NULL")) {
+    if (!ah_unit_assert(unit, in != NULL, "ah_buf_get_base_const(buf) == NULL")) {
         return;
     }
 
-    if (!ah_unit_assert_unsigned_eq(unit, 18u, nread)) {
+    if (!ah_unit_assert_unsigned_eq(unit, 18u, ah_rw_get_readable_size(&in->rw))) {
         return;
     }
 
-    if (!ah_unit_assert_unsigned_eq(unit, 24u, ah_buf_get_size(&buf))) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) &in->rw.r)) {
         return;
     }
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base_const(&buf))) {
-        return;
-    }
+
+    ah_rw_skip_all(&in->rw);
 
     ah_err_t err0 = ah_tcp_conn_close(conn);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err0)) {
@@ -263,8 +247,10 @@ static void s_on_conn_read_data(ah_tcp_conn_t* conn, ah_buf_t buf, size_t nread,
     user_data->did_call_read_cb = true;
 }
 
-static void s_on_conn_write_done(ah_tcp_conn_t* conn, ah_err_t err)
+static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
 {
+    (void) out;
+
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_t* unit = user_data->unit;
@@ -352,20 +338,6 @@ static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_listener_conn_alloc(ah_tcp_listener_t* ln, ah_tcp_conn_t** conn)
-{
-    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
-
-    if (!ah_unit_assert(user_data->unit, user_data->free_conn != NULL, "no free connection can be allocated")) {
-        return;
-    }
-
-    *conn = user_data->free_conn;
-    user_data->free_conn = NULL;
-
-    user_data->did_call_conn_alloc_cb = true;
-}
-
 static void s_on_listener_conn_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
@@ -417,7 +389,6 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     };
 
     struct s_tcp_listener_user_data ln_user_data = {
-        .free_conn = &(ah_tcp_conn_t) { 0u },
         .accept_user_data = (struct s_tcp_conn_user_data) {
             .close_call_counter = &close_call_counter,
             .send_msg = (ah_tcp_out_t) {
@@ -457,13 +428,13 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_x509_crt ln_own_cert;
     mbedtls_x509_crt_init(&ln_own_cert);
-    res = mbedtls_x509_crt_parse(&ln_own_cert, (const unsigned char*) mbedtls_test_srv_crt, mbedtls_test_srv_crt_len);
+    res = mbedtls_x509_crt_parse(&ln_own_cert, ah_i_mbedtls_test_srv_crt_data, ah_i_mbedtls_test_srv_crt_size);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_x509_crt_parse() returned %d; %s", res, errbuf);
         return;
     }
-    res = mbedtls_x509_crt_parse(&ln_own_cert, (const unsigned char*) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len);
+    res = mbedtls_x509_crt_parse(&ln_own_cert, ah_i_mbedtls_test_srv_ca_data, ah_i_mbedtls_test_srv_ca_size);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_x509_crt_parse() returned %d; %s", res, errbuf);
@@ -472,7 +443,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_pk_context ln_own_pk;
     mbedtls_pk_init(&ln_own_pk);
-    res = mbedtls_pk_parse_key(&ln_own_pk, (const unsigned char*) mbedtls_test_srv_key, mbedtls_test_srv_key_len, NULL, 0);
+    res = mbedtls_pk_parse_key(&ln_own_pk, ah_i_mbedtls_test_srv_key_data, ah_i_mbedtls_test_srv_key_size, NULL, 0, mbedtls_ctr_drbg_random, &ln_ctr_drbg);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_pk_parse_key() returned %d; %s", res, errbuf);
@@ -535,7 +506,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_x509_crt conn_cacert;
     mbedtls_x509_crt_init(&conn_cacert);
-    res = mbedtls_x509_crt_parse(&conn_cacert, (const unsigned char*) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len);
+    res = mbedtls_x509_crt_parse(&conn_cacert, ah_i_mbedtls_test_cln_ca_data, ah_i_mbedtls_test_cln_ca_size);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_x509_crt_parse() returned %d; %s", res, errbuf);
@@ -544,7 +515,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_x509_crt conn_own_cert;
     mbedtls_x509_crt_init(&conn_own_cert);
-    res = mbedtls_x509_crt_parse(&conn_own_cert, (const unsigned char*) mbedtls_test_cli_crt, mbedtls_test_cli_crt_len);
+    res = mbedtls_x509_crt_parse(&conn_own_cert, ah_i_mbedtls_test_cln_crt_data, ah_i_mbedtls_test_cln_crt_size);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_x509_crt_parse() returned %d; %s", res, errbuf);
@@ -553,7 +524,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_pk_context conn_own_pk;
     mbedtls_pk_init(&conn_own_pk);
-    res = mbedtls_pk_parse_key(&conn_own_pk, (const unsigned char*) mbedtls_test_cli_key, mbedtls_test_cli_key_len, NULL, 0);
+    res = mbedtls_pk_parse_key(&conn_own_pk, ah_i_mbedtls_test_cln_key_data, ah_i_mbedtls_test_cln_key_size, NULL, 0, mbedtls_ctr_drbg_random, &conn_ctr_drbg);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_pk_parse_key() returned %d; %s", res, errbuf);
@@ -620,7 +591,6 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     (void) ah_unit_assert(unit, conn_data->did_call_connect_cb, "`conn` s_on_conn_connect() not called");
     (void) ah_unit_assert(unit, conn_data->did_call_handshake_done_cb, "`conn` s_on_conn_handshake_done() not called");
     (void) ah_unit_assert(unit, conn_data->did_call_close_cb, "`conn` s_on_conn_close() not called");
-    (void) ah_unit_assert(unit, conn_data->did_call_read_alloc_cb, "`conn` s_on_conn_read_alloc() not called");
     (void) ah_unit_assert(unit, conn_data->did_call_read_cb, "`conn` s_on_conn_read_data() not called");
     (void) ah_unit_assert(unit, !conn_data->did_call_write_cb, "`conn` s_on_conn_write_done() was called");
 
@@ -628,7 +598,6 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     (void) ah_unit_assert(unit, ln_data->did_call_open_cb, "`ln` s_on_listener_open() not called");
     (void) ah_unit_assert(unit, ln_data->did_call_listen_cb, "`ln` s_on_listener_listen() not called");
     (void) ah_unit_assert(unit, ln_data->did_call_close_cb, "`ln` s_on_listener_close() not called");
-    (void) ah_unit_assert(unit, ln_data->did_call_conn_alloc_cb, "`ln` s_on_listener_conn_alloc() not called");
     (void) ah_unit_assert(unit, ln_data->did_call_accept_cb, "`ln` s_on_listener_conn_accept() not called");
 
     struct s_tcp_conn_user_data* acc_data = &ln_data->accept_user_data;
@@ -636,7 +605,6 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     (void) ah_unit_assert(unit, !acc_data->did_call_connect_cb, "`acc` s_on_conn_connect() was called");
     (void) ah_unit_assert(unit, acc_data->did_call_handshake_done_cb, "`acc` s_on_conn_handshake_done() not called");
     (void) ah_unit_assert(unit, acc_data->did_call_close_cb, "`acc` s_on_conn_close() not called");
-    (void) ah_unit_assert(unit, !acc_data->did_call_read_alloc_cb, "`acc` s_on_conn_read_alloc() was called");
     (void) ah_unit_assert(unit, !acc_data->did_call_read_cb, "`acc` s_on_conn_read_data() was called");
     (void) ah_unit_assert(unit, acc_data->did_call_write_cb, "`acc` s_on_conn_write_done() not called");
 
