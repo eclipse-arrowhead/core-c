@@ -25,6 +25,7 @@ struct ah_i_ring {
 ah_err_t ah_i_ring_init(struct ah_i_ring* ring, size_t initial_entry_capacity, size_t entry_size);
 void* ah_i_ring_alloc(struct ah_i_ring* ring);
 void* ah_i_ring_peek(struct ah_i_ring* ring);
+void* ah_i_ring_pop(struct ah_i_ring* ring);
 void ah_i_ring_skip(struct ah_i_ring* ring);
 void ah_i_ring_term(struct ah_i_ring* ring);
 

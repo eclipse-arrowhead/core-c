@@ -22,6 +22,7 @@ ah_err_t ah_i_ring_init(struct ah_i_ring* ring, size_t initial_entry_capacity, s
         return AH_ENOMEM;
     }
 
+    ring->_entry_size = entry_size;
     ring->_offset_start = ah_malloc(initial_entry_capacity_in_bytes);
     if (ring->_offset_start == NULL) {
         return AH_ENOMEM;
@@ -110,6 +111,25 @@ void* ah_i_ring_peek(struct ah_i_ring* ring)
     return ring->_offset_read;
 }
 
+void* ah_i_ring_pop(struct ah_i_ring* ring)
+{
+    ah_assert_if_debug(ring != NULL);
+
+    if (ring->_offset_read == ring->_offset_write) {
+        return NULL;
+    }
+
+     void* entry = ring->_offset_read;
+
+     void* offset_read = &((uint8_t*) ring->_offset_read)[ring->_entry_size];
+     if (offset_read == ring->_offset_end) {
+         offset_read = ring->_offset_start;
+     }
+     ring->_offset_read = offset_read;
+
+     return entry;
+}
+
 void ah_i_ring_skip(struct ah_i_ring* ring)
 {
     ah_assert_if_debug(ring != NULL);
@@ -122,6 +142,7 @@ void ah_i_ring_skip(struct ah_i_ring* ring)
     if (offset_read == ring->_offset_end) {
         offset_read = ring->_offset_start;
     }
+    ring->_offset_read = offset_read;
 }
 
 void ah_i_ring_term(struct ah_i_ring* ring)

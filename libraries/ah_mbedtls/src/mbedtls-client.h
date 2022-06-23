@@ -23,7 +23,7 @@ ah_err_t ah_i_mbedtls_client_close(void* client_, ah_tcp_conn_t* conn);
 
 void ah_i_mbedtls_handshake(ah_tcp_conn_t* conn);
 
-int ah_i_mbedtls_ssl_on_send(void* conn_, const unsigned char* buf, size_t len);
-int ah_i_mbedtls_ssl_on_recv(void* conn_, unsigned char* buf, size_t len);
+int ah_i_mbedtls_client_write_ciphertext(void* conn_, const unsigned char* buf, size_t len);
+int ah_i_mbedtls_client_read_ciphertext(void* conn_, unsigned char* buf, size_t len);
 
 #endif

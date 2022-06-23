@@ -203,16 +203,10 @@ static void s_listener_on_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, con
 
     conn->_trans.ctx = client;
 
-    mbedtls_ssl_set_bio(&client->_ssl, conn, ah_i_mbedtls_ssl_on_send, ah_i_mbedtls_ssl_on_recv, NULL);
+    mbedtls_ssl_set_bio(&client->_ssl, conn, ah_i_mbedtls_client_write_ciphertext, ah_i_mbedtls_client_read_ciphertext, NULL);
 
 handle_err:
     server->_ln_cbs->on_accept(ln, conn, raddr, err);
-
-    if (err != AH_ENONE || !ah_tcp_conn_is_readable_and_writable(conn)) {
-        return;
-    }
-
-    ah_i_mbedtls_handshake(conn);
 }
 
 static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err)
