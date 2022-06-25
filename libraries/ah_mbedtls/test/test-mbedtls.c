@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/mbedtls.h"
-#include "ah/sock.h"
 #include "certs.h"
 
 #include <ah/err.h>
@@ -14,6 +13,7 @@
 #include <ah/unit.h>
 #include <mbedtls/debug.h>
 #include <mbedtls/error.h>
+#include <mbedtls/version.h>
 
 struct s_tcp_conn_user_data {
     const ah_sockaddr_t* ln_addr;
@@ -448,7 +448,11 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_pk_context ln_own_pk;
     mbedtls_pk_init(&ln_own_pk);
+#if MBEDTLS_VERSION_MAJOR >= 3
     res = mbedtls_pk_parse_key(&ln_own_pk, ah_i_mbedtls_test_srv_key_data, ah_i_mbedtls_test_srv_key_size, NULL, 0, mbedtls_ctr_drbg_random, &ln_ctr_drbg);
+#else
+    res = mbedtls_pk_parse_key(&ln_own_pk, ah_i_mbedtls_test_srv_key_data, ah_i_mbedtls_test_srv_key_size, NULL, 0);
+#endif
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_pk_parse_key() returned %d; %s", res, errbuf);
@@ -529,7 +533,11 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_pk_context conn_own_pk;
     mbedtls_pk_init(&conn_own_pk);
-    res = mbedtls_pk_parse_key(&conn_own_pk, ah_i_mbedtls_test_cln_key_data, ah_i_mbedtls_test_cln_key_size, NULL, 0, mbedtls_ctr_drbg_random, &conn_ctr_drbg);
+#if MBEDTLS_VERSION_MAJOR >= 3
+    res = mbedtls_pk_parse_key(&ln_own_pk, ah_i_mbedtls_test_srv_key_data, ah_i_mbedtls_test_srv_key_size, NULL, 0, mbedtls_ctr_drbg_random, &ln_ctr_drbg);
+#else
+    res = mbedtls_pk_parse_key(&ln_own_pk, ah_i_mbedtls_test_srv_key_data, ah_i_mbedtls_test_srv_key_size, NULL, 0);
+#endif
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_pk_parse_key() returned %d; %s", res, errbuf);

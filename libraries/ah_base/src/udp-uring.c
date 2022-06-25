@@ -30,14 +30,15 @@ ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
         return AH_ESTATE;
     }
 
-    ah_udp_in_t* in = ah_i_udp_in_alloc();
-    if (in == NULL) {
-        return AH_ENOMEM;
+    ah_err_t err;
+
+    err = ah_i_udp_in_alloc_for(&sock->_in);
+    if (err != AH_ENONE) {
+        return err;
     }
 
-    in->raddr = &sock->_recv_addr;
+    sock->_in->raddr = &sock->_recv_addr;
 
-    sock->_in = in;
     sock->_recv_msghdr = (struct msghdr) {
         .msg_name = ah_i_sockaddr_into_bsd(&sock->_recv_addr),
         .msg_namelen = sizeof(ah_sockaddr_t),
@@ -45,9 +46,9 @@ ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
         .msg_iovlen = 1u,
     };
 
-    ah_err_t err = s_sock_recv_prep(sock);
+    err = s_sock_recv_prep(sock);
     if (err != AH_ENONE) {
-        ah_i_udp_in_free(in);
+        ah_i_udp_in_free(sock->_in);
         return err;
     }
 
@@ -113,27 +114,11 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
-    sock->_in->buf._base -= sock->_in->nread;
-    sock->_in->buf._size += sock->_in->nread;
-    sock->_in->nread += (size_t) cqe->res;
+    sock->_in->nread = (size_t) cqe->res;
 
-    size_t n_to_retain = sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
+    sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
 
-    if (n_to_retain == AH_UDP_IN_FORGET) {
-        if (sock->_state == AH_I_UDP_SOCK_STATE_RECEIVING) {
-            ah_udp_in_t* in_new = ah_i_udp_in_alloc();
-            if (in_new == NULL) {
-                err = AH_ENOMEM;
-                goto report_err;
-            }
-            sock->_in = in_new;
-        }
-    }
-    else {
-        if (n_to_retain <= sock->_in->nread) {
-            sock->_in->nread = n_to_retain;
-        }
-    }
+    ah_i_udp_in_reset(sock->_in);
 
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return;
