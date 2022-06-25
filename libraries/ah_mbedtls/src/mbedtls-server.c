@@ -124,11 +124,7 @@ ah_err_t ah_i_tls_server_open(void* server_, ah_tcp_listener_t* ln, const ah_soc
 static void s_listener_on_open(ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
-
-    if (server == NULL) {
-        ln->_cbs->on_open(ln, AH_ESTATE);
-        return;
-    }
+    ah_assert_if_debug(server != NULL);
 
     server->_ln_cbs->on_open(ln, err);
 }
@@ -151,11 +147,7 @@ ah_err_t ah_i_tls_server_listen(void* server_, ah_tcp_listener_t* ln, unsigned b
 static void s_listener_on_listen(ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
-
-    if (server == NULL) {
-        ln->_cbs->on_listen(ln, AH_ESTATE);
-        return;
-    }
+    ah_assert_if_debug(server != NULL);
 
     server->_ln_cbs->on_listen(ln, err);
 }
@@ -176,11 +168,7 @@ ah_err_t ah_i_tls_server_close(void* server_, ah_tcp_listener_t* ln)
 static void s_listener_on_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
-
-    if (server == NULL) {
-        ln->_cbs->on_accept(ln, NULL, NULL, AH_ESTATE);
-        return;
-    }
+    ah_assert_if_debug(server != NULL);
 
     if (err != AH_ENONE) {
         goto handle_err;
@@ -212,11 +200,7 @@ handle_err:
 static void s_listener_on_close(ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_mbedtls_server_t* server = ah_mbedtls_listener_get_server(ln);
-
-    if (server == NULL) {
-        ln->_cbs->on_close(ln, AH_ESTATE);
-        return;
-    }
+    ah_assert_if_debug(server != NULL);
 
     server->_ln_cbs->on_close(ln, err);
 }

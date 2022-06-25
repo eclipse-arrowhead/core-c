@@ -331,12 +331,17 @@ ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_ou
     entry->_state = S_SEND_QUEUE_ENTRY_STATE_PENDING;
 
     int res = mbedtls_ssl_write(&client->_ssl, ah_buf_get_base(&out->buf), ah_buf_get_size(&out->buf));
-    if (res == MBEDTLS_ERR_SSL_WANT_READ || res == MBEDTLS_ERR_SSL_WANT_WRITE) {
-        ah_i_mbedtls_handshake(conn);
-        return AH_ERECONN;
-    }
-    else if (res < 0) {
-        return ah_i_mbedtls_res_to_err(&client->_errs, res);
+    if (res < 0) {
+        switch (res) {
+        case MBEDTLS_ERR_SSL_WANT_READ:
+            return AH_ERECONN;
+
+        case MBEDTLS_ERR_SSL_WANT_WRITE:
+            return AH_ENONE;
+
+        default:
+            return ah_i_mbedtls_res_to_err(&client->_errs, res);
+        }
     }
 
     // We guarantee that all data in out is written every time.
@@ -463,6 +468,9 @@ static ah_err_t s_close_notify(ah_mbedtls_client_t* client, uint8_t kind)
     int res = mbedtls_ssl_close_notify(&client->_ssl);
 
     if (res < 0) {
+        if (res == MBEDTLS_ERR_SSL_WANT_WRITE) {
+            return AH_ENONE;
+        }
         return ah_i_mbedtls_res_to_err(&client->_errs, res);
     }
 
