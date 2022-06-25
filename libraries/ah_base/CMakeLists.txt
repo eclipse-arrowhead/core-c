@@ -139,7 +139,7 @@ target_include_directories(
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     include(FindLiburing)
-    target_link_libraries(ah_base liburing::liburing)
+    target_link_libraries(ah_base PRIVATE liburing::liburing)
 endif ()
 
 add_custom_target(mkdir_generated
