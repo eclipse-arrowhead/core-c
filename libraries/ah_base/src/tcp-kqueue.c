@@ -186,12 +186,12 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
 
-        if (!ah_rw_is_readable(&conn->_in->rw)) {
-            ah_i_tcp_in_reset(conn->_in);
-        }
-
         if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
             return;
+        }
+
+        if (!ah_rw_is_readable(&conn->_in->rw)) {
+            ah_i_tcp_in_reset(conn->_in);
         }
 
         n_bytes_left -= (size_t) nread;
@@ -373,19 +373,32 @@ ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn)
         }
     }
 
-    if (conn->_read_evt != NULL) {
-        ah_i_loop_evt_dealloc(conn->_loop, conn->_read_evt);
-    }
-
 #ifndef NDEBUG
     conn->_fd = 0;
 #endif
 
-    if (conn->_in != NULL) {
-        ah_i_tcp_in_free(conn->_in);
+    conn->_cbs->on_close(conn, err);
+
+    if (conn->_read_evt != NULL) {
+        ah_i_loop_evt_dealloc(conn->_loop, conn->_read_evt);
+#ifndef NDEBUG
+        conn->_read_evt = NULL;
+#endif
     }
 
-    conn->_cbs->on_close(conn, err);
+    if (conn->_in != NULL) {
+        ah_i_tcp_in_free(conn->_in);
+#ifndef NDEBUG
+        conn->_in = NULL;
+#endif
+    }
+
+    if (conn->_owning_slab != NULL) {
+        ah_i_slab_free(conn->_owning_slab, conn);
+#ifndef NDEBUG
+        conn->_owning_slab = NULL;
+#endif
+    }
 
     return AH_ENONE;
 }
@@ -443,12 +456,14 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
     ah_tcp_listener_t* ln = evt->_subject;
     ah_assert_if_debug(ln != NULL);
 
+    ah_err_t err;
+
     if (ah_unlikely((kev->flags & EV_ERROR) != 0)) {
-        ln->_cbs->on_listen(ln, (ah_err_t) kev->data);
-        return;
+        err = (ah_err_t) kev->data;
+        goto handle_err;
     }
 
-    for (int64_t i = 0; i < kev->data; i += 1) {
+    for (int64_t i = 0; i < kev->data && ln->_state == AH_I_TCP_LISTENER_STATE_LISTENING; i += 1) {
         ah_tcp_conn_t* conn = ah_i_slab_alloc(&ln->_conn_slab);
         if (conn == NULL) {
             ln->_cbs->on_accept(ln, NULL, NULL, AH_ENOMEM);
@@ -460,8 +475,8 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         const int fd = accept(ln->_fd, ah_i_sockaddr_into_bsd(&sockaddr), &socklen);
         if (fd == -1) {
-            ln->_cbs->on_accept(ln, NULL, NULL, errno);
-            continue;
+            err = errno;
+            goto handle_err;
         }
 
 #if AH_I_SOCKADDR_HAS_SIZE
@@ -482,8 +497,14 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
     }
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
-        ln->_cbs->on_listen(ln, (ah_err_t) kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF);
+        err = (ah_err_t) kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
+        goto handle_err;
     }
+
+    return;
+
+handle_err:
+    ln->_cbs->on_accept(ln, NULL, NULL, err);
 }
 
 ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln)

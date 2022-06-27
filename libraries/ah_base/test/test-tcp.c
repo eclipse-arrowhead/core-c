@@ -30,7 +30,6 @@ struct s_tcp_listener_user_data {
     ah_sockaddr_t addr;
     ah_tcp_conn_t* conn;
 
-    ah_tcp_conn_t* free_conn;
     struct s_tcp_conn_user_data accept_user_data;
     ah_tcp_out_t conn_msg;
 
@@ -318,7 +317,6 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     };
 
     struct s_tcp_listener_user_data ln_user_data = {
-        .free_conn = &(ah_tcp_conn_t) { 0u },
         .accept_user_data = (struct s_tcp_conn_user_data) {
             .close_call_counter = &close_call_counter,
             .unit = unit,
@@ -374,6 +372,13 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
         return;
     }
     err = ah_loop_run_until(&loop, &deadline);
+    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+        return;
+    }
+
+    // Perform final cleanups.
+
+    err = ah_tcp_listener_term(&ln);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

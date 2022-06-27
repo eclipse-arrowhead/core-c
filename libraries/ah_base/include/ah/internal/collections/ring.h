@@ -15,14 +15,14 @@
 #include <stdlib.h>
 
 struct ah_i_ring {
-    size_t _entry_size;
-    void* _offset_start;
-    void* _offset_read;
-    void* _offset_write;
-    void* _offset_end;
+    void* _base;
+    uint16_t _capacity;
+    uint16_t _entry_size;
+    uint16_t _offset_read;
+    uint16_t _offset_write;
 };
 
-ah_err_t ah_i_ring_init(struct ah_i_ring* ring, size_t initial_entry_capacity, size_t entry_size);
+ah_err_t ah_i_ring_init(struct ah_i_ring* ring, size_t entry_capacity, size_t entry_size);
 void* ah_i_ring_alloc(struct ah_i_ring* ring);
 void* ah_i_ring_peek(struct ah_i_ring* ring);
 void* ah_i_ring_pop(struct ah_i_ring* ring);

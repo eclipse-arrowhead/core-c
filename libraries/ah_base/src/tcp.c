@@ -348,6 +348,20 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln)
     return ln->_trans.vtab->listener_close(ln->_trans.ctx, ln);
 }
 
+ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln)
+{
+    if (ln == NULL) {
+        return AH_EINVAL;
+    }
+    if (ln->_state != AH_I_TCP_LISTENER_STATE_CLOSED) {
+        return AH_ESTATE;
+    }
+
+    ah_i_slab_term(&ln->_conn_slab, NULL);
+
+    return AH_ENONE;
+}
+
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln)
 {
     ah_assert(ln != NULL);

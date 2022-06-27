@@ -9,6 +9,7 @@
 
 #include <ah/err.h>
 #include <ah/loop.h>
+#include <ah/sock.h>
 #include <ah/tcp.h>
 #include <ah/unit.h>
 #include <mbedtls/debug.h>
@@ -185,8 +186,11 @@ static void s_print_mbedtls_err_if_any(ah_unit_t* unit, ah_tcp_conn_t* conn, ah_
 static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
-
     ah_unit_t* unit = user_data->unit;
+
+    if (err == AH_EEOF) {
+        return;
+    }
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         s_print_mbedtls_err_if_any(unit, conn, err);
@@ -220,7 +224,6 @@ static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err
     (void) out;
 
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
-
     ah_unit_t* unit = user_data->unit;
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
@@ -280,7 +283,7 @@ static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err)
         return;
     }
 
-    err = ah_tcp_listener_set_nodelay(ln, false);
+    err = ah_tcp_listener_set_nodelay(ln, true);
     if (!ah_unit_assert_err_eq(user_data->unit, AH_ENONE, err)) {
         return;
     }
@@ -326,11 +329,6 @@ static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err)
         return;
     }
 
-    ah_mbedtls_server_t* ln_server = ah_mbedtls_listener_get_server(ln);
-    if (ah_unit_assert(unit, ln_server != NULL, "ln_server == NULL")) {
-        ah_mbedtls_server_term(ln_server);
-    }
-
     user_data->did_call_close_cb = true;
 }
 
@@ -359,7 +357,7 @@ static void s_on_listener_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, con
 
     user_data->did_call_accept_cb = true;
 }
-
+/*
 static void s_mbedtls_debug_client(void* ctx, int level, const char* file, int line, const char* str)
 {
     fprintf((FILE*) ctx, "CLIENT <%d> %s:%04d: %s", level, file, line, str);
@@ -369,7 +367,7 @@ static void s_mbedtls_debug_server(void* ctx, int level, const char* file, int l
 {
     fprintf((FILE*) ctx, "SERVER <%d> %s:%04d: %s", level, file, line, str);
 }
-
+*/
 static void s_should_read_and_write_data(ah_unit_t* unit)
 {
     char errbuf[256u];
@@ -474,7 +472,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     mbedtls_ssl_conf_session_cache(&ln_ssl_conf, &ln_ssl_cache, mbedtls_ssl_cache_get, mbedtls_ssl_cache_set);
 #endif
     mbedtls_ssl_conf_ca_chain(&ln_ssl_conf, ln_own_cert.next, NULL);
-    mbedtls_ssl_conf_dbg(&ln_ssl_conf, s_mbedtls_debug_server, stdout);
+    //mbedtls_ssl_conf_dbg(&ln_ssl_conf, s_mbedtls_debug_server, stdout);
     res = mbedtls_ssl_conf_own_cert(&ln_ssl_conf, &ln_own_cert, &ln_own_pk);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
@@ -551,7 +549,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     mbedtls_ssl_conf_authmode(&conn_ssl_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     mbedtls_ssl_conf_ca_chain(&conn_ssl_conf, &conn_cacert, NULL);
-    mbedtls_ssl_conf_dbg(&conn_ssl_conf, s_mbedtls_debug_client, stdout);
+    //mbedtls_ssl_conf_dbg(&conn_ssl_conf, s_mbedtls_debug_client, stdout);
     res = mbedtls_ssl_conf_own_cert(&conn_ssl_conf, &conn_own_cert, &conn_own_pk);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
@@ -584,7 +582,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Submit issued events for execution.
 
     ah_time_t deadline;
-    err = ah_time_add(ah_time_now(), 10000 * AH_TIMEDIFF_S, &deadline);
+    err = ah_time_add(ah_time_now(), 1 * AH_TIMEDIFF_S, &deadline);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -592,6 +590,14 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
+
+    // Perform final cleanups.
+
+#if defined(MBEDTLS_SSL_CACHE_C)
+    mbedtls_ssl_cache_free(&ln_ssl_cache);
+#endif
+    ah_mbedtls_server_term(&ln_server);
+    ah_tcp_listener_term(&ln);
 
     // Check results.
 

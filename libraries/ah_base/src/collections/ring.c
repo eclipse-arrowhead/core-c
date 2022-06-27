@@ -10,27 +10,37 @@
 
 #include <string.h>
 
-static size_t s_get_capacity_in_bytes(const struct ah_i_ring* ring);
-
-ah_err_t ah_i_ring_init(struct ah_i_ring* ring, size_t initial_entry_capacity, size_t entry_size)
+ah_err_t ah_i_ring_init(struct ah_i_ring* ring, size_t entry_capacity, size_t entry_size)
 {
     ah_assert_if_debug(ring != NULL);
     ah_assert_if_debug(entry_size > 0u);
 
-    size_t initial_entry_capacity_in_bytes;
-    if (ah_mul_size(initial_entry_capacity, entry_size, &initial_entry_capacity_in_bytes) != AH_ENONE) {
+    if (entry_size > UINT16_MAX) {
+        return AH_EDOM;
+    }
+
+    if (ah_add_size(entry_capacity, 1u, &entry_capacity) != AH_ENONE) {
         return AH_ENOMEM;
     }
 
-    ring->_entry_size = entry_size;
-    ring->_offset_start = ah_malloc(initial_entry_capacity_in_bytes);
-    if (ring->_offset_start == NULL) {
+    if (entry_capacity > UINT16_MAX) {
+        return AH_EOVERFLOW;
+    }
+
+    size_t entry_capacity_in_bytes;
+    if (ah_mul_size(entry_capacity, entry_size, &entry_capacity_in_bytes) != AH_ENONE) {
         return AH_ENOMEM;
     }
 
-    ring->_offset_read = ring->_offset_start;
-    ring->_offset_write = ring->_offset_start;
-    ring->_offset_end = &((uint8_t*) ring->_offset_start)[initial_entry_capacity_in_bytes];
+    ring->_entry_size = (uint16_t) entry_size;
+    ring->_base = ah_malloc(entry_capacity_in_bytes);
+    if (ring->_base == NULL) {
+        return AH_ENOMEM;
+    }
+
+    ring->_offset_read = 0u;
+    ring->_offset_write = 0u;
+    ring->_capacity = (uint16_t) entry_capacity;
 
     return AH_ENONE;
 }
@@ -39,65 +49,23 @@ void* ah_i_ring_alloc(struct ah_i_ring* ring)
 {
     ah_assert_if_debug(ring != NULL);
 
-    void* offset_write = &((uint8_t*) ring->_offset_write)[ring->_entry_size];
-    if (offset_write == ring->_offset_end) {
-        offset_write = ring->_offset_start;
+    uint16_t offset_write = ring->_offset_write + 1u;
+    if (offset_write == ring->_capacity) {
+        offset_write = 0u;
     }
 
     if (ring->_offset_read == offset_write) {
-        size_t capacity_in_bytes = s_get_capacity_in_bytes(ring);
-
-        const size_t min_capacity_in_bytes = ring->_entry_size * 4u;
-        if (capacity_in_bytes < min_capacity_in_bytes) {
-            capacity_in_bytes = min_capacity_in_bytes;
-        }
-        else {
-            if (ah_mul_size(capacity_in_bytes, 2u, &capacity_in_bytes) != AH_ENONE) {
-                return NULL;
-            }
-        }
-
-        void* entries = ah_malloc(capacity_in_bytes);
-        if (entries == NULL) {
-            return NULL;
-        }
-
-        uintptr_t size_of_entries_in_bytes;
-        if (ring->_offset_read > ring->_offset_write) {
-            size_t size_of_rhs_entries_in_bytes = ((uint8_t*) ring->_offset_end) - ((uint8_t*) ring->_offset_read);
-            memcpy(entries, ring->_offset_read, size_of_rhs_entries_in_bytes);
-
-            size_t size_of_lhs_entries_in_bytes = ((uint8_t*) ring->_offset_write) - ((uint8_t*) ring->_offset_start);
-            memcpy(&((uint8_t*) entries)[size_of_rhs_entries_in_bytes], ring->_offset_start, size_of_lhs_entries_in_bytes);
-
-            size_of_entries_in_bytes = size_of_lhs_entries_in_bytes + size_of_rhs_entries_in_bytes;
-        }
-        else {
-            size_of_entries_in_bytes = ((uint8_t*) ring->_offset_write) - ((uint8_t*) ring->_offset_read);
-            memcpy(entries, ring->_offset_read, size_of_entries_in_bytes);
-        }
-
-        ah_free(ring->_offset_start);
-
-        ring->_offset_start = entries;
-        ring->_offset_read = entries;
-        ring->_offset_write = &((uint8_t*) entries)[size_of_entries_in_bytes];
-        ring->_offset_end = &((uint8_t*) entries)[capacity_in_bytes];
-
-        offset_write = &((uint8_t*) ring->_offset_write)[ring->_entry_size];
+        return NULL;
     }
 
-    void* entry = ring->_offset_write;
+    void* entry = &((uint8_t*) ring->_base)[ring->_offset_write * ring->_entry_size];
     ring->_offset_write = offset_write;
 
+#ifndef NDEBUG
+    memset(entry, 0, ring->_entry_size);
+#endif
+
     return entry;
-}
-
-static size_t s_get_capacity_in_bytes(const struct ah_i_ring* ring)
-{
-    ah_assert_if_debug(ring != NULL);
-
-    return ((uint8_t*) ring->_offset_end) - ((uint8_t*) ring->_offset_start);
 }
 
 void* ah_i_ring_peek(struct ah_i_ring* ring)
@@ -108,7 +76,7 @@ void* ah_i_ring_peek(struct ah_i_ring* ring)
         return NULL;
     }
 
-    return ring->_offset_read;
+    return &((uint8_t*) ring->_base)[ring->_offset_read * ring->_entry_size];
 }
 
 void* ah_i_ring_pop(struct ah_i_ring* ring)
@@ -119,15 +87,15 @@ void* ah_i_ring_pop(struct ah_i_ring* ring)
         return NULL;
     }
 
-     void* entry = ring->_offset_read;
+    void* entry = &((uint8_t*) ring->_base)[ring->_offset_read * ring->_entry_size];
 
-     void* offset_read = &((uint8_t*) ring->_offset_read)[ring->_entry_size];
-     if (offset_read == ring->_offset_end) {
-         offset_read = ring->_offset_start;
-     }
-     ring->_offset_read = offset_read;
+    uint16_t offset_read = ring->_offset_read + 1u;
+    if (offset_read == ring->_capacity) {
+        offset_read = 0u;
+    }
+    ring->_offset_read = offset_read;
 
-     return entry;
+    return entry;
 }
 
 void ah_i_ring_skip(struct ah_i_ring* ring)
@@ -138,9 +106,9 @@ void ah_i_ring_skip(struct ah_i_ring* ring)
         return;
     }
 
-    void* offset_read = &((uint8_t*) ring->_offset_read)[ring->_entry_size];
-    if (offset_read == ring->_offset_end) {
-        offset_read = ring->_offset_start;
+    uint16_t offset_read = ring->_offset_read + 1u;
+    if (offset_read == ring->_capacity) {
+        offset_read = 0u;
     }
     ring->_offset_read = offset_read;
 }
@@ -149,5 +117,8 @@ void ah_i_ring_term(struct ah_i_ring* ring)
 {
     ah_assert_if_debug(ring != NULL);
 
-    ah_free(ring->_offset_start);
+    ah_free(ring->_base);
+#ifndef NDEBUG
+    memset(ring, 0, sizeof(struct ah_i_ring));
+#endif
 }

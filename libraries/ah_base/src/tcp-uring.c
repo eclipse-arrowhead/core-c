@@ -188,12 +188,12 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
 
-    if (!ah_rw_is_readable(&conn->_in->rw)) {
-        ah_i_tcp_in_reset(conn->_in);
-    }
-
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;
+    }
+
+    if (!ah_rw_is_readable(&conn->_in->rw)) {
+        ah_i_tcp_in_reset(conn->_in);
     }
 
     err = s_conn_read_prep(conn);
@@ -525,7 +525,6 @@ ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln)
 #endif
 
     ln->_cbs->on_close(ln, err);
-    ah_i_slab_term(&ln->_conn_slab, NULL);
 
     return AH_ENONE;
 }
@@ -543,5 +542,4 @@ static void s_on_listener_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 #endif
 
     ln->_cbs->on_close(ln, -(cqe->res));
-    ah_i_slab_term(&ln->_conn_slab, NULL);
 }

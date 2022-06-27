@@ -118,11 +118,11 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
 
-    ah_i_udp_in_reset(sock->_in);
-
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return;
     }
+
+    ah_i_udp_in_reset(sock->_in);
 
     err = s_sock_recv_prep(sock);
     if (err != AH_ENONE) {

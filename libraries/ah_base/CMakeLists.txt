@@ -169,6 +169,8 @@ set(
     TEST_FILES
     test/main.c
     test/test-buf.c
+    test/test-collections-list.c
+    test/test-collections-ring.c
     test/test-err.c
     test/test-ip.c
     test/test-math.c

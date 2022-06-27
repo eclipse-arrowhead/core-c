@@ -93,11 +93,11 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
 
     sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
 
-    ah_i_udp_in_reset(sock->_in);
-
     if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return;
     }
+
+    ah_i_udp_in_reset(sock->_in);
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;

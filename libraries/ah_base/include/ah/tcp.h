@@ -128,6 +128,7 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
+ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln);
 ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr);
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln);
 ah_extern void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln);

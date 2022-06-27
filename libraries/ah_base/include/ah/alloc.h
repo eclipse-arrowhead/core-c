@@ -10,7 +10,6 @@
 #include "conf.h"
 
 #define AH_PSIZE     AH_CONF_PSIZE
-#define AH_PSIZE_MAX AH_I_PSIZE_MAX
 
 #define ah_calloc(n, size) AH_CONF_CALLOC((n), (size))
 #define ah_free(ptr)       AH_CONF_FREE((ptr))

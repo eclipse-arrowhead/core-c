@@ -24,7 +24,11 @@ ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, si
     ah_assert_if_debug(slab != NULL);
     ah_assert_if_debug(slot_data_size != 0u && slot_data_size <= (SIZE_MAX - sizeof(struct ah_i_slab_slot)));
 
-    const size_t slot_size = slot_data_size + sizeof(struct ah_i_slab_slot);
+    size_t slot_size = slot_data_size + sizeof(struct ah_i_slab_slot);
+
+    // Round up slot_size to the nearest multiple of the platform pointer size.
+    slot_size = slot_size + (sizeof(uintptr_t) - slot_size % sizeof(uintptr_t));
+
     const size_t cache_slot_capacity = S_CACHE_SLOT_CAPACITY_IN_BYTES / slot_size;
     if (cache_slot_capacity == 0u || cache_slot_capacity > AH_PSIZE) {
         return AH_EOVERFLOW;
@@ -146,6 +150,9 @@ void ah_i_slab_term(struct ah_i_slab* slab, void (*allocated_entry_cb)(void*))
     struct ah_i_slab_cache* current = slab->_cache_list;
     while (current != NULL) {
         struct ah_i_slab_cache* next = current->_next;
+#ifndef NDEBUG
+        memset(current, 0, AH_PSIZE);
+#endif
         ah_pfree(current);
         current = next;
     }

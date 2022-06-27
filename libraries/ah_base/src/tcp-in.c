@@ -59,6 +59,10 @@ void ah_i_tcp_in_free(ah_tcp_in_t* in)
 {
     ah_assert_if_debug(in != NULL);
 
+#ifndef NDEBUG
+    memset(in, 0, AH_PSIZE);
+#endif
+
     ah_pfree(in);
 }
 
