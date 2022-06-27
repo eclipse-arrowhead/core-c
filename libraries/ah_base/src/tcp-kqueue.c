@@ -168,6 +168,8 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             goto report_err;
         }
 
+        ah_buf_limit_size_to(&dst, n_bytes_left);
+
         ssize_t nread = recv(conn->_fd, ah_buf_get_base(&dst), ah_buf_get_size(&dst), 0u);
         if (nread < 0) {
             err = errno;
@@ -176,13 +178,14 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
         if (nread == 0) {
             break;
         }
-        conn->_in->rw.w = &conn->_in->rw.w[(size_t) nread];
-        ah_assert_if_debug(conn->_in->rw.w <= conn->_in->rw.e);
 
         if (ah_unlikely(ah_buf_get_size(&dst) < (size_t) nread)) {
             err = AH_EDOM;
             goto report_err;
         }
+
+        conn->_in->rw.w = &conn->_in->rw.w[(size_t) nread];
+        ah_assert_if_debug(conn->_in->rw.w <= conn->_in->rw.e);
 
         conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
 

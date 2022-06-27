@@ -499,11 +499,11 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
     ah_assert_if_debug(client != NULL);
 
+    client->_conn_cbs->on_close(conn, err);
+
     if (client->_server != NULL) {
         ah_mbedtls_client_term(client);
     }
-
-    client->_conn_cbs->on_close(conn, err);
 }
 
 void ah_i_mbedtls_handshake(ah_tcp_conn_t* conn)

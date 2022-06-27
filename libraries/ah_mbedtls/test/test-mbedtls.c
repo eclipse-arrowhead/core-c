@@ -189,6 +189,8 @@ static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
     ah_unit_t* unit = user_data->unit;
 
     if (err == AH_EEOF) {
+        err = ah_tcp_conn_close(conn);
+        (void) ah_unit_assert_err_eq(unit, AH_ENONE, err);
         return;
     }
 
@@ -251,11 +253,6 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
 
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
-    }
-
-    ah_mbedtls_client_t* conn_client = ah_mbedtls_conn_get_client(conn);
-    if (ah_unit_assert(unit, conn_client != NULL, "conn_client == NULL")) {
-        ah_mbedtls_client_term(conn_client);
     }
 
     (*user_data->close_call_counter) += 1u;
@@ -596,6 +593,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 #if defined(MBEDTLS_SSL_CACHE_C)
     mbedtls_ssl_cache_free(&ln_ssl_cache);
 #endif
+    ah_mbedtls_client_term(&conn_client);
     ah_mbedtls_server_term(&ln_server);
     ah_tcp_listener_term(&ln);
 
