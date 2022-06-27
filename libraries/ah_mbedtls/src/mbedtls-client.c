@@ -501,6 +501,8 @@ static void s_on_close(ah_tcp_conn_t* conn, ah_err_t err)
 
     client->_conn_cbs->on_close(conn, err);
 
+    ah_tcp_in_free(client->_in_plaintext);
+
     if (client->_server != NULL) {
         ah_mbedtls_client_term(client);
     }

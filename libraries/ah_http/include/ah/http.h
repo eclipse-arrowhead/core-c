@@ -124,6 +124,7 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, a
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog, const ah_http_client_cbs_t* cbs);
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
+ah_extern ah_err_t ah_http_server_term(ah_http_server_t* srv);
 ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv);
 ah_extern ah_err_t ah_http_server_get_laddr(const ah_http_server_t* srv, ah_sockaddr_t* laddr);
 ah_extern ah_loop_t* ah_http_server_get_loop(const ah_http_server_t* srv);

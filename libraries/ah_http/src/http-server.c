@@ -117,6 +117,14 @@ static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err)
     srv->_cbs->on_close(srv, err);
 }
 
+ah_extern ah_err_t ah_http_server_term(ah_http_server_t* srv)
+{
+    if (srv == NULL) {
+        return AH_EINVAL;
+    }
+    return ah_tcp_listener_term(&srv->_ln);
+}
+
 ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv)
 {
     ah_assert(srv != NULL);

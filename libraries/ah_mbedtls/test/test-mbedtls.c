@@ -354,26 +354,12 @@ static void s_on_listener_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, con
 
     user_data->did_call_accept_cb = true;
 }
-/*
-static void s_mbedtls_debug_client(void* ctx, int level, const char* file, int line, const char* str)
-{
-    fprintf((FILE*) ctx, "CLIENT <%d> %s:%04d: %s", level, file, line, str);
-}
 
-static void s_mbedtls_debug_server(void* ctx, int level, const char* file, int line, const char* str)
-{
-    fprintf((FILE*) ctx, "SERVER <%d> %s:%04d: %s", level, file, line, str);
-}
-*/
 static void s_should_read_and_write_data(ah_unit_t* unit)
 {
     char errbuf[256u];
     ah_err_t err;
     int res;
-
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_debug_set_threshold(4);
-#endif
 
     // Setup user data.
 
@@ -469,7 +455,6 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     mbedtls_ssl_conf_session_cache(&ln_ssl_conf, &ln_ssl_cache, mbedtls_ssl_cache_get, mbedtls_ssl_cache_set);
 #endif
     mbedtls_ssl_conf_ca_chain(&ln_ssl_conf, ln_own_cert.next, NULL);
-    //mbedtls_ssl_conf_dbg(&ln_ssl_conf, s_mbedtls_debug_server, stdout);
     res = mbedtls_ssl_conf_own_cert(&ln_ssl_conf, &ln_own_cert, &ln_own_pk);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
@@ -504,18 +489,15 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
         return;
     }
 
-    mbedtls_x509_crt conn_cacert;
-    mbedtls_x509_crt_init(&conn_cacert);
-    res = mbedtls_x509_crt_parse(&conn_cacert, ah_i_mbedtls_test_ca_crt_data, ah_i_mbedtls_test_ca_crt_size);
+    mbedtls_x509_crt conn_own_cert;
+    mbedtls_x509_crt_init(&conn_own_cert);
+    res = mbedtls_x509_crt_parse(&conn_own_cert, ah_i_mbedtls_test_cln_crt_data, ah_i_mbedtls_test_cln_crt_size);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_x509_crt_parse() returned %d; %s", res, errbuf);
         return;
     }
-
-    mbedtls_x509_crt conn_own_cert;
-    mbedtls_x509_crt_init(&conn_own_cert);
-    res = mbedtls_x509_crt_parse(&conn_own_cert, ah_i_mbedtls_test_cln_crt_data, ah_i_mbedtls_test_cln_crt_size);
+    res = mbedtls_x509_crt_parse(&conn_own_cert, ah_i_mbedtls_test_ca_crt_data, ah_i_mbedtls_test_ca_crt_size);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
         ah_unit_failf(unit, "mbedtls_x509_crt_parse() returned %d; %s", res, errbuf);
@@ -545,8 +527,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     }
 
     mbedtls_ssl_conf_authmode(&conn_ssl_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
-    mbedtls_ssl_conf_ca_chain(&conn_ssl_conf, &conn_cacert, NULL);
-    //mbedtls_ssl_conf_dbg(&conn_ssl_conf, s_mbedtls_debug_client, stdout);
+    mbedtls_ssl_conf_ca_chain(&conn_ssl_conf, conn_own_cert.next, NULL);
     res = mbedtls_ssl_conf_own_cert(&conn_ssl_conf, &conn_own_cert, &conn_own_pk);
     if (res != 0) {
         mbedtls_strerror(res, errbuf, sizeof(errbuf));
@@ -579,7 +560,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
     // Submit issued events for execution.
 
     ah_time_t deadline;
-    err = ah_time_add(ah_time_now(), 1 * AH_TIMEDIFF_S, &deadline);
+    err = ah_time_add(ah_time_now(), 5 * AH_TIMEDIFF_S, &deadline);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -590,12 +571,24 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     // Perform final cleanups.
 
-#if defined(MBEDTLS_SSL_CACHE_C)
-    mbedtls_ssl_cache_free(&ln_ssl_cache);
-#endif
     ah_mbedtls_client_term(&conn_client);
     ah_mbedtls_server_term(&ln_server);
     ah_tcp_listener_term(&ln);
+
+    mbedtls_ctr_drbg_free(&ln_ctr_drbg);
+    mbedtls_entropy_free(&ln_entropy);
+    mbedtls_pk_free(&ln_own_pk);
+#if defined(MBEDTLS_SSL_CACHE_C)
+    mbedtls_ssl_cache_free(&ln_ssl_cache);
+#endif
+    mbedtls_ssl_config_free(&ln_ssl_conf);
+    mbedtls_x509_crt_free(&ln_own_cert);
+
+    mbedtls_ctr_drbg_free(&conn_ctr_drbg);
+    mbedtls_entropy_free(&conn_entropy);
+    mbedtls_pk_free(&conn_own_pk);
+    mbedtls_ssl_config_free(&conn_ssl_conf);
+    mbedtls_x509_crt_free(&conn_own_cert);
 
     // Check results.
 

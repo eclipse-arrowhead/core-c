@@ -35,12 +35,12 @@ static void s_should_peek_and_pop_entries_in_order_of_insertion(ah_unit_t* unit)
 
     struct s_entry* entry1 = malloc(sizeof(struct s_entry));
     entry1->text = "Entry 1";
-    entry0->entry_order = 1;
+    entry1->entry_order = 1;
     entry1->entry._next = NULL;
 
     struct s_entry* entry2 = malloc(sizeof(struct s_entry));
     entry2->text = "Entry 2";
-    entry0->entry_order = 2;
+    entry2->entry_order = 2;
     entry2->entry._next = NULL;
 
     ah_i_list_push(&list, entry0, offsetof(struct s_entry, entry));

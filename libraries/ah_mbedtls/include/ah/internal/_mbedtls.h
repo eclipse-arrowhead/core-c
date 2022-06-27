@@ -18,7 +18,7 @@
  ah_tcp_trans_t _trans;                                 \
  const ah_tcp_conn_cbs_t* _conn_cbs;                    \
                                                         \
- ah_tcp_in_t* _in_ciphertext;                            \
+ ah_tcp_in_t* _in_ciphertext;                           \
  ah_tcp_in_t* _in_plaintext;                            \
                                                         \
  struct ah_i_ring _out_queue_ciphertext;                \

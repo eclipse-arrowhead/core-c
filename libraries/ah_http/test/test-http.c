@@ -442,6 +442,10 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
         return;
     }
 
+    // Perform final cleanups.
+
+    ah_http_server_term(&server);
+
     // Check results.
 
     struct s_http_client_user_data* lclient_data = &lclient_user_data;
