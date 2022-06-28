@@ -26,6 +26,7 @@ static void s_conn_read_stop(ah_tcp_conn_t* conn);
 
 static ah_err_t s_listener_accept_prep(ah_tcp_listener_t* ln);
 
+#pragma warning(disable : 6011)
 ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     (void) ctx;
@@ -70,6 +71,7 @@ ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr
 
     return AH_ENONE;
 }
+#pragma warning(default : 6011)
 
 static void s_on_conn_connect(ah_i_loop_evt_t* evt)
 {
@@ -86,28 +88,34 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt)
 
     DWORD n_bytes_transferred;
     err = ah_i_loop_evt_get_wsa_result(evt, conn->_fd, &n_bytes_transferred);
-    if (err == AH_ENONE) {
-        conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
+    if (err != AH_ENONE) {
+        conn->_state = AH_I_TCP_CONN_STATE_OPEN;
+        goto handle_err;
+    }
 
-        ah_tcp_shutdown_t shutdown_flags = 0u;
+    conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
 
-        if (conn->_cbs->on_read == NULL) {
-            shutdown_flags |= AH_TCP_SHUTDOWN_RD;
-        }
-        if (conn->_cbs->on_write == NULL) {
-            shutdown_flags |= AH_TCP_SHUTDOWN_WR;
-        }
-        if (shutdown_flags != 0) {
-            err = ah_tcp_conn_shutdown(conn, shutdown_flags);
-        }
-        else {
-            err = AH_ENONE;
-        }
+    err = ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0);
+    if (err != AH_ENONE) {
+        goto handle_err;
+    }
+
+    ah_tcp_shutdown_t shutdown_flags = 0u;
+
+    if (conn->_cbs->on_read == NULL) {
+        shutdown_flags |= AH_TCP_SHUTDOWN_RD;
+    }
+    if (conn->_cbs->on_write == NULL) {
+        shutdown_flags |= AH_TCP_SHUTDOWN_WR;
+    }
+    if (shutdown_flags != 0) {
+        err = ah_tcp_conn_shutdown(conn, shutdown_flags);
     }
     else {
-        conn->_state = AH_I_TCP_CONN_STATE_OPEN;
+        err = AH_ENONE;
     }
 
+handle_err:
     conn->_cbs->on_connect(conn, err);
 }
 
@@ -393,6 +401,7 @@ ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned bac
             err = WSAGetLastError();
             goto report_err;
         }
+
         ln->_is_listening = true;
     }
 
@@ -480,6 +489,11 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt)
 
     DWORD n_bytes_transferred;
     err = ah_i_loop_evt_get_wsa_result(evt, ln->_fd, &n_bytes_transferred);
+    if (err != AH_ENONE) {
+        goto handle_err;
+    }
+
+    err = ah_i_sock_setsockopt(ln->_accept_fd, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, &ln->_fd, sizeof(ln->_fd));
     if (err != AH_ENONE) {
         goto handle_err;
     }

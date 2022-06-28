@@ -84,6 +84,7 @@ static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err)
 static void s_on_listener_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_conn_to_server(ln);
+
     if (err != AH_ENONE) {
         srv->_cbs->on_accept(srv, NULL, err);
         return;

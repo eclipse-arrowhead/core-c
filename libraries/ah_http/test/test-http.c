@@ -58,7 +58,7 @@ void test_http(ah_unit_t* unit)
 void on_client_open(ah_http_client_t* cln, ah_err_t err);
 void on_client_connect(ah_http_client_t* cln, ah_err_t err);
 void on_client_close(ah_http_client_t* cln, ah_err_t err);
-void on_client_send_done(ah_http_client_t* cln, ah_http_head_t* msg, ah_err_t err);
+void on_client_send(ah_http_client_t* cln, ah_http_head_t* msg, ah_err_t err);
 void on_client_recv_line(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
 void on_client_recv_header(ah_http_client_t* cln, ah_http_header_t header);
 void on_client_recv_headers(ah_http_client_t* cln);
@@ -75,7 +75,7 @@ static const ah_http_client_cbs_t s_client_cbs = {
     .on_open = on_client_open,
     .on_connect = on_client_connect,
     .on_close = on_client_close,
-    .on_send = on_client_send_done,
+    .on_send = on_client_send,
     .on_recv_line = on_client_recv_line,
     .on_recv_header = on_client_recv_header,
     .on_recv_headers = on_client_recv_headers,
@@ -158,7 +158,7 @@ void on_client_close(ah_http_client_t* cln, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-void on_client_send_done(ah_http_client_t* cln, ah_http_head_t* msg, ah_err_t err)
+void on_client_send(ah_http_client_t* cln, ah_http_head_t* msg, ah_err_t err)
 {
     struct s_http_client_user_data* user_data = ah_http_client_get_user_data(cln);
     ah_unit_t* unit = user_data->unit;

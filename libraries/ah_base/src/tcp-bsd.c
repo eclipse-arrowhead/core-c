@@ -57,10 +57,7 @@ ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enable
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
-    if (setsockopt(conn->_fd, SOL_SOCKET, SO_KEEPALIVE, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_KEEPALIVE, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
@@ -72,10 +69,7 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
-    if (setsockopt(conn->_fd, IPPROTO_TCP, TCP_NODELAY, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(conn->_fd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled)
@@ -87,10 +81,7 @@ ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enable
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
-    if (setsockopt(conn->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
@@ -107,8 +98,7 @@ ah_extern ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, ah_tcp
         return AH_ESTATE;
     }
 
-#if SHUT_RD == (AH_TCP_SHUTDOWN_RD - 1) && SHUT_WR == (AH_TCP_SHUTDOWN_WR - 1) \
-    && SHUT_RDWR == (AH_TCP_SHUTDOWN_RDWR - 1)
+#if SHUT_RD == (AH_TCP_SHUTDOWN_RD - 1) && SHUT_WR == (AH_TCP_SHUTDOWN_WR - 1) && SHUT_RDWR == (AH_TCP_SHUTDOWN_RDWR - 1)
 
     const int how = ((int) flags) - 1;
 
@@ -134,25 +124,18 @@ ah_extern ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, ah_tcp
 
 #endif
 
-    ah_err_t err;
-
-    if (shutdown(conn->_fd, how) != 0) {
-#if AH_IS_WIN32
-        err = WSAGetLastError();
-#else
-        err = errno;
-#endif
-    }
-    else {
-        err = AH_ENONE;
-        conn->_shutdown_flags = flags;
-
-        if ((flags & AH_TCP_SHUTDOWN_RD) != 0u && conn->_state == AH_I_TCP_CONN_STATE_READING) {
-            conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
-        }
+    ah_err_t err = ah_i_sock_shutdown(conn->_fd, how);
+    if (err != AH_ENONE) {
+        return err;
     }
 
-    return err;
+    conn->_shutdown_flags = flags;
+
+    if ((flags & AH_TCP_SHUTDOWN_RD) != 0u && conn->_state == AH_I_TCP_CONN_STATE_READING) {
+        conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
+    }
+
+    return AH_ENONE;
 }
 
 ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
@@ -201,10 +184,7 @@ ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
-    if (setsockopt(ln->_fd, SOL_SOCKET, SO_KEEPALIVE, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(ln->_fd, SOL_SOCKET, SO_KEEPALIVE, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled)
@@ -216,10 +196,7 @@ ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_en
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
-    if (setsockopt(ln->_fd, IPPROTO_TCP, TCP_NODELAY, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(ln->_fd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled)
@@ -231,10 +208,7 @@ ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
-    if (setsockopt(ln->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(ln->_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value));
 }
 
 ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
