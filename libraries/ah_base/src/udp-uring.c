@@ -61,7 +61,7 @@ static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
 
-    if (sock->_in->nread >= sock->_in->buf._size) {
+    if (sock->_in->nrecv >= sock->_in->buf._size) {
         sock->_cbs->on_recv(sock, NULL, AH_EOVERFLOW);
         return AH_ENONE;
     }
@@ -79,8 +79,8 @@ static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
 
     sock->_recv_evt = evt;
 
-    sock->_in->buf._base += sock->_in->nread;
-    sock->_in->buf._size -= sock->_in->nread;
+    sock->_in->buf._base += sock->_in->nrecv;
+    sock->_in->buf._size -= sock->_in->nrecv;
 
     io_uring_prep_recvmsg(sqe, sock->_fd, &sock->_recv_msghdr, 0);
     io_uring_sqe_set_data(sqe, evt);
@@ -114,7 +114,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
-    sock->_in->nread = (size_t) cqe->res;
+    sock->_in->nrecv = (size_t) cqe->res;
 
     sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
 

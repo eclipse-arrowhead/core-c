@@ -51,7 +51,7 @@ struct ah_udp_in {
     const ah_sockaddr_t* raddr;
 
     ah_buf_t buf;
-    size_t nread;
+    size_t nrecv;
 
     AH_I_UDP_IN_FIELDS
 };

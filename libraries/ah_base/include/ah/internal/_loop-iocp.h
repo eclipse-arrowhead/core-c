@@ -14,6 +14,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include <winsock2.h>
+
 #define AH_I_LOOP_PLATFORM_FIELDS \
  HANDLE _iocp_handle;             \
  struct ah_i_loop_task_queue _task_queue;
@@ -37,6 +39,6 @@ struct ah_i_loop_task_queue {
 ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task);
 ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task);
 
-ah_extern ah_err_t ah_i_loop_evt_get_result(ah_i_loop_evt_t* evt, DWORD* n_bytes_transferred);
+ah_extern ah_err_t ah_i_loop_evt_get_wsa_result(ah_i_loop_evt_t* evt, SOCKET fd, DWORD* n_bytes_transferred);
 
 #endif

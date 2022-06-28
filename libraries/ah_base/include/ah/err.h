@@ -83,7 +83,7 @@
  E(DOM, AH_I_ERR_ONE_OF(EDOM, 5506), "arithmetic argument outside accepted domain")                   \
  E(DQUOT, AH_I_ERR_ONE_OF(EDQUOT, WSAEDQUOT), "disc quota exceeded")                                  \
  E(EXIST, AH_I_ERR_ONE_OF(EEXIST, 5507), "already exists")                                            \
- E(FAULT, AH_I_ERR_ONE_OF(EFAULT, WSAEFAULT), "bad address")                                          \
+ E(FAULT, AH_I_ERR_ONE_OF(EFAULT, WSAEFAULT), "bad pointer")                                          \
  E(FBIG, AH_I_ERR_ONE_OF(EFBIG, 5508), "file too large")                                              \
  E(HOSTDOWN, AH_I_ERR_ONE_OF(EHOSTDOWN, WSAEHOSTDOWN), "host down")                                   \
  E(HOSTUNREACH, AH_I_ERR_ONE_OF(EHOSTUNREACH, WSAEHOSTUNREACH), "host unreachable")                   \

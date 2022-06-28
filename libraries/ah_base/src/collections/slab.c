@@ -17,7 +17,11 @@
 
 #define S_CACHE_SLOT_CAPACITY_IN_BYTES (AH_PSIZE - sizeof(struct ah_i_slab_cache))
 
-bool s_try_grow(struct ah_i_slab* slab);
+static struct ah_i_slab_slot* s_cache_get_slot(struct ah_i_slab_cache* cache, size_t index, size_t slot_size);
+static struct ah_i_slab_slot* s_entry_get_slot(void* entry);
+static bool s_slab_is_full(struct ah_i_slab* slab);
+static bool s_slab_try_grow(struct ah_i_slab* slab);
+static void* s_slot_get_entry(struct ah_i_slab_slot* slot);
 
 ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, size_t slot_data_size)
 {
@@ -40,7 +44,7 @@ ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, si
     };
 
     while (initial_slot_capacity > 0u) {
-        if (!s_try_grow(slab)) {
+        if (!s_slab_try_grow(slab)) {
             ah_i_slab_term(slab, 0);
             return AH_ENOMEM;
         }
@@ -52,7 +56,7 @@ ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, si
     return AH_ENONE;
 }
 
-bool s_try_grow(struct ah_i_slab* slab)
+static bool s_slab_try_grow(struct ah_i_slab* slab)
 {
     ah_assert_if_debug(slab != NULL);
 
@@ -62,15 +66,12 @@ bool s_try_grow(struct ah_i_slab* slab)
     }
 
     for (size_t i = 1u; i < slab->_cache_slot_capacity; i += 1u) {
-        size_t byte_off = i * slab->_slot_size;
-        struct ah_i_slab_slot* prev = ((struct ah_i_slab_slot*) &cache->_slots_as_raw_bytes[byte_off - slab->_slot_size]);
-        struct ah_i_slab_slot* cur = (struct ah_i_slab_slot*) &cache->_slots_as_raw_bytes[byte_off];
-        prev->_next_free = cur;
+        s_cache_get_slot(cache, i - 1u, slab->_slot_size)->_next_free = s_cache_get_slot(cache, i, slab->_slot_size);
     }
 
-    struct ah_i_slab_slot* last = ((struct ah_i_slab_slot*) &cache->_slots_as_raw_bytes[(slab->_cache_slot_capacity - 1u) * slab->_slot_size]);
+    struct ah_i_slab_slot* last = s_cache_get_slot(cache, slab->_cache_slot_capacity - 1u, slab->_slot_size);
     if (slab->_cache_list != NULL) {
-        last->_next_free = (struct ah_i_slab_slot*) &slab->_cache_list->_slots_as_raw_bytes[0u];
+        last->_next_free = s_cache_get_slot(slab->_cache_list, 0u, slab->_slot_size);
     }
     else {
         last->_next_free = NULL;
@@ -79,29 +80,53 @@ bool s_try_grow(struct ah_i_slab* slab)
     cache->_next = slab->_cache_list;
 
     slab->_cache_list = cache;
-    slab->_free_list = (struct ah_i_slab_slot*) &cache->_slots_as_raw_bytes[0u];
+    slab->_free_list = s_cache_get_slot(cache, 0u, slab->_slot_size);
 
     return true;
+}
+
+static struct ah_i_slab_slot* s_cache_get_slot(struct ah_i_slab_cache* cache, size_t index, size_t slot_size)
+{
+    ah_assert_if_debug(cache != NULL);
+    ah_assert_if_debug(slot_size != 0u);
+    ah_assert_if_debug(index < (S_CACHE_SLOT_CAPACITY_IN_BYTES / slot_size));
+
+    uint8_t* base = &((uint8_t*) cache)[sizeof(struct ah_i_slab_cache)];
+
+    return (struct ah_i_slab_slot*) &base[index * slot_size];
 }
 
 void* ah_i_slab_alloc(struct ah_i_slab* slab)
 {
     ah_assert_if_debug(slab != NULL);
 
-    struct ah_i_slab_slot* slot = slab->_free_list;
-    if (slot == NULL) {
-        if (!s_try_grow(slab)) {
+    if (s_slab_is_full(slab)) {
+        if (!s_slab_try_grow(slab)) {
             return NULL;
         }
-        slot = slab->_free_list;
     }
+    struct ah_i_slab_slot* slot = slab->_free_list;
 
     slab->_free_list = slot->_next_free;
 #ifndef NDEBUG
     slot->_next_free = NULL;
 #endif
 
-    return slot->_entry_as_raw_bytes;
+    return s_slot_get_entry(slot);
+}
+
+static bool s_slab_is_full(struct ah_i_slab* slab)
+{
+    ah_assert_if_debug(slab != NULL);
+
+    return slab->_free_list == NULL;
+}
+
+static void* s_slot_get_entry(struct ah_i_slab_slot* slot)
+{
+    ah_assert_if_debug(slot != NULL);
+
+    return &((uint8_t*) slot)[sizeof(struct ah_i_slab_slot)];
 }
 
 void ah_i_slab_free(struct ah_i_slab* slab, void* entry)
@@ -109,7 +134,7 @@ void ah_i_slab_free(struct ah_i_slab* slab, void* entry)
     ah_assert_if_debug(slab != NULL);
     ah_assert_if_debug(entry != NULL);
 
-    struct ah_i_slab_slot* slot = (struct ah_i_slab_slot*) &((unsigned char*) entry)[-((ptrdiff_t) offsetof(struct ah_i_slab_slot, _entry_as_raw_bytes))];
+    struct ah_i_slab_slot* slot = s_entry_get_slot(entry);
     ah_assert_if_debug(slot->_next_free == NULL);
 
 #ifndef NDEBUG
@@ -118,6 +143,13 @@ void ah_i_slab_free(struct ah_i_slab* slab, void* entry)
 
     slot->_next_free = slab->_free_list;
     slab->_free_list = slot;
+}
+
+static struct ah_i_slab_slot* s_entry_get_slot(void* entry)
+{
+    ah_assert_if_debug(entry != NULL);
+
+    return (struct ah_i_slab_slot*) &((uint8_t*) entry)[-((ptrdiff_t) sizeof(struct ah_i_slab_slot))];
 }
 
 void ah_i_slab_term(struct ah_i_slab* slab, void (*allocated_entry_cb)(void*))
@@ -134,14 +166,12 @@ void ah_i_slab_term(struct ah_i_slab* slab, void (*allocated_entry_cb)(void*))
         // Sweep through all slots, providing those with unmarked free pointers to the callback.
         for (struct ah_i_slab_cache* cache = slab->_cache_list; cache != NULL; cache = cache->_next) {
             for (size_t i = 0u; i < slab->_cache_slot_capacity; i += 1u) {
-                struct ah_i_slab_slot* slot = (struct ah_i_slab_slot*) &cache->_slots_as_raw_bytes[i * slab->_slot_size];
+                struct ah_i_slab_slot* slot = s_cache_get_slot(cache, i, slab->_slot_size);
                 if (slot->_next_free != (struct ah_i_slab_slot*) 1u) {
-                    allocated_entry_cb(slot->_entry_as_raw_bytes);
+                    allocated_entry_cb(s_slot_get_entry(slot));
                 }
 #ifndef NDEBUG
-                else {
-                    slot->_next_free = NULL;
-                }
+                slot->_next_free = NULL;
 #endif
             }
         }

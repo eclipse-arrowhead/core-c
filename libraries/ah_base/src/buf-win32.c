@@ -57,5 +57,5 @@ ah_extern void ah_buf_skipn(ah_buf_t* buf, size_t size)
     }
 
     buf->_base = &buf->_base[size];
-    buf->_size = buf->_size - size;
+    buf->_size = buf->_size - (ULONG) size;
 }

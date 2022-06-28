@@ -24,7 +24,7 @@ ah_err_t ah_i_udp_in_alloc_for(ah_udp_in_t** owner_ptr)
     *in = (ah_udp_in_t) {
         .raddr = NULL,
         .buf = ah_buf_from(&page[sizeof(ah_udp_in_t)], AH_PSIZE - sizeof(ah_udp_in_t)),
-        .nread = 0u,
+        .nrecv = 0u,
         ._owner_ptr = owner_ptr,
     };
 
@@ -67,5 +67,5 @@ void ah_i_udp_in_reset(ah_udp_in_t* in)
 
     in->raddr = NULL;
     in->buf = ah_buf_from(&page[sizeof(ah_udp_in_t)], AH_PSIZE - sizeof(ah_udp_in_t));
-    in->nread = 0u;
+    in->nrecv = 0u;
 }

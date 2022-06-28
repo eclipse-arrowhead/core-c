@@ -147,7 +147,7 @@ ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* lad
 #if AH_IS_WIN32
     ah_sockaddr_t laddr_copy = *laddr;
     laddr_copy.as_ip.port = htons(laddr->as_ip.port);
-    if (bind(fd0, ah_i_sockaddr_const_into_bsd(laddr_copy), ah_i_sockaddr_get_size(laddr)) != 0) {
+    if (bind(fd0, ah_i_sockaddr_const_into_bsd(&laddr_copy), ah_i_sockaddr_get_size(laddr)) != 0) {
         err = WSAGetLastError();
         goto close_fd0_and_return;
     }
@@ -201,6 +201,17 @@ ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr)
 #if AH_I_SOCKADDR_HAS_SIZE
     ah_assert_if_debug(socklen <= UINT8_MAX);
     laddr->as_any.size = (uint8_t) socklen;
+#endif
+
+#if AH_IS_WIN32
+    if (ah_sockaddr_is_ip_wildcard(laddr)) {
+        if (laddr->as_ip.family == AH_SOCKFAMILY_IPV4) {
+            memcpy(&laddr->as_ipv4.ipaddr, &ah_sockaddr_ipv4_loopback.ipaddr, sizeof(ah_sockaddr_ipv4_loopback.ipaddr));
+        }
+        else {
+            memcpy(&laddr->as_ipv6.ipaddr, &ah_sockaddr_ipv6_loopback.ipaddr, sizeof(ah_sockaddr_ipv6_loopback.ipaddr));
+        }
+    }
 #endif
 
     return AH_ENONE;

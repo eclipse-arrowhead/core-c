@@ -102,8 +102,8 @@ ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char*
             if (i == 0u) {
                 // Does address start with 0:0:0:0:0:FFFF? It is an IPv4-mapped IPv6 address!
                 if (double_colon_range.size == 10u && addr->octets[10] == 0xFF && addr->octets[11] == 0xFF) {
-                    n = sprintf(&buf[buf_i], ":FFFF:%d.%d.%d.%d", addr->octets[12], addr->octets[13],
-                        addr->octets[14], addr->octets[15]);
+                    n = snprintf(&buf[buf_i], AH_IPADDR_V6_STRLEN_MAX - buf_i, ":FFFF:%d.%d.%d.%d",
+                        addr->octets[12], addr->octets[13], addr->octets[14], addr->octets[15]);
                     if (n < 0) {
                         return AH_EOPNOTSUPP;
                     }
@@ -113,8 +113,8 @@ ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char*
 
                 // Does address start with 0:0:0:0:0:0? It is an IPv4-compatible IPv6 address!
                 if (double_colon_range.size == 12u) {
-                    n = sprintf(&buf[buf_i], ":%d.%d.%d.%d", addr->octets[12], addr->octets[13],
-                        addr->octets[14], addr->octets[15]);
+                    n = snprintf(&buf[buf_i], AH_IPADDR_V6_STRLEN_MAX - buf_i, ":%d.%d.%d.%d",
+                        addr->octets[12], addr->octets[13], addr->octets[14], addr->octets[15]);
                     if (n < 0) {
                         return AH_EOPNOTSUPP;
                     }
@@ -133,7 +133,7 @@ ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char*
         }
 
         uint16_t value = ((uint16_t) addr->octets[i]) << 8 | addr->octets[i + 1u];
-        n = sprintf(&buf[buf_i], "%X", value);
+        n = snprintf(&buf[buf_i], AH_IPADDR_V6_STRLEN_MAX - buf_i, "%X", value);
         if (n < 0) {
             return AH_EOPNOTSUPP;
         }

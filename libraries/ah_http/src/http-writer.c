@@ -60,7 +60,7 @@ bool ah_i_http_write_size_as_string(ah_rw_t* rw, size_t size, unsigned base)
 
     uint64_t s = size;
     for (;;) {
-        uint8_t digit = s % base;
+        uint8_t digit = (uint8_t) (s % base);
         if (digit < 10u) {
             off[0u] = '0' + digit;
         }

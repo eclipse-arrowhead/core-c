@@ -8,6 +8,7 @@
 
 #include "ah/assert.h"
 #include "ah/buf.h"
+#include "ah/err.h"
 
 #include <string.h>
 
@@ -47,10 +48,11 @@ ah_extern ah_buf_t ah_rw_get_readable_as_buf(const ah_rw_t* rw)
 {
     ah_assert(rw != NULL);
 
-    return (ah_buf_t) {
-        ._base = (uint8_t*) rw->r,
-        ._size = (size_t) (rw->w - rw->r),
-    };
+    ah_buf_t buf;
+    if (ah_buf_init(&buf, rw->r, (size_t) (rw->w - rw->r)) != AH_ENONE) {
+        return ah_buf_from(rw->r, UINT32_MAX);
+    }
+    return buf;
 }
 
 ah_extern size_t ah_rw_get_readable_size(const ah_rw_t* rw)
@@ -64,10 +66,11 @@ ah_extern ah_buf_t ah_rw_get_writable_as_buf(const ah_rw_t* rw)
 {
     ah_assert(rw != NULL);
 
-    return (ah_buf_t) {
-        ._base = (uint8_t*) rw->w,
-        ._size = (size_t) (rw->e - rw->w),
-    };
+    ah_buf_t buf;
+    if (ah_buf_init(&buf, rw->w, (size_t) (rw->e - rw->w)) != AH_ENONE) {
+        return ah_buf_from(rw->w, UINT32_MAX);
+    }
+    return buf;
 }
 
 ah_extern size_t ah_rw_get_writable_size(const ah_rw_t* rw)

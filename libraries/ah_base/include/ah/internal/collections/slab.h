@@ -17,14 +17,14 @@ struct ah_i_slab {
     size_t _slot_size;
 };
 
+// Slot contents are stored right after the slot structure itself.
 struct ah_i_slab_slot {
     struct ah_i_slab_slot* _next_free;
-    uint8_t _entry_as_raw_bytes[];
 };
 
+// Cache slots are stored right after the cache structure itself.
 struct ah_i_slab_cache {
     struct ah_i_slab_cache* _next;
-    uint8_t _slots_as_raw_bytes[];
 };
 
 ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, size_t slot_data_size);

@@ -81,14 +81,14 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
     struct sockaddr* address = ah_i_sockaddr_into_bsd(&raddr);
     socklen_t address_len = sizeof(raddr);
 
-    ssize_t nread = recvfrom(sock->_fd, ah_buf_get_base(&sock->_in->buf), ah_buf_get_size(&sock->_in->buf), 0, address, &address_len);
-    if (nread <= 0) {
+    ssize_t nrecv = recvfrom(sock->_fd, ah_buf_get_base(&sock->_in->buf), ah_buf_get_size(&sock->_in->buf), 0, address, &address_len);
+    if (nrecv <= 0) {
         // We know there are bytes left to read, so zero bytes being read should not be possible.
-        err = nread == 0 ? AH_EINTERN : errno;
+        err = nrecv == 0 ? AH_EINTERN : errno;
         goto report_err;
     }
 
-    sock->_in->nread = (size_t) nread;
+    sock->_in->nrecv = (size_t) nrecv;
     sock->_in->raddr = &raddr;
 
     sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);

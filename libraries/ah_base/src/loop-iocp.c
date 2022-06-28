@@ -17,11 +17,11 @@
 
 #include <stdlib.h>
 
-static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb, size_t initial_capacity);
+static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, size_t initial_capacity);
 static ah_task_t* s_task_queue_dequeue_if_at_or_after(struct ah_i_loop_task_queue* queue, ah_time_t baseline);
 static ah_time_t* s_task_queue_peek_at_baseline(struct ah_i_loop_task_queue* queue);
 static void s_task_queue_heapify_down_from(struct ah_i_loop_task_queue* queue, const size_t index);
-static void s_task_queue_term(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb);
+static void s_task_queue_term(struct ah_i_loop_task_queue* queue);
 
 ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
 {
@@ -32,7 +32,7 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
         opts->capacity = AH_CONF_IOCP_DEFAULT_CAPACITY;
     }
 
-    ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->alloc_cb, opts->capacity / 4u);
+    ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->capacity / 4u);
     if (err != AH_ENONE) {
         return err;
     }
@@ -160,16 +160,15 @@ ah_extern void ah_i_loop_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
-    s_task_queue_term(&loop->_task_queue, loop->_alloc_cb);
+    s_task_queue_term(&loop->_task_queue);
 
     (void) CloseHandle(loop->_iocp_handle);
     (void) WSACleanup();
 }
 
-static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb, size_t initial_capacity)
+static ah_err_t s_task_queue_init(struct ah_i_loop_task_queue* queue, size_t initial_capacity)
 {
     ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(alloc_cb != NULL);
 
     struct ah_i_loop_task_entry* entries;
 
@@ -257,10 +256,9 @@ static void s_task_queue_heapify_down_from(struct ah_i_loop_task_queue* queue, c
     }
 }
 
-static void s_task_queue_term(struct ah_i_loop_task_queue* queue, ah_alloc_cb alloc_cb)
+static void s_task_queue_term(struct ah_i_loop_task_queue* queue)
 {
     ah_assert_if_debug(queue != NULL);
-    ah_assert_if_debug(alloc_cb != NULL);
 
     ah_free(queue->_entries);
 
@@ -269,6 +267,7 @@ static void s_task_queue_term(struct ah_i_loop_task_queue* queue, ah_alloc_cb al
 #endif
 }
 
+#pragma warning(disable : 6386)
 ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task)
 {
     ah_assert_if_debug(loop != NULL);
@@ -323,6 +322,7 @@ ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, 
 
     return AH_ENONE;
 }
+#pragma warning(default : 6386)
 
 ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task)
 {
@@ -347,7 +347,7 @@ ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task)
     return false;
 }
 
-ah_extern ah_err_t ah_i_loop_evt_get_result(ah_i_loop_evt_t* evt, DWORD* n_bytes_transferred)
+ah_extern ah_err_t ah_i_loop_evt_get_wsa_result(ah_i_loop_evt_t* evt, SOCKET fd, DWORD* n_bytes_transferred)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(n_bytes_transferred != NULL);
@@ -357,7 +357,7 @@ ah_extern ah_err_t ah_i_loop_evt_get_result(ah_i_loop_evt_t* evt, DWORD* n_bytes
     }
 
     DWORD flags;
-    if (!WSAGetOverlappedResult(conn->_fd, &evt->_overlapped, &n_bytes_transferred, false, &flags)) {
+    if (!WSAGetOverlappedResult(fd, &evt->_overlapped, n_bytes_transferred, false, &flags)) {
         return WSAGetLastError();
     }
 

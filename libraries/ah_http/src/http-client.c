@@ -165,7 +165,7 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
         bool has_connection_close_been_seen = false;
         bool has_content_length_been_seen = false;
         bool has_transfer_encoding_chunked_been_seen = false;
-        size_t content_length;
+        size_t content_length = 0u;
 
         for (;;) {
             ah_http_header_t header;

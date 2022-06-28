@@ -28,7 +28,7 @@ static void s_should_use_same_data_layout_as_platform_variant(ah_unit_t* unit)
 
 #if AH_IS_WIN32
 
-    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_buf_t, _capacity, WSABUF, len);
+    S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_buf_t, _size, WSABUF, len);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(unit, ah_buf_t, _base, WSABUF, buf);
 
     ah_unit_assert(unit, sizeof(ah_buf_t) >= sizeof(WSABUF), "ah_buf_t seems to be missing fields");

@@ -14,15 +14,22 @@ set(
     src/mbedtls-utils.h
 )
 
-include(FindMbedTLS)
-if (NOT mbedtls_FOUND)
-    message(FATAL_ERROR "The MbedTLS library could not be found. Required.")
-endif ()
-
 add_library(ah_mbedtls STATIC ${SOURCE_FILES})
-target_include_directories(ah_mbedtls
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(ah_mbedtls PUBLIC ah_base MbedTLS::mbedtls)
+target_include_directories(ah_mbedtls PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+include(FindMbedTLS)
+if (mbedtls_FOUND)
+    target_link_libraries(ah_mbedtls PUBLIC ah_base MbedTLS::mbedtls)
+else ()
+    include(FetchContent)
+    FetchContent_Declare(
+        MbedTLS
+        GIT_REPOSITORY https://github.com/Mbed-TLS/mbedtls.git
+        GIT_TAG d65aeb37349ad1a50e0f6c9b694d4b5290d60e49 # v3.1.0
+    )
+    FetchContent_MakeAvailable(MbedTLS)
+    target_link_libraries(ah_mbedtls PUBLIC ah_base MbedTLS)
+endif ()
 
 set(
     TEST_FILES

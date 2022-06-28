@@ -30,6 +30,7 @@
  LPFN_ACCEPTEX _AcceptEx;                                   \
  LPFN_GETACCEPTEXSOCKADDRS _GetAcceptExSockaddrs;
 
-#define AH_I_TCP_OUT_PLATFORM_FIELDS
+#define AH_I_TCP_OUT_PLATFORM_FIELDS \
+ ah_tcp_conn_t* _conn;
 
 #endif

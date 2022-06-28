@@ -151,6 +151,7 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
+#pragma warning(disable : 6011)
 static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
@@ -185,6 +186,7 @@ static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 
     user_data->did_call_read_cb = true;
 }
+#pragma warning(default : 6011)
 
 static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
 {
@@ -286,7 +288,7 @@ static void s_on_listener_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, con
         return;
     }
 
-    ah_unit_assert(unit, raddr != NULL, "ln_addr == NULL");
+    ah_unit_assert(unit, raddr != NULL, "raddr == NULL");
 
     ah_tcp_conn_set_user_data(conn, &user_data->accept_user_data);
 

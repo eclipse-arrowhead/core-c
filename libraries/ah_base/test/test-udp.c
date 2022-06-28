@@ -83,13 +83,15 @@ static void s_on_open(ah_udp_sock_t* sock, ah_err_t err)
 
     if (user_data->out != NULL) {
         err = ah_udp_sock_send(sock, user_data->out);
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
     }
     else {
         err = ah_udp_sock_recv_start(sock);
-    }
-
-    if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
-        return;
+        if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
+            return;
+        }
     }
 
     user_data->did_call_open_cb = true;
@@ -134,7 +136,7 @@ static void s_on_recv(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err)
     if (!ah_unit_assert(unit, in != NULL, "raddr == NULL")) {
         return;
     }
-    if (!ah_unit_assert_unsigned_eq(unit, 18u, in->nread)) {
+    if (!ah_unit_assert_unsigned_eq(unit, 18u, in->nrecv)) {
         return;
     }
     if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base(&in->buf))) {
