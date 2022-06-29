@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.15)
 project(ah_mbedtls C)
 set(CMAKE_C_STANDARD 99)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 # Try to find a local installation of MbedTLS and link to that.
-include(cmake/FindMbedTLS.cmake)
+include(FindMbedTLS)
 if (NOT mbedtls_IS_ALREADY_AVAILABLE)
     # If no such is available, download, install and then find the downloaded MBedTLS version.
-    include(cmake/DownloadMbedTLS.cmake)
+    include(DownloadMbedTLS)
 endif ()
 
 set(

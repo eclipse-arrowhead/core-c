@@ -1,13 +1,18 @@
 include(FindPackageHandleStandardArgs)
 
 find_library(mbedcrypto_LIBRARY NAMES mbedcrypto)
+find_path(mbedcrypto_INCLUDE_DIR NAMES mbedtls/platform.h)
+find_package_handle_standard_args(mbedcrypto REQUIRED_VARS mbedcrypto_INCLUDE_DIR mbedcrypto_LIBRARY)
+
 find_library(mbedx509_LIBRARY NAMES mbedx509)
+find_path(mbedx509_INCLUDE_DIR NAMES mbedtls/x509.h)
+find_package_handle_standard_args(mbedx509 REQUIRED_VARS mbedx509_INCLUDE_DIR mbedx509_LIBRARY)
+
 find_library(mbedtls_LIBRARY NAMES mbedtls)
+find_path(mbedtls_INCLUDE_DIR NAMES mbedtls/ssl.h)
+find_package_handle_standard_args(mbedtls REQUIRED_VARS mbedtls_INCLUDE_DIR mbedtls_LIBRARY)
 
 if (mbedcrypto_FOUND AND mbedx509_FOUND AND mbedtls_FOUND)
-
-    find_path(mbedcrypto_INCLUDE_DIR NAMES mbedtls/platform.h)
-    find_package_handle_standard_args(mbedcrypto REQUIRED_VARS mbedcrypto_INCLUDE_DIR mbedcrypto_LIBRARY)
 
     mark_as_advanced(mbedcrypto_INCLUDE_DIR)
     mark_as_advanced(mbedcrypto_LIBRARY)
@@ -18,9 +23,6 @@ if (mbedcrypto_FOUND AND mbedx509_FOUND AND mbedtls_FOUND)
         target_include_directories(MbedTLS::mbedcrypto INTERFACE ${mbedcrypto_INCLUDE_DIR})
     endif ()
 
-    find_path(mbedx509_INCLUDE_DIR NAMES mbedtls/x509.h)
-    find_package_handle_standard_args(mbedx509 REQUIRED_VARS mbedx509_INCLUDE_DIR mbedx509_LIBRARY)
-
     mark_as_advanced(mbedx509_INCLUDE_DIR)
     mark_as_advanced(mbedx509_LIBRARY)
 
@@ -30,9 +32,6 @@ if (mbedcrypto_FOUND AND mbedx509_FOUND AND mbedtls_FOUND)
         set_target_properties(MbedTLS::mbedx509 PROPERTIES INTERFACE_LINK_LIBRARIES MbedTLS::mbedcrypto)
         target_include_directories(MbedTLS::mbedx509 INTERFACE ${mbedx509_INCLUDE_DIR})
     endif ()
-
-    find_path(mbedtls_INCLUDE_DIR NAMES mbedtls/ssl.h)
-    find_package_handle_standard_args(mbedtls REQUIRED_VARS mbedtls_INCLUDE_DIR mbedtls_LIBRARY)
 
     mark_as_advanced(mbedtls_INCLUDE_DIR)
     mark_as_advanced(mbedtls_LIBRARY)
@@ -45,5 +44,9 @@ if (mbedcrypto_FOUND AND mbedx509_FOUND AND mbedtls_FOUND)
     endif ()
 
     set(mbedtls_IS_ALREADY_AVAILABLE TRUE)
+
+else ()
+
+    set(mbedtls_IS_ALREADY_AVAILABLE FALSE)
 
 endif ()
