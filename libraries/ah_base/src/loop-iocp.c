@@ -133,11 +133,16 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
                 evt->_cb(evt);
             }
 
+            ah_i_loop_evt_dealloc(loop, evt);
+
+            err = ah_i_loop_get_pending_err(loop);
+            if (ah_unlikely(err != AH_ENONE)) {
+                return err;
+            }
+
             if (ah_unlikely(loop->_state != AH_I_LOOP_STATE_RUNNING)) {
                 return AH_ENONE;
             }
-
-            ah_i_loop_evt_dealloc(loop, evt);
         }
 
         for (;;) {

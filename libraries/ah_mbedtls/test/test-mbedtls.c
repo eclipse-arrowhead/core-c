@@ -183,6 +183,9 @@ static void s_print_mbedtls_err_if_any(ah_unit_t* unit, ah_tcp_conn_t* conn, ah_
     }
 }
 
+#if AH_VIA_MSVC
+# pragma warning(disable : 6011)
+#endif
 static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
@@ -220,6 +223,9 @@ static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 
     user_data->did_call_read_cb = true;
 }
+#if AH_VIA_MSVC
+# pragma warning(default : 6011)
+#endif
 
 static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
 {
