@@ -28,5 +28,7 @@ bool ah_i_unit_assert_err_eq(struct ah_i_unit unit, ah_err_t a, ah_err_t b, cons
 bool ah_i_unit_assert_mem_eq(struct ah_i_unit unit, const void* a, const void* b, size_t size, const char* message);
 bool ah_i_unit_assert_signed_eq(struct ah_i_unit unit, intmax_t a, intmax_t b, const char* message);
 bool ah_i_unit_assert_unsigned_eq(struct ah_i_unit unit, uintmax_t a, uintmax_t b, const char* message);
+void ah_i_unit_print(struct ah_i_unit unit, const char* message);
+void ah_i_unit_printf(struct ah_i_unit unit, const char* format, ...);
 
 #endif

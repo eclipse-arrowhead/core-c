@@ -7,9 +7,10 @@
 #ifndef AH_INTERNAL_LOOP_H_
 #define AH_INTERNAL_LOOP_H_
 
-#include "../alloc.h"
+#include "../conf.h"
 #include "../defs.h"
 #include "../time.h"
+#include "collections/slab.h"
 
 #if AH_USE_IOCP
 # include "_loop-iocp.h"
@@ -25,32 +26,19 @@
 #define AH_I_LOOP_STATE_TERMINATING 0x08
 #define AH_I_LOOP_STATE_TERMINATED  0x10
 
-#define AH_I_LOOP_EVT_PAGE_SIZE     8192
-#define AH_I_LOOP_EVT_PAGE_CAPACITY ((AH_I_LOOP_EVT_PAGE_SIZE / sizeof(ah_i_loop_evt_t)) - 1)
-
-#define AH_I_LOOP_FIELDS                    \
- ah_alloc_cb _alloc_cb;                     \
-                                            \
- struct ah_i_loop_evt_page* _evt_page_list; \
- struct ah_i_loop_evt* _evt_free_list;      \
-                                            \
- ah_time_t _now;                            \
- ah_err_t _pending_err;                     \
- int _state;                                \
-                                            \
+#define AH_I_LOOP_FIELDS     \
+ struct ah_i_slab _evt_slab; \
+                             \
+ ah_time_t _now;             \
+ ah_err_t _pending_err;      \
+ int _state;                 \
+                             \
  AH_I_LOOP_PLATFORM_FIELDS
 
 struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS
 
-    void* _subject; // Must be non-NULL while the event is in use.
-    ah_i_loop_evt_t* _next_free; // Used by loop allocator. Do not use directly.
-};
-
-struct ah_i_loop_evt_page {
-    ah_i_loop_evt_t _evt_array[AH_I_LOOP_EVT_PAGE_CAPACITY];
-    char _pad[sizeof(ah_i_loop_evt_t) - sizeof(ah_i_loop_evt_page_t*)];
-    ah_i_loop_evt_page_t* _next_page;
+    void* _subject;
 };
 
 ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts);

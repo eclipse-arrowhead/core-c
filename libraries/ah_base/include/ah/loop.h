@@ -14,7 +14,6 @@ struct ah_loop {
 };
 
 struct ah_loop_opts {
-    ah_alloc_cb alloc_cb;
     size_t capacity;
 };
 
@@ -23,7 +22,6 @@ struct ah_loop_opts {
 // * AH_EMFILE       - [Darwin, Linux] Per-process file descriptor table is full.
 // * AH_ENFILE       - [Darwin, Linux] Platform file table is full.
 // * AH_ENOMEM       - [Darwin, Linux] Failed to allocate kernel memory for event queue.
-// * AH_ENOMEM       - `opts->alloc_cb` failed to allocate required memory.
 // * AH_EOVERFLOW    - [Linux] More than 32-bits of heap memory was requested on a 32-bit system.
 // * AH_EPERM        - [Linux] Permission denied to set up required kernel resource.
 // * AH_EPROCLIM     - [Win32] Windows task limit reached.

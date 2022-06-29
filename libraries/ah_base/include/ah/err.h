@@ -56,8 +56,11 @@
 #endif
 
 #define AH_I_ERR_MAP(E)                                                                               \
+ E(DEP, 5405, "dependency error")                                                                     \
  E(DUP, 5403, "duplicate exists")                                                                     \
  E(EOF, 5401, "unexpected end of stream")                                                             \
+ E(INTERN, 5404, "internal error")                                                                    \
+ E(RECONN, 5406, "reconnecting")                                                                      \
  E(STATE, 5402, "state invalid")                                                                      \
                                                                                                       \
  E(2BIG, AH_I_ERR_ONE_OF(E2BIG, 5501), "argument list too long")                                      \
@@ -80,7 +83,7 @@
  E(DOM, AH_I_ERR_ONE_OF(EDOM, 5506), "arithmetic argument outside accepted domain")                   \
  E(DQUOT, AH_I_ERR_ONE_OF(EDQUOT, WSAEDQUOT), "disc quota exceeded")                                  \
  E(EXIST, AH_I_ERR_ONE_OF(EEXIST, 5507), "already exists")                                            \
- E(FAULT, AH_I_ERR_ONE_OF(EFAULT, WSAEFAULT), "bad address")                                          \
+ E(FAULT, AH_I_ERR_ONE_OF(EFAULT, WSAEFAULT), "bad pointer")                                          \
  E(FBIG, AH_I_ERR_ONE_OF(EFBIG, 5508), "file too large")                                              \
  E(HOSTDOWN, AH_I_ERR_ONE_OF(EHOSTDOWN, WSAEHOSTDOWN), "host down")                                   \
  E(HOSTUNREACH, AH_I_ERR_ONE_OF(EHOSTUNREACH, WSAEHOSTUNREACH), "host unreachable")                   \
@@ -105,12 +108,12 @@
  E(NOBUFS, AH_I_ERR_ONE_OF(ENOBUFS, WSAENOBUFS), "no buffer space available")                         \
  E(NODATA, AH_I_ERR_ONE_OF(ENODATA, 5516), "no data available")                                       \
  E(NODEV, AH_I_ERR_ONE_OF(ENODEV, 5517), "no such device")                                            \
- E(NOENT, AH_I_ERR_ONE_OF(ENOENT, 5518), "no such file or directory")                                 \
+ E(NOENT, AH_I_ERR_ONE_OF(ENOENT, 5518), "no such entry")                                             \
  E(NOEXEC, AH_I_ERR_ONE_OF(ENOEXEC, 5519), "executable file format error")                            \
  E(NOLCK, AH_I_ERR_ONE_OF(ENOLCK, 5520), "no locks available")                                        \
  E(NOLINK, AH_I_ERR_ONE_OF(ENOLINK, 5521), "link severed")                                            \
  E(NOMEM, AH_I_ERR_ONE_OF(ENOMEM, ERROR_NOT_ENOUGH_MEMORY), "not enough memory")                      \
- E(NOMSG, AH_I_ERR_ONE_OF(ENOMSG, 5522), "no message of the desired type")                            \
+ E(NOMSG, AH_I_ERR_ONE_OF(ENOMSG, 5522), "no such message")                                           \
  E(NOPROTOOPT, AH_I_ERR_ONE_OF(ENOPROTOOPT, WSAENOPROTOOPT), "protocol not available")                \
  E(NOSPC, AH_I_ERR_ONE_OF(ENOSPC, 5523), "no space left")                                             \
  E(NOSR, AH_I_ERR_ONE_OF(ENOSR, 5524), "no STREAM resources")                                         \

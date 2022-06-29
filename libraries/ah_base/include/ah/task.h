@@ -17,7 +17,7 @@ struct ah_task {
     AH_I_TASK_FIELDS
 };
 
-ah_extern void ah_task_init(ah_task_t* task, ah_loop_t* loop, ah_task_cb cb);
+ah_extern ah_err_t ah_task_init(ah_task_t* task, ah_loop_t* loop, ah_task_cb cb);
 ah_extern void* ah_task_get_user_data(const ah_task_t* task);
 ah_extern ah_loop_t* ah_task_get_loop(const ah_task_t* task);
 ah_extern void ah_task_set_user_data(ah_task_t* task, void* user_data);

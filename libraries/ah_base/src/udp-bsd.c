@@ -14,8 +14,10 @@
 # include <ws2ipdef.h>
 #endif
 
-ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_udp_sock_open(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t* laddr)
 {
+    (void) ctx;
+
     if (sock == NULL || sock->_loop == NULL) {
         return AH_EINVAL;
     }
@@ -30,7 +32,7 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* la
         sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
     }
 
-    sock->_vtab->on_open(sock, err);
+    sock->_cbs->on_open(sock, err);
 
     return err;
 }
@@ -68,11 +70,7 @@ ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint
     }
 
     int value = hop_limit;
-    if (setsockopt(sock->_fd, level, name, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(sock->_fd, level, name, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool is_enabled)
@@ -97,11 +95,7 @@ ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool 
     }
 
     int value = is_enabled ? 1 : 0;
-    if (setsockopt(sock->_fd, level, name, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(sock->_fd, level, name, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enabled)
@@ -113,10 +107,7 @@ ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enable
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
-    if (setsockopt(sock->_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(sock->_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit)
@@ -141,11 +132,7 @@ ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_
     }
 
     int value = hop_limit;
-    if (setsockopt(sock->_fd, level, name, (void*) &value, sizeof(value)) != 0) {
-        return errno;
-    }
-
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(sock->_fd, level, name, &value, sizeof(value));
 }
 
 ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* group)
@@ -169,11 +156,7 @@ ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* g
         name = IP_ADD_MEMBERSHIP;
     }
 
-    if (setsockopt(sock->_fd, level, name, (void*) group, sizeof(ah_udp_group_t)) != 0) {
-        return errno;
-    }
-
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(sock->_fd, level, name, (void*) group, sizeof(ah_udp_group_t));
 }
 
 ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group)
@@ -197,9 +180,5 @@ ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* 
         name = IP_DROP_MEMBERSHIP;
     }
 
-    if (setsockopt(sock->_fd, level, name, (void*) group, sizeof(ah_udp_group_t)) != 0) {
-        return errno;
-    }
-
-    return AH_ENONE;
+    return ah_i_sock_setsockopt(sock->_fd, level, name, (void*) group, sizeof(ah_udp_group_t));
 }

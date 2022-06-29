@@ -17,6 +17,11 @@
 // overflowed. The signed `div` functions additionally return AH_EDOM of the `b`
 // argument is zero.
 
+ah_extern ah_err_t ah_add_int16(int16_t a, int16_t b, int16_t* result);
+ah_extern ah_err_t ah_div_int16(int16_t a, int16_t b, int16_t* result);
+ah_extern ah_err_t ah_mul_int16(int16_t a, int16_t b, int16_t* result);
+ah_extern ah_err_t ah_sub_int16(int16_t a, int16_t b, int16_t* result);
+
 ah_extern ah_err_t ah_add_int32(int32_t a, int32_t b, int32_t* result);
 ah_extern ah_err_t ah_div_int32(int32_t a, int32_t b, int32_t* result);
 ah_extern ah_err_t ah_mul_int32(int32_t a, int32_t b, int32_t* result);
@@ -36,6 +41,11 @@ ah_extern ah_err_t ah_add_size(size_t a, size_t b, size_t* result);
 ah_extern ah_err_t ah_div_size(size_t a, size_t b, size_t* result);
 ah_extern ah_err_t ah_mul_size(size_t a, size_t b, size_t* result);
 ah_extern ah_err_t ah_sub_size(size_t a, size_t b, size_t* result);
+
+ah_extern ah_err_t ah_add_uint16(uint16_t a, uint16_t b, uint16_t* result);
+ah_extern ah_err_t ah_div_uint16(uint16_t a, uint16_t b, uint16_t* result);
+ah_extern ah_err_t ah_mul_uint16(uint16_t a, uint16_t b, uint16_t* result);
+ah_extern ah_err_t ah_sub_uint16(uint16_t a, uint16_t b, uint16_t* result);
 
 ah_extern ah_err_t ah_add_uint32(uint32_t a, uint32_t b, uint32_t* result);
 ah_extern ah_err_t ah_div_uint32(uint32_t a, uint32_t b, uint32_t* result);

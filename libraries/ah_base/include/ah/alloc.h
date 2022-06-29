@@ -7,16 +7,14 @@
 #ifndef AH_ALLOC_H_
 #define AH_ALLOC_H_
 
-#include "defs.h"
+#include "conf.h"
 
-#include <stddef.h>
+#define AH_PSIZE     AH_CONF_PSIZE
 
-typedef void* (*ah_alloc_cb)(void* ptr, size_t size);
-
-ah_extern void ah_dealloc(ah_alloc_cb a, void* ptr);
-ah_extern void* ah_malloc(ah_alloc_cb a, size_t size);
-ah_extern void* ah_malloc_array(ah_alloc_cb a, size_t array_length, size_t item_size);
-ah_extern void* ah_realloc_array(ah_alloc_cb a, void* ptr, size_t new_array_length, size_t item_size);
-ah_extern void* ah_realloc_array_larger(ah_alloc_cb a, void* ptr, size_t* array_length, size_t item_size);
+#define ah_calloc(n, size) AH_CONF_CALLOC((n), (size))
+#define ah_free(ptr)       AH_CONF_FREE((ptr))
+#define ah_malloc(size)    AH_CONF_MALLOC((size))
+#define ah_palloc()        AH_CONF_PALLOC()
+#define ah_pfree(page)     AH_CONF_PFREE((page))
 
 #endif

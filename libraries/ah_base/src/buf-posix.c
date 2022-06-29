@@ -26,28 +26,28 @@ ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size)
 
 ah_extern ah_buf_t ah_buf_from(uint8_t* base, uint32_t size)
 {
-    ah_assert_if_debug(base != NULL || size == 0u);
+    ah_assert(base != NULL || size == 0u);
+
     return (ah_buf_t) { base, size };
 }
 
-ah_extern void ah_i_bufs_from_iovec(ah_bufs_t* bufs, struct iovec* iov, size_t iovcnt)
+ah_extern void ah_buf_limit_size_to(ah_buf_t* buf, size_t limit)
 {
-    ah_assert_if_debug(bufs != NULL && iov != NULL);
+    ah_assert(buf != NULL);
 
-    bufs->items = (ah_buf_t*) iov;
-    bufs->length = iovcnt;
+    if (buf->_size > limit) {
+        buf->_size = limit;
+    }
 }
 
-ah_extern ah_err_t ah_i_bufs_into_iovecs(ah_bufs_t* bufs, struct iovec** iov, int* iovcnt)
+ah_extern void ah_buf_skipn(ah_buf_t* buf, size_t size)
 {
-    ah_assert_if_debug(bufs != NULL && iov != NULL && iovcnt != NULL);
+    ah_assert(buf != NULL);
 
-    if (bufs->length > INT_MAX) {
-        return AH_EOVERFLOW;
+    if (size > buf->_size) {
+        size = buf->_size;
     }
 
-    *iov = (struct iovec*) bufs->items;
-    *iovcnt = (int) bufs->length;
-
-    return AH_ENONE;
+    buf->_base = &buf->_base[size];
+    buf->_size = buf->_size - size;
 }

@@ -10,6 +10,7 @@ set(
     include/ah/alloc.h
     include/ah/assert.h
     include/ah/buf.h
+    include/ah/conf.h
     include/ah/defs.h
     include/ah/err.h
     include/ah/internal/_loop.h
@@ -18,29 +19,40 @@ set(
     include/ah/internal/_tcp.h
     include/ah/internal/_time.h
     include/ah/internal/_udp.h
+    include/ah/internal/collections/list.h
+    include/ah/internal/collections/ring.h
+    include/ah/internal/collections/slab.h
     include/ah/intrin.h
     include/ah/ip.h
     include/ah/lib.h
     include/ah/loop.h
     include/ah/math.h
+    include/ah/rw.h
     include/ah/sock.h
     include/ah/task.h
     include/ah/tcp.h
     include/ah/time.h
     include/ah/udp.h
     src/abort.c
-    src/alloc.c
     src/buf.c
+    src/collections/list.c
+    src/collections/ring.c
+    src/collections/slab.c
     src/err.c
     src/ip.c
     src/lib.c
     src/loop-evt.h
     src/loop.c
     src/math.c
+    src/rw.c
     src/sock.c
     src/task.c
+    src/tcp-in.c
+    src/tcp-in.h
     src/tcp.c
     src/time.c
+    src/udp-in.c
+    src/udp-in.h
     src/udp.c
 )
 
@@ -62,11 +74,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         src/task-kqueue.c
         src/tcp-bsd.c
         src/tcp-kqueue.c
-        src/tcp-posix.c
         src/time-darwin.c
         src/udp-bsd.c
         src/udp-kqueue.c
-        src/udp-posix.c
     )
 endif ()
 
@@ -87,11 +97,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         src/sock-bsd.c
         src/task-uring.c
         src/tcp-bsd.c
-        src/tcp-posix.c
         src/tcp-uring.c
         src/time-uring.c
         src/udp-bsd.c
-        src/udp-posix.c
         src/udp-uring.c
     )
 endif ()
@@ -130,14 +138,15 @@ target_include_directories(
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    include(FindLiburing)
-    target_link_libraries(ah_base liburing::liburing)
+    include(cmake/FindLiburing.cmake)
+    target_link_libraries(ah_base PRIVATE liburing::liburing)
 endif ()
 
 add_custom_target(mkdir_generated
     COMMAND ${CMAKE_COMMAND} -E make_directory "${GENERATED_DIR}"
     BYPRODUCTS "${GENERATED_DIR}"
-    VERBATIM)
+    VERBATIM
+)
 
 add_dependencies(ah_base mkdir_generated)
 
@@ -151,7 +160,8 @@ if (GIT_FOUND)
         BYPRODUCTS "${GIT_METADATA_HEADER}"
         DEPENDS "${CMAKE_SOURCE_DIR}/.git/refs/heads/master"
         COMMENT "Generating ${GIT_METADATA_HEADER}"
-        VERBATIM)
+        VERBATIM
+    )
     add_dependencies(ah_base generate_git_metadata_header)
 else ()
     message(FATAL_ERROR "`git` not found. Required.")
@@ -161,6 +171,8 @@ set(
     TEST_FILES
     test/main.c
     test/test-buf.c
+    test/test-collections-list.c
+    test/test-collections-ring.c
     test/test-err.c
     test/test-ip.c
     test/test-math.c

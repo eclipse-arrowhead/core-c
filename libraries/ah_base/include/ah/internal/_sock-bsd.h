@@ -68,4 +68,8 @@ ah_extern ah_err_t ah_i_sock_close(ah_i_sockfd_t fd);
 ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr);
 ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* raddr);
 
+ah_extern ah_err_t ah_i_sock_setsockopt(ah_i_sockfd_t fd, int level, int name, const void* value, ah_i_socklen_t size);
+
+ah_extern ah_err_t ah_i_sock_shutdown(ah_i_sockfd_t fd, int flags);
+
 #endif

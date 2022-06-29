@@ -10,17 +10,19 @@
 #include "ah/err.h"
 #include "ah/loop.h"
 
-ah_extern void ah_task_init(ah_task_t* task, ah_loop_t* loop, ah_task_cb cb)
+ah_extern ah_err_t ah_task_init(ah_task_t* task, ah_loop_t* loop, ah_task_cb cb)
 {
-    ah_assert_if_debug(task != NULL);
-    ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(cb != NULL);
+    if (task == NULL || loop == NULL || cb == NULL) {
+        return AH_EINVAL;
+    }
 
     *task = (ah_task_t) {
         ._loop = loop,
         ._cb = cb,
         ._state = AH_I_TASK_STATE_INITIAL,
     };
+
+    return AH_ENONE;
 }
 
 ah_extern void* ah_task_get_user_data(const ah_task_t* task)
