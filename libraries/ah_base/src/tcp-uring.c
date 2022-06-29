@@ -124,6 +124,7 @@ ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
 static ah_err_t s_conn_read_prep(ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
+    ah_assert_if_debug(conn->_state == AH_I_TCP_CONN_STATE_READING);
 
     ah_err_t err;
 
@@ -183,7 +184,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto report_err;
     }
 
-    conn->_in->rw.w = &conn->_in->rw.w[(size_t) (size_t) cqe->res];
+    conn->_in->rw.w = &conn->_in->rw.w[(size_t) cqe->res];
     ah_assert_if_debug(conn->_in->rw.w <= conn->_in->rw.e);
 
     conn->_cbs->on_read(conn, conn->_in, AH_ENONE);
@@ -198,6 +199,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     err = s_conn_read_prep(conn);
     if (err != AH_ENONE) {
+        conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
         goto report_err;
     }
 
@@ -414,6 +416,7 @@ ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned bac
 
     ln->_conn_cbs = conn_cbs;
     ln->_state = AH_I_TCP_LISTENER_STATE_LISTENING;
+
     ln->_cbs->on_listen(ln, AH_ENONE);
 
     return AH_ENONE;

@@ -16,8 +16,8 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
 static void s_sock_close(ah_udp_sock_t* sock, ah_err_t err);
-static void s_sock_recv_stop(ah_udp_sock_t* sock);
 static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock);
+static void s_sock_recv_stop(ah_udp_sock_t* sock);
 
 ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 {
@@ -61,11 +61,6 @@ static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
 
-    if (sock->_in->nrecv >= sock->_in->buf._size) {
-        sock->_cbs->on_recv(sock, NULL, AH_EOVERFLOW);
-        return AH_ENONE;
-    }
-
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
 
@@ -78,9 +73,6 @@ static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
     evt->_subject = sock;
 
     sock->_recv_evt = evt;
-
-    sock->_in->buf._base += sock->_in->nrecv;
-    sock->_in->buf._size -= sock->_in->nrecv;
 
     io_uring_prep_recvmsg(sqe, sock->_fd, &sock->_recv_msghdr, 0);
     io_uring_sqe_set_data(sqe, evt);
