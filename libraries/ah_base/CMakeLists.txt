@@ -138,14 +138,15 @@ target_include_directories(
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    include(FindLiburing)
+    include(cmake/FindLiburing.cmake)
     target_link_libraries(ah_base PRIVATE liburing::liburing)
 endif ()
 
 add_custom_target(mkdir_generated
     COMMAND ${CMAKE_COMMAND} -E make_directory "${GENERATED_DIR}"
     BYPRODUCTS "${GENERATED_DIR}"
-    VERBATIM)
+    VERBATIM
+)
 
 add_dependencies(ah_base mkdir_generated)
 
@@ -159,7 +160,8 @@ if (GIT_FOUND)
         BYPRODUCTS "${GIT_METADATA_HEADER}"
         DEPENDS "${CMAKE_SOURCE_DIR}/.git/refs/heads/master"
         COMMENT "Generating ${GIT_METADATA_HEADER}"
-        VERBATIM)
+        VERBATIM
+    )
     add_dependencies(ah_base generate_git_metadata_header)
 else ()
     message(FATAL_ERROR "`git` not found. Required.")

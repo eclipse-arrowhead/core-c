@@ -16,7 +16,7 @@ if (mbedcrypto_FOUND AND mbedx509_FOUND AND mbedtls_FOUND)
         add_library(MbedTLS::mbedcrypto IMPORTED STATIC)
         set_property(TARGET MbedTLS::mbedcrypto PROPERTY IMPORTED_LOCATION ${mbedcrypto_LIBRARY})
         target_include_directories(MbedTLS::mbedcrypto INTERFACE ${mbedcrypto_INCLUDE_DIR})
-    endif()
+    endif ()
 
     find_path(mbedx509_INCLUDE_DIR NAMES mbedtls/x509.h)
     find_package_handle_standard_args(mbedx509 REQUIRED_VARS mbedx509_INCLUDE_DIR mbedx509_LIBRARY)
@@ -29,7 +29,7 @@ if (mbedcrypto_FOUND AND mbedx509_FOUND AND mbedtls_FOUND)
         set_property(TARGET MbedTLS::mbedx509 PROPERTY IMPORTED_LOCATION ${mbedx509_LIBRARY})
         set_target_properties(MbedTLS::mbedx509 PROPERTIES INTERFACE_LINK_LIBRARIES MbedTLS::mbedcrypto)
         target_include_directories(MbedTLS::mbedx509 INTERFACE ${mbedx509_INCLUDE_DIR})
-    endif()
+    endif ()
 
     find_path(mbedtls_INCLUDE_DIR NAMES mbedtls/ssl.h)
     find_package_handle_standard_args(mbedtls REQUIRED_VARS mbedtls_INCLUDE_DIR mbedtls_LIBRARY)
@@ -42,20 +42,8 @@ if (mbedcrypto_FOUND AND mbedx509_FOUND AND mbedtls_FOUND)
         set_property(TARGET MbedTLS::mbedtls PROPERTY IMPORTED_LOCATION ${mbedtls_LIBRARY})
         set_target_properties(MbedTLS::mbedtls PROPERTIES INTERFACE_LINK_LIBRARIES MbedTLS::mbedx509)
         target_include_directories(MbedTLS::mbedtls INTERFACE ${mbedtls_INCLUDE_DIR})
-    endif()
+    endif ()
 
-else()
+    set(mbedtls_IS_ALREADY_AVAILABLE TRUE)
 
-    include(FetchContent)
-
-    FetchContent_Declare(
-        MbedTLS
-        GIT_REPOSITORY https://github.com/Mbed-TLS/mbedtls.git
-        GIT_TAG d65aeb37349ad1a50e0f6c9b694d4b5290d60e49 # v3.1.0
-    )
-
-    FetchContent_MakeAvailable(MbedTLS)
-
-    set(mbedtls_FOUND TRUE)
-
-endif()
+endif ()

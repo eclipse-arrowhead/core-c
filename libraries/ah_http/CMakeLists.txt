@@ -17,8 +17,7 @@ set(
 )
 
 add_library(ah_http STATIC ${SOURCE_FILES})
-target_include_directories(ah_http
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(ah_http PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_link_libraries(ah_http PRIVATE ah_base)
 
 set(
