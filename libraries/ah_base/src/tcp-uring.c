@@ -110,13 +110,13 @@ ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
         return err;
     }
 
+    conn->_state = AH_I_TCP_CONN_STATE_READING;
+
     err = s_conn_read_prep(conn);
     if (err != AH_ENONE) {
         ah_i_tcp_in_free(conn->_in);
         return err;
     }
-
-    conn->_state = AH_I_TCP_CONN_STATE_READING;
 
     return AH_ENONE;
 }
