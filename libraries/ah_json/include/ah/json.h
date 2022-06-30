@@ -7,6 +7,7 @@
 #ifndef AH_JSON_H_
 #define AH_JSON_H_
 
+#include <ah/buf.h>
 #include <ah/defs.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -21,16 +22,49 @@
 #define AH_JSON_TYPE_FALSE  6u
 #define AH_JSON_TYPE_NULL   7u
 
-typedef void* (*ah_json_cb_t)(const char* base, size_t length, unsigned type, unsigned level, void* user_data);
+typedef struct ah_json_buf ah_json_buf_t;
+typedef struct ah_json_val ah_json_val_t;
+
+struct ah_json_buf {
+    size_t capacity;
+    size_t length;
+
+    // If NULL, memory will be allocated dynamically by ah_json_parse().
+    ah_json_val_t* values;
+};
+
+struct ah_json_val {
+    const char* base;
+
+#if UINTPTR_MAX == UINT32_MAX
+# define AH_JSON_LENGTH_MAX (UINT32_C(0x001FFFFF))
+# define AH_JSON_LEVEL_MAX  (0xFF)
+
+    uint32_t type   : 3;
+    uint32_t level  : 8;
+    uint32_t length : 21;
+
+#elif UINTPTR_MAX == UINT64_MAX
+# define AH_JSON_LENGTH_MAX (UINT64_C(0x0000FFFFFFFFFFFF))
+# define AH_JSON_LEVEL_MAX  (0x1FFF)
+
+    uint64_t type   : 3;
+    uint64_t level  : 13;
+    uint64_t length : 48;
+
+#else
+# define AH_JSON_LENGTH_MAX (UINT32_MAX)
+# define AH_JSON_LEVEL_MAX  (UINT16_MAX)
+
+    uint16_t type;
+    uint16_t level;
+    uint32_t length;
+
+#endif
+};
 
 ah_extern void ah_json_escape(const char* src, size_t src_length, char* dst, size_t dst_length);
 ah_extern int ah_json_strcmp(const char* a, size_t a_length, const char* b, size_t b_length);
-ah_extern void* ah_json_parse(void* src, size_t size, void* user_data, ah_json_cb_t cb);
-
-// [ 1, 2, 3, 4, [ 5, 6, [ 7 ] ], 8, 9]
-// 0 1  1  1  1  1 2  2  2 3      1  1
-
-// { "a": 1, "b": { "c": 3 }, "d": 4 }
-// 0  1   1   1   1  2   2     1   1
+ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 
 #endif

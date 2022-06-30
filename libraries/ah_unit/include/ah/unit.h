@@ -39,6 +39,11 @@
 #define ah_unit_failf(unit, format, ...) \
  ((void) ah_i_unit_assertf(AH_I_UNIT_WRAP(unit), false, (format), __VA_ARGS__))
 
+#define ah_unit_pass(unit)      \
+ do {                           \
+  (unit)->assertion_count += 1; \
+ } while (false)
+
 #define ah_unit_print(unit, message) \
  ah_i_unit_print(AH_I_UNIT_WRAP(unit), (message))
 
