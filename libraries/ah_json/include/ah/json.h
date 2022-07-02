@@ -63,8 +63,15 @@ struct ah_json_val {
 #endif
 };
 
-ah_extern void ah_json_escape(const char* src, size_t src_length, char* dst, size_t dst_length);
-ah_extern int ah_json_strcmp(const char* a, size_t a_length, const char* b, size_t b_length);
+// JSON numbers are compatible with snprintf, sscanf, strfromd, strtod, etc. as
+// long as the set locale uses "." as radix character (the default "C" locale
+// uses the "." as radix character). You should use those functions to read and
+// write JSON numbers.
+
+ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length);
+ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* dst, size_t dst_length);
+ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t dst_length);
+
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 
 #endif
