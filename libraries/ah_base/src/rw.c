@@ -25,7 +25,7 @@ ah_extern ah_rw_t ah_rw_from_writable_buf(ah_buf_t* buf)
 {
     ah_assert(buf != NULL);
 
-    return ah_rw_from_writable(ah_buf_get_base(buf), ah_buf_get_size(buf));
+    return ah_rw_from_writable(buf->base, buf->size);
 }
 
 ah_extern ah_rw_t ah_rw_from_readable(const void* base, size_t size)
@@ -41,7 +41,7 @@ ah_extern ah_rw_t ah_rw_from_readable_buf(const ah_buf_t* buf)
 {
     ah_assert(buf != NULL);
 
-    return ah_rw_from_readable(ah_buf_get_base_const(buf), ah_buf_get_size(buf));
+    return ah_rw_from_readable(buf->base, buf->size);
 }
 
 ah_extern ah_buf_t ah_rw_get_readable_as_buf(const ah_rw_t* rw)
@@ -85,8 +85,7 @@ ah_extern bool ah_rw_is_containing_buf(const ah_rw_t* rw, const ah_buf_t* buf)
     ah_assert(rw != NULL);
     ah_assert(buf != NULL);
 
-    const uint8_t* base = ah_buf_get_base_const(buf);
-    return rw->r <= base && rw->e >= &base[ah_buf_get_size(buf)];
+    return rw->r <= buf->base && rw->e >= &buf->base[buf->size];
 }
 
 ah_extern bool ah_rw_is_readable(const ah_rw_t* rw)

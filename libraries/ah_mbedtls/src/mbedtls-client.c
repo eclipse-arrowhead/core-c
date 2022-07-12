@@ -330,7 +330,7 @@ ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_ou
     entry->_kind = S_SEND_QUEUE_ENTRY_KIND_NORMAL;
     entry->_state = S_SEND_QUEUE_ENTRY_STATE_PENDING;
 
-    int res = mbedtls_ssl_write(&client->_ssl, ah_buf_get_base(&out->buf), ah_buf_get_size(&out->buf));
+    int res = mbedtls_ssl_write(&client->_ssl, out->buf.base, out->buf.size);
     if (res < 0) {
         switch (res) {
         case MBEDTLS_ERR_SSL_WANT_READ:
@@ -345,7 +345,7 @@ ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_ou
     }
 
     // We guarantee that all data in out is written every time.
-    if (ah_buf_get_size(&out->buf) != (size_t) res) {
+    if (out->buf.size != (size_t) res) {
         return AH_EINTERN;
     }
 
@@ -606,7 +606,7 @@ int ah_i_mbedtls_client_write_ciphertext(void* conn_, const unsigned char* buf, 
 
     case S_SEND_QUEUE_ENTRY_STATE_SENT: {
         ah_i_ring_skip(&client->_out_queue_ciphertext);
-        size_t size = ah_buf_get_size(&entry->_out.buf);
+        size_t size = entry->_out.buf.size;
         ah_assert_if_debug(size == (size_t) len);
         return (int) size;
     }

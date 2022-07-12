@@ -14,10 +14,6 @@
 
 #define AH_I_BUF_PLATFORM_SIZE_MAX SIZE_MAX
 
-#define AH_I_BUF_PLATFORM_FIELDS \
- uint8_t* _base;                 \
- size_t _size;
-
 struct iovec;
 
 static inline struct iovec* ah_i_buf_into_iovec(ah_buf_t* buf)

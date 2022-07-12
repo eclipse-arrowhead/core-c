@@ -168,9 +168,11 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             goto report_err;
         }
 
-        ah_buf_limit_size_to(&dst, n_bytes_left);
+        if (dst.size > n_bytes_left) {
+            dst.size = n_bytes_left;
+        }
 
-        ssize_t nread = recv(conn->_fd, ah_buf_get_base(&dst), ah_buf_get_size(&dst), 0u);
+        ssize_t nread = recv(conn->_fd, dst.base, dst.size, 0u);
         if (nread < 0) {
             err = errno;
             goto report_err;
@@ -179,7 +181,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
             break;
         }
 
-        if (ah_unlikely(ah_buf_get_size(&dst) < (size_t) nread)) {
+        if (ah_unlikely(dst.size < (size_t) nread)) {
             err = AH_EDOM;
             goto report_err;
         }
@@ -313,13 +315,13 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err_and_prep_next;
     }
 
-    if (out->_buf_offset > ah_buf_get_size(&out->buf)) {
+    if (out->_buf_offset > out->buf.size) {
         err = AH_EINTERN;
         goto report_err_and_prep_next;
     }
 
-    void* buffer = &ah_buf_get_base(&out->buf)[out->_buf_offset];
-    size_t length = ah_buf_get_size(&out->buf) - out->_buf_offset;
+    void* buffer = &out->buf.base[out->_buf_offset];
+    size_t length = out->buf.size - out->_buf_offset;
 
     ssize_t res = send(conn->_fd, buffer, length, 0);
     if (ah_unlikely(res < 0)) {
@@ -327,7 +329,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt, struct kevent* kev)
         goto report_err_and_prep_next;
     }
 
-    if (((size_t) res) < ah_buf_get_size(&out->buf)) {
+    if (((size_t) res) < out->buf.size) {
         ((ah_tcp_out_t*) out)->_buf_offset = (size_t) res;
         goto prep_next;
     }
