@@ -21,7 +21,7 @@ static void s_should_parse_numbers(ah_unit_t* unit);
 static void s_should_parse_objects(ah_unit_t* unit);
 static void s_should_parse_strings(ah_unit_t* unit);
 
-void test_json(ah_unit_t* unit)
+void test_json_parse(ah_unit_t* unit)
 {
     s_should_parse_arrays(unit);
     s_should_parse_keywords(unit);
@@ -38,7 +38,7 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
 
         ah_err_t err = ah_json_parse(ah_buf_from((uint8_t*) test->source, strlen(test->source)), &buf);
         if (err != AH_ENONE) {
-            ah_unit_failf(unit, "%s [%zu]: parsing failed with error `%d: %s`", label, test_i, err, ah_strerror(err));
+            ah_unit_failf(unit, "%s [%zu]:\n\tparsing failed with error `%d: %s`", label, test_i, err, ah_strerror(err));
             continue;
         }
         ah_unit_pass(unit);
@@ -53,21 +53,21 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
             }
 
             if (expected_val->type != actual_val->type) {
-                ah_unit_failf(unit, "%s [%zu:%zu]: unexpected type `%" PRIuMAX "` not matching actual type `%" PRIuMAX "`",
+                ah_unit_failf(unit, "%s [%zu:%zu]:\n\tunexpected type `%" PRIuMAX "` not matching actual type `%" PRIuMAX "`",
                     label, test_i, expected_length, expected_val->type, actual_val->type);
                 continue;
             }
             ah_unit_pass(unit);
 
             if (expected_val->length != actual_val->length || memcmp(expected_val->base, actual_val->base, expected_val->length) != 0) {
-                ah_unit_failf(unit, "%s [%zu:%zu]: expected value `%*.s` not matching actual value `%*.s`",
+                ah_unit_failf(unit, "%s [%zu:%zu]:\n\texpected value `%*.s` not matching actual value `%*.s`",
                     label, test_i, expected_length, expected_val->length, expected_val->base, actual_val->length, actual_val->base);
                 continue;
             }
             ah_unit_pass(unit);
 
             if (expected_val->level != actual_val->level) {
-                ah_unit_failf(unit, "%s [%zu:%zu]: unexpected level `%" PRIuMAX "` not matching actual level `%" PRIuMAX "`",
+                ah_unit_failf(unit, "%s [%zu:%zu]:\n\tunexpected level `%" PRIuMAX "` not matching actual level `%" PRIuMAX "`",
                     label, test_i, expected_length, expected_val->type, actual_val->type);
                 continue;
             }
@@ -75,7 +75,7 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
         }
 
         if (expected_length != buf.length) {
-            ah_unit_failf(unit, "%s [%zu]: unexpected value length `%zu` not matching actual length `%zu`",
+            ah_unit_failf(unit, "%s [%zu]:\n\tunexpected value length `%zu` not matching actual length `%zu`",
                 label, test_i, expected_length, buf.length);
             continue;
         }
@@ -91,14 +91,14 @@ static void s_should_parse_arrays(ah_unit_t* unit)
                 "[]",
                 (ah_json_val_t[]) {
                     { "[", AH_JSON_TYPE_ARRAY, 0u, 0u },
-                    { NULL },
+                    { 0u },
                 },
             },
             [1] = {
                 " [\t ] ",
                 (ah_json_val_t[]) {
                     { "[", AH_JSON_TYPE_ARRAY, 0u, 0u },
-                    { NULL },
+                    { 0u },
                 },
             },
             [2] = {
@@ -106,7 +106,7 @@ static void s_should_parse_arrays(ah_unit_t* unit)
                 (ah_json_val_t[]) {
                     { "[", AH_JSON_TYPE_ARRAY, 0u, 1u },
                     { "1", AH_JSON_TYPE_NUMBER, 1u, 1u },
-                    { NULL },
+                    { 0u },
                 },
             },
             [3] = {
@@ -115,7 +115,7 @@ static void s_should_parse_arrays(ah_unit_t* unit)
                     { "[", AH_JSON_TYPE_ARRAY, 0u, 2u },
                     { "2", AH_JSON_TYPE_NUMBER, 1u, 1u },
                     { "[", AH_JSON_TYPE_ARRAY, 1u, 0u },
-                    { NULL },
+                    { 0u },
                 },
             },
             [4] = {
@@ -131,10 +131,10 @@ static void s_should_parse_arrays(ah_unit_t* unit)
                     { "[", AH_JSON_TYPE_ARRAY, 2u, 1u },
                     { "[", AH_JSON_TYPE_ARRAY, 3u, 1u },
                     { "[", AH_JSON_TYPE_ARRAY, 4u, 0u },
-                    { NULL },
+                    { 0u },
                 },
             },
-            { NULL },
+            { 0u },
         });
 }
 
@@ -142,10 +142,10 @@ static void s_should_parse_keywords(ah_unit_t* unit)
 {
     s_assert_json_parse_tests(unit, __func__,
         (struct s_json_parse_test[]) {
-            [0] = { "false ", (ah_json_val_t[]) { { "false", AH_JSON_TYPE_FALSE, 0u, 5u }, { NULL } } },
-            [1] = { " null ", (ah_json_val_t[]) { { "null", AH_JSON_TYPE_NULL, 0u, 4u }, { NULL } } },
-            [2] = { " true ", (ah_json_val_t[]) { { "true", AH_JSON_TYPE_TRUE, 0u, 4u }, { NULL } } },
-            { NULL },
+            [0] = { "false ", (ah_json_val_t[]) { { "false", AH_JSON_TYPE_FALSE, 0u, 5u }, { 0u } } },
+            [1] = { " null ", (ah_json_val_t[]) { { "null", AH_JSON_TYPE_NULL, 0u, 4u }, { 0u } } },
+            [2] = { " true ", (ah_json_val_t[]) { { "true", AH_JSON_TYPE_TRUE, 0u, 4u }, { 0u } } },
+            { 0u },
         });
 }
 
@@ -153,14 +153,14 @@ static void s_should_parse_numbers(ah_unit_t* unit)
 {
     s_assert_json_parse_tests(unit, __func__,
         (struct s_json_parse_test[]) {
-            [0] = { "1      ", (ah_json_val_t[]) { { "1", AH_JSON_TYPE_NUMBER, 0u, 1u }, { NULL } } },
-            [1] = { " -41   ", (ah_json_val_t[]) { { "-41", AH_JSON_TYPE_NUMBER, 0u, 3u }, { NULL } } },
-            [2] = { "  3.67 ", (ah_json_val_t[]) { { "3.67", AH_JSON_TYPE_NUMBER, 0u, 4u }, { NULL } } },
-            [3] = { "-0.53  ", (ah_json_val_t[]) { { "-0.53", AH_JSON_TYPE_NUMBER, 0u, 5u }, { NULL } } },
-            [4] = { " 109E2 ", (ah_json_val_t[]) { { "109E2", AH_JSON_TYPE_NUMBER, 0u, 5u }, { NULL } } },
-            [5] = { "\t7E+18", (ah_json_val_t[]) { { "7E+18", AH_JSON_TYPE_NUMBER, 0u, 4u }, { NULL } } },
-            [6] = { "1.0e-24", (ah_json_val_t[]) { { "1.0e-24", AH_JSON_TYPE_NUMBER, 0u, 4u }, { NULL } } },
-            { NULL },
+            [0] = { "1      ", (ah_json_val_t[]) { { "1", AH_JSON_TYPE_NUMBER, 0u, 1u }, { 0u } } },
+            [1] = { " -41   ", (ah_json_val_t[]) { { "-41", AH_JSON_TYPE_NUMBER, 0u, 3u }, { 0u } } },
+            [2] = { "  3.67 ", (ah_json_val_t[]) { { "3.67", AH_JSON_TYPE_NUMBER, 0u, 4u }, { 0u } } },
+            [3] = { "-0.53  ", (ah_json_val_t[]) { { "-0.53", AH_JSON_TYPE_NUMBER, 0u, 5u }, { 0u } } },
+            [4] = { " 109E2 ", (ah_json_val_t[]) { { "109E2", AH_JSON_TYPE_NUMBER, 0u, 5u }, { 0u } } },
+            [5] = { "\t7E+18", (ah_json_val_t[]) { { "7E+18", AH_JSON_TYPE_NUMBER, 0u, 4u }, { 0u } } },
+            [6] = { "1.0e-24", (ah_json_val_t[]) { { "1.0e-24", AH_JSON_TYPE_NUMBER, 0u, 4u }, { 0u } } },
+            { 0u },
         });
 }
 
@@ -172,14 +172,14 @@ static void s_should_parse_objects(ah_unit_t* unit)
                 "{}",
                 (ah_json_val_t[]) {
                     { "{", AH_JSON_TYPE_OBJECT, 0u, 0u },
-                    { NULL },
+                    { 0u },
                 },
             },
             [1] = {
                 " {  \t} ",
                 (ah_json_val_t[]) {
                     { "[", AH_JSON_TYPE_OBJECT, 0u, 0u },
-                    { NULL },
+                    { 0u },
                 },
             },
             [2] = {
@@ -188,7 +188,7 @@ static void s_should_parse_objects(ah_unit_t* unit)
                     { "{", AH_JSON_TYPE_OBJECT, 0u, 2u },
                     { "a", AH_JSON_TYPE_STRING, 1u, 1u },
                     { "1", AH_JSON_TYPE_NUMBER, 1u, 1u },
-                    { NULL },
+                    { 0u },
                 },
             },
             [3] = {
@@ -199,7 +199,7 @@ static void s_should_parse_objects(ah_unit_t* unit)
                     { "[", AH_JSON_TYPE_ARRAY, 1u, 1u },
                     { "c", AH_JSON_TYPE_STRING, 1u, 1u },
                     { "3", AH_JSON_TYPE_NUMBER, 1u, 1u },
-                    { NULL },
+                    { 0u },
                 },
             },
             [4] = {
@@ -216,10 +216,10 @@ static void s_should_parse_objects(ah_unit_t* unit)
                     { "[", AH_JSON_TYPE_ARRAY, 4u, 0u },
                     { "g", AH_JSON_TYPE_STRING, 1u, 1u },
                     { "7", AH_JSON_TYPE_NUMBER, 1u, 1u },
-                    { NULL },
+                    { 0u },
                 },
             },
-            { NULL },
+            { 0u },
         });
 }
 
@@ -227,9 +227,9 @@ static void s_should_parse_strings(ah_unit_t* unit)
 {
     s_assert_json_parse_tests(unit, __func__,
         (struct s_json_parse_test[]) {
-            [0] = { "\"Hello, Arrowhead!\"", (ah_json_val_t[]) { { "Hello, Arrowhead!", AH_JSON_TYPE_STRING, 0u, 17u }, { NULL } } },
-            [1] = { "\"Hello, UTF-8 ÅÄÖ!\"", (ah_json_val_t[]) { { "Hello, UTF-8 ÅÄÖ!", AH_JSON_TYPE_STRING, 0u, 20u }, { NULL } } },
-            [2] = { "\"Space \\\"\\u0020\\\"\"", (ah_json_val_t[]) { { "Space \\\"\\u0020\\\"", AH_JSON_TYPE_STRING, 0u, 16u }, { NULL } } },
-            { NULL },
+            [0] = { "\"Hello, Arrowhead!\"", (ah_json_val_t[]) { { "Hello, Arrowhead!", AH_JSON_TYPE_STRING, 0u, 17u }, { 0u } } },
+            [1] = { "\"Hello, UTF-8 ÅÄÖ!\"", (ah_json_val_t[]) { { "Hello, UTF-8 ÅÄÖ!", AH_JSON_TYPE_STRING, 0u, 20u }, { 0u } } },
+            [2] = { "\"Space \\\"\\u0020\\\"\"", (ah_json_val_t[]) { { "Space \\\"\\u0020\\\"", AH_JSON_TYPE_STRING, 0u, 16u }, { 0u } } },
+            { 0u },
         });
 }

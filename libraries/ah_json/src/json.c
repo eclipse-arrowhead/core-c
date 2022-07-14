@@ -18,17 +18,7 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
     return -1;
 }
 
-ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* dst, size_t dst_length)
-{
-    (void) src;
-    (void) src_length;
-    (void) dst;
-    (void) dst_length;
-
-    return AH_EOPNOTSUPP;
-}
-
-ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t dst_length)
+ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length)
 {
     (void) src;
     (void) src_length;

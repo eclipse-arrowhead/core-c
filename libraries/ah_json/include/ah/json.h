@@ -29,7 +29,10 @@ struct ah_json_buf {
     size_t capacity;
     size_t length;
 
-    // If NULL, memory will be allocated dynamically by ah_json_parse().
+    // If NULL, memory will be allocated and reallocated dynamically by
+    // ah_json_parse(). The `capacity` field is then treated as the desired
+    // default capacity. If  `capacity` is zero an arbitrary default capacity
+    // will be used.
     ah_json_val_t* values;
 };
 
@@ -64,13 +67,11 @@ struct ah_json_val {
 };
 
 // JSON numbers are compatible with snprintf, sscanf, strfromd, strtod, etc. as
-// long as the set locale uses "." as radix character (the default "C" locale
-// uses the "." as radix character). You should use those functions to read and
-// write JSON numbers.
+// long as the set locale uses "." as radix character (which the default "C"
+// locale does). You may use those functions to read and write JSON numbers.
 
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length);
-ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* dst, size_t dst_length);
-ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t dst_length);
+ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length);
 
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 
