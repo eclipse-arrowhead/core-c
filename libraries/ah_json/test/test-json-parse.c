@@ -15,6 +15,7 @@ struct s_json_parse_test {
     ah_json_val_t* expected; // Terminated by value with NULL base.
 };
 
+static void s_should_fail_to_parse_invalid_sources(ah_unit_t* unit);
 static void s_should_parse_arrays(ah_unit_t* unit);
 static void s_should_parse_keywords(ah_unit_t* unit);
 static void s_should_parse_numbers(ah_unit_t* unit);
@@ -23,6 +24,7 @@ static void s_should_parse_strings(ah_unit_t* unit);
 
 void test_json_parse(ah_unit_t* unit)
 {
+    s_should_fail_to_parse_invalid_sources(unit);
     s_should_parse_arrays(unit);
     s_should_parse_keywords(unit);
     s_should_parse_numbers(unit);
@@ -81,6 +83,54 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
         }
         ah_unit_pass(unit);
     }
+}
+
+static void s_should_fail_to_parse_invalid_sources(ah_unit_t* unit)
+{
+    s_assert_json_parse_tests(unit, __func__,
+        (struct s_json_parse_test[]) {
+            [0] = {
+                "[",
+                (ah_json_val_t[]) {
+                    { "[", AH_JSON_TYPE_ARRAY, 0u, 0u },
+                    { "", AH_JSON_TYPE_ERROR, 0u, 0u },
+                    { 0u },
+                },
+            },
+            [1] = {
+                " 1 f",
+                (ah_json_val_t[]) {
+                    { "1", AH_JSON_TYPE_NUMBER, 0u, 1u },
+                    { "f", AH_JSON_TYPE_ERROR, 0u, 1u },
+                    { 0u },
+                },
+            },
+            [2] = {
+                " [] bad",
+                (ah_json_val_t[]) {
+                    { "[", AH_JSON_TYPE_ARRAY, 0u, 0u },
+                    { "b", AH_JSON_TYPE_ERROR, 0u, 1u },
+                    { 0u },
+                },
+            },
+            [3] = {
+                "\tx",
+                (ah_json_val_t[]) {
+                    { "x", AH_JSON_TYPE_ERROR, 0u, 1u },
+                    { 0u },
+                },
+            },
+            [4] = {
+                "{\"a\"}",
+                (ah_json_val_t[]) {
+                    { "{", AH_JSON_TYPE_OBJECT, 0u, 1u },
+                    { "a", AH_JSON_TYPE_STRING, 1u, 1u },
+                    { "", AH_JSON_TYPE_ERROR, 1u, 0u },
+                    { 0u },
+                },
+            },
+            { 0u },
+        });
 }
 
 static void s_should_parse_arrays(ah_unit_t* unit)
@@ -203,7 +253,7 @@ static void s_should_parse_objects(ah_unit_t* unit)
                 },
             },
             [4] = {
-                "{ \"d\": {\"e\":[]}, \"f\":[[[]]]}, \"g\": 7 }",
+                "{ \"d\": {\"e\":[]}, \"f\":[[[]]]}, \"gh\": 7 }",
                 (ah_json_val_t[]) {
                     { "{", AH_JSON_TYPE_OBJECT, 0u, 6u },
                     { "d", AH_JSON_TYPE_STRING, 1u, 1u },
@@ -214,7 +264,7 @@ static void s_should_parse_objects(ah_unit_t* unit)
                     { "[", AH_JSON_TYPE_ARRAY, 2u, 1u },
                     { "[", AH_JSON_TYPE_ARRAY, 3u, 1u },
                     { "[", AH_JSON_TYPE_ARRAY, 4u, 0u },
-                    { "g", AH_JSON_TYPE_STRING, 1u, 1u },
+                    { "gh", AH_JSON_TYPE_STRING, 1u, 1u },
                     { "7", AH_JSON_TYPE_NUMBER, 1u, 1u },
                     { 0u },
                 },
