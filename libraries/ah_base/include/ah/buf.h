@@ -18,7 +18,7 @@
 struct ah_buf {
 #if AH_IS_WIN32
     ULONG size; // Guaranteed to be of a size smaller than or equal to size_t.
-    uint8_t* off;
+    uint8_t* base;
 #else
     uint8_t* base;
     size_t size;
@@ -26,7 +26,7 @@ struct ah_buf {
 };
 
 // Error codes:
-// * AH_EINVAL            - `buf` is NULL or `off` is NULL and `size` is positive.
+// * AH_EINVAL            - `buf` is NULL or `base` is NULL and `size` is positive.
 // * AH_EOVERFLOW [Win32] - `size` is larger than AH_BUF_SIZE_MAX.
 ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size);
 
