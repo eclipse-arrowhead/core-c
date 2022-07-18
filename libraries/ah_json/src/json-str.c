@@ -232,11 +232,3 @@ handle_err:
 
     return err;
 }
-
-ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst)
-{
-    (void) src;
-    (void) dst;
-
-    return AH_EOPNOTSUPP;
-}

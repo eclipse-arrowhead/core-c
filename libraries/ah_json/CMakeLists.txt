@@ -5,7 +5,8 @@ set(CMAKE_C_STANDARD 99)
 set(
     SOURCE_FILES
     include/ah/json.h
-    src/json.c
+    src/json-parse.c
+    src/json-str.c
 )
 
 add_library(ah_json STATIC ${SOURCE_FILES})
