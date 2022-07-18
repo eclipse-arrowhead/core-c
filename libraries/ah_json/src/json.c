@@ -9,11 +9,14 @@
 #include <ah/assert.h>
 #include <ah/err.h>
 
-static uint8_t s_integer_from_hex_digit(char hex_digit);
+static uint32_t s_integer_from_hex_digit(char hex_digit);
 static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char* dst, size_t* dst_length);
 
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length)
 {
+    ah_assert_if_debug(a != NULL || a_length == 0u);
+    ah_assert_if_debug(b != NULL || b_length == 0u);
+
     while (a_length != 0u && b_length != 0u) {
         int diff = a[0u] - b[0u];
 
@@ -69,6 +72,10 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
 
 static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char* dst, size_t* dst_length)
 {
+    ah_assert_if_debug(src != NULL || src_length == 0u);
+    ah_assert_if_debug(dst_length != 0u);
+    ah_assert_if_debug(dst != NULL || *dst_length == 0u);
+
     if (src_length < 2u) {
         *dst_length = 0u;
         return 0u;
@@ -115,7 +122,7 @@ static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char
             return 0u;
         }
 
-        uint16_t codepoint
+        uint32_t codepoint
             = (s_integer_from_hex_digit(src[2u]) << 12u)
             | (s_integer_from_hex_digit(src[3u]) << 8u)
             | (s_integer_from_hex_digit(src[4u]) << 4u)
@@ -136,12 +143,16 @@ static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char
             return 6u;
         }
 
-        // 1110xxxx 10xxxxxx 10xxxxxx
-        dst[0u] = (char) (0xE0 | ((codepoint >> 12u) & 0x0F));
-        dst[1u] = (char) (0x80 | ((codepoint >> 6u) & 0x3F));
-        dst[2u] = (char) (0x80 | ((codepoint >> 0u) & 0x3F));
-        *dst_length = 3u;
-        return 6u;
+        if (codepoint < 0x100000) {
+            // 1110xxxx 10xxxxxx 10xxxxxx
+            dst[0u] = (char) (0xE0 | ((codepoint >> 12u) & 0x0F));
+            dst[1u] = (char) (0x80 | ((codepoint >> 6u) & 0x3F));
+            dst[2u] = (char) (0x80 | ((codepoint >> 0u) & 0x3F));
+            *dst_length = 3u;
+            return 6u;
+        }
+
+        // fallthrough
 
     default:
         *dst_length = 0u;
@@ -149,7 +160,7 @@ static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char
     }
 }
 
-static uint8_t s_integer_from_hex_digit(char hex_digit)
+static uint32_t s_integer_from_hex_digit(char hex_digit)
 {
     if (hex_digit >= '0' && hex_digit <= '9') {
         return hex_digit - '0';
@@ -163,17 +174,63 @@ static uint8_t s_integer_from_hex_digit(char hex_digit)
         return (hex_digit - 'a') + 10u;
     }
 
-    return 0;
+    return 0xFFFFFFFF; // No valid UTF-16 codepoint has this code.
 }
 
 ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length)
 {
-    (void) src;
-    (void) src_length;
-    (void) dst;
-    (void) dst_length;
+    ah_assert_if_debug(src != NULL || src_length == 0u);
+    ah_assert_if_debug(dst_length != NULL);
+    ah_assert_if_debug(dst != NULL || *dst_length == 0u);
 
-    return AH_EOPNOTSUPP;
+    ah_err_t err;
+
+    size_t dst_length0 = *dst_length;
+
+    while (src_length != 0u) {
+        if (dst_length0 == 0u) {
+            err = AH_EOVERFLOW;
+            goto handle_err;
+        }
+
+        char ch = src[0u];
+
+        if (ch != '\\') {
+            dst[0u] = ch;
+
+            src = &src[1u];
+            dst = &dst[1u];
+            src_length -= 1u;
+            dst_length0 -= 1u;
+            continue;
+        }
+
+        char buf[4u];
+        size_t buf_length = sizeof(buf);
+
+        size_t n_read = s_escape_sequence_to_utf8(src, src_length, buf, &buf_length);
+        if (n_read == 0u) {
+            err = AH_EILSEQ;
+            goto handle_err;
+        }
+        src = &src[n_read];
+        src_length -= n_read;
+
+        if (buf_length > dst_length0) {
+            err = AH_EOVERFLOW;
+            goto handle_err;
+        }
+        memcpy(dst, buf, buf_length);
+        dst = &dst[buf_length];
+        dst_length0 -= buf_length;
+    }
+
+    err = AH_ENONE;
+
+handle_err:
+    *dst_length -= dst_length0;
+
+    return err;
 }
 
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst)

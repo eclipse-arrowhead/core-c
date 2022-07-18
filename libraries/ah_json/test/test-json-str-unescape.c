@@ -53,13 +53,16 @@ void s_should_fail_to_unescape_invalid_strings(ah_unit_t* unit)
 {
     s_assert_json_unescape_tests(unit, __func__,
         (struct s_json_unescape_test[]) {
-            [0] = { "\\", AH_EOVERFLOW, "" },
-            [1] = { "\\0", AH_EOVERFLOW, "" },
-            [2] = { "\\0F", AH_EOVERFLOW, "" },
-            [3] = { "\\00d", AH_EOVERFLOW, "" },
-            [4] = { "\\?", AH_EILSEQ, "" },
-            [5] = { "\\00FZ", AH_EILSEQ, "" },
-            [6] = { "Hello \\xFF!", AH_EILSEQ, "" },
+            [0] = { "\\", AH_EILSEQ, "" },
+            [1] = { "\\0", AH_EILSEQ, "" },
+            [2] = { "\\0F", AH_EILSEQ, "" },
+            [3] = { "\\u00d", AH_EILSEQ, "" },
+            [4] = { "\\u?", AH_EILSEQ, "" },
+            [5] = { "\\u00FZ", AH_EILSEQ, "" },
+            [6] = { "Hello \\xFF!", AH_EILSEQ, "Hello " },
+            [7] = { "\\u", AH_EILSEQ, "" },
+            [8] = { "\\t\\x", AH_EILSEQ, "\t" },
+            [9] = { "\\x\\t", AH_EILSEQ, "" },
             { 0u },
         });
 }
@@ -70,10 +73,10 @@ void s_should_unescape_valid_strings(ah_unit_t* unit)
         (struct s_json_unescape_test[]) {
             [0] = { "", AH_ENONE, "" },
             [1] = { "a", AH_ENONE, "a" },
-            [2] = { "\\00f6", AH_ENONE, "ö" },
-            [3] = { "\\00C4", AH_ENONE, "Ä" },
-            [4] = { "\\732B", AH_ENONE, "猫" },
-            [5] = { "\\00C5k!", AH_ENONE, "Åk!" },
+            [2] = { "\\u00f6", AH_ENONE, "ö" },
+            [3] = { "\\u00C4", AH_ENONE, "Ä" },
+            [4] = { "\\u732B", AH_ENONE, "猫" },
+            [5] = { "\\u00C5k!", AH_ENONE, "Åk!" },
             [6] = { "\\\" \\\\ \\/ \\b \\f \\n \\r \\t", AH_ENONE, "\" \\ / \b \f \n \r \t" },
             { 0u },
         });
