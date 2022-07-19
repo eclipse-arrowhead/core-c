@@ -23,9 +23,7 @@ static ah_err_t s_parse_object(struct s_parser* parser, ah_json_val_t* parent, u
 static ah_err_t s_parse_array(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst);
 static ah_err_t s_parse_string(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst);
 static ah_err_t s_parse_number(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst);
-static ah_err_t s_parse_true(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst);
-static ah_err_t s_parse_false(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst);
-static ah_err_t s_parse_null(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst);
+static ah_err_t s_parse_keyword(struct s_parser* parser, ah_json_val_t* parent, const char* chars, uint16_t type, uint16_t level, ah_json_buf_t* dst);
 
 static ah_err_t s_report_error(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst);
 
@@ -34,7 +32,8 @@ static ah_err_t s_alloc_value(struct s_parser* parser, ah_json_val_t* parent, ui
 static uint8_t s_peek_byte_or_zero(struct s_parser* parser);
 static uint8_t s_read_byte_or_zero(struct s_parser* parser);
 static void s_skip_byte(struct s_parser* parser);
-static void s_skip_if_char(struct s_parser* parser, char ch);
+static bool s_skip_if_char(struct s_parser* parser, char ch);
+static size_t s_skip_if_chars(struct s_parser* parser, const char* chars);
 static void s_skip_whitespace(struct s_parser* parser);
 
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst)
@@ -48,6 +47,8 @@ ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst)
         .src_end = &src.base[src.size],
         .is_realloc_enabled = dst->values == NULL,
     };
+
+    s_skip_whitespace(&parser);
 
     ah_err_t err = s_parse_value(&parser, NULL, 0u, dst);
     if (err != AH_ENONE) {
@@ -68,9 +69,7 @@ static ah_err_t s_parse_value(struct s_parser* parser, ah_json_val_t* parent, ui
     ah_assert_if_debug(parser != NULL);
     ah_assert_if_debug(dst != NULL);
 
-    s_skip_whitespace(parser);
-
-    switch (s_read_byte_or_zero(parser)) {
+    switch (s_peek_byte_or_zero(parser)) {
     case '\0':
         return AH_ENONE;
 
@@ -97,13 +96,13 @@ static ah_err_t s_parse_value(struct s_parser* parser, ah_json_val_t* parent, ui
         return s_parse_number(parser, parent, level, dst);
 
     case 't':
-        return s_parse_true(parser, parent, level, dst);
+        return s_parse_keyword(parser, parent, "true", AH_JSON_TYPE_TRUE, level, dst);
 
     case 'f':
-        return s_parse_false(parser, parent, level, dst);
+        return s_parse_keyword(parser, parent, "false", AH_JSON_TYPE_FALSE, level, dst);
 
     case 'n':
-        return s_parse_null(parser, parent, level, dst);
+        return s_parse_keyword(parser, parent, "null", AH_JSON_TYPE_NULL, level, dst);
 
     default:
         return s_report_error(parser, parent, level, dst);
@@ -128,10 +127,13 @@ static ah_err_t s_parse_object(struct s_parser* parser, ah_json_val_t* parent, u
         return err;
     }
 
+    ah_assert_if_debug(s_peek_byte_or_zero(parser) == '{');
+    s_skip_byte(parser);
+
     for (;;) {
         s_skip_whitespace(parser);
 
-        switch (s_read_byte_or_zero(parser)) {
+        switch (s_peek_byte_or_zero(parser)) {
         case '\0':
             return AH_EEOF;
 
@@ -139,6 +141,7 @@ static ah_err_t s_parse_object(struct s_parser* parser, ah_json_val_t* parent, u
             break;
 
         case '}':
+            s_skip_byte(parser);
             return AH_ENONE;
 
         default:
@@ -152,16 +155,19 @@ static ah_err_t s_parse_object(struct s_parser* parser, ah_json_val_t* parent, u
 
         s_skip_whitespace(parser);
 
-        switch (s_read_byte_or_zero(parser)) {
+        switch (s_peek_byte_or_zero(parser)) {
         case '\0':
             return AH_EEOF;
 
         case ':':
+            s_skip_byte(parser);
             break;
 
         default:
             goto report_error;
         }
+
+        s_skip_whitespace(parser);
 
         err = s_parse_value(parser, object, child_level, dst);
         if (err != AH_ENONE) {
@@ -170,14 +176,16 @@ static ah_err_t s_parse_object(struct s_parser* parser, ah_json_val_t* parent, u
 
         s_skip_whitespace(parser);
 
-        switch (s_read_byte_or_zero(parser)) {
+        switch (s_peek_byte_or_zero(parser)) {
         case '\0':
             return AH_EEOF;
 
         case ',':
-            break;
+            s_skip_byte(parser);
+            continue;
 
         case '}':
+            s_skip_byte(parser);
             return AH_ENONE;
 
         default:
@@ -207,35 +215,40 @@ static ah_err_t s_parse_array(struct s_parser* parser, ah_json_val_t* parent, ui
         return err;
     }
 
+    ah_assert_if_debug(s_peek_byte_or_zero(parser) == '[');
+    s_skip_byte(parser);
+
     for (;;) {
         s_skip_whitespace(parser);
 
-        switch (s_read_byte_or_zero(parser)) {
+        switch (s_peek_byte_or_zero(parser)) {
         case '\0':
             return AH_EEOF;
 
         case ']':
+            s_skip_byte(parser);
             return AH_ENONE;
 
         default:
+            err = s_parse_value(parser, array, child_level, dst);
+            if (err != AH_ENONE) {
+                return err;
+            }
             break;
-        }
-
-        err = s_parse_value(parser, array, child_level, dst);
-        if (err != AH_ENONE) {
-            return err;
         }
 
         s_skip_whitespace(parser);
 
-        switch (s_read_byte_or_zero(parser)) {
+        switch (s_peek_byte_or_zero(parser)) {
         case '\0':
             return AH_EEOF;
 
         case ',':
-            break;
+            s_skip_byte(parser);
+            continue;
 
         case ']':
+            s_skip_byte(parser);
             return AH_ENONE;
 
         default:
@@ -249,10 +262,11 @@ static ah_err_t s_parse_string(struct s_parser* parser, ah_json_val_t* parent, u
     ah_assert_if_debug(parser != NULL);
     ah_assert_if_debug(dst != NULL);
 
-    ah_err_t err;
+    ah_assert_if_debug(s_peek_byte_or_zero(parser) == '"');
+    s_skip_byte(parser);
 
     ah_json_val_t* string;
-    err = s_alloc_value(parser, parent, AH_JSON_TYPE_STRING, level, dst, &string);
+    ah_err_t err = s_alloc_value(parser, parent, AH_JSON_TYPE_STRING, level, dst, &string);
     if (err != AH_ENONE) {
         return err;
     }
@@ -266,7 +280,9 @@ static ah_err_t s_parse_string(struct s_parser* parser, ah_json_val_t* parent, u
             return AH_ENONE;
 
         case '\\':
-            s_skip_if_char(parser, '"');
+            if (s_skip_if_char(parser, '"')) {
+                string->length += 1u;
+            }
             break;
 
         default:
@@ -287,49 +303,56 @@ static ah_err_t s_parse_number(struct s_parser* parser, ah_json_val_t* parent, u
     ah_assert_if_debug(parser != NULL);
     ah_assert_if_debug(dst != NULL);
 
-    (void) parent;
-    (void) level;
+    ah_json_val_t* number;
+    ah_err_t err = s_alloc_value(parser, parent, AH_JSON_TYPE_NUMBER, level, dst, &number);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+
+    for (;;) {
+        s_skip_byte(parser);
+        number->length += 1u;
+
+        switch (s_peek_byte_or_zero(parser)) {
+        case '\0':
+        case ',':
+        case '}':
+        case ']':
+        case '\t':
+        case '\r':
+        case '\n':
+        case ' ':
+            return AH_ENONE;
+
+        default:
+            continue;
+        }
+    }
+}
+
+static ah_err_t s_parse_keyword(struct s_parser* parser, ah_json_val_t* parent, const char* chars, uint16_t type, uint16_t level, ah_json_buf_t* dst)
+{
+    ah_assert_if_debug(parser != NULL);
+    ah_assert_if_debug(dst != NULL);
+
+    ah_json_val_t* val;
+
+    ah_err_t err = s_alloc_value(parser, parent, type, level, dst, &val);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    size_t n_read_chars = s_skip_if_chars(parser, chars);
+    if (n_read_chars == 0u) {
+        val->type = AH_JSON_TYPE_ERROR;
+        val->length = 1u;
+        return AH_EILSEQ;
+    }
+
+    val->length = n_read_chars;
 
     return AH_ENONE;
-}
-
-static ah_err_t s_parse_true(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst)
-{
-    ah_assert_if_debug(parser != NULL);
-    ah_assert_if_debug(dst != NULL);
-
-    if (parser->src_end < &parser->src_off[3u] || memcmp(parser->src_off, "rue", 3u) != 0) {
-        return s_report_error(parser, parent, level, dst);
-    }
-
-    ah_json_val_t* keyword;
-    return s_alloc_value(parser, parent, AH_JSON_TYPE_TRUE, level, dst, &keyword);
-}
-
-static ah_err_t s_parse_false(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst)
-{
-    ah_assert_if_debug(parser != NULL);
-    ah_assert_if_debug(dst != NULL);
-
-    if (parser->src_end < &parser->src_off[4u] || memcmp(parser->src_off, "alse", 4u) != 0) {
-        return s_report_error(parser, parent, level, dst);
-    }
-
-    ah_json_val_t* keyword;
-    return s_alloc_value(parser, parent, AH_JSON_TYPE_FALSE, level, dst, &keyword);
-}
-
-static ah_err_t s_parse_null(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst)
-{
-    ah_assert_if_debug(parser != NULL);
-    ah_assert_if_debug(dst != NULL);
-
-    if (parser->src_end < &parser->src_off[3u] || memcmp(parser->src_off, "ull", 3u) != 0) {
-        return s_report_error(parser, parent, level, dst);
-    }
-
-    ah_json_val_t* keyword;
-    return s_alloc_value(parser, parent, AH_JSON_TYPE_NULL, level, dst, &keyword);
 }
 
 static ah_err_t s_report_error(struct s_parser* parser, ah_json_val_t* parent, uint16_t level, ah_json_buf_t* dst)
@@ -442,16 +465,42 @@ static void s_skip_byte(struct s_parser* parser)
     parser->src_off = &parser->src_off[1u];
 }
 
-static void s_skip_if_char(struct s_parser* parser, char ch)
+static bool s_skip_if_char(struct s_parser* parser, char ch)
 {
     ah_assert_if_debug(parser != NULL);
 
     if (parser->src_off == parser->src_end) {
-        return;
+        return false;
     }
 
     if (parser->src_off[0u] == ch) {
         parser->src_off = &parser->src_off[1u];
+        return true;
+    }
+
+    return false;
+}
+
+static size_t s_skip_if_chars(struct s_parser* parser, const char* chars)
+{
+    ah_assert_if_debug(parser != NULL);
+    ah_assert_if_debug(chars != NULL);
+
+    for (size_t i = 0u;; i += 1u) {
+        char ch = chars[i];
+
+        if (ch == '\0') {
+            parser->src_off = &parser->src_off[i];
+            return i;
+        }
+
+        if (&parser->src_off[i] > parser->src_end) {
+            return 0u;
+        }
+
+        if (ch != parser->src_off[i]) {
+            return 0u;
+        }
     }
 }
 
