@@ -203,13 +203,13 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
         goto report_err;
     }
 
-    if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) != 0 && nread == 0)) {
+    if (ah_unlikely(conn->_recv_buf.size != 0 && nread == 0)) {
         conn->_shutdown_flags |= AH_TCP_SHUTDOWN_RD;
         err = AH_EEOF;
         goto report_err;
     }
 
-    if (ah_unlikely(ah_buf_get_size(&conn->_recv_buf) < (size_t) nread)) {
+    if (ah_unlikely(conn->_recv_buf.size < (size_t) nread)) {
         err = AH_EDOM;
         goto report_err;
     }

@@ -14,10 +14,6 @@
 
 #define AH_I_BUF_PLATFORM_SIZE_MAX ULONG_MAX
 
-#define AH_I_BUF_PLATFORM_FIELDS \
- ULONG _size;                    \
- uint8_t* _base;
-
 typedef struct _WSABUF WSABUF;
 
 static inline WSABUF* ah_i_buf_into_wsabuf(ah_buf_t* buf)

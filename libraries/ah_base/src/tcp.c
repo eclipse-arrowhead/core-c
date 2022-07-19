@@ -278,7 +278,7 @@ ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void)
         .buf = ah_buf_from(&page[sizeof(ah_tcp_out_t)], AH_PSIZE - sizeof(ah_tcp_out_t)),
     };
 
-    if (ah_buf_get_size(&out->buf) > AH_PSIZE) {
+    if (out->buf.size > AH_PSIZE) {
         ah_pfree(page);
         return NULL;
     }

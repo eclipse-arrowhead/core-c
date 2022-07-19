@@ -485,8 +485,8 @@ try_next:
 
             ah_buf_t buf = ah_rw_get_writable_as_buf(&rw);
 
-            size_t nwritten = ah_buf_get_size(&buf);
-            err = ah_sockaddr_stringify(&raddr, (char*) ah_buf_get_base(&buf), &nwritten);
+            size_t nwritten = buf.size;
+            err = ah_sockaddr_stringify(&raddr, (char*) buf.base, &nwritten);
             if (err != AH_ENONE) {
                 goto handle_err;
             }
@@ -678,7 +678,7 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
     ah_rw_from_writable_buf(&chunk->_out->buf);
 
     // Write chunk line to buffer.
-    (void) ah_i_http_write_size_as_string(&rw, ah_buf_get_size(&chunk->data.buf), 16u);
+    (void) ah_i_http_write_size_as_string(&rw, chunk->data.buf.size, 16u);
     if (chunk->ext != NULL) {
         (void) ah_i_http_write_cstr(&rw, chunk->ext);
     }

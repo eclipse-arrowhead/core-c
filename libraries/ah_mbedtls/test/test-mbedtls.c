@@ -202,7 +202,7 @@ static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
         return;
     }
 
-    if (!ah_unit_assert(unit, in != NULL, "ah_buf_get_base_const(buf) == NULL")) {
+    if (!ah_unit_assert(unit, in != NULL, "in == NULL")) {
         return;
     }
 

@@ -110,13 +110,13 @@ ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
         return err;
     }
 
+    conn->_state = AH_I_TCP_CONN_STATE_READING;
+
     err = s_conn_read_prep(conn);
     if (err != AH_ENONE) {
         ah_i_tcp_in_free(conn->_in);
         return err;
     }
-
-    conn->_state = AH_I_TCP_CONN_STATE_READING;
 
     return AH_ENONE;
 }
@@ -146,7 +146,7 @@ static ah_err_t s_conn_read_prep(ah_tcp_conn_t* conn)
 
     conn->_read_evt = evt;
 
-    io_uring_prep_recv(sqe, conn->_fd, ah_buf_get_base(&dst), ah_buf_get_size(&dst), 0);
+    io_uring_prep_recv(sqe, conn->_fd, dst.base, dst.size, 0);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;

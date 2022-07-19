@@ -139,7 +139,7 @@ static void s_on_recv(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err)
     if (!ah_unit_assert_unsigned_eq(unit, 18u, in->nrecv)) {
         return;
     }
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base(&in->buf))) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) in->buf.base)) {
         return;
     }
 
@@ -175,7 +175,7 @@ static void s_on_send(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err)
     if (!ah_unit_assert_unsigned_eq(unit, 18u, out->nsent)) {
         return;
     }
-    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) ah_buf_get_base(&out->buf))) {
+    if (!ah_unit_assert_cstr_eq(unit, "Hello, Arrowhead!", (char*) out->buf.base)) {
         return;
     }
 
