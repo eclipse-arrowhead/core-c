@@ -286,7 +286,6 @@ static ah_err_t s_parse_string(struct s_parser* parser, ah_json_val_t* parent, u
             break;
 
         default:
-            // TODO: Validate UTF-8.
             break;
         }
 
