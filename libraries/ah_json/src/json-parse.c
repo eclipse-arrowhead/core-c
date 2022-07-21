@@ -71,7 +71,7 @@ static ah_err_t s_parse_value(struct s_parser* parser, ah_json_val_t* parent, ui
 
     switch (s_peek_byte_or_zero(parser)) {
     case '\0':
-        return AH_ENONE;
+        return AH_EEOF;
 
     case '{':
         return s_parse_object(parser, parent, level, dst);
@@ -81,19 +81,6 @@ static ah_err_t s_parse_value(struct s_parser* parser, ah_json_val_t* parent, ui
 
     case '"':
         return s_parse_string(parser, parent, level, dst);
-
-    case '-':
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-        return s_parse_number(parser, parent, level, dst);
 
     case 't':
         return s_parse_keyword(parser, parent, "true", AH_JSON_TYPE_TRUE, level, dst);
@@ -105,7 +92,7 @@ static ah_err_t s_parse_value(struct s_parser* parser, ah_json_val_t* parent, ui
         return s_parse_keyword(parser, parent, "null", AH_JSON_TYPE_NULL, level, dst);
 
     default:
-        return s_report_error(parser, parent, level, dst);
+        return s_parse_number(parser, parent, level, dst);
     }
 }
 
@@ -308,7 +295,6 @@ static ah_err_t s_parse_number(struct s_parser* parser, ah_json_val_t* parent, u
         return err;
     }
 
-
     for (;;) {
         s_skip_byte(parser);
         number->length += 1u;
@@ -493,7 +479,7 @@ static size_t s_skip_if_chars(struct s_parser* parser, const char* chars)
             return i;
         }
 
-        if (&parser->src_off[i] > parser->src_end) {
+        if (&parser->src_off[i] >= parser->src_end) {
             return 0u;
         }
 

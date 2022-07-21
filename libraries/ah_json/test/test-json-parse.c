@@ -50,15 +50,22 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
         ah_json_val_t* expected_val = test->expected_val;
         ah_json_val_t* actual_val = &buf.values[0u];
 
-        size_t expected_length = 0u;
-        for (;; expected_val = &expected_val[1u], expected_length += 1u, actual_val = &actual_val[1u]) {
-            if (expected_val->base == NULL || expected_length == buf.length) {
+        size_t expected_i = 0u;
+        for (;; expected_val = &expected_val[1u], expected_i += 1u, actual_val = &actual_val[1u]) {
+            if (expected_val->base == NULL) {
                 break;
             }
 
+            if (expected_i == buf.length) {
+                ah_unit_failf(unit, "%s [%zu:%zu]:\n\texpected another value of type `%" PRIuMAX "`; parse result contains no more values",
+                    label, test_i, expected_i, (uintmax_t) expected_val->type);
+                break;
+            }
+            ah_unit_pass(unit);
+
             if (expected_val->type != actual_val->type) {
                 ah_unit_failf(unit, "%s [%zu:%zu]:\n\texpected type `%" PRIuMAX "` not matching actual type `%" PRIuMAX "`",
-                    label, test_i, expected_length, (uintmax_t) expected_val->type, (uintmax_t) actual_val->type);
+                    label, test_i, expected_i, (uintmax_t) expected_val->type, (uintmax_t) actual_val->type);
                 continue;
             }
             ah_unit_pass(unit);
@@ -66,7 +73,7 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
             if (expected_val->type != AH_JSON_TYPE_OBJECT && expected_val->type != AH_JSON_TYPE_ARRAY) {
                 if (expected_val->length != actual_val->length || memcmp(expected_val->base, actual_val->base, expected_val->length) != 0) {
                     ah_unit_failf(unit, "%s [%zu:%zu]:\n\texpected value `%.*s` not matching actual value `%.*s`",
-                        label, test_i, expected_length, expected_val->length, expected_val->base, actual_val->length, actual_val->base);
+                        label, test_i, expected_i, expected_val->length, expected_val->base, actual_val->length, actual_val->base);
                     continue;
                 }
                 ah_unit_pass(unit);
@@ -74,7 +81,7 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
             else {
                 if (expected_val->length != actual_val->length) {
                     ah_unit_failf(unit, "%s [%zu:%zu]:\n\texpected length `%" PRIuMAX "` not matching actual length `%" PRIuMAX "`",
-                        label, test_i, expected_length, (uintmax_t) expected_val->length, (uintmax_t) actual_val->length);
+                        label, test_i, expected_i, (uintmax_t) expected_val->length, (uintmax_t) actual_val->length);
                     continue;
                 }
                 ah_unit_pass(unit);
@@ -82,15 +89,15 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
 
             if (expected_val->level != actual_val->level) {
                 ah_unit_failf(unit, "%s [%zu:%zu]:\n\texpected level `%" PRIuMAX "` not matching actual level `%" PRIuMAX "`",
-                    label, test_i, expected_length, (uintmax_t) expected_val->level, (uintmax_t) actual_val->level);
+                    label, test_i, expected_i, (uintmax_t) expected_val->level, (uintmax_t) actual_val->level);
                 continue;
             }
             ah_unit_pass(unit);
         }
 
-        if (expected_length != buf.length) {
+        if (expected_i != buf.length) {
             ah_unit_failf(unit, "%s [%zu]:\n\texpected value length `%zu` not matching actual length `%zu`",
-                label, test_i, expected_length, buf.length);
+                label, test_i, expected_i, buf.length);
             continue;
         }
         ah_unit_pass(unit);
@@ -102,15 +109,28 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_t* unit)
     s_assert_json_parse_tests(unit, __func__,
         (struct s_json_parse_test[]) {
             [0] = {
-                "[",
+                "",
                 AH_EEOF,
                 (ah_json_val_t[]) {
-                    { "[", AH_JSON_TYPE_ARRAY, 0u, 0u },
-                    { "", AH_JSON_TYPE_ERROR, 0u, 0u },
                     { 0u },
                 },
             },
             [1] = {
+                "\t",
+                AH_EEOF,
+                (ah_json_val_t[]) {
+                    { 0u },
+                },
+            },
+            [2] = {
+                "[",
+                AH_EEOF,
+                (ah_json_val_t[]) {
+                    { "[", AH_JSON_TYPE_ARRAY, 0u, 0u },
+                    { 0u },
+                },
+            },
+            [3] = {
                 " 1 f",
                 AH_EILSEQ,
                 (ah_json_val_t[]) {
@@ -119,7 +139,7 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_t* unit)
                     { 0u },
                 },
             },
-            [2] = {
+            [4] = {
                 " [] bad",
                 AH_EILSEQ,
                 (ah_json_val_t[]) {
@@ -128,15 +148,7 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_t* unit)
                     { 0u },
                 },
             },
-            [3] = {
-                "\tx",
-                AH_EILSEQ,
-                (ah_json_val_t[]) {
-                    { "x", AH_JSON_TYPE_ERROR, 0u, 1u },
-                    { 0u },
-                },
-            },
-            [4] = {
+            [5] = {
                 "{\"a\"}",
                 AH_EILSEQ,
                 (ah_json_val_t[]) {
