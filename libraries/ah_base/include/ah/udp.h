@@ -78,7 +78,7 @@ struct ah_udp_sock_cbs {
     void (*on_close)(ah_udp_sock_t* sock, ah_err_t err);
 };
 
-ah_extern ah_udp_trans_t ah_udp_trans_get_default();
+ah_extern ah_udp_trans_t ah_udp_trans_get_default(void);
 
 ah_extern bool ah_udp_vtab_is_valid(const ah_udp_vtab_t* vtab);
 

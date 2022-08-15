@@ -11,7 +11,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-ah_extern void ah_abort()
+ah_extern void ah_abort(void)
 {
     struct sigaction act;
     (void) sigemptyset(&act.sa_mask);

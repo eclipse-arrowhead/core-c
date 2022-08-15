@@ -10,7 +10,7 @@
 
 #include <signal.h>
 
-ah_extern void ah_abort()
+ah_extern void ah_abort(void)
 {
     raise(SIGABRT);
     ah_trap();
