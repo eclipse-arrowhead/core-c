@@ -32,7 +32,7 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
         opts->capacity = AH_CONF_IOCP_DEFAULT_CAPACITY;
     }
 
-    ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->capacity / 4u);
+    ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->capacity);
     if (err != AH_ENONE) {
         return err;
     }
