@@ -9,6 +9,8 @@
 
 #include "defs.h"
 
+#include <stddef.h>
+
 #if AH_IS_WIN32
 # include <winerror.h>
 #else
@@ -20,6 +22,14 @@
 #else
 # define AH_I_ERR_ONE_OF(POSIX_CODE, WIN32_CODE) POSIX_CODE
 #endif
+
+#define AH_I_ERR_MAP_CUSTOM(E)            \
+ E(DEP, 5405, "dependency error")         \
+ E(DUP, 5403, "duplicate exists")         \
+ E(EOF, 5401, "unexpected end of stream") \
+ E(INTERN, 5404, "internal error")        \
+ E(RECONN, 5406, "reconnecting")          \
+ E(STATE, 5402, "state invalid")
 
 #if AH_IS_DARWIN
 # define AH_I_ERR_MAP_PLATFORM(E)                           \
@@ -56,12 +66,7 @@
 #endif
 
 #define AH_I_ERR_MAP(E)                                                                               \
- E(DEP, 5405, "dependency error")                                                                     \
- E(DUP, 5403, "duplicate exists")                                                                     \
- E(EOF, 5401, "unexpected end of stream")                                                             \
- E(INTERN, 5404, "internal error")                                                                    \
- E(RECONN, 5406, "reconnecting")                                                                      \
- E(STATE, 5402, "state invalid")                                                                      \
+ AH_I_ERR_MAP_CUSTOM(E)                                                                               \
                                                                                                       \
  E(2BIG, AH_I_ERR_ONE_OF(E2BIG, 5501), "argument list too long")                                      \
  E(ACCES, AH_I_ERR_ONE_OF(EACCES, WSAEACCES), "permission denied")                                    \
@@ -158,6 +163,6 @@ enum {
 #undef AH_I_ERR_E
 };
 
-ah_extern const char* ah_strerror(ah_err_t err);
+ah_extern void ah_strerror_r(ah_err_t err, char* buf, size_t size);
 
 #endif

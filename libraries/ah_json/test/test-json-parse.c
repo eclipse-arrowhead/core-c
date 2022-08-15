@@ -41,8 +41,14 @@ static void s_assert_json_parse_tests(ah_unit_t* unit, const char* label, struct
 
         ah_err_t err = ah_json_parse(ah_buf_from((uint8_t*) test->source, strlen(test->source)), &buf);
         if (err != test->expected_err) {
+            char actual_err_buf[128u];
+            ah_strerror_r(err, actual_err_buf, sizeof(actual_err_buf));
+
+            char expected_err_buf[128u];
+            ah_strerror_r(test->expected_err, expected_err_buf, sizeof(expected_err_buf));
+
             ah_unit_failf(unit, "%s [%zu]:\n\tparsing failed with error `%d: %s`; expected `%d: %s`",
-                label, test_i, err, ah_strerror(err), test->expected_err, ah_strerror(test->expected_err));
+                label, test_i, err, actual_err_buf, test->expected_err, expected_err_buf);
             continue;
         }
         ah_unit_pass(unit);

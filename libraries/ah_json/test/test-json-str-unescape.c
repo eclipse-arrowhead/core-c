@@ -34,8 +34,14 @@ void s_assert_json_unescape_tests(ah_unit_t* unit, const char* label, struct s_j
 
         ah_err_t err = ah_json_str_unescape(test->input, strlen(test->input), buf, &actual_length);
         if (err != test->expected_err) {
+            char actual_err_buf[128u];
+            ah_strerror_r(err, actual_err_buf, sizeof(actual_err_buf));
+
+            char expected_err_buf[128u];
+            ah_strerror_r(test->expected_err, expected_err_buf, sizeof(expected_err_buf));
+
             ah_unit_failf(unit, "%s [%zu]:\n\tparsing failed with error `%d: %s`; expected error `%d: %s`",
-                label, test_i, err, ah_strerror(err), test->expected_err, ah_strerror(test->expected_err));
+                label, test_i, err, actual_err_buf, test->expected_err, expected_err_buf);
             continue;
         }
         ah_unit_pass(unit);

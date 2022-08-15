@@ -146,8 +146,13 @@ bool ah_i_unit_assert_err_eq(struct ah_i_unit unit, ah_err_t a, ah_err_t b, cons
 
     unit.external->fail_count += 1;
 
-    (void) printf("FAIL %s (%s:%d) [%s] != [%s]; %d != %d\n\t%s\n", unit.func, unit.file, unit.line, ah_strerror(a),
-        ah_strerror(b), a, b, message);
+    char a_buf[128u];
+    ah_strerror_r(a, a_buf, sizeof(a_buf));
+
+    char b_buf[128u];
+    ah_strerror_r(b, b_buf, sizeof(b_buf));
+
+    (void) printf("FAIL %s (%s:%d) [%s] != [%s]; %d != %d\n\t%s\n", unit.func, unit.file, unit.line, a_buf, b_buf, a, b, message);
 
     return false;
 }

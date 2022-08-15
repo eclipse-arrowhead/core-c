@@ -5,8 +5,14 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include <ah/err.h>
+#include <string.h>
 
-ah_extern const char* ah_strerror(ah_err_t err)
+#if AH_IS_WIN32
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
+#endif
+
+ah_extern void ah_strerror_r(ah_err_t err, char* buf, size_t size)
 {
     const char* string;
 
@@ -20,14 +26,35 @@ ah_extern const char* ah_strerror(ah_err_t err)
   string = (STRING);                   \
   break;
 
-        AH_I_ERR_MAP(AH_I_ERR_E)
+#if AH_IS_DARWIN || AH_IS_LINUX
 
-#undef AH_I_ERR_E
+        AH_I_ERR_MAP_CUSTOM(AH_I_ERR_E)
+
+    default:
+        (void) strerror_r(err, buf, size);
+        return;
+
+#elif AH_IS_WIN32
+
+        AH_I_ERR_MAP_CUSTOM(AH_I_ERR_E)
+
+    default:
+        const WORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+        (void) FormatMessageA(flags, NULL, err, 0u, (LPTSTR) buf, size, NULL);
+        return;
+
+#else
+
+        AH_I_ERR_MAP(AH_I_ERR_E)
 
     default:
         string = "unknown error";
         break;
+
+#endif
+
+#undef AH_I_ERR_E
     }
 
-    return string;
+    (void) strncpy(buf, string, size);
 }

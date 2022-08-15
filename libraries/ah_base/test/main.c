@@ -13,7 +13,6 @@
 void test_buf(ah_unit_t* unit);
 void test_collections_list(ah_unit_t* unit);
 void test_collections_ring(ah_unit_t* unit);
-void test_err(ah_unit_t* unit);
 void test_ip(ah_unit_t* unit);
 void test_math(ah_unit_t* unit);
 void test_sock(ah_unit_t* unit);
@@ -35,7 +34,6 @@ int main(void)
     test_buf(&unit);
     test_collections_list(&unit);
     test_collections_ring(&unit);
-    test_err(&unit);
     test_ip(&unit);
     test_math(&unit);
     test_sock(&unit);
