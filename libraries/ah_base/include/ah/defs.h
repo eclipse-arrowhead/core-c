@@ -7,7 +7,18 @@
 #ifndef AH_DEFS_H_
 #define AH_DEFS_H_
 
-#if defined(__APPLE__)
+/// \brief Platform, compiler, attribute and type definitions.
+/// \file
+///
+/// This file is meant to be included from virtually every header file of the
+/// base library. It contains macros for checking what the targeted platform is,
+/// what compiler is being used, what relevant platform and compiler features
+/// are available, and so on. Finally, it performs some tests to ensure that the
+/// targeted platform and compiler are supported by the library.
+
+#if defined(AH_DOXYGEN)
+// Do nothing.
+#elif defined(__APPLE__)
 # define AH_IS_DARWIN 1
 #elif defined(__linux__)
 # define AH_IS_LINUX 1
@@ -16,29 +27,45 @@
 #endif
 
 #ifndef AH_IS_DARWIN
+/// \brief Indicates whether the targeted platform is Darwin.
 # define AH_IS_DARWIN 0
 #endif
 #ifndef AH_IS_LINUX
+/// \brief Indicates whether the targeted platform is Linux.
 # define AH_IS_LINUX 0
 #endif
 #ifndef AH_IS_WIN32
+/// \brief Indicates whether the targeted platform is WIN32.
 # define AH_IS_WIN32 0
 #endif
 
 #ifndef AH_USE_IOCP
+/// \brief Indicates whether the Windows I/O Completion Ports API is used
+///        internally to manage asynchronous events.
 # define AH_USE_IOCP AH_IS_WIN32
 #endif
 #ifndef AH_USE_KQUEUE
+/// \brief Indicates whether the BSD Kernel Queue API is used internally to
+///        manage asynchronous events.
 # define AH_USE_KQUEUE AH_IS_DARWIN
 #endif
 #ifndef AH_USE_URING
+/// \brief Indicates whether the Linux io_uring API is used internally to
+///        manage asynchronous events.
 # define AH_USE_URING AH_IS_LINUX
 #endif
 
+/// \brief Indicates whether or not a BSD sockets implementation is available on
+///        the targeted platform.
 #define AH_HAS_BSD_SOCKETS (AH_USE_IOCP || AH_USE_KQUEUE || AH_USE_URING)
-#define AH_HAS_POSIX       (AH_USE_KQUEUE || AH_USE_URING)
 
-#if defined(__clang__)
+/// \brief Indicates whether the targeted platform is at least loosely
+///        POSIX-compliant.
+#define AH_HAS_POSIX (AH_USE_KQUEUE || AH_USE_URING)
+
+#if defined(AH_DOXYGEN)
+// Do nothing.
+#elif defined(__clang__)
 # if __clang_major__ < 13
 #  error "Only clang versions 13 and above are supported for this library."
 # endif
@@ -58,12 +85,16 @@
 #endif
 
 #ifndef AH_VIA_CLANG
+/// \brief Indicates whether or not the Clang compiler is being used.
 # define AH_VIA_CLANG 0
 #endif
 #ifndef AH_VIA_GCC
+/// \brief Indicates whether or not the GCC compiler is being used.
 # define AH_VIA_GCC 0
 #endif
 #ifndef AH_VIA_MSVC
+/// \brief Indicates whether or not the Microsoft Visual Studio compiler is
+///        being used.
 # define AH_VIA_MSVC 0
 #endif
 
@@ -77,8 +108,19 @@
 #elif AH_VIA_MSVC
 # define ah_extern   __declspec(dllexport)
 # define ah_noreturn __declspec(noreturn)
+#else
+/// \brief Specified before a function declaration or definition to make it
+///        available when linking.
+# define ah_extern
+
+/// \brief Specified before a function declaration or definition to indicate
+//         that the function in question never returns.
+# define ah_noreturn
 #endif
 
+/// \brief Signed integer type used to hold an error code.
+///
+/// \see err.h
 typedef int ah_err_t;
 
 typedef struct ah_buf ah_buf_t;
