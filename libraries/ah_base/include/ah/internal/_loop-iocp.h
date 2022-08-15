@@ -36,9 +36,11 @@ struct ah_i_loop_task_queue {
     struct ah_i_loop_task_entry* _entries;
 };
 
+struct ah_i_loop_evt;
+
 ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task);
 ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task);
 
-ah_extern ah_err_t ah_i_loop_evt_get_wsa_result(ah_i_loop_evt_t* evt, SOCKET fd, DWORD* n_bytes_transferred);
+ah_extern ah_err_t ah_i_loop_evt_get_wsa_result(struct ah_i_loop_evt* evt, SOCKET fd, DWORD* n_bytes_transferred);
 
 #endif

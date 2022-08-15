@@ -21,7 +21,9 @@
 #define AH_I_LOOP_EVT_PLATFORM_FIELDS \
  void (*_cb)(ah_i_loop_evt_t*, struct kevent*);
 
-ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev);
+struct ah_i_loop_evt;
+
+ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, struct ah_i_loop_evt** evt, struct kevent** kev);
 ah_err_t ah_i_loop_alloc_kev(ah_loop_t* loop, struct kevent** kev);
 
 #endif

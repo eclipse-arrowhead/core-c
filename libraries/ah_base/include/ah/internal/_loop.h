@@ -35,6 +35,8 @@
                              \
  AH_I_LOOP_PLATFORM_FIELDS
 
+typedef struct ah_i_loop_evt ah_i_loop_evt_t;
+
 struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS
 

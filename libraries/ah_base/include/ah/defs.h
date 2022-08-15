@@ -155,6 +155,4 @@ typedef struct ah_udp_vtab ah_udp_vtab_t;
 typedef union ah_sockaddr ah_sockaddr_t;
 typedef union ah_udp_group ah_udp_group_t;
 
-typedef struct ah_i_loop_evt ah_i_loop_evt_t;
-
 #endif
