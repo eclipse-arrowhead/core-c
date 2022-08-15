@@ -21,14 +21,31 @@ ah_extern void ah_strerror_r(ah_err_t err, char* buf, size_t size)
         string = "no error";
         break;
 
-#define AH_I_ERR_E(NAME, CODE, STRING) \
- case AH_E##NAME:                      \
-  string = (STRING);                   \
-  break;
+    case AH_EDEP:
+        string = "dependency failed";
+        break;
+
+    case AH_EDUP:
+        string = "duplicate exists";
+        break;
+
+    case AH_EEOF:
+        string = "unexpected end";
+        break;
+
+    case AH_EINTERN:
+        string = "internal error";
+        break;
+
+    case AH_ERECONN:
+        string = "reconnecting";
+        break;
+
+    case AH_ESTATE:
+        string = "state invalid";
+        break;
 
 #if AH_IS_DARWIN || AH_IS_LINUX
-
-        AH_I_ERR_MAP_CUSTOM(AH_I_ERR_E)
 
     default:
         (void) strerror_r(err, buf, size);
@@ -36,20 +53,10 @@ ah_extern void ah_strerror_r(ah_err_t err, char* buf, size_t size)
 
 #elif AH_IS_WIN32
 
-        AH_I_ERR_MAP_CUSTOM(AH_I_ERR_E)
-
     default:
         const WORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
         (void) FormatMessageA(flags, NULL, err, 0u, (LPTSTR) buf, size, NULL);
         return;
-
-#else
-
-        AH_I_ERR_MAP(AH_I_ERR_E)
-
-    default:
-        string = "unknown error";
-        break;
 
 #endif
 

@@ -13,6 +13,7 @@ set(
     include/ah/conf.h
     include/ah/defs.h
     include/ah/err.h
+    include/ah/internal/_err.h
     include/ah/internal/_loop.h
     include/ah/internal/_sock.h
     include/ah/internal/_task.h
