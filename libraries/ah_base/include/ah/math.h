@@ -7,15 +7,30 @@
 #ifndef AH_MATH_H_
 #define AH_MATH_H_
 
+/// \brief Safe integer operations.
+/// \file
+///
+/// This file provides a rather long list of functions that can be used to
+/// ensure that certain integer operations never produce undefined behavior.
+///
+/// The functions behave as follows: All \c add, \c div, \c mul and \c sub
+/// functions return \c AH_ENONE if successful, \c AH_EINVAL if the \c result
+/// argument is \c NULL or \c AH_ERANGE if the operation overflowed. The \c div
+/// functions additionally return \c AH_EDOM if their \c b argument is zero.
+/// Unsigned divisions are guaranteed to never yield \c AH_RANGE. In every case,
+/// the \c result value is only updated if the return value is \c AH_ENONE.
+///
+/// Note that signed divisions can overflow, causing \c AH_ERANGE to be
+/// returned, if their \c a argument is the lowest representable such and their
+/// \c b argument is \c -1. This is a consequence of the two's complement
+/// integer representation having a negative number range being larger than its
+/// positive counterpart. Only two's complement signed integer representations
+/// are supported by this library.
+
 #include "defs.h"
 
 #include <stddef.h>
 #include <stdint.h>
-
-// All `add`, `div`, `mul` and `sub` functions return AH_ENONE if successful,
-// AH_EINVAL if the `result` argument is NULL or AH_ERANGE if the operation
-// overflowed. The signed `div` functions additionally return AH_EDOM of the `b`
-// argument is zero.
 
 ah_extern ah_err_t ah_add_int16(int16_t a, int16_t b, int16_t* result);
 ah_extern ah_err_t ah_div_int16(int16_t a, int16_t b, int16_t* result);
