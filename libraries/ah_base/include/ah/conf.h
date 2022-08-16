@@ -7,7 +7,7 @@
 #ifndef AH_CONF_H_
 #define AH_CONF_H_
 
-/// \brief Base library configuration.
+/// \brief Library configuration.
 /// \file
 ///
 /// This file contains various macro definitions that are used to affect the
