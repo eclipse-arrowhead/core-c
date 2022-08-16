@@ -127,7 +127,6 @@ typedef struct ah_buf ah_buf_t;
 typedef struct ah_ipaddr_v4 ah_ipaddr_v4_t;
 typedef struct ah_ipaddr_v6 ah_ipaddr_v6_t;
 typedef struct ah_loop ah_loop_t;
-typedef struct ah_loop_opts ah_loop_opts_t;
 typedef struct ah_rw ah_rw_t;
 typedef struct ah_sockaddr_any ah_sockaddr_any_t;
 typedef struct ah_sockaddr_ip ah_sockaddr_ip_t;

@@ -10,28 +10,27 @@
 #include "ah/err.h"
 #include "ah/internal/collections/slab.h"
 #include "ah/intrin.h"
-#include "ah/math.h"
 #include "loop-evt.h"
 
 static void s_evt_cancel(void* evt);
 static void s_term(ah_loop_t* loop);
 
-ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
+ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, size_t capacity)
 {
-    if (loop == NULL || opts == NULL) {
+    if (loop == NULL) {
         return AH_EINVAL;
     }
 
     *loop = (ah_loop_t) { 0u };
 
-    ah_err_t err = ah_i_loop_init(loop, opts);
+    ah_err_t err = ah_i_loop_init(loop, &capacity);
     if (err != AH_ENONE) {
         return err;
     }
 
-    ah_assert_if_debug(opts->capacity != 0u);
+    ah_assert_if_debug(capacity != 0u);
 
-    err = ah_i_slab_init(&loop->_evt_slab, opts->capacity, sizeof(ah_i_loop_evt_t));
+    err = ah_i_slab_init(&loop->_evt_slab, capacity, sizeof(ah_i_loop_evt_t));
     if (err != AH_ENONE) {
         ah_i_loop_term(loop);
         return err;

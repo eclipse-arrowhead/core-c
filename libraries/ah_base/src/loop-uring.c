@@ -12,22 +12,21 @@
 
 #include <fcntl.h>
 #include <limits.h>
-#include <stdlib.h>
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
+ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
 {
     ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(opts != NULL);
+    ah_assert_if_debug(capacity != NULL);
 
-    if (opts->capacity == 0u) {
-        opts->capacity = AH_CONF_URING_DEFAULT_CAPACITY;
+    if (*capacity == 0u) {
+        *capacity = AH_CONF_URING_DEFAULT_CAPACITY;
     }
 
-    if (opts->capacity > UINT_MAX) {
+    if (*capacity > UINT_MAX) {
         return AH_EDOM;
     }
 
-    int err = io_uring_queue_init((unsigned) opts->capacity, &loop->_uring, 0u);
+    int err = io_uring_queue_init((unsigned) *capacity, &loop->_uring, 0u);
     if (err != 0) {
         return -err;
     }

@@ -398,7 +398,7 @@ static void s_should_send_and_receive_short_message(ah_unit_t* unit)
 
     // Setup event loop.
     ah_loop_t loop;
-    err = ah_loop_init(&loop, &(ah_loop_opts_t) { .capacity = 4u });
+    err = ah_loop_init(&loop, 4u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

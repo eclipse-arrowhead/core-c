@@ -45,7 +45,7 @@ static void s_should_execute_task_with_no_err(ah_unit_t* unit)
     ah_err_t err;
 
     struct ah_loop loop;
-    err = ah_loop_init(&loop, &(struct ah_loop_opts) { .capacity = 4u });
+    err = ah_loop_init(&loop, 4u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -87,7 +87,7 @@ static void s_should_execute_cancelled_task_with_correct_err(ah_unit_t* unit)
     ah_err_t err;
 
     struct ah_loop loop;
-    err = ah_loop_init(&loop, &(struct ah_loop_opts) { .capacity = 4u });
+    err = ah_loop_init(&loop, 4u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

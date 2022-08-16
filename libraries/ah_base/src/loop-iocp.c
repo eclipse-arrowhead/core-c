@@ -23,16 +23,16 @@ static ah_time_t* s_task_queue_peek_at_baseline(struct ah_i_loop_task_queue* que
 static void s_task_queue_heapify_down_from(struct ah_i_loop_task_queue* queue, const size_t index);
 static void s_task_queue_term(struct ah_i_loop_task_queue* queue);
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
+ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
 {
     ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(opts != NULL);
+    ah_assert_if_debug(capacity != NULL);
 
-    if (opts->capacity == 0u) {
-        opts->capacity = AH_CONF_IOCP_DEFAULT_CAPACITY;
+    if (*capacity == 0u) {
+        *capacity = AH_CONF_IOCP_DEFAULT_CAPACITY;
     }
 
-    ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->capacity);
+    ah_err_t err = s_task_queue_init(&loop->_task_queue, *capacity);
     if (err != AH_ENONE) {
         return err;
     }

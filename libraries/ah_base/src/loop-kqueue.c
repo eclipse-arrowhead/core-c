@@ -16,16 +16,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
+ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
 {
     ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(opts != NULL);
+    ah_assert_if_debug(capacity != NULL);
 
-    if (opts->capacity == 0u) {
-        opts->capacity = AH_CONF_KQUEUE_DEFAULT_CAPACITY;
+    if (*capacity == 0u) {
+        *capacity = AH_CONF_KQUEUE_DEFAULT_CAPACITY;
     }
 
-    if (opts->capacity > INT_MAX) {
+    if (*capacity > INT_MAX) {
         return AH_EDOM;
     }
 
@@ -41,19 +41,19 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
         goto close_fd_and_return_err;
     }
 
-    struct kevent* kqueue_changelist = ah_calloc(opts->capacity, sizeof(struct kevent));
+    struct kevent* kqueue_changelist = ah_calloc(*capacity, sizeof(struct kevent));
     if (kqueue_changelist == NULL) {
         err = errno;
         goto close_fd_and_return_err;
     }
 
-    struct kevent* kqueue_eventlist = ah_calloc(opts->capacity, sizeof(struct kevent));
+    struct kevent* kqueue_eventlist = ah_calloc(*capacity, sizeof(struct kevent));
     if (kqueue_eventlist == NULL) {
         err = AH_ENOMEM;
         goto close_fd_free_changelist_and_return_err;
     }
 
-    loop->_kqueue_capacity = (int) opts->capacity;
+    loop->_kqueue_capacity = (int) *capacity;
     loop->_kqueue_fd = kqueue_fd;
     loop->_kqueue_changelist = kqueue_changelist;
     loop->_kqueue_eventlist = kqueue_eventlist;

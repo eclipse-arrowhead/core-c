@@ -43,7 +43,7 @@ struct ah_i_loop_evt {
     void* _subject;
 };
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts);
+ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity);
 
 ah_extern ah_err_t ah_i_loop_get_pending_err(ah_loop_t* loop);
 ah_extern bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err);

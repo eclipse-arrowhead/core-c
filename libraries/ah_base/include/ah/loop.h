@@ -13,10 +13,6 @@ struct ah_loop {
     AH_I_LOOP_FIELDS
 };
 
-struct ah_loop_opts {
-    size_t capacity;
-};
-
 // Error codes:
 // * AH_EINVAL       - `loop` or `opts` is NULL.
 // * AH_EMFILE       - [Darwin, Linux] Per-process file descriptor table is full.

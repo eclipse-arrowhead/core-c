@@ -391,7 +391,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     ah_loop_t loop;
 
-    err = ah_loop_init(&loop, &(ah_loop_opts_t) { .capacity = 4u });
+    err = ah_loop_init(&loop, 4u);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
