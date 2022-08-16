@@ -53,7 +53,7 @@ ah_extern bool ah_loop_is_term(const ah_loop_t* loop)
 {
     ah_assert(loop != NULL);
 
-    return (loop->_state & (AH_I_LOOP_STATE_TERMINATING | AH_I_LOOP_STATE_TERMINATED)) != 0;
+    return loop->_state == AH_I_LOOP_STATE_TERMINATING || loop->_state == AH_I_LOOP_STATE_TERMINATED;
 }
 
 ah_extern struct ah_time ah_loop_now(const ah_loop_t* loop)
@@ -73,7 +73,7 @@ ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, struct ah_time* time)
     if (loop == NULL) {
         return AH_EINVAL;
     }
-    if ((loop->_state & (AH_I_LOOP_STATE_RUNNING | AH_I_LOOP_STATE_TERMINATING | AH_I_LOOP_STATE_TERMINATED)) != 0) {
+    if (loop->_state != AH_I_LOOP_STATE_INITIAL && loop->_state != AH_I_LOOP_STATE_STOPPED) {
         return AH_ESTATE;
     }
     loop->_state = AH_I_LOOP_STATE_RUNNING;
@@ -124,7 +124,7 @@ ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop)
     if (loop->_state != AH_I_LOOP_STATE_RUNNING) {
         return AH_ESTATE;
     }
-    loop->_state = AH_I_LOOP_STATE_STOPPED;
+    loop->_state = AH_I_LOOP_STATE_STOPPING;
     return AH_ENONE;
 }
 
@@ -145,13 +145,14 @@ ah_err_t ah_loop_term(ah_loop_t* loop)
         err = AH_ENONE;
         break;
 
-    case AH_I_LOOP_STATE_STOPPED:
-        s_term(loop);
+    case AH_I_LOOP_STATE_RUNNING:
+        loop->_state = AH_I_LOOP_STATE_TERMINATING;
         err = AH_ENONE;
         break;
 
-    case AH_I_LOOP_STATE_RUNNING:
-        loop->_state = AH_I_LOOP_STATE_TERMINATING;
+    case AH_I_LOOP_STATE_STOPPING:
+    case AH_I_LOOP_STATE_STOPPED:
+        s_term(loop);
         err = AH_ENONE;
         break;
 

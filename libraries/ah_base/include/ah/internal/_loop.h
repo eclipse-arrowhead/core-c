@@ -20,11 +20,12 @@
 # include "_loop-uring.h"
 #endif
 
-#define AH_I_LOOP_STATE_INITIAL     0x01
-#define AH_I_LOOP_STATE_RUNNING     0x02
-#define AH_I_LOOP_STATE_STOPPED     0x04
-#define AH_I_LOOP_STATE_TERMINATING 0x08
-#define AH_I_LOOP_STATE_TERMINATED  0x10
+#define AH_I_LOOP_STATE_INITIAL     0
+#define AH_I_LOOP_STATE_RUNNING     1
+#define AH_I_LOOP_STATE_STOPPING    2
+#define AH_I_LOOP_STATE_STOPPED     3
+#define AH_I_LOOP_STATE_TERMINATING 4
+#define AH_I_LOOP_STATE_TERMINATED  5
 
 #define AH_I_LOOP_FIELDS     \
  struct ah_i_slab _evt_slab; \
