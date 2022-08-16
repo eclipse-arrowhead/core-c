@@ -7,10 +7,25 @@
 #ifndef AH_TASK_H_
 #define AH_TASK_H_
 
+/// \brief Task scheduling.
+/// \file
+///
+/// A \e task, is a pointer to a function that is to be executed after a certain
+/// \e baseline, which is a future point in time. This file provides the
+/// utilities require to formulate and schedule such tasks.
+
 #include "internal/_task.h"
 
 #include <stddef.h>
 
+/// \brief A pointer to a task function, or \e callback.
+///
+/// \param task Pointer to the ah_task containing this function pointer.
+/// \param err  <ul>
+///   <li><b>AH_ENONE</b>     - \a task was executed after its \c baseline.
+///   <li><b>AH_ECANCELED</b> - \a task is being cancelled due to its event loop
+///                             shutting down.
+/// </ul>
 typedef void (*ah_task_cb)(ah_task_t* task, ah_err_t err);
 
 struct ah_task {
