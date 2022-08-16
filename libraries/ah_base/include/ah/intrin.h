@@ -54,30 +54,31 @@
 /// \param b Value of an arbitrary integer type.
 /// \param result Pointer to value of an arbitrary integer type.
 /// \return \c true if the sum of \a a and \a b cannot be represented by
-//          \a result. \c false otherwise.
+///         \a result. \c false otherwise.
 # define ah_p_add_overflow(a, b, result)
 
 /// \brief <b>[Clang, GCC]</b> Multiplties \a a and \a b, storing the product to
-//         \a result.
+///        \a result.
 ///
 /// \param a Value of an arbitrary integer type.
 /// \param b Value of an arbitrary integer type.
 /// \param result Pointer to value of an arbitrary integer type.
 /// \return \c true if the product of \a a and \a b cannot be represented by
-//          \a result. \c false otherwise.
+///         \a result. \c false otherwise.
 # define ah_p_mul_overflow(a, b, result)
 
 /// \brief <b>[Clang, GCC]</b> Subtracts \a a and \a b, storing the difference
-//         to \a result.
+///        to \a result.
 ///
 /// \param a Value of an arbitrary integer type.
 /// \param b Value of an arbitrary integer type.
 /// \param result Pointer to value of an arbitrary integer type.
 /// \return \c true if the difference of \a a and \a b cannot be represented by
-//          \a result. \c false otherwise.
+///         \a result. \c false otherwise.
 # define ah_p_sub_overflow(a, b, result)
 
 #elif AH_VIA_CLANG || AH_VIA_GCC
+
 # define ah_likely(expr)   __builtin_expect(!!(expr), 1)
 # define ah_trap()         __builtin_trap()
 # define ah_unlikely(expr) __builtin_expect(!!(expr), 0)
@@ -86,6 +87,7 @@
 # define ah_p_add_overflow(a, b, result) __builtin_add_overflow((a), (b), (result))
 # define ah_p_mul_overflow(a, b, result) __builtin_mul_overflow((a), (b), (result))
 # define ah_p_sub_overflow(a, b, result) __builtin_sub_overflow((a), (b), (result))
+
 #elif AH_VIA_MSVC
 # pragma intrinsic(__debugbreak)
 
@@ -93,6 +95,7 @@
 # define ah_trap()         __debugbreak()
 # define ah_unlikely(expr) expr
 # define ah_unreachable()  __assume(0)
+
 #endif
 
 #endif

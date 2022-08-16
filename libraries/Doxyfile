@@ -25,7 +25,7 @@ ABBREVIATE_BRIEF       = "The $name class" \
                          the
 ALWAYS_DETAILED_SEC    = NO
 INLINE_INHERITED_MEMB  = NO
-FULL_PATH_NAMES        = NO
+FULL_PATH_NAMES        = YES
 STRIP_FROM_PATH        =
 STRIP_FROM_INC_PATH    =
 SHORT_NAMES            = NO
@@ -151,7 +151,7 @@ VERBATIM_HEADERS       = YES
 # Configuration options related to the alphabetical class index.
 
 ALPHABETICAL_INDEX     = YES
-IGNORE_PREFIX          = ah_
+IGNORE_PREFIX          = AH_ ah_
 
 # Configuration options related to the HTML output.
 
@@ -233,3 +233,15 @@ INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = AH_DOXYGEN
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
+
+# Configuration options related to the dot tool.
+
+CLASS_GRAPH            = NO
+COLLABORATION_GRAPH    = NO
+GROUP_GRAPHS           = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+DIRECTORY_GRAPH        = NO
+GENERATE_LEGEND        = NO
