@@ -42,13 +42,17 @@ ah_extern bool ah_ipaddr_v6_is_wildcard(const ah_ipaddr_v6_t* addr)
 
 ah_extern ah_err_t ah_ipaddr_v4_stringify(const struct ah_ipaddr_v4* addr, char* dest, size_t* dest_size)
 {
+    if (addr == NULL || dest == NULL || dest_size == NULL) {
+        return AH_EINVAL;
+    }
+
     char buf[AH_IPADDR_V4_STRLEN_MAX];
 
     const int n = snprintf(buf, sizeof(buf), "%d.%d.%d.%d",
         addr->octets[0], addr->octets[1], addr->octets[2], addr->octets[3]);
 
     if (n < 0) {
-        return AH_EOPNOTSUPP;
+        return AH_EINTERN;
     }
 
     if (((size_t) n) < *dest_size) {
@@ -62,6 +66,10 @@ ah_extern ah_err_t ah_ipaddr_v4_stringify(const struct ah_ipaddr_v4* addr, char*
 
 ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char* dest, size_t* dest_size)
 {
+    if (addr == NULL || dest == NULL || dest_size == NULL) {
+        return AH_EINVAL;
+    }
+
     char buf[AH_IPADDR_V6_STRLEN_MAX];
     size_t buf_i = 0u;
 
@@ -105,7 +113,7 @@ ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char*
                     n = snprintf(&buf[buf_i], AH_IPADDR_V6_STRLEN_MAX - buf_i, ":FFFF:%d.%d.%d.%d",
                         addr->octets[12], addr->octets[13], addr->octets[14], addr->octets[15]);
                     if (n < 0) {
-                        return AH_EOPNOTSUPP;
+                        return AH_EINTERN;
                     }
                     buf_i += (size_t) n;
                     break;
@@ -116,7 +124,7 @@ ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char*
                     n = snprintf(&buf[buf_i], AH_IPADDR_V6_STRLEN_MAX - buf_i, ":%d.%d.%d.%d",
                         addr->octets[12], addr->octets[13], addr->octets[14], addr->octets[15]);
                     if (n < 0) {
-                        return AH_EOPNOTSUPP;
+                        return AH_EINTERN;
                     }
                     buf_i += (size_t) n;
                     break;
@@ -135,7 +143,7 @@ ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char*
         uint16_t value = ((uint16_t) addr->octets[i]) << 8 | addr->octets[i + 1u];
         n = snprintf(&buf[buf_i], AH_IPADDR_V6_STRLEN_MAX - buf_i, "%X", value);
         if (n < 0) {
-            return AH_EOPNOTSUPP;
+            return AH_EINTERN;
         }
         buf_i += (size_t) n;
     }
