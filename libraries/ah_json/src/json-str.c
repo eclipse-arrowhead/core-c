@@ -73,7 +73,7 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
 static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char* dst, size_t* dst_length)
 {
     ah_assert_if_debug(src != NULL || src_length == 0u);
-    ah_assert_if_debug(dst_length != 0u);
+    ah_assert_if_debug(dst_length != NULL);
     ah_assert_if_debug(dst != NULL || *dst_length == 0u);
 
     if (src_length < 2u) {

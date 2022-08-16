@@ -16,7 +16,7 @@
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS \
  int _fd;                             \
  ah_sockaddr_t _recv_addr;            \
- ah_i_loop_evt_t* _recv_evt;          \
+ struct ah_i_loop_evt* _recv_evt;     \
  struct msghdr _recv_msghdr;
 
 #endif

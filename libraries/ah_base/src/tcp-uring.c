@@ -267,7 +267,7 @@ ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
 
     out->_conn = conn;
 
-    io_uring_prep_send(sqe, conn->_fd, out->buf._base, out->buf._size, 0);
+    io_uring_prep_send(sqe, conn->_fd, out->buf.base, out->buf.size, 0);
     io_uring_sqe_set_data(sqe, evt);
 
     return AH_ENONE;
