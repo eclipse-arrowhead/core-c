@@ -106,7 +106,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         size_t port_size;
         const int n = snprintf(dest, dest_rem, ":%" PRIu16, sockaddr->as_ipv4.port);
         if (n < 0) {
-            return AH_EOPNOTSUPP;
+            return AH_EINTERN;
         }
         port_size = (size_t) n;
         if (port_size == dest_rem) {
@@ -137,7 +137,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         if (sockaddr->as_ipv6.zone_id != 0u) {
             const int n = snprintf(dest, dest_rem, "%%25%" PRIu32, sockaddr->as_ipv6.zone_id);
             if (n < 0) {
-                return AH_EOPNOTSUPP;
+                return AH_EINTERN;
             }
             zone_id_size = (size_t) n;
             if (zone_id_size == dest_rem) {
@@ -160,7 +160,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         size_t port_size;
         const int n = snprintf(dest, dest_rem, ":%" PRIu16, sockaddr->as_ipv4.port);
         if (n < 0) {
-            return AH_EOPNOTSUPP;
+            return AH_EINTERN;
         }
         port_size = (size_t) n;
         if (port_size == dest_rem) {
