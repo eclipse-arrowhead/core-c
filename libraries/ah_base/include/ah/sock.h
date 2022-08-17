@@ -54,7 +54,7 @@
 #endif
 
 /// \brief Variant of ah_sockaddr that exposes struct members present on all
-///        supported socket addresses.
+///        supported socket address types.
 struct ah_sockaddr_any {
 #ifdef AH_DOXYGEN
     uintX_t size;   ///< \brief <b>[Darwin]</b> Byte size of this socket address.
@@ -65,7 +65,7 @@ struct ah_sockaddr_any {
 };
 
 /// \brief Variant of ah_sockaddr that exposes struct members present on all
-///        IP-based socket addresses.
+///        IP-based socket address types.
 struct ah_sockaddr_ip {
 #ifdef AH_DOXYGEN
     uintX_t size;   ///< \brief <b>[Darwin]</b> Byte size of this socket address.
@@ -86,8 +86,8 @@ struct ah_sockaddr_ipv4 {
 #endif
     uint16_t port;              ///< \brief UDP or TCP port number.
     struct ah_ipaddr_v4 ipaddr; ///< \brief IPv4 address.
-#if AH_HAS_BSD_SOCKETS
-    uint8_t zero[8u];
+#if AH_HAS_BSD_SOCKETS || defined(AH_DOXYGEN)
+    uint8_t zero[8u]; ///< \brief <b>[BSD Sockets]</b> Zero padding.
 #endif
 };
 
@@ -100,8 +100,8 @@ struct ah_sockaddr_ipv6 {
     AH_I_SOCKADDR_COMMON
 #endif
     uint16_t port; ///< \brief UDP or TCP port number.
-#if AH_HAS_BSD_SOCKETS
-    uint32_t flowinfo;
+#if AH_HAS_BSD_SOCKETS || defined(AH_DOXYGEN)
+    uint32_t flowinfo; ///< \brief <b>[BSD Sockets]</b> Flow information (unused).
 #endif
     struct ah_ipaddr_v6 ipaddr; ///< \brief IPv6 address.
     uint32_t zone_id;           ///< \brief IPv6 zone identifier.
