@@ -15,7 +15,7 @@
 
 static mach_timebase_info_data_t s_get_mach_timebase_info_data(void);
 
-ah_extern ah_time_t ah_time_now()
+ah_extern ah_time_t ah_time_now(void)
 {
     return (ah_time_t) { ._mach_absolute_time = mach_absolute_time() };
 }
