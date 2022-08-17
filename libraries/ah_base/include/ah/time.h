@@ -7,6 +7,10 @@
 #ifndef AH_TIME_H_
 #define AH_TIME_H_
 
+/// \brief Time querying and comparison.
+/// \file
+///
+
 #include "internal/_time.h"
 
 #include <stdbool.h>
@@ -31,6 +35,29 @@ struct ah_time {
 
 typedef int64_t ah_timediff_t; // Nanoseconds.
 
+/// \brief Gets the current time, as reported by the platform.
+///
+/// What concrete platform provision is consulted varies with the targeted
+/// platform. The following table outlines what time sources are used on the
+/// supported platforms:
+///
+/// <table>
+///   <caption id="time-sources">Time sources</caption>
+///   <tr>
+///     <th>Platform
+///     <th>Source
+///   <tr>
+///     <td>Darwin
+///     <td><a href="https://developer.apple.com/documentation/kernel/1462446-mach_absolute_time">mach_absolute_time()</a>
+///   <tr>
+///     <td>Linux
+///     <td><a href="https://linux.die.net/man/3/clock_gettime">clock_gettime(CLOCK_MONOTONIC)</a>
+///   <tr>
+///     <td>Win32
+///     <td><a href="https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter">QueryPerformanceCounter()</a>
+/// </table>
+///
+/// \return Current time.
 ah_extern ah_time_t ah_time_now(void);
 
 // Error codes:
