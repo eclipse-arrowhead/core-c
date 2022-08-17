@@ -73,6 +73,10 @@ struct ah_loop {
 ///   <li><b>AH_EPROCLIM [Win32]</b>       - Windows task limit reached.
 ///   <li><b>AH_ESYSNOTREADY [Win32]</b>   - Network subsystem not ready.
 /// </ul>
+///
+/// \warning No other functions operating on \a loop are safe to call until
+///          after this function has returned successfully, unless something
+///          else is stated in their respective documentations.
 ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, size_t capacity);
 
 /// \brief Checks if \a loop is currently running.
@@ -138,9 +142,6 @@ ah_extern ah_time_t ah_loop_now(const ah_loop_t* loop);
 ///                                         to no memory being available to the
 ///                                         kernel.
 /// </ul>
-///
-/// \warning \a loop must have been initialized via a call to ah_loop_init()
-///          prior to being used with this function.
 ah_extern ah_err_t ah_loop_run(ah_loop_t* loop);
 
 /// \brief Runs event \a loop at least until \a time, making it await and handle
@@ -174,9 +175,6 @@ ah_extern ah_err_t ah_loop_run(ah_loop_t* loop);
 ///                                         to no memory being available to the
 ///                                         kernel.
 /// </ul>
-///
-/// \warning \a loop must have been initialized via a call to ah_loop_init()
-///          prior to being used with this function.
 ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, ah_time_t* time);
 
 /// \brief Stops \a loop, preventing it from processing any further events.
