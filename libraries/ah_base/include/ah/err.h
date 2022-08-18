@@ -148,13 +148,14 @@
 #endif
 
 #if AH_IS_WIN32 || defined(AH_DOXYGEN)
-/// \name WIN32 Errors
+/// \name Win32 Errors
 /// \{
-# define AH_EDISCON          WSAEDISCON                ///< \brief Disconneted.
-# define AH_EHOSTNOTFOUND    WSAHOST_NOT_FOUND         ///< \brief Host not found.
-# define AH_ESECHOSTNOTFOUND WSA_SECURE_HOST_NOT_FOUND ///< \brief Secure host not found.
-# define AH_ESYSNOTREADY     WSASYSNOTREADY            ///< \brief Networking system not ready.
-# define AH_EPROCLIM_W       WSAEPROCLIM               ///< \brief Process limit reached.
+# define AH_EDISCON             WSAEDISCON                ///< \brief Disconneted.
+# define AH_EHOSTNOTFOUND       WSAHOST_NOT_FOUND         ///< \brief Host not found.
+# define AH_EPROVIDERFAILEDINIT WSAEPROVIDERFAILEDINIT    ///< \brief Network service provider failed to initialize.
+# define AH_ESECHOSTNOTFOUND    WSA_SECURE_HOST_NOT_FOUND ///< \brief Secure host not found.
+# define AH_ESYSNOTREADY        WSASYSNOTREADY            ///< \brief Networking system not ready.
+# define AH_EPROCLIM_W          WSAEPROCLIM               ///< \brief Process limit reached.
 /// \}
 #endif
 

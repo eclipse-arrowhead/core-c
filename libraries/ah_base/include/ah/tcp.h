@@ -116,6 +116,7 @@ struct ah_tcp_conn_cbs {
     ///   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
     ///   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
     ///   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
+    ///   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>    - Network service failed to initialize.
     /// </ul>
     ///
     /// \note This function is never called for accepted connections, which
@@ -195,7 +196,8 @@ struct ah_tcp_conn_cbs {
     ///                                                     time-out or other failure.
     ///   <li><b>AH_ECONNRESET [Darwin, Linux, Win32]</b> - Connection reset by remote host.
     ///   <li><b>AH_EEOF</b>                              - Connection closed for writing.
-    ///   <li><b>AH_ENETDOWN [Darwin, Win32]</b>          - Local network not online.
+    ///   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
+    ///   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
     ///   <li><b>AH_ENETRESET [Win32]</b>                 - Keep-alive is enabled for the connection
     ///                                                     and a related failure was detected.
     ///   <li><b>AH_ENETUNREACH [Darwin]</b>              - Network of remote host not reachable.
@@ -229,20 +231,91 @@ struct ah_tcp_listener {
 ///
 /// A set of function pointers used to handle events related to TCP listeners.
 struct ah_tcp_listener_cbs {
+    /// \brief Listener \a ln has been opened, or the attempt failed.
+    ///
+    /// \param conn Pointer to listener.
+    /// \param err  One of the following codes: <ul>
+    ///   <li><b>AH_ENONE</b>                          - Listener opened successfully.
+    ///   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open socket.
+    ///   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
+    ///   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
+    ///                                                  associated with the given local address.
+    ///   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
+    ///   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
+    ///   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
+    ///   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
+    ///   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
+    ///   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
+    /// </ul>
     void (*on_open)(ah_tcp_listener_t* ln, ah_err_t err);
+
+    /// \brief Listener \a ln has started to listen for incoming connections, or
+    ///        the attempt failed.
+    ///
+    /// \param conn Pointer to listener.
+    /// \param err  One of the following codes: <ul>
+    ///   <li><b>AH_ENONE</b>                     - Listener started to listen successfully.
+    ///   <li><b>AH_EACCESS [Darwin]</b>          - Not permitted to listen.
+    ///   <li><b>AH_EADDRINUSE [Linux, Win32]</b> - No ephemeral TCP port is available. This error
+    ///                                             can only occur if the listener was opened with
+    ///                                             the wildcard address, which means that network
+    ///                                             interface binding is delayed until listening.
+    ///   <li><b>AH_ENETDOWN [Win32]</b>          - The network subsystem has failed.
+    ///   <li><b>AH_ENFILE [Win32]</b>            - System file table is full.
+    ///   <li><b>AH_ENOBUFS [Win32]</b>           - Not enough buffer space available.
+    /// </ul>
     void (*on_listen)(ah_tcp_listener_t* ln, ah_err_t err);
+
+    /// \brief Listener \a ln has accepted the connection \a conn.
+    ///
+    /// If \a err is \c AH_ENONE, which indicates a successful acceptance, all
+    /// further events related to \a conn will be dealt with via the connection
+    /// callback set (see ah_tcp_conn_cbs) provided when listening was started
+    /// via ah_tcp_listener_listen().
+    ///
+    /// \param ln    Pointer to listener.
+    /// \param conn  Pointer to accepted connection, or \c NULL if \a err is not
+    ///              \c AH_ENONE.
+    /// \param raddr Pointer to address of \a conn, or \c NULL if \a err is not
+    ///              \c AH_ENONE.
+    /// \param err  One of the following codes: <ul>
+    ///   <li><b>AH_ENONE</b>                         - Connection accepted successfully.
+    ///   <li><b>AH_ECONNABORTED [Darwin, Linux]</b>  - Connection aborted before finalization.
+    ///   <li><b>AH_ECONNRESET [Win32]</b>            - Connection aborted before finalization.
+    ///   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b> - Process descriptor table is full.
+    ///   <li><b>AH_ENETDOWN [Win32]</b>              - The network subsystem has failed.
+    ///   <li><b>AH_ENFILE [Darwin, Linux]</b>        - System file table is full.
+    ///   <li><b>AH_ENOBUFS [Linux, Win32]</b>        - Not enough buffer space available.
+    ///   <li><b>AH_ENOMEM [Darwin, Linux]</b>        - Not enough heap memory available.
+    ///   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>   - Network service failed to initialize.
+    /// </ul>
     void (*on_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
+
+    /// \brief Listener \a ln has been closed.
+    ///
+    /// \param conn Pointer to listener.
+    /// \param err  Should always be \c AH_ENONE. Other codes may be provided if
+    ///             an unexpected platform error occurs.
     void (*on_close)(ah_tcp_listener_t* ln, ah_err_t err);
 };
 
-// A buffer part of a stream of incoming TCP bytes.
+/// \brief Represents an incoming stream of bytes.
+///
+/// \note Some members of this data structure are \e private in the sense that
+///       a user of this API should not access them directly. All private
+///       members have names beginning with an underscore.
 struct ah_tcp_in {
+    /// \brief Reader/writer referring to the incoming data.
     ah_rw_t rw;
 
     AH_I_TCP_IN_FIELDS
 };
 
-// A buffer part of a stream of outgoing TCP bytes.
+/// \brief Represents an outgoing buffer of bytes.
+///
+/// \note Some members of this data structure are \e private in the sense that
+///       a user of this API should not access them directly. All private
+///       members have names beginning with an underscore.
 struct ah_tcp_out {
     ah_buf_t buf;
 
@@ -252,6 +325,13 @@ struct ah_tcp_out {
 /// \name TCP Transport
 /// \{
 
+/// \brief Gets a copy of the default TCP transport.
+///
+/// The default TCP transport represents a plain connection via the network
+/// subsystem of the current platform. This transport may be used directly with
+/// ah_tcp_conn_init() and ah_tcp_listener_init() to establish plain TCP
+/// connections, which is to say that they are not encrypted or analyzed in any
+/// way.
 ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
 
 /// \}
@@ -259,6 +339,10 @@ ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
 /// \name TCP Virtual Function Table
 /// \{
 
+/// \brief Checks if all mandatory fields of \a vtab are set.
+///
+/// \param vtab Pointer to virtual function table.
+/// \return \c true only if \a vtab is valid. \c false otherwise.
 ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
 
 /// \}
