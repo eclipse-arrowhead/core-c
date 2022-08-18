@@ -11,14 +11,22 @@
 /// \file
 ///
 /// Here, the data structures and functions required to setup and send messages
-/// through TCP connections. Such connections are produced either by
-/// \e connecting to a remote host or \e listening for incoming connections.
+/// through TCP connections are made available. Such connections are produced
+/// either by \e connecting to a remote host or \e listening for incoming
+/// connections.
 ///
-/// \note The terms \e remote and \e local are used here from the perspective
-/// of individual setup connections, not from the host they are running on. A
-/// connection being connected to a listener residing on the same host, or even
-/// being setup in the same operating process, is considered \e remote from the
-/// viewpoint of the connector, which considers itself to be local.
+/// \note When we use the terms \e remote and \e local to describe connections
+///       and hosts, we do so from the perspective of individual connections
+///       rather than complete devices. In other words, if a certain connection
+///       is initialized and then established using calls to ah_tcp_conn_init()
+///       and ah_tcp_conn_connect(), that connection is considered \e local. The
+///       listener it connected to is considered \e remote, even if the listener
+///       would happen to be located on the same device, or even in the same
+///       process, as the original connection. The reverse is also true. If a
+///       listener is established with calls to ah_tcp_listener_init() and
+///       ah_tcp_listener_listen(), any accepted connection is considered
+///       \e remote from the perspective of the listener, even if the connection
+///       would have been initiated from the same device or process.
 
 #include "buf.h"
 #include "internal/_tcp.h"
