@@ -172,13 +172,13 @@ struct ah_tcp_conn_cbs {
     /// instance is reused by \a conn every time this callback is invoked. If
     /// the ah_rw member of that instance is not read in its entirety, whatever
     /// unread contents remain when this callback returns will be presented
-    /// again in another call to this callback. If not at least some of the
-    /// contents of \a in are read or discarded every time this callback is
-    /// invoked, that buffer may become full, which triggers the
-    /// \c AH_EOVERFLOW error. If you wish to save the contents of \a in without
-    /// having to copy it over to another buffer, you can detach it from \a conn
-    /// using ah_tcp_in_detach(), which will make \a conn allocate a replacement
-    /// when appropriate.
+    /// again in another call to this callback. If not all of the contents of
+    /// \a in are read or discarded every time this callback is invoked, or
+    /// the buffer is repackaged via ah_tcp_in_repackage(), that buffer may
+    /// eventually become full, triggering the \c AH_EOVERFLOW error. If you
+    /// wish to save the contents of \a in without having to copy it over to
+    /// another buffer, you can detach it from \a conn using ah_tcp_in_detach(),
+    /// which allocates a new input buffer for \a conn.
     ///
     /// \param conn Pointer to connection.
     /// \param in   Pointer to input data representation, or \c NULL if \a err
@@ -196,7 +196,15 @@ struct ah_tcp_conn_cbs {
     ///                                              related failure was detected.
     ///   <li><b>AH_ENOBUFS [Darwin, Linux]</b>    - Not enough buffer space available.
     ///   <li><b>AH_ENOMEM [Linux]</b>             - Not enough heap memory available.
-    ///   <li><b>AH_EOVERFLOW</b>                  - The
+    ///   <li><b>AH_EOVERFLOW</b>                  - The input buffer of \a conn is full. Note that
+    ///                                              the input buffer is not available via \a in if
+    ///                                              this error code is provided. The only way to
+    ///                                              recover from this error is by closing the
+    ///                                              connection. To prevent this error from
+    ///                                              occurring, you must ensure that the input
+    ///                                              buffer never gets exhausted by reading,
+    ///                                              discarding, repackaging or detaching
+    ///                                              its contents, as described further above.
     ///   <li><b>AH_ETIMEDOUT</b>                  - Connection timed out.
     /// </ul>
     ///
@@ -703,19 +711,76 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 /// \}
 
 /// \name TCP Input Buffer
+///
+/// Operations of ah_tcp_in instances.
+///
 /// \{
 
+/// \brief Allocates new input buffer, storing a pointer to it in \a owner_ptr.
+///
+/// The allocated input buffer is stored to \a owner_ptr \e and contains its own
+/// copy of \a owner_ptr. The buffer can later be detached from its owner by a
+/// call to ah_tcp_in_detach(), which sets the copy to \c NULL and replaces the
+/// pointer pointed to by \a owner_ptr with that of a new input buffer.
+///
+/// \param owner_ptr Pointer to own pointer to allocated input buffer.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>     - The operation was successful.
+///   <li><b>AH_EINVAL</b>    - \a owner_ptr is \c NULL.
+///   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned \c NULL).
+///   <li><b>AH_EOVERFLOW</b> - The configured \c AH_PSIZE is too small for it to be possible to
+///                             store both an ah_tcp_in instance \e and have room for input data in
+///                             a single page provided by the page allocator (see ah_palloc()).
+/// </ul>
+///
+/// \note This function should primarily be of interest to those both wishing to
+///       implement their own TCP transports and need to intercept buffers (for
+///       the sake of decryption, for example).
 ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr);
+
+/// \brief Detaches input buffer \a in from its owner.
+///
+/// This function first allocates a new input buffer, disassociates \a in from
+/// its current owner (most typically an ah_tcp_conn instance), and then
+/// associates the newly allocated input buffer with that owner.
+///
+/// \param in Pointer to input buffer.
+/// \return
+///
+/// \warning As the previous owner of \a in is no longer responsible for it or
+///          its memory, you must manually free it using ah_tcp_in_free() once
+///          you have no more use of it.
 ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in);
 
-// Must only be called after successful call to ah_tcp_in_detach() with same `in`.
+/// \brief Frees heap memory associated with \a in.
+///
+/// \param in Pointer to input buffer.
+///
+/// \note This function does nothing if \a in is \c NULL.
 ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
 
+/// \brief Moves the readable bytes of \a in to the beginning of its internal
+///        buffer.
+///
+/// As the internal buffer of \a in is finite in length, this operation may
+/// prevent that buffer from reaching its end, which would make it impossible to
+/// store additional data to it. Repackaging is not enough, however, if an
+/// input buffer keeps growing indefinitely, unless data is also read.
+///
+/// \param in Pointer to input buffer.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>  - The operation was successful.
+///   <li><b>AH_EINVAL</b> - \a in is \c NULL.
+///   <li><b>AH_ENOSPC</b> - \a in is full. Nothing can be moved.
+/// </ul>
 ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
 
 /// \}
 
 /// \name TCP Output Buffer
+///
+/// Operations of ah_tcp_out instances.
+///
 /// \{
 
 ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void);

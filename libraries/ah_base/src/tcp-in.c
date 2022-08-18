@@ -66,7 +66,7 @@ void ah_i_tcp_in_free(ah_tcp_in_t* in)
     ah_pfree(in);
 }
 
-void ah_i_tcp_in_repackage(ah_tcp_in_t* in)
+ah_err_t ah_i_tcp_in_repackage(ah_tcp_in_t* in)
 {
     ah_assert_if_debug(in != NULL);
 
@@ -75,9 +75,15 @@ void ah_i_tcp_in_repackage(ah_tcp_in_t* in)
 
     ah_i_tcp_in_reset(in);
 
+    if (r_off == in->rw.r) {
+        return AH_ENOSPC;
+    }
+
     memmove(in->rw.r, r_off, r_size);
 
     in->rw.w = &in->rw.r[r_size];
+
+    return AH_ENONE;
 }
 
 void ah_i_tcp_in_reset(ah_tcp_in_t* in)

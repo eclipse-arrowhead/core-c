@@ -12,7 +12,7 @@
 ah_err_t ah_i_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr);
 ah_err_t ah_i_tcp_in_detach(ah_tcp_in_t* in);
 void ah_i_tcp_in_free(ah_tcp_in_t* in);
-void ah_i_tcp_in_repackage(ah_tcp_in_t* in);
+ah_err_t ah_i_tcp_in_repackage(ah_tcp_in_t* in);
 void ah_i_tcp_in_reset(ah_tcp_in_t* in);
 
 #endif

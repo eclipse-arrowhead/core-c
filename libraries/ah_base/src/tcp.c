@@ -255,10 +255,7 @@ ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in)
     if (in == NULL) {
         return AH_EINVAL;
     }
-
-    ah_i_tcp_in_repackage(in);
-
-    return AH_ENONE;
+    return ah_i_tcp_in_repackage(in);
 }
 
 ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void)
