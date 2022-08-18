@@ -190,13 +190,18 @@ struct ah_tcp_conn_cbs {
     /// \param out  Pointer to output data representation, or \c NULL if \a err
     ///             is not \c AH_ENONE.
     /// \param err  One of the following codes: <ul>
-    ///   <li><b>AH_ENONE</b>                - Data sent successfully.
-    ///   <li><b>AH_ECONNRESET [Darwin]</b>  - Connection reset by remote host.
-    ///   <li><b>AH_EEOF [Darwin]</b>        - Connection closed for writing.
-    ///   <li><b>AH_ENETDOWN [Darwin]</b>    - Local network not online.
-    ///   <li><b>AH_ENETUNREACH [Darwin]</b> - Network of remote host not reachable.
-    ///   <li><b>AH_ENOBUFS [Darwin]</b>     - Not enough buffer space available.
-    ///   <li><b>AH_ENOMEM [Darwin]</b>      - Not enough heap memory available.
+    ///   <li><b>AH_ENONE</b>                             - Data sent successfully.
+    ///   <li><b>AH_ECONNABORTED [Win32]</b>              - Virtual circuit terminated due to
+    ///                                                     time-out or other failure.
+    ///   <li><b>AH_ECONNRESET [Darwin, Linux, Win32]</b> - Connection reset by remote host.
+    ///   <li><b>AH_EEOF</b>                              - Connection closed for writing.
+    ///   <li><b>AH_ENETDOWN [Darwin, Win32]</b>          - Local network not online.
+    ///   <li><b>AH_ENETRESET [Win32]</b>                 - Keep-alive is enabled for the connection
+    ///                                                     and a related failure was detected.
+    ///   <li><b>AH_ENETUNREACH [Darwin]</b>              - Network of remote host not reachable.
+    ///   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b>    - Not enough buffer space available.
+    ///   <li><b>AH_ENOMEM [Darwin, Linux]</b>            - Not enough heap memory available.
+    ///   <li><b>AH_ETIMEDOUT</b>                         - Connection timed out.
     /// </ul>
     ///
     /// \note If set to \c NULL, writing is shutdown automatically.
@@ -220,6 +225,9 @@ struct ah_tcp_listener {
     AH_I_TCP_LISTENER_FIELDS
 };
 
+/// \brief TCP listener callback set.
+///
+/// A set of function pointers used to handle events related to TCP listeners.
 struct ah_tcp_listener_cbs {
     void (*on_open)(ah_tcp_listener_t* ln, ah_err_t err);
     void (*on_listen)(ah_tcp_listener_t* ln, ah_err_t err);
@@ -241,9 +249,22 @@ struct ah_tcp_out {
     AH_I_TCP_OUT_FIELDS
 };
 
+/// \name TCP Transport
+/// \{
+
 ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
 
+/// \}
+
+/// \name TCP Virtual Function Table
+/// \{
+
 ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
+
+/// \}
+
+/// \name TCP Connection
+/// \{
 
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs);
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
@@ -268,6 +289,11 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 
+/// \}
+
+/// \name TCP Input Buffer
+/// \{
+
 ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr);
 ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in);
 
@@ -276,8 +302,18 @@ ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
 
 ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
 
+/// \}
+
+/// \name TCP Output Buffer
+/// \{
+
 ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void);
 ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
+
+/// \}
+
+/// \name TCP Listener
+/// \{
 
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs);
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
@@ -292,5 +328,7 @@ ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_
 ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled);
 ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled);
 ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data);
+
+/// \}
 
 #endif
