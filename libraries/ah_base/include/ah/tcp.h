@@ -101,62 +101,84 @@ struct ah_tcp_conn {
 ///
 /// A set of function pointers used to handle events on TCP connections.
 struct ah_tcp_conn_cbs {
-    /// \brief The connection has been opened or failed to open.
+    /// \brief \a conn has been opened, or the attempt failed.
     ///
     /// \param conn Pointer to connection.
-    /// \param err <ul>
-    ///   <li><b>AH_ENONE</b>                  - Connection opened.
-    ///   <li><b>AH_EACCESS [Darwin]</b>       - Not permitted to open socket.
-    ///   <li><b>AH_EADDRINUSE [Darwin]</b>    - Specified address already in use.
-    ///   <li><b>AH_EADDRNOTAVAIL [Darwin]</b> - No available network interface is associated with
-    ///                                          the specified address.
-    ///   <li><b>AH_EAFNOSUPPORT [Darwin]</b>  - Used IP version not supported.
-    ///   <li><b>AH_EMFILE [Darwin]</b>        - Process descriptor table is full.
-    ///   <li><b>AH_ENFILE [Darwin]</b>        - System file table is full.
-    ///   <li><b>AH_ENOBUFS [Darwin]</b>       - Not enough buffer space available.
-    ///   <li><b>AH_ENOMEM [Darwin]</b>        - Not enough heap memory available.
+    /// \param err One of the following codes: <ul>
+    ///   <li><b>AH_ENONE</b>                          - Connection opened successfully.
+    ///   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open socket.
+    ///   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
+    ///   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
+    ///                                                  associated with the given local address.
+    ///   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
+    ///   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
+    ///   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
+    ///   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
+    ///   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
+    ///   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
     /// </ul>
     ///
-    /// \note Never called for accepted connections. May be \c NULL when used
+    /// \note This function is never called for accepted connections, which
+    ///       means it may be set to \c NULL when this data structure is used
     ///       with ah_tcp_listener_listen().
     void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err);
 
-    /// \brief The connection has been established to a remote host.
+    /// \brief \a conn has been established to a specified remote host, or the
+    ///        attempt to establish it has failed.
     ///
     /// \param conn Pointer to connection.
-    /// \param err <ul>
-    ///   <li><b>AH_ENONE</b>                  - Connection established.
-    ///   <li><b>AH_EADDRINUSE [Darwin]</b>    - Specified address already in use.
-    ///   <li><b>AH_EADDRNOTAVAIL [Darwin]</b> - No available network interface is associated with
-    ///                                          the specified address.
-    ///   <li><b>AH_EAFNOSUPPORT [Darwin]</b>  - Used IP version not supported.
-    ///   <li><b>AH_ECANCELED</b>              - The event loop of \a conn was shut down.
-    ///   <li><b>AH_ECONNREFUSED [Darwin]</b>  - Connection attempt ignored or rejected by targeted
-    ///                                          remote host.
-    ///   <li><b>AH_ECONNRESET [Darwin]</b>    - Connection attempt reset by targeted remote host.
-    ///   <li><b>AH_EHOSTUNREACH [Darwin]</b>  - The targeted remote host could not be reached.
-    ///   <li><b>AH_ENETDOWN [Darwin]</b>      - Local network not online.
-    ///   <li><b>AH_ENETUNREACH [Darwin]</b>   - Network of targeted remote host not reachable.
-    ///   <li><b>AH_ENOBUFS</b>                - Not enough buffer space available.
-    ///   <li><b>AH_ENOMEM</b>                 - Not enough heap memory available.
-    ///   <li><b>AH_ETIMEDOUT [Darwin]</b>     - Connection attempt timed out.
+    /// \param err One of the following codes: <ul>
+    ///   <li><b>AH_ENONE</b>                             - Connection established successfully.
+    ///   <li><b>AH_EADDRINUSE [Darwin, Linux, Win32]</b> - Failed to bind a concrete local address.
+    ///                                                     This error only occurs if the connection
+    ///                                                     was opened with the wildcard address,
+    ///                                                     which means that network interface
+    ///                                                     binding is delayed until connection.
+    ///   <li><b>AH_EADDRNOTAVAIL [Darwin, Win32]</b>     - The specified remote address is invalid.
+    ///   <li><b>AH_EADDRNOTAVAIL [Linux]</b>             - No ephemeral TCP port is available.
+    ///   <li><b>AH_EAFNOSUPPORT</b>                      - The IP version of the specified remote
+    ///                                                     address does not match that of the bound
+    ///                                                     local address.
+    ///   <li><b>AH_ECANCELED</b>                         - The event loop of \a conn has shut down.
+    ///   <li><b>AH_ECONNREFUSED</b>                      - Connection attempt ignored or rejected
+    ///                                                     by targeted remote host.
+    ///   <li><b>AH_ECONNRESET [Darwin]</b>               - Connection attempt reset by targeted
+    ///                                                     remote host.
+    ///   <li><b>AH_EHOSTUNREACH [Darwin, Win32]</b>      - The targeted remote host could not be
+    ///                                                     reached.
+    ///   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
+    ///   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
+    ///   <li><b>AH_ENETUNREACH</b>                       - Network of targeted remote host not
+    ///                                                     reachable.
+    ///   <li><b>AH_ENOBUFS</b>                           - Not enough buffer space available.
+    ///   <li><b>AH_ENOMEM</b>                            - Not enough heap memory available.
+    ///   <li><b>AH_ETIMEDOUT</b>                         - The connection attempt did not complete
+    ///                                                     before its deadline.
     /// </ul>
     ///
-    /// \note Never called for accepted connections. May be \c NULL when used
+    /// \note This function is never called for accepted connections, which
+    ///       means it may be set to \c NULL when this data structure is used
     ///       with ah_tcp_listener_listen().
     void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err);
 
-    ///\brief Data has been received via the connection.
+    ///\brief Data has been received via \a conn.
     ///
     /// \param conn Pointer to connection.
     /// \param in   Pointer to input data representation, or \c NULL if \a err
     ///             is not \c AH_ENONE.
-    /// \param err  <ul>
-    ///   <li><b>AH_ENONE</b>               - Data received successfully.
-    ///   <li><b>AH_ECONNRESET [Darwin]</b> - Connection reset by remote host.
-    ///   <li><b>AH_EEOF [Darwin]</b>       - Connection closed for reading.
-    ///   <li><b>AH_ENOBUFS [Darwin]</b>    - Not enough buffer space available.
-    ///   <li><b>AH_ETIMEDOUT [Darwin]</b>  - Connection attempt timed out.
+    /// \param err  One of the following codes: <ul>
+    ///   <li><b>AH_ENONE</b>                      - Data received successfully.
+    ///   <li><b>AH_ECONNABORTED [Win32]</b>       - Virtual circuit terminated due to time-out or
+    ///                                              other failure.
+    ///   <li><b>AH_ECONNRESET [Darwin, Win32]</b> - Connection reset by remote host.
+    ///   <li><b>AH_EDISCON [Win32]</b>            - Connection gracefully closed by remote host.
+    ///   <li><b>AH_EEOF</b>                       - Connection closed for reading.
+    ///   <li><b>AH_ENETDOWN [Win32]</b>           - The network subsystem has failed.
+    ///   <li><b>AH_ENETRESET [Win32]</b>          - Keep-alive is enabled for the connection and a
+    ///                                              related failure was detected.
+    ///   <li><b>AH_ENOBUFS [Darwin, Linux]</b>    - Not enough buffer space available.
+    ///   <li><b>AH_ENOMEM [Linux]</b>             - Not enough heap memory available.
+    ///   <li><b>AH_ETIMEDOUT</b>                  - Connection timed out.
     /// </ul>
     ///
     /// \note If set to \c NULL, reading is shutdown automatically.
@@ -167,7 +189,7 @@ struct ah_tcp_conn_cbs {
     /// \param conn Pointer to connection.
     /// \param out  Pointer to output data representation, or \c NULL if \a err
     ///             is not \c AH_ENONE.
-    /// \param err  <ul>
+    /// \param err  One of the following codes: <ul>
     ///   <li><b>AH_ENONE</b>                - Data sent successfully.
     ///   <li><b>AH_ECONNRESET [Darwin]</b>  - Connection reset by remote host.
     ///   <li><b>AH_EEOF [Darwin]</b>        - Connection closed for writing.
