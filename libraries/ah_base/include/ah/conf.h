@@ -137,6 +137,16 @@
 # endif
 #endif
 
+#ifndef AH_CONF_REALLOC
+/// \brief Used C99 realloc() implementation.
+///
+/// Reallocates previously allocated chunks of memory.
+# define AH_CONF_REALLOC realloc
+# ifndef AH_I_CONF_INCLUDE_STDLIB_H
+#  define AH_I_CONF_INCLUDE_STDLIB_H
+# endif
+#endif
+
 #ifndef AH_CONF_URING_DEFAULT_CAPACITY
 # if AH_CONF_IS_CONSTRAINED
 #  define AH_CONF_URING_DEFAULT_CAPACITY 32u

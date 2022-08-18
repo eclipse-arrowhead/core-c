@@ -6,6 +6,7 @@
 
 #include "ah/json.h"
 
+#include <ah/alloc.h>
 #include <ah/assert.h>
 #include <ah/err.h>
 #include <ah/math.h>
@@ -32,7 +33,7 @@ static ah_err_t s_alloc_value(struct s_parser* parser, ah_json_val_t* parent, ui
 static uint8_t s_peek_byte_or_zero(struct s_parser* parser);
 static uint8_t s_read_byte_or_zero(struct s_parser* parser);
 static void s_skip_byte(struct s_parser* parser);
-static bool s_skip_if_char(struct s_parser* parser, char ch);
+static bool s_skip_if_double_quote(struct s_parser* parser);
 static size_t s_skip_if_chars(struct s_parser* parser, const char* chars);
 static void s_skip_whitespace(struct s_parser* parser);
 
@@ -267,7 +268,7 @@ static ah_err_t s_parse_string(struct s_parser* parser, ah_json_val_t* parent, u
             return AH_ENONE;
 
         case '\\':
-            if (s_skip_if_char(parser, '"')) {
+            if (s_skip_if_double_quote(parser)) {
                 string->length += 1u;
             }
             break;
@@ -383,7 +384,7 @@ static ah_err_t s_alloc_value(struct s_parser* parser, ah_json_val_t* parent, ui
             return AH_ENOMEM;
         }
 
-        ah_json_val_t* new_values = realloc(dst->values, new_capacity_in_bytes);
+        ah_json_val_t* new_values = ah_realloc(dst->values, new_capacity_in_bytes);
         if (new_values == NULL) {
             return AH_ENOMEM;
         }
@@ -450,7 +451,7 @@ static void s_skip_byte(struct s_parser* parser)
     parser->src_off = &parser->src_off[1u];
 }
 
-static bool s_skip_if_char(struct s_parser* parser, char ch)
+static bool s_skip_if_double_quote(struct s_parser* parser)
 {
     ah_assert_if_debug(parser != NULL);
 
@@ -458,7 +459,7 @@ static bool s_skip_if_char(struct s_parser* parser, char ch)
         return false;
     }
 
-    if (parser->src_off[0u] == ch) {
+    if (parser->src_off[0u] == '"') {
         parser->src_off = &parser->src_off[1u];
         return true;
     }

@@ -298,7 +298,7 @@ ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, 
             return AH_ENOMEM;
         }
 
-        struct ah_i_loop_task_entry* entries = realloc(queue->_entries, total_size);
+        struct ah_i_loop_task_entry* entries = ah_realloc(queue->_entries, total_size);
         if (entries == NULL) {
             return AH_ENOMEM;
         }

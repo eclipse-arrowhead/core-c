@@ -36,8 +36,8 @@
 ///
 /// \param n    Number of elements to allocate.
 /// \param size Size, in bytes, of each element.
-/// \returns A zeroed chunk of memory, or \c NULL if no sufficiently large chunk
-/// can be allocated.
+/// \return A zeroed chunk of memory, or \c NULL if no sufficiently large chunk
+///         can be allocated.
 #define ah_calloc(n, size) AH_CONF_CALLOC((n), (size))
 
 /// \brief Releases referenced memory block, potentially making it possible for
@@ -46,21 +46,21 @@
 /// \param ptr Pointer previously acquired from ah_calloc() or ah_malloc().
 ///
 /// \warning It is an error to provide a pointer returned by ah_palloc(), or any
-/// other allocation function, to this function.
+///          other allocation function, to this function.
 #define ah_free(ptr) AH_CONF_FREE((ptr))
 
 /// \brief Allocates a contiguous chunk of at least \a size bytes of memory.
 ///
 /// \param size Size, in bytes, of chunk to allocate.
-/// \returns An uninitialized chunk of memory, or \c NULL if no sufficiently
-/// large chunk can be allocated.
+/// \return An uninitialized chunk of memory, or \c NULL if no sufficiently
+///         large chunk can be allocated.
 #define ah_malloc(size) AH_CONF_MALLOC((size))
 
 /// \brief Allocates a \e page of memory, guaranteed to be at least AH_PSIZE
 /// bytes large.
 ///
-/// \returns An uninitialized chunk of memory, or \c NULL if no sufficiently
-/// large chunk can be allocated.
+/// \return An uninitialized chunk of memory, or \c NULL if no sufficiently
+///         large chunk can be allocated.
 #define ah_palloc() AH_CONF_PALLOC()
 
 /// \brief Releases referenced memory page, potentially making it possible for
@@ -69,7 +69,29 @@
 /// \param page Pointer previously acquired from ah_palloc().
 ///
 /// \warning It is an error to provide a pointer returned by ah_calloc(),
-/// ah_malloc() or any other allocation function, to this function.
+///          ah_malloc() or any other allocation function, to this function.
 #define ah_pfree(page) AH_CONF_PFREE((page))
+
+/// \brief Reallocates memory chunk associated with \a ptr.
+///
+/// Conceptually, this function allocates a new memory chunk of \a size bytes,
+/// copies over the contents of the \a ptr buffer (or as much of it as fits in
+/// the new chunk), and then frees the memory associated with \a ptr. If \a size
+/// is larger than the previous size of the \a ptr chunk, the additional memory
+/// is uninitialized. Practically, this function may expand or contract the
+/// \a ptr chunk in place, or do something else with the same observable result.
+///
+/// \param ptr  Pointer previously acquired from ah_calloc(), ah_malloc() or
+///             ah_realloc().
+/// \param size Desired size, in bytes, of chunk after reallocation.
+/// \return A chunk of memory of at least \a size bytes that contain the
+///         contents previously associated with \a ptr. \c NULL if the
+///         reallocation failed, in which case the chunk of \a ptr remains
+///         unmodified.
+///
+/// \warning If \a size is \c 0 and \a ptr is not \c NULL, the result \e may be
+///          a pointer to a new buffer with size \a 0 being returned or \c NULL
+///          being returned.
+#define ah_realloc(ptr, size) AH_CONF_REALLOC((ptr), (size))
 
 #endif
