@@ -123,6 +123,8 @@ struct ah_tcp_conn_cbs {
     /// \note This function is never called for accepted connections, which
     ///       means it may be set to \c NULL when this data structure is used
     ///       with ah_tcp_listener_listen().
+    /// \note Every successfully opened \a conn must eventually be provided to
+    ///       ah_tcp_conn_close().
     void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err);
 
     /// \brief \a conn has been established to a specified remote host, or the
@@ -309,6 +311,9 @@ struct ah_tcp_listener_cbs {
     ///   <li><b>AH_ENOMEM [Darwin, Linux]</b>        - Not enough heap memory available.
     ///   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>   - Network service failed to initialize.
     /// </ul>
+    ///
+    /// \note Every successfully accepted \a conn must eventually be provided to
+    ///       ah_tcp_conn_close().
     void (*on_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
     /// \brief Listener \a ln has been closed.
@@ -343,6 +348,9 @@ struct ah_tcp_out {
 };
 
 /// \name TCP Transport
+///
+/// Operations on ah_tcp_trans instances.
+///
 /// \{
 
 /// \brief Gets a copy of the default TCP transport.
@@ -357,6 +365,9 @@ ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
 /// \}
 
 /// \name TCP Virtual Function Table
+///
+/// Operations on ah_tcp_vtab instances.
+///
 /// \{
 
 /// \brief Checks if all mandatory fields of \a vtab are set.
@@ -368,6 +379,9 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
 /// \}
 
 /// \name TCP Connection
+///
+/// Operations on ah_tcp_conn instances.
+///
 /// \{
 
 /// \brief Initializes \a conn for subsequent use.
@@ -407,6 +421,9 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
 ///   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
 ///   <li><b>AH_ESTATE</b>       - \a conn is not closed.
 /// </ul>
+///
+/// \note Every successfully opened \a conn must eventually be provided to
+///       ah_tcp_conn_close().
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 
 /// \brief Schedules connection of \a conn to \a raddr.
@@ -469,26 +486,218 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 /// </ul>
 ///
 /// \note It is acceptable to call this function immediately after a successful
-///       call to ah_tcp_conn_read_start() with the same \a conn, even if
-///       \a conn reading neve had a practical chance to actually start.
+///       call to ah_tcp_conn_read_start() with the same \a conn, even if that
+///       means that \a conn never had a practical chance to start reading.
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
 
+/// \brief Schedules sending of data in \a out via \a conn.
+///
+/// \param conn Pointer to connection.
+/// \param out  Pointer to outgoing data.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - Receiving of data via \a conn successfully stopped.
+///   <li><b>AH_ECANCELED</b>        - The event loop of \a conn is shutting down.
+///   <li><b>AH_EINVAL</b>           - \a conn or \a out is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
+///   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>           - \a conn is not open or its write direction has been shut
+///                                    down.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
+
+/// \brief Shuts down the read and/or write direction of \a conn, as specified
+///        by \a flags.
+///
+/// \param conn  Pointer to connection.
+/// \param flags Shutdown flags.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>                - Receiving of data via \a conn successfully stopped.
+///   <li><b>AH_ECONNABORTED [Win32]</b> - Connection has been aborted.
+///   <li><b>AH_ECONNRESET [Win32]</b>   - Connection has been reset by its remote host.
+///   <li><b>AH_EINVAL</b>               - \a conn is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b>     - The network subsystem has failed.
+///   <li><b>AH_ESTATE</b>               - \a conn is not connected.
+/// </ul>
+///
+/// \warning A connection with both of its read and write directions shut down
+///          is not considered as being closed. Every connection must eventually
+///          be provided to ah_tcp_conn_close(), irrespective of any direction
+///          being shutdown.
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
+
+/// \brief Schedules closing of \a conn.
+///
+/// \param conn Pointer to connection.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>  - Close of \a conn successfully scheduled.
+///   <li><b>AH_EINVAL</b> - \a conn is \c NULL.
+///   <li><b>AH_ESTATE</b> - \a conn is already closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
+
+/// \brief Stores local address bound by \a conn into \a laddr.
+///
+/// \param conn  Pointer to connection.
+/// \param laddr Pointer to socket address to be set by this operation.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>                   - The operation was successful.
+///   <li><b>AH_EINVAL</b>                  - \a conn or \a laddr is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
+///   <li><b>AH_ESTATE</b>                  - \a conn is closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
+
+/// \brief Stores remote address of \a conn into \a laddr.
+///
+/// \param conn  Pointer to connection.
+/// \param raddr Pointer to socket address to be set by this operation.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>                   - The operation was successful.
+///   <li><b>AH_EINVAL</b>                  - \a conn or \a raddr is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
+///   <li><b>AH_ESTATE</b>                  - \a conn is not connected to a remote host.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr);
+
+/// \brief Gets pointer to event loop of \a conn.
+///
+/// \param conn Pointer to connection.
+/// \return Pointer to event loop, or \c NULL if \a conn is \c NULL.
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
+
+/// \brief Gets currently set shutdown flags of \a conn.
+///
+/// \param conn Pointer to connection.
+/// \return Shutdown flags associated with \a conn. If \a conn is \c NULL,
+///         \c AH_TCP_SHUTDOWN_RDWR is returned.
 ah_extern ah_tcp_shutdown_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn);
+
+/// \brief Gets user data pointer associated with \a conn.
+///
+/// \param conn Pointer to connection.
+/// \return Any user data pointer previously set via
+///         ah_tcp_conn_set_user_data(), or \c NULL if no such has been set or
+///         if \a conn is \c NULL.
 ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn);
+
+/// \brief Checks if \a conn is closed.
+///
+/// \param conn Pointer to connection.
+/// \return \c true only if \a conn is not \c NULL and is currently closed.
+///         \c false otherwise.
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn);
+
+/// \brief Checks if \a conn can be read from.
+///
+/// A readable connection is currently connected and has not had its read
+/// direction shut down.
+///
+/// \param conn Pointer to connection.
+/// \return \c true only if \a conn is not \c NULL and is currently readable.
+///         \c false otherwise.
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn);
+
+/// \brief Checks if \a conn can be read from and written to.
+///
+/// A readable and writable connection is currently connected and has not had
+/// either of its read or write directions shut down.
+///
+/// \param conn Pointer to connection.
+/// \return \c true only if \a conn is not \c NULL and is currently readable and
+///         writable. \c false otherwise.
 ah_extern bool ah_tcp_conn_is_readable_and_writable(const ah_tcp_conn_t* conn);
+
+/// \brief Checks if \conn is currently reading incoming data.
+///
+/// A connection is reading if its currently connected and
+/// ah_tcp_conn_read_start() has been called with the same connection as
+/// argument. In addition, neither of ah_tcp_conn_read_stop() or
+/// ah_tcp_conn_shutdown() has since been used to stop or shutdown the read
+/// direction of the same connection.
+///
+/// \param conn Pointer to connection.
+/// \return \c true only if \a conn is not \c NULL and is currently reading.
+///         \c false otherwise.
 ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn);
+
+/// \brief Checks if \a conn can be written to.
+///
+/// A writable connection is currently connected and has not had its write
+/// direction shut down.
+///
+/// \param conn Pointer to connection.
+/// \return \c true only if \a conn is not \c NULL and is currently readable.
+///         \c false otherwise.
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
+
+/// \brief Sets the \e keep-alive option of \a conn to \a is_enabled.
+///
+/// This option enables or disables keep-alive messaging. Generally, using such
+/// messaging means that \a conn automatically sends messages sensible times to
+/// check if the connection is in a usable condition. The exact implications
+/// of this option depends on the platform.
+///
+/// \param conn       Pointer to connection.
+/// \param is_enabled Whether keep-alive is to be enabled or not.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - The operation was successful.
+///   <li><b>AH_EINVAL</b>           - \a conn is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
+///   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>           - \a conn is closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled);
+
+/// \brief Sets the \e no-delay option of \a conn to \a is_enabled.
+///
+/// This option being enabled means that use of Nagle's algorithm is disabled.
+/// The mentioned algorithm queues up messages for a short time before sending
+/// them over the network. The purpose of this is to reduce the number of TCP
+/// segments submitted over the used network.
+///
+/// \param conn       Pointer to connection.
+/// \param is_enabled Whether keep-alive is to be enabled or not.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - The operation was successful.
+///   <li><b>AH_EINVAL</b>           - \a conn is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
+///   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>           - \a conn is closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled);
+
+/// \brief Sets the <em>reuse address</em> option of \a conn to \a is_enabled.
+///
+/// Address reuse generally means that a the specific combination of local
+/// interface address and port number bound by this connection can be reused
+/// right after it closes. Address reuse can lead to security implications as
+/// it may enable a malicious process on the same platform to hijack a closed
+/// connection.
+///
+/// \param conn       Pointer to connection.
+/// \param is_enabled Whether keep-alive is to be enabled or not.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - The operation was successful.
+///   <li><b>AH_EINVAL</b>           - \a conn is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
+///   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>           - \a conn is closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
+
+/// \brief Sets the user data pointer of \a conn.
+///
+/// \param conn      Pointer to connection.
+/// \param user_data User data pointer, referring to whatever context you want
+///                  to associate with \a conn.
+///
+/// \note If \a conn is \c NULL, this function does nothing.
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 
 /// \}

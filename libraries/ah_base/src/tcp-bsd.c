@@ -42,7 +42,7 @@ ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_
     if (conn == NULL || raddr == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
+    if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return AH_ESTATE;
     }
     return ah_i_sock_getpeername(conn->_fd, raddr);
