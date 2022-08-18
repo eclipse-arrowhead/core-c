@@ -866,7 +866,7 @@ void ah_i_http_client_init_accepted(ah_http_client_t* cln, ah_http_server_t* srv
     cln->_in_state = S_IN_STATE_INIT;
 }
 
-const ah_tcp_conn_cbs_t* ah_i_http_client_get_conn_cbs()
+const ah_tcp_conn_cbs_t* ah_i_http_client_get_conn_cbs(void)
 {
     return &s_cbs;
 }

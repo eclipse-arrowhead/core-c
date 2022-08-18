@@ -218,6 +218,9 @@ ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t*
     if (conn == NULL) {
         return AH_EINVAL;
     }
+    if (laddr != NULL && !ah_sockaddr_is_ip(laddr)) {
+        return AH_EAFNOSUPPORT;
+    }
     if (conn->_state != AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }

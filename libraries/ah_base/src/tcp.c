@@ -89,9 +89,9 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_open == NULL) {
-        return AH_ESTATE;
-    }
+
+    ah_assert_if_debug(conn->_trans.vtab != NULL && conn->_trans.vtab->conn_open != NULL);
+
     return conn->_trans.vtab->conn_open(conn->_trans.ctx, conn, laddr);
 }
 
@@ -100,9 +100,9 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_connect == NULL) {
-        return AH_ESTATE;
-    }
+
+    ah_assert_if_debug(conn->_trans.vtab != NULL && conn->_trans.vtab->conn_connect != NULL);
+
     return conn->_trans.vtab->conn_connect(conn->_trans.ctx, conn, raddr);
 }
 
@@ -111,9 +111,9 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_start == NULL) {
-        return AH_ESTATE;
-    }
+
+    ah_assert_if_debug(conn->_trans.vtab != NULL && conn->_trans.vtab->conn_read_start != NULL);
+
     return conn->_trans.vtab->conn_read_start(conn->_trans.ctx, conn);
 }
 
@@ -122,9 +122,9 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_stop == NULL) {
-        return AH_ESTATE;
-    }
+
+    ah_assert_if_debug(conn->_trans.vtab != NULL && conn->_trans.vtab->conn_read_stop != NULL);
+
     return conn->_trans.vtab->conn_read_stop(conn->_trans.ctx, conn);
 }
 
@@ -133,9 +133,9 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out)
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_write == NULL) {
-        return AH_ESTATE;
-    }
+
+    ah_assert_if_debug(conn->_trans.vtab != NULL && conn->_trans.vtab->conn_write != NULL);
+
     return conn->_trans.vtab->conn_write(conn->_trans.ctx, conn, out);
 }
 
@@ -144,9 +144,9 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t f
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_shutdown == NULL) {
-        return AH_ESTATE;
-    }
+
+    ah_assert_if_debug(conn->_trans.vtab != NULL && conn->_trans.vtab->conn_shutdown != NULL);
+
     return conn->_trans.vtab->conn_shutdown(conn->_trans.ctx, conn, flags);
 }
 
@@ -155,76 +155,72 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_close == NULL) {
-        return AH_ESTATE;
-    }
+
+    ah_assert_if_debug(conn->_trans.vtab != NULL && conn->_trans.vtab->conn_close != NULL);
+
     return conn->_trans.vtab->conn_close(conn->_trans.ctx, conn);
 }
 
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
+    if (conn == NULL) {
+        return NULL;
+    }
     return conn->_loop;
 }
 
 ah_extern ah_tcp_shutdown_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
+    if (conn == NULL) {
+        return AH_TCP_SHUTDOWN_RDWR;
+    }
     return conn->_shutdown_flags;
 }
 
 ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
+    if (conn == NULL) {
+        return NULL;
+    }
     return conn->_user_data;
 }
 
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
+    if (conn == NULL) {
+        return true;
+    }
     return conn->_state == AH_I_TCP_CONN_STATE_CLOSED;
 }
 
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
+    return conn != NULL && conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
         && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) == 0u;
 }
 
 ah_extern bool ah_tcp_conn_is_readable_and_writable(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
+    return conn != NULL && conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
         && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RDWR) == 0u;
 }
 
 ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_state == AH_I_TCP_CONN_STATE_READING;
+    return conn != NULL && conn->_state == AH_I_TCP_CONN_STATE_READING;
 }
 
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
+    return conn != NULL && conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
         && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) == 0u;
 }
 
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
 {
-    ah_assert(conn != NULL);
-
-    conn->_user_data = user_data;
+    if (conn != NULL) {
+        conn->_user_data = user_data;
+    }
 }
 
 ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in)
@@ -364,28 +360,28 @@ ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln)
 
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln)
 {
-    ah_assert(ln != NULL);
-
+    if (ln == NULL) {
+        return NULL;
+    }
     return ln->_loop;
 }
 
 ah_extern void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln)
 {
-    ah_assert(ln != NULL);
-
+    if (ln == NULL) {
+        return NULL;
+    }
     return ln->_user_data;
 }
 
 ah_extern bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln)
 {
-    ah_assert(ln != NULL);
-
-    return ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED;
+    return ln == NULL || ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED;
 }
 
 ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data)
 {
-    ah_assert(ln != NULL);
-
-    ln->_user_data = user_data;
+    if (ln != NULL) {
+        ln->_user_data = user_data;
+    }
 }

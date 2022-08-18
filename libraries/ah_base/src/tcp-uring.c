@@ -30,8 +30,11 @@ ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr
 {
     (void) ctx;
 
-    if (conn == NULL || raddr == NULL || !ah_sockaddr_is_ip(raddr)) {
+    if (conn == NULL || raddr == NULL) {
         return AH_EINVAL;
+    }
+    if (!ah_sockaddr_is_ip(raddr)) {
+        return AH_EAFNOSUPPORT;
     }
     if (conn->_state != AH_I_TCP_CONN_STATE_OPEN) {
         return AH_ESTATE;

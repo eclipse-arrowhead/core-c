@@ -111,6 +111,7 @@ struct ah_tcp_conn_cbs {
     ///   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
     ///                                                  associated with the given local address.
     ///   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
+    ///   <li><b>AH_ECANCELED</b>                      - Connection event loop is shutting down.
     ///   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
     ///   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
     ///   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
@@ -164,11 +165,25 @@ struct ah_tcp_conn_cbs {
 
     ///\brief Data has been received via \a conn.
     ///
+    /// Successful calls to this function (meaning that \a err is equal to
+    /// \c AH_ENONE) always carry a pointer to an ah_tcp_in instance. That
+    /// instance is reused by \a conn every time this callback is invoked. If
+    /// the ah_rw member of that instance is not read in its entirety, whatever
+    /// unread contents remain when this callback returns will be presented
+    /// again in another call to this callback. If not at least some of the
+    /// contents of \a in are read or discarded every time this callback is
+    /// invoked, that buffer may become full, which triggers the
+    /// \c AH_EOVERFLOW error. If you wish to save the contents of \a in without
+    /// having to copy it over to another buffer, you can detach it from \a conn
+    /// using ah_tcp_in_detach(), which will make \a conn allocate a replacement
+    /// when appropriate.
+    ///
     /// \param conn Pointer to connection.
     /// \param in   Pointer to input data representation, or \c NULL if \a err
     ///             is not \c AH_ENONE.
     /// \param err  One of the following codes: <ul>
     ///   <li><b>AH_ENONE</b>                      - Data received successfully.
+    ///   <li><b>AH_ECANCELED</b>                  - Connection event loop is shutting down.
     ///   <li><b>AH_ECONNABORTED [Win32]</b>       - Virtual circuit terminated due to time-out or
     ///                                              other failure.
     ///   <li><b>AH_ECONNRESET [Darwin, Win32]</b> - Connection reset by remote host.
@@ -179,6 +194,7 @@ struct ah_tcp_conn_cbs {
     ///                                              related failure was detected.
     ///   <li><b>AH_ENOBUFS [Darwin, Linux]</b>    - Not enough buffer space available.
     ///   <li><b>AH_ENOMEM [Linux]</b>             - Not enough heap memory available.
+    ///   <li><b>AH_EOVERFLOW</b>                  - The
     ///   <li><b>AH_ETIMEDOUT</b>                  - Connection timed out.
     /// </ul>
     ///
@@ -192,6 +208,7 @@ struct ah_tcp_conn_cbs {
     ///             is not \c AH_ENONE.
     /// \param err  One of the following codes: <ul>
     ///   <li><b>AH_ENONE</b>                             - Data sent successfully.
+    ///   <li><b>AH_ECANCELED</b>                         - Connection event loop is shutting down.
     ///   <li><b>AH_ECONNABORTED [Win32]</b>              - Virtual circuit terminated due to
     ///                                                     time-out or other failure.
     ///   <li><b>AH_ECONNRESET [Darwin, Linux, Win32]</b> - Connection reset by remote host.
@@ -241,6 +258,7 @@ struct ah_tcp_listener_cbs {
     ///   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
     ///                                                  associated with the given local address.
     ///   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
+    ///   <li><b>AH_ECANCELED</b>                      - Connection event loop is shutting down.
     ///   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
     ///   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
     ///   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
@@ -260,6 +278,7 @@ struct ah_tcp_listener_cbs {
     ///                                             can only occur if the listener was opened with
     ///                                             the wildcard address, which means that network
     ///                                             interface binding is delayed until listening.
+    ///   <li><b>AH_ECANCELED</b>                 - Listener event loop is shutting down.
     ///   <li><b>AH_ENETDOWN [Win32]</b>          - The network subsystem has failed.
     ///   <li><b>AH_ENFILE [Win32]</b>            - System file table is full.
     ///   <li><b>AH_ENOBUFS [Win32]</b>           - Not enough buffer space available.
@@ -280,6 +299,7 @@ struct ah_tcp_listener_cbs {
     ///              \c AH_ENONE.
     /// \param err  One of the following codes: <ul>
     ///   <li><b>AH_ENONE</b>                         - Connection accepted successfully.
+    ///   <li><b>AH_ECANCELED</b>                     - Listener event loop is shutting down.
     ///   <li><b>AH_ECONNABORTED [Darwin, Linux]</b>  - Connection aborted before finalization.
     ///   <li><b>AH_ECONNRESET [Win32]</b>            - Connection aborted before finalization.
     ///   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b> - Process descriptor table is full.
@@ -350,11 +370,109 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
 /// \name TCP Connection
 /// \{
 
+/// \brief Initializes \a conn for subsequent use.
+///
+/// \param conn  Pointer to connection.
+/// \param loop  Pointer to event loop.
+/// \param trans Desired transport.
+/// \param cbs   Pointer to event callback set.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>  - \a conn successfully initialized.
+///   <li><b>AH_EINVAL</b> - \a conn or \a loop or \a cbs is \c NULL.
+///   <li><b>AH_EINVAL</b> - \a trans \c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+///   <li><b>AH_EINVAL</b> - \c on_open, \c on_connect or \c on_close of \a cbs is \c NULL.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs);
+
+/// \brief Schedules opening of \a conn.
+///
+/// If successfully scheduled, the result of the open attempt will be reported
+/// via the ah_tcp_conn_cbs::on_open callback associated with \a conn.
+///
+/// \param conn  Pointer to connection.
+/// \param laddr Pointer to socket address representing a local network
+///              interface through which the connection must later be
+///              established. If opening is successful, the referenced address
+///              must remain valid for the entire lifetime of the created
+///              connection. If \c NULL, the connection is bound to the wildcard
+///              address, which means that it can be established through any
+///              available local network interface. Any other required details,
+///              such as a port number, are chosen automatically.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>        - \a conn opening successfully scheduled.
+///   <li><b>AH_EAFNOSUPPORT</b> - \a laddr is not \c NULL and is not an IP-based address.
+///   <li><b>AH_ECANCELED</b>    - The event loop of \a conn is shutting down.
+///   <li><b>AH_EINVAL</b>       - \a conn is \c NULL.
+///   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
+///   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>       - \a conn is not closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
+
+/// \brief Schedules connection of \a conn to \a raddr.
+///
+/// \param conn  Pointer to connection.
+/// \param raddr Pointer to socket address representing the remote host to which
+///              the connection is to be established. If connection is
+///              successful, the referenced address must remain valid until
+///              \a conn is closed.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>        - \a conn opening successfully scheduled.
+///   <li><b>AH_EAFNOSUPPORT</b> - \a raddr is not an IP-based address.
+///   <li><b>AH_ECANCELED</b>    - The event loop of \a conn is shutting down.
+///   <li><b>AH_EINVAL</b>       - \a conn or \a raddr is \c NULL.
+///   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
+///   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>       - \a conn is not open.
+/// </ul>
+///
+/// \warning This function must be called with a successfully opened connection.
+///          Therefore, the most appropriate place to call this function is
+///          likely to be in an ah_tcp_conn_cbs::on_open callback after a check
+///          that opening was indeed successful.
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
+
+/// \brief Schedules start of receiving of incoming data via \a conn.
+///
+/// All received data is stored to a single ah_tcp_in instance that is backed by
+/// a single memory page acquired via ah_palloc(). See ah_tcp_conn_cbs::on_read
+/// for more details regarding how this memory page is handled.
+///
+/// \param conn Pointer to connection.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - Start of receiving data via \a conn successfully scheduled.
+///   <li><b>AH_ECANCELED</b>        - The event loop of \a conn is shutting down.
+///   <li><b>AH_EINVAL</b>           - \a conn is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
+///   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
+///   <li><b>AH_EOVERFLOW</b>        - The configured \c AH_PSIZE is too small for it to be possible
+///                                    to store both required metadata \e and read data in a single
+///                                    page provided by the page allocator (see ah_palloc()).
+///   <li><b>AH_ESTATE</b>           - \a conn is not connected or its read direction has been shut
+///                                    down.
+/// </ul>
+///
+/// \warning This function must be called with a successfully connected
+///          connection. Therefore, an appropriate place to call this function
+///          is likely to be in an ah_tcp_conn_cbs::on_connect callback after a
+///          check that the connection attempt was indeed successful.
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
+
+/// \brief Immediately stops receiving of incoming data via \a conn.
+///
+/// \param conn Pointer to connection.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - Receiving of data via \a conn successfully stopped.
+///   <li><b>AH_EINVAL</b>           - \a conn is \c NULL.
+///   <li><b>AH_ESTATE</b>           - \a conn reading not started.
+/// </ul>
+///
+/// \note It is acceptable to call this function immediately after a successful
+///       call to ah_tcp_conn_read_start() with the same \a conn, even if
+///       \a conn reading neve had a practical chance to actually start.
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
+
 ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
 ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
