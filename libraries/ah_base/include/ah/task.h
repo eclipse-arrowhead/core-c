@@ -48,7 +48,7 @@ struct ah_task {
 /// \param task Pointer to task.
 /// \param loop Pointer to event loop.
 /// \param cb   Task function pointer.
-/// \param err  <ul>
+/// \return <ul>
 ///   <li><b>AH_ENONE</b>  - Initialization of \a task was successful.
 ///   <li><b>AH_EINVAL</b> - \a task, \a loop or \a cb is \c NULL.
 /// </ul>
@@ -93,24 +93,20 @@ ah_extern bool ah_task_cancel(ah_task_t* task);
 
 /// \brief Schedules \a task for execution at or after \a baseline.
 ///
-/// \param task Pointer to task.
+/// \param task     Pointer to task.
 /// \param baseline Target baseline.
-/// \param err  <ul>
+/// \return <ul>
 ///   <li><b>AH_ENONE</b>                         - \a task scheduled.
-///   <li><b>AH_EDOM [Darwin]</b>                 - \a baseline is too far into
-///                                                 the future to be acceptable
-///                                                 to the platform event queue.
+///   <li><b>AH_EDOM [Darwin]</b>                 - \a baseline is too far into the future to be
+///                                                 acceptable to the platform event queue.
 ///   <li><b>AH_EINVAL</b>                        - \a task is \c NULL.
-///   <li><b>AH_ENOBUFS [Darwin, Linux]</b>       - \a task event loop has no
-///                                                 more slots available in its
-///                                                 event queue and could not
-///                                                 flush it to make more slots
-///                                                 available.
-///   <li><b>AH_ENOMEM [Darwin, Linux, Win32]</b> - \a task event loop failed to
-///                                                 allocate heap memory.
-///   <li><b>AH_ESTATE</b>                        - \a task is already scheduled
-///                                                 and has not yet been
-///                                                 cancelled or executed.
+///   <li><b>AH_ENOBUFS [Darwin, Linux]</b>       - \a task event loop has no more slots available
+///                                                 in its event queue and could not flush it to
+///                                                 make more slots available.
+///   <li><b>AH_ENOMEM [Darwin, Linux, Win32]</b> - \a task event loop failed to allocate heap
+///                                                 memory.
+///   <li><b>AH_ESTATE</b>                        - \a task is already scheduled and has not yet
+///                                                 been cancelled or executed.
 /// </ul>
 ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline);
 
