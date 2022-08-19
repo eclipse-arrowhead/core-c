@@ -75,8 +75,11 @@ ah_err_t ah_i_tcp_in_repackage(ah_tcp_in_t* in)
 
     ah_i_tcp_in_reset(in);
 
-    if (r_off == in->rw.r) {
-        return AH_ENOSPC;
+    if (in->rw.r == r_off) {
+        if (ah_unlikely(in->rw.w == in->rw.e)) {
+            return AH_ENOSPC;
+        }
+        return AH_ENONE;
     }
 
     memmove(in->rw.r, r_off, r_size);
