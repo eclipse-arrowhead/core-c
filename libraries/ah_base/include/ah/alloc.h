@@ -56,8 +56,11 @@
 ///         large chunk can be allocated.
 #define ah_malloc(size) AH_CONF_MALLOC((size))
 
-/// \brief Allocates a \e page of memory, guaranteed to be at least AH_PSIZE
+/// \brief Allocates a \e page of memory, guaranteed to be at least \c AH_PSIZE
 /// bytes large.
+///
+/// The value of \c AH_PSIZE can be adjusted by modifying \c AH_CONF_PSIZE, more
+/// of which you can read in conf.h.
 ///
 /// \return An uninitialized chunk of memory, or \c NULL if no sufficiently
 ///         large chunk can be allocated.
