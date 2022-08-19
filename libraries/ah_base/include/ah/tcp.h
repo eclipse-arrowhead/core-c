@@ -526,6 +526,10 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
 /// \brief Schedules the sending of the data in \a out to the remote host of
 ///        \a conn.
 ///
+/// An output buffer can be allocated on the heap using ah_tcp_out_alloc(). If
+/// you want to store the buffer memory somewhere else, just zero an ah_tcp_out
+/// instance and then initialize its \c buf member.
+///
 /// If the return value of this function is \c AH_ENONE, meaning that the
 /// sending could indeed be scheduled, the result of the sending will eventually
 /// be presented via the ah_tcp_conn_cbs::on_write callback of \a conn. More
@@ -762,6 +766,10 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 /// call to ah_tcp_in_detach(), which sets the copy to \c NULL and replaces the
 /// pointer pointed to by \a owner_ptr with that of a new input buffer.
 ///
+/// Every input buffer allocated with this function must eventually be provided
+/// to ah_tcp_in_free(). It is the responsibility of the owner of each instance
+/// to make sure this is the case.
+///
 /// \param owner_ptr Pointer to own pointer to allocated input buffer.
 /// \return <ul>
 ///   <li><b>AH_ENONE</b>     - The operation was successful.
@@ -842,7 +850,26 @@ ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
 ///
 /// \{
 
+/// \brief Dynamically allocates and partially initializes a TCP output buffer.
+///
+/// Every output buffer allocated with this function must eventually be provided
+/// to ah_tcp_out_free().
+///
+/// Concretely, the page allocator (see ah_palloc()) is used to allocate the
+/// returned buffer. All parts of the returned buffer are initialized, except
+/// for the actual payload memory.
+///
+/// \return Pointer to new output buffer, or \c NULL if the allocation failed.
+///
+/// \warning If \c AH_CONF_PSIZE is configured to a too small value
+///          (see conf.h), this function always fails.
 ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void);
+
+/// \brief Frees output buffer previously allocated using ah_tcp_out_alloc().
+///
+/// \param out Pointer to output buffer.
+///
+/// \note If \a out is \c NULL, this function does nothing.
 ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
 
 /// \}
