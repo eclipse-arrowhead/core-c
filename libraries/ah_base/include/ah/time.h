@@ -46,7 +46,11 @@ struct ah_time {
     AH_I_TIME_FIELDS
 };
 
-/// \brief The difference between to ah_time instances, measured in nanoseconds.
+/// \brief The difference between two ah_time instances, measured in
+///        nanoseconds.
+///
+/// This type is guaranteed to be a signed 64-bit integer on all supported
+/// platforms.
 typedef int64_t ah_timediff_t;
 
 /// \brief Gets the current time, as reported by the platform.
