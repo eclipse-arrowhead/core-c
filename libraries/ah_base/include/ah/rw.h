@@ -147,7 +147,7 @@ ah_extern size_t ah_rw_get_writable_size(const ah_rw_t* rw);
 /// \param rw Pointer to R/W.
 /// \return \c true only if \a rw refers to a non-zero number of readable bytes.
 ///
-/// \note Returns \c false if \rw is \c NULL.
+/// \note Returns \c false if \a rw is \c NULL.
 ah_extern bool ah_rw_is_readable(const ah_rw_t* rw);
 
 /// \brief Checks if the writable section of \a rw has a non-zero size.
@@ -155,7 +155,7 @@ ah_extern bool ah_rw_is_readable(const ah_rw_t* rw);
 /// \param rw Pointer to R/W.
 /// \return \c true only if \a rw refers to a non-zero number of writable bytes.
 ///
-/// \note Returns \c false if \rw is \c NULL.
+/// \note Returns \c false if \a rw is \c NULL.
 ah_extern bool ah_rw_is_writable(const ah_rw_t* rw);
 
 /// \brief Reads one byte from \a src and writes it to \a dst.
@@ -222,7 +222,7 @@ ah_extern bool ah_rw_read1(ah_rw_t* rw, uint8_t* dst);
 /// \brief Reads \a n bytes from \a src, writes them to \a dst and advances the
 ///        read pointer of \a rw \a n bytes.
 ///
-/// \param src Pointer to source R/W.
+/// \param rw  Pointer to source R/W.
 /// \param dst Pointer to beginning of memory region that will receive copy of
 ///            the read bytes.
 /// \param n   Number of bytes to read from \a src and write to \a dst.
@@ -235,7 +235,7 @@ ah_extern bool ah_rw_readn(ah_rw_t* rw, uint8_t* dst, size_t n);
 
 /// \brief Advances the read pointer of \a rw one byte.
 ///
-/// \param src Pointer to R/W.
+/// \param rw Pointer to R/W.
 /// \return \c true only if exactly one byte could be read and discarded from
 ///         \a src.
 ///
@@ -245,7 +245,8 @@ ah_extern bool ah_rw_skip1(ah_rw_t* rw);
 
 /// \brief Advances the read pointer of \a rw \a n bytes.
 ///
-/// \param src Pointer to R/W.
+/// \param rw Pointer to R/W.
+/// \param n  Number of bytes to skip.
 /// \return \c true only if exactly \a n bytes could be read and discarded from
 ///         \a src.
 ///
@@ -287,7 +288,7 @@ ah_extern bool ah_rw_writen(ah_rw_t* rw, uint8_t* src, size_t n);
 
 /// \brief Advances the write pointer of \a rw one byte.
 ///
-/// \param src Pointer to R/W.
+/// \param rw Pointer to R/W.
 /// \return \c true only if the write pointer of \a rw could be advanced one
 ///         byte.
 ///
@@ -299,7 +300,8 @@ ah_extern bool ah_rw_juke1(ah_rw_t* rw);
 
 /// \brief Advances the write pointer of \a rw \a n bytes.
 ///
-/// \param src Pointer to R/W.
+/// \param rw Pointer to R/W.
+/// \param n  Number of bytes to skip.
 /// \return \c true only if the write pointer of \a rw could be advanced \a n
 ///         bytes.
 ///
