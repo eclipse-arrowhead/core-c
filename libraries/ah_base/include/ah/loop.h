@@ -158,9 +158,10 @@ ah_extern ah_err_t ah_loop_run(ah_loop_t* loop);
 /// ah_loop_term() is called with \a loop as argument, or (2) \a time is passed.
 ///
 /// \param loop Pointer to event loop.
+/// \param time Point after which \a loop execution is to stop.
 /// \return <ul>
-///   <li><b>AH_ENONE</b>                 - \a loop ran until stopped or
-///                                         terminated.
+///   <li><b>AH_ENONE</b>                 - \a loop ran until \a time expired,
+///                                         it was stopped or it was terminated.
 ///   <li><b>AH_EDOM</b>                  - \a time is too far into the future
 ///                                         for it to be representable by the
 ///                                         kernel event queue system.
