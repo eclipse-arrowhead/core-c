@@ -99,24 +99,6 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt)
     conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
 
     err = ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0);
-    if (err != AH_ENONE) {
-        goto handle_err;
-    }
-
-    ah_tcp_shutdown_t shutdown_flags = 0u;
-
-    if (conn->_cbs->on_read == NULL) {
-        shutdown_flags |= AH_TCP_SHUTDOWN_RD;
-    }
-    if (conn->_cbs->on_write == NULL) {
-        shutdown_flags |= AH_TCP_SHUTDOWN_WR;
-    }
-    if (shutdown_flags != 0) {
-        err = ah_tcp_conn_shutdown(conn, shutdown_flags);
-    }
-    else {
-        err = AH_ENONE;
-    }
 
 handle_err:
     conn->_cbs->on_connect(conn, err);
@@ -374,7 +356,7 @@ ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned bac
     if (ln == NULL || conn_cbs == NULL) {
         return AH_EINVAL;
     }
-    if (conn_cbs->on_close == NULL || conn_cbs->on_read == NULL || conn_cbs->on_write == NULL) {
+    if (conn_cbs->on_read == NULL || conn_cbs->on_write == NULL || conn_cbs->on_close == NULL) {
         return AH_EINVAL;
     }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {

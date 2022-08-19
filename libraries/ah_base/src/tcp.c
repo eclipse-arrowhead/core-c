@@ -70,7 +70,7 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
     if (conn == NULL || loop == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || cbs == NULL) {
         return AH_EINVAL;
     }
-    if (cbs->on_open == NULL || cbs->on_connect == NULL || cbs->on_close == NULL) {
+    if (cbs->on_open == NULL || cbs->on_connect == NULL || cbs->on_read == NULL || cbs->on_write == NULL || cbs->on_close == NULL) {
         return AH_EINVAL;
     }
 

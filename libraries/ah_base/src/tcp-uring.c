@@ -71,21 +71,7 @@ static void s_on_conn_connect(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
 
     if (ah_likely(cqe->res == 0)) {
         conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
-
-        ah_tcp_shutdown_t shutdown_flags = 0u;
-
-        if (conn->_cbs->on_read == NULL) {
-            shutdown_flags |= AH_TCP_SHUTDOWN_RD;
-        }
-        if (conn->_cbs->on_write == NULL) {
-            shutdown_flags |= AH_TCP_SHUTDOWN_WR;
-        }
-        if (shutdown_flags != 0u) {
-            err = ah_tcp_conn_shutdown(conn, shutdown_flags);
-        }
-        else {
-            err = AH_ENONE;
-        }
+        err = AH_ENONE;
     }
     else {
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
@@ -385,7 +371,7 @@ ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned bac
     if (ln == NULL || conn_cbs == NULL) {
         return AH_EINVAL;
     }
-    if (conn_cbs->on_close == NULL || conn_cbs->on_read == NULL || conn_cbs->on_write == NULL) {
+    if (conn_cbs->on_read == NULL || conn_cbs->on_write == NULL || conn_cbs->on_close == NULL) {
         return AH_EINVAL;
     }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {

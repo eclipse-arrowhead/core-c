@@ -205,8 +205,6 @@ struct ah_tcp_conn_cbs {
     ///                                              its contents, as described further above.
     ///   <li><b>AH_ETIMEDOUT</b>                  - Connection timed out.
     /// </ul>
-    ///
-    /// \note If set to \c NULL, reading is shutdown automatically.
     void (*on_read)(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
 
     /// \brief Data has been sent via the connection.
@@ -237,8 +235,6 @@ struct ah_tcp_conn_cbs {
     ///   <li><b>AH_ENOMEM [Darwin, Linux]</b>            - Not enough heap memory available.
     ///   <li><b>AH_ETIMEDOUT</b>                         - Connection timed out.
     /// </ul>
-    ///
-    /// \note If set to \c NULL, writing is shutdown automatically.
     void (*on_write)(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
 
     /// \brief The connection has been closed.
