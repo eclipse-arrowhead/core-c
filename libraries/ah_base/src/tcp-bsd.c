@@ -84,7 +84,7 @@ ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enable
     return ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
+ah_extern ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, uint8_t flags)
 {
     (void) ctx;
 

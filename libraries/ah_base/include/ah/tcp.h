@@ -45,9 +45,6 @@
 ///        ah_tcp_conn_shutdown().
 #define AH_TCP_SHUTDOWN_RDWR 3u
 
-/// \brief Type guaranteed to be able to hold all TCP shutdown flags.
-typedef uint8_t ah_tcp_shutdown_t;
-
 /// \brief A TCP-based transport.
 ///
 /// A \e transport represents a medium through which TCP connections can be
@@ -74,7 +71,7 @@ struct ah_tcp_vtab {
     ah_err_t (*conn_read_start)(void* ctx, ah_tcp_conn_t* conn);
     ah_err_t (*conn_read_stop)(void* ctx, ah_tcp_conn_t* conn);
     ah_err_t (*conn_write)(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out);
-    ah_err_t (*conn_shutdown)(void* ctx, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
+    ah_err_t (*conn_shutdown)(void* ctx, ah_tcp_conn_t* conn, uint8_t flags);
     ah_err_t (*conn_close)(void* ctx, ah_tcp_conn_t* conn);
 
     ah_err_t (*listener_open)(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
@@ -568,7 +565,7 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
 ///          is not considered as being closed. Every connection must eventually
 ///          be provided to ah_tcp_conn_close(), irrespective of any direction
 ///          being shutdown.
-ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
+ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags);
 
 /// \brief Schedules closing of \a conn.
 ///
@@ -624,7 +621,7 @@ ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
 /// \param conn Pointer to connection.
 /// \return Shutdown flags associated with \a conn. If \a conn is \c NULL,
 ///         \c AH_TCP_SHUTDOWN_RDWR is returned.
-ah_extern ah_tcp_shutdown_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn);
+ah_extern uint8_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn);
 
 /// \brief Gets the user data pointer associated with \a conn.
 ///

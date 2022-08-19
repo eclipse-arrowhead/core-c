@@ -425,7 +425,7 @@ handle_err:
     client->_conn_cbs->on_write(conn, out, err);
 }
 
-ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
+ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, uint8_t flags)
 {
     ah_mbedtls_client_t* client = client_;
     if (client == NULL || client->_trans.vtab == NULL || client->_trans.vtab->conn_shutdown == NULL) {

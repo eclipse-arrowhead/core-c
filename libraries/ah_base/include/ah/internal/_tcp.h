@@ -28,20 +28,20 @@
 #define AH_I_TCP_LISTENER_STATE_OPEN      1u
 #define AH_I_TCP_LISTENER_STATE_LISTENING 2u
 
-#define AH_I_TCP_CONN_FIELDS        \
- ah_loop_t* _loop;                  \
- struct ah_i_slab* _owning_slab;    \
-                                    \
- ah_tcp_trans_t _trans;             \
- const ah_tcp_conn_cbs_t* _cbs;     \
-                                    \
- ah_tcp_in_t* _in;                  \
-                                    \
- ah_tcp_shutdown_t _shutdown_flags; \
- uint8_t _state;                    \
-                                    \
- AH_I_TCP_CONN_PLATFORM_FIELDS      \
-                                    \
+#define AH_I_TCP_CONN_FIELDS     \
+ ah_loop_t* _loop;               \
+ struct ah_i_slab* _owning_slab; \
+                                 \
+ ah_tcp_trans_t _trans;          \
+ const ah_tcp_conn_cbs_t* _cbs;  \
+                                 \
+ ah_tcp_in_t* _in;               \
+                                 \
+ uint8_t _shutdown_flags;        \
+ uint8_t _state;                 \
+                                 \
+ AH_I_TCP_CONN_PLATFORM_FIELDS   \
+                                 \
  void* _user_data;
 
 #define AH_I_TCP_IN_FIELDS \

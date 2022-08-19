@@ -18,7 +18,7 @@ ah_err_t ah_i_mbedtls_client_connect(void* client_, ah_tcp_conn_t* conn, const a
 ah_err_t ah_i_mbedtls_client_read_start(void* client_, ah_tcp_conn_t* conn);
 ah_err_t ah_i_mbedtls_client_read_stop(void* client_, ah_tcp_conn_t* conn);
 ah_err_t ah_i_mbedtls_client_write(void* client_, ah_tcp_conn_t* conn, ah_tcp_out_t* out);
-ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
+ah_err_t ah_i_mbedtls_client_shutdown(void* client_, ah_tcp_conn_t* conn, uint8_t flags);
 ah_err_t ah_i_mbedtls_client_close(void* client_, ah_tcp_conn_t* conn);
 
 void ah_i_mbedtls_handshake(ah_tcp_conn_t* conn);
