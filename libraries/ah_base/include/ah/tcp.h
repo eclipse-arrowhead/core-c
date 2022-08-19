@@ -15,18 +15,15 @@
 /// either by \e connecting to a remote host or \e listening for incoming
 /// connections.
 ///
-/// \note When we use the terms \e remote and \e local to describe connections
-///       and hosts, we do so from the perspective of individual connections
-///       rather than complete devices. In other words, if a certain connection
-///       is initialized and then established using calls to ah_tcp_conn_init()
-///       and ah_tcp_conn_connect(), that connection is considered \e local. The
-///       listener it connected to is considered \e remote, even if the listener
-///       would happen to be located on the same device, or even in the same
-///       process, as the original connection. The reverse is also true. If a
-///       listener is established with calls to ah_tcp_listener_init() and
-///       ah_tcp_listener_listen(), any accepted connection is considered
-///       \e remote from the perspective of the listener, even if the connection
-///       would have been initiated from the same device or process.
+/// \note When we use the terms \e remote and \e local throughout this file, we
+///       do so from the perspective of individual connections rather than
+///       complete devices. In other words, when we consider a certain
+///       connection, that connection is local and whatever listener it connects
+///       to is remote. When we, on the other hand, consider a certain
+///       listener, that listener is local and whatever connection attempts it
+///       receives are remote. Whether the connections and listeners are
+///       physically located on different devices or processes is not of
+///       concern.
 
 #include "buf.h"
 #include "internal/_tcp.h"
@@ -180,6 +177,10 @@ struct ah_tcp_conn_cbs {
     /// another buffer, you can detach it from \a conn using ah_tcp_in_detach(),
     /// which allocates a new input buffer for \a conn.
     ///
+    /// If this callback is invoked with an error code (\a err is not equal to
+    /// \c AH_ENONE), \a conn should always be closed via a call to
+    /// ah_tcp_conn_close().
+    ///
     /// \param conn Pointer to connection.
     /// \param in   Pointer to input data representation, or \c NULL if \a err
     ///             is not \c AH_ENONE.
@@ -213,6 +214,13 @@ struct ah_tcp_conn_cbs {
 
     /// \brief Data has been sent via the connection.
     ///
+    /// This callback is always invoked after a successful call to
+    /// ah_tcp_conn_write(). If \a err is \c AH_ENONE, all outgoing data
+    /// provided to the mentioned function was transmitted successfully. If \a
+    /// err has any other value, an error occurred before the transmission could
+    /// be completed. If an error has occurred, \a conn should be closed using
+    /// ah_tcp_conn_close().
+    ///
     /// \param conn Pointer to connection.
     /// \param out  Pointer to output data representation, or \c NULL if \a err
     ///             is not \c AH_ENONE.
@@ -241,6 +249,10 @@ struct ah_tcp_conn_cbs {
     /// \param conn Pointer to connection.
     /// \param err  Should always be \c AH_ENONE. Other codes may be provided if
     ///             an unexpected platform error occurs.
+    ///
+    /// \note This function is guaranteed to be called after every call to
+    ///       ah_tcp_conn_close(), which makes it an excellent place to release
+    ///       any resources associated with \a conn.
     void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
 };
 
@@ -332,24 +344,25 @@ struct ah_tcp_listener_cbs {
     void (*on_close)(ah_tcp_listener_t* ln, ah_err_t err);
 };
 
-/// \brief Represents an incoming stream of bytes.
+/// \brief An incoming stream of bytes.
 ///
 /// \note Some members of this data structure are \e private in the sense that
 ///       a user of this API should not access them directly. All private
 ///       members have names beginning with an underscore.
 struct ah_tcp_in {
-    /// \brief Reader/writer referring to the incoming data.
+    /// \brief Reader/writer referring to incoming data.
     ah_rw_t rw;
 
     AH_I_TCP_IN_FIELDS
 };
 
-/// \brief Represents an outgoing buffer of bytes.
+/// \brief An outgoing buffer of bytes.
 ///
 /// \note Some members of this data structure are \e private in the sense that
 ///       a user of this API should not access them directly. All private
 ///       members have names beginning with an underscore.
 struct ah_tcp_out {
+    /// \brief Buffer referring to outgoing data.
     ah_buf_t buf;
 
     AH_I_TCP_OUT_FIELDS
@@ -388,7 +401,11 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
 
 /// \name TCP Connection
 ///
-/// Operations on ah_tcp_conn instances.
+/// Operations on ah_tcp_conn instances. All such instances must be initialized
+/// using ah_tcp_conn_init() before they are provided to any other functions
+/// listed here. Any other requirements regarding the state of connections
+/// are described in the documentation of each respective function, sometimes
+/// only via the error codes it lists.
 ///
 /// \{
 
@@ -404,12 +421,17 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
 ///   <li><b>AH_EINVAL</b> - \a trans \c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
 ///   <li><b>AH_EINVAL</b> - \c on_open, \c on_connect or \c on_close of \a cbs is \c NULL.
 /// </ul>
+///
+/// \note Every successfully initialized \a conn must eventually be provided to
+///       ah_tcp_conn_close().
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs);
 
-/// \brief Schedules opening of \a conn.
+/// \brief Schedules opening of \a conn, which must be initialized, via the
+///        local network interface represented by \a laddr.
 ///
-/// If successfully scheduled, the result of the open attempt will be reported
-/// via the ah_tcp_conn_cbs::on_open callback associated with \a conn.
+/// If the return value of this function is \c AH_ENONE, meaning that the open
+/// attempt could indeed be scheduled, its result will eventually be presented
+/// via the ah_tcp_conn_cbs::on_open callback of \a conn.
 ///
 /// \param conn  Pointer to connection.
 /// \param laddr Pointer to socket address representing a local network
@@ -417,9 +439,9 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
 ///              established. If opening is successful, the referenced address
 ///              must remain valid for the entire lifetime of the created
 ///              connection. If \c NULL, the connection is bound to the wildcard
-///              address, which means that it can be established through any
-///              available local network interface. Any other required details,
-///              such as a port number, are chosen automatically.
+///              address and the zero port, which means that it can be
+///              established through any available local network interface and
+///              that a concrete port number is chosen automatically.
 /// \return <ul>
 ///   <li><b>AH_ENONE</b>        - \a conn opening successfully scheduled.
 ///   <li><b>AH_EAFNOSUPPORT</b> - \a laddr is not \c NULL and is not an IP-based address.
@@ -429,12 +451,13 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
 ///   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
 ///   <li><b>AH_ESTATE</b>       - \a conn is not closed.
 /// </ul>
-///
-/// \note Every successfully opened \a conn must eventually be provided to
-///       ah_tcp_conn_close().
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 
-/// \brief Schedules connection of \a conn to \a raddr.
+/// \brief Schedules connection of \a conn, which must be open, to \a raddr.
+///
+/// If the return value of this function is \c AH_ENONE, meaning that connection
+/// could indeed be scheduled, its result will eventually be presented via the
+/// ah_tcp_conn_cbs::on_connect callback of \a conn.
 ///
 /// \param conn  Pointer to connection.
 /// \param raddr Pointer to socket address representing the remote host to which
@@ -451,17 +474,19 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
 ///   <li><b>AH_ESTATE</b>       - \a conn is not open.
 /// </ul>
 ///
+/// \note Data receiving is disabled for new connections by default. Is must be
+///       explicitly enabled via a call to ah_tcp_conn_read_start().
+///
 /// \warning This function must be called with a successfully opened connection.
-///          Therefore, the most appropriate place to call this function is
-///          likely to be in an ah_tcp_conn_cbs::on_open callback after a check
-///          that opening was indeed successful.
+///          An appropriate place to call this function is often going to be in
+///          an ah_tcp_conn_cbs::on_open callback after a check that opening was
+///          successful.
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 
-/// \brief Schedules start of receiving of incoming data via \a conn.
+/// \brief Enables receiving of incoming data via \a conn.
 ///
-/// All received data is stored to a single ah_tcp_in instance that is backed by
-/// a single memory page acquired via ah_palloc(). See ah_tcp_conn_cbs::on_read
-/// for more details regarding how this memory page is handled.
+/// When the receiving of data is enabled, the ah_tcp_conn_cbs::on_read callback
+/// of \a conn will be invoked whenever incoming data is received.
 ///
 /// \param conn Pointer to connection.
 /// \return <ul>
@@ -479,12 +504,12 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
 /// </ul>
 ///
 /// \warning This function must be called with a successfully connected
-///          connection. Therefore, an appropriate place to call this function
-///          is likely to be in an ah_tcp_conn_cbs::on_connect callback after a
-///          check that the connection attempt was indeed successful.
+///          connection. An appropriate place to call this function is often
+///          going to be in an ah_tcp_conn_cbs::on_connect callback after a
+///          check that the connection attempt was successful.
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 
-/// \brief Immediately stops receiving of incoming data via \a conn.
+/// \brief Disables receiving of incoming data via \a conn.
 ///
 /// \param conn Pointer to connection.
 /// \return <ul>
@@ -498,12 +523,19 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 ///       means that \a conn never had a practical chance to start reading.
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
 
-/// \brief Schedules sending of data in \a out via \a conn.
+/// \brief Schedules the sending of the data in \a out to the remote host of
+///        \a conn.
+///
+/// If the return value of this function is \c AH_ENONE, meaning that the
+/// sending could indeed be scheduled, the result of the sending will eventually
+/// be presented via the ah_tcp_conn_cbs::on_write callback of \a conn. More
+/// specifically, the callback is invoked either if an error occurs or after all
+/// data in \a out has been successfully transmitted.
 ///
 /// \param conn Pointer to connection.
 /// \param out  Pointer to outgoing data.
 /// \return <ul>
-///   <li><b>AH_ENONE</b>            - Receiving of data via \a conn successfully stopped.
+///   <li><b>AH_ENONE</b>            - Data transmission scheduled successfully.
 ///   <li><b>AH_ECANCELED</b>        - The event loop of \a conn is shutting down.
 ///   <li><b>AH_EINVAL</b>           - \a conn or \a out is \c NULL.
 ///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
@@ -536,6 +568,10 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t f
 
 /// \brief Schedules closing of \a conn.
 ///
+/// If the return value of this function is \c AH_ENONE, meaning that the
+/// closing could indeed be scheduled, its result will eventually be presented
+/// via the ah_tcp_conn_cbs::on_close callback of \a conn.
+///
 /// \param conn Pointer to connection.
 /// \return <ul>
 ///   <li><b>AH_ENONE</b>  - Close of \a conn successfully scheduled.
@@ -545,6 +581,9 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t f
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 
 /// \brief Stores local address bound by \a conn into \a laddr.
+///
+/// If \a conn was opened with a zero port, this function will report what
+/// concrete port was assigned to \a conn.
 ///
 /// \param conn  Pointer to connection.
 /// \param laddr Pointer to socket address to be set by this operation.
@@ -557,7 +596,7 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 /// </ul>
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
 
-/// \brief Stores remote address of \a conn into \a laddr.
+/// \brief Stores remote address of \a conn into \a raddr.
 ///
 /// \param conn  Pointer to connection.
 /// \param raddr Pointer to socket address to be set by this operation.
@@ -583,7 +622,7 @@ ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
 ///         \c AH_TCP_SHUTDOWN_RDWR is returned.
 ah_extern ah_tcp_shutdown_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn);
 
-/// \brief Gets user data pointer associated with \a conn.
+/// \brief Gets the user data pointer associated with \a conn.
 ///
 /// \param conn Pointer to connection.
 /// \return Any user data pointer previously set via
@@ -618,7 +657,7 @@ ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn);
 ///         writable. \c false otherwise.
 ah_extern bool ah_tcp_conn_is_readable_and_writable(const ah_tcp_conn_t* conn);
 
-/// \brief Checks if \conn is currently reading incoming data.
+/// \brief Checks if \a conn is currently reading incoming data.
 ///
 /// A connection is reading if its currently connected and
 /// ah_tcp_conn_read_start() has been called with the same connection as
@@ -699,7 +738,7 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
 /// </ul>
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
 
-/// \brief Sets the user data pointer of \a conn.
+/// \brief Sets the user data pointer associated with \a conn.
 ///
 /// \param conn      Pointer to connection.
 /// \param user_data User data pointer, referring to whatever context you want
@@ -712,7 +751,7 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 
 /// \name TCP Input Buffer
 ///
-/// Operations of ah_tcp_in instances.
+/// Operations on ah_tcp_in instances.
 ///
 /// \{
 
@@ -756,16 +795,36 @@ ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in);
 ///
 /// \param in Pointer to input buffer.
 ///
+/// \warning Only free ah_tcp_in instances you own. Unless you explicitly call
+///          ah_tcp_in_alloc_for(), ah_tcp_in_detach() or in some other way is
+///          able to take ownership of your own instance, you are not going to
+///          need to call this function.
+///
 /// \note This function does nothing if \a in is \c NULL.
 ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
 
 /// \brief Moves the readable bytes of \a in to the beginning of its internal
 ///        buffer.
 ///
-/// As the internal buffer of \a in is finite in length, this operation may
-/// prevent that buffer from reaching its end, which would make it impossible to
-/// store additional data to it. Repackaging is not enough, however, if an
-/// input buffer keeps growing indefinitely, unless data is also read.
+/// The internal buffer of \a in has a finite size. When data is written to that
+/// internal buffer, a write pointer advances. If enough data is written to it,
+/// the write pointer advances to the end of the buffer, making it impossible to
+/// store further data to it. When data is read from the buffer, an internal
+/// read pointer advances towards the write pointer. After a successful such
+/// read operation, the memory between the beginning of the buffer and the read
+/// pointer becomes inaccessible. This function moves the data between the read
+/// and write pointers of the internal buffer to the beginning of that buffer.
+/// This eliminates the inaccessible region and makes it possible to write more
+/// data to the end of the buffer.
+///
+/// TCP is a streaming transmission protocol. Whatever data is sent may arrive
+/// split up into multiple segments at its intended receiver. Multiple such
+/// segments may have to be awaited before a certain data object can be
+/// interpreted correctly, and the last segment may contain the beginning of
+/// another data object. In such a scenario, this function makes it possible to
+/// move the received part of second data object to the beginning of the
+/// internal buffer, preventing it from overflowing for data objects that are
+/// smaller than the full size of that buffer.
 ///
 /// \param in Pointer to input buffer.
 /// \return <ul>
@@ -779,7 +838,7 @@ ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
 
 /// \name TCP Output Buffer
 ///
-/// Operations of ah_tcp_out instances.
+/// Operations on ah_tcp_out instances.
 ///
 /// \{
 
@@ -789,6 +848,9 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
 /// \}
 
 /// \name TCP Listener
+///
+/// Operations on ah_tcp_listener instances.
+///
 /// \{
 
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs);
