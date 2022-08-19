@@ -61,7 +61,11 @@ struct ah_tcp_trans {
 /// \brief Virtual function table for TCP-based transports.
 ///
 /// A set of function pointers representing the TCP functions that must be
-/// implemented via a transport (see ah_tcp_trans).
+/// implemented by every valid transport (see ah_tcp_trans). The functions must
+/// behave as documented by the regular functions they are named after. Each of
+/// them takes a void pointer \c ctx argument, which corresponds to the
+/// ah_tcp_trans::ctx member of the transport owning the function table in
+/// question.
 ///
 /// \note This structure is primarily useful to those wishing to implement their
 ///       own TCP transports.
@@ -153,6 +157,9 @@ struct ah_tcp_conn_cbs {
     ///   <li><b>AH_ETIMEDOUT</b>                         - The connection attempt did not complete
     ///                                                     before its deadline.
     /// </ul>
+    ///
+    /// \note Data receiving is disabled for new connections by default. It must
+    ///       be explicitly enabled via a call to ah_tcp_conn_read_start().
     ///
     /// \note This function is never called for accepted connections, which
     ///       means it may be set to \c NULL when this data structure is used
@@ -327,6 +334,9 @@ struct ah_tcp_listener_cbs {
     ///
     /// \note Every successfully accepted \a conn must eventually be provided to
     ///       ah_tcp_conn_close().
+    ///
+    /// \note Data receiving is disabled for accepted connections by default. It
+    ///       must be explicitly enabled via a call to ah_tcp_conn_read_start().
     void (*on_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
     /// \brief Listener \a ln has been closed.
@@ -412,11 +422,9 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
 ///   <li><b>AH_ENONE</b>  - \a conn successfully initialized.
 ///   <li><b>AH_EINVAL</b> - \a conn or \a loop or \a cbs is \c NULL.
 ///   <li><b>AH_EINVAL</b> - \a trans \c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
-///   <li><b>AH_EINVAL</b> - \c on_open, \c on_connect or \c on_close of \a cbs is \c NULL.
+///   <li><b>AH_EINVAL</b> - \c on_open, \c on_connect, \c on_read, \c on_write or \c on_close of
+///                          \a cbs is \c NULL.
 /// </ul>
-///
-/// \note Every successfully initialized \a conn must eventually be provided to
-///       ah_tcp_conn_close().
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs);
 
 /// \brief Schedules opening of \a conn, which must be initialized, via the
@@ -444,6 +452,9 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
 ///   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
 ///   <li><b>AH_ESTATE</b>       - \a conn is not closed.
 /// </ul>
+///
+/// \note Every successfully opened \a conn must eventually be provided to
+///       ah_tcp_conn_close().
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 
 /// \brief Schedules connection of \a conn, which must be open, to \a raddr.
@@ -489,9 +500,9 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
 ///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
 ///   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
 ///   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
-///   <li><b>AH_EOVERFLOW</b>        - The configured \c AH_PSIZE is too small for it to be possible
-///                                    to store both required metadata \e and read data in a single
-///                                    page provided by the page allocator (see ah_palloc()).
+///   <li><b>AH_EOVERFLOW</b>        - \c AH_CONF_PSIZE is too small for it to be possible to store
+//                                     both required metadata \e and read data in a single page
+//                                     provided by the page allocator (see ah_palloc()).
 ///   <li><b>AH_ESTATE</b>           - \a conn is not connected or its read direction has been shut
 ///                                    down.
 /// </ul>
@@ -701,7 +712,8 @@ ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enable
 /// This option being enabled means that use of Nagle's algorithm is disabled.
 /// The mentioned algorithm queues up messages for a short time before sending
 /// them over the network. The purpose of this is to reduce the number of TCP
-/// segments submitted over the used network.
+/// segments submitted over the used network. Its disadvantage is that it may
+/// increase messaging latency.
 ///
 /// \param conn       Pointer to connection.
 /// \param is_enabled Whether keep-alive is to be enabled or not.
@@ -768,9 +780,9 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 ///   <li><b>AH_ENONE</b>     - The operation was successful.
 ///   <li><b>AH_EINVAL</b>    - \a owner_ptr is \c NULL.
 ///   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned \c NULL).
-///   <li><b>AH_EOVERFLOW</b> - The configured \c AH_PSIZE is too small for it to be possible to
-///                             store both an ah_tcp_in instance \e and have room for input data in
-///                             a single page provided by the page allocator (see ah_palloc()).
+///   <li><b>AH_EOVERFLOW</b> - \c AH_CONF_PSIZE is too small for it to be possible to store both an
+//                              ah_tcp_in instance \e and have room for input data in a single page
+//                              provided by the page allocator (see ah_palloc()).
 /// </ul>
 ///
 /// \note This function should primarily be of interest to those both wishing to
@@ -869,22 +881,234 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
 
 /// \name TCP Listener
 ///
-/// Operations on ah_tcp_listener instances.
+/// Operations on ah_tcp_listener instances. All such instances must be
+/// initialized using ah_tcp_listener_init() before they are provided to any
+/// other functions listed here. Any other requirements regarding the state of
+/// listeners are described in the documentation of each respective function,
+/// sometimes only via the error codes it lists.
 ///
 /// \{
 
+/// \brief Initializes \a ln for subsequent use.
+///
+/// \param ln    Pointer to listener.
+/// \param loop  Pointer to event loop.
+/// \param trans Desired transport.
+/// \param cbs   Pointer to event callback set.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>     - \a ln successfully initialized.
+///   <li><b>AH_EINVAL</b>    - \a ln or \a loop or \a cbs is \c NULL.
+///   <li><b>AH_EINVAL</b>    - \a trans \c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+///   <li><b>AH_EINVAL</b>    - \c on_open, \c on_listen, \c on_accept or \c on_close of \a cbs is
+///                             \c NULL.
+///   <li><b>AH_ENOMEM</b>    - Heap memory could not be allocated for storing incoming connections.
+///   <li><b>AH_EOVERFLOW</b> - \c AH_CONF_PSIZE is too small for it to be possible to store both
+////                            metadata \e and have room for at least one incoming connection in a
+///                             single page provided by the page allocator (see ah_palloc()).
+/// </ul>
+///
+/// \note Every successfully initialized \a ln must eventually be provided to
+///       ah_tcp_listener_term().
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs);
+
+/// \brief Schedules opening of \a ln, which must be initialized, bound to the
+///        local network interface represented by \a laddr.
+///
+/// If the return value of this function is \c AH_ENONE, meaning that the open
+/// attempt could indeed be scheduled, its result will eventually be presented
+/// via the ah_tcp_listener_cbs::on_open callback of \a ln.
+///
+/// \param ln    Pointer to listener.
+/// \param laddr Pointer to socket address representing a local network
+///              interface through which the listener must later receive
+///              incoming connections. If opening is successful, the referenced
+///              address must remain valid for the entire lifetime of the
+///              created connection. If \c NULL, the listener is bound to the
+///              wildcard address and the zero port, which means that it can be
+///              accept connections through all available local network
+///              interfaces and that a concrete port number is chosen
+///              automatically.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>        - \a ln opening successfully scheduled.
+///   <li><b>AH_EAFNOSUPPORT</b> - \a laddr is not \c NULL and is not an IP-based address.
+///   <li><b>AH_ECANCELED</b>    - The event loop of \a ln is shutting down.
+///   <li><b>AH_EINVAL</b>       - \a ln is \c NULL.
+///   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
+///   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>       - \a ln is not closed.
+/// </ul>
+///
+/// \note Every successfully opened \a ln must eventually be provided to
+///       ah_tcp_listener_close() before it is provided to
+///       ah_tcp_listener_term().
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
+
+/// \brief Schedules for \a ln, which must be open, to start listening for
+///        incoming connections.
+///
+/// If the return value of this function is \c AH_ENONE, meaning that listening
+/// could indeed be scheduled, its result will eventually be presented via the
+/// ah_tcp_conn_cbs::on_listen callback of \a ln.
+///
+/// \param ln       Pointer to listener.
+/// \param backlog  Capacity, in connections, of the queue in which incoming
+///                 connections wait to get accepted. If \c 0, a platform
+///                 default will be chosen. If larger than some arbitrary
+///                 platform maximum, it will be set to that maximum.
+/// \param conn_cbs Pointer to event callback set to provide to all accepted
+///                 connections.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>     - \a ln listening successfully scheduled.
+///   <li><b>AH_ECANCELED</b> - The event loop of \a ln is shutting down.
+///   <li><b>AH_EINVAL</b>    - \a ln or \a conn_cbs is \c NULL.
+///   <li><b>AH_EINVAL</b>    - \c on_read, \c on_write or \c on_close of \a conn_cbs is \c NULL.
+///   <li><b>AH_ENOBUFS</b>   - Not enough buffer space available.
+///   <li><b>AH_ENOMEM</b>    - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>    - \a ln is not open.
+/// </ul>
+///
+/// \warning This function must be called with a successfully opened listener.
+///          An appropriate place to call this function is often going to be in
+///          an ah_tcp_listener_cbs::on_open callback after a check that opening
+///          was successful.
 ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
+
+/// \brief Schedules closing of \a ln.
+///
+/// If the return value of this function is \c AH_ENONE, meaning that the
+/// closing could indeed be scheduled, its result will eventually be presented
+/// via the ah_tcp_listener_cbs::on_close callback of \a ln.
+///
+/// \param ln Pointer to listener.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>  - Close of \a ln successfully scheduled.
+///   <li><b>AH_EINVAL</b> - \a ln is \c NULL.
+///   <li><b>AH_ESTATE</b> - \a ln is already closed.
+/// </ul>
+///
+/// \note Any already accepted connections that are still open are unaffected by
+///       the listener being closed.
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
+
+/// \brief Terminates \a ln, freeing any resources it holds.
+///
+/// \param ln Pointer to listener.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>  - \a ln successfully terminated.
+///   <li><b>AH_EINVAL</b> - \a ln is \c NULL.
+///   <li><b>AH_ESTATE</b> - \a ln is not currently closed.
+/// </ul>
+///
+/// \note Any already accepted connections that are still open are unaffected by
+///       the listener being terminated. It may, however, be the case at some
+///       resources \a ln shares with those connections are not freed until they
+///       are all closed.
 ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln);
+
+/// \brief Stores local address bound by \a ln into \a laddr.
+///
+/// If \a ln was opened with a zero port, this function will report what
+/// concrete port was assigned to \a ln.
+///
+/// \param ln    Pointer to listener.
+/// \param laddr Pointer to socket address to be set by this operation.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>                   - The operation was successful.
+///   <li><b>AH_EINVAL</b>                  - \a ln or \a laddr is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
+///   <li><b>AH_ESTATE</b>                  - \a ln is closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr);
+
+/// \brief Gets pointer to event loop of \a ln.
+///
+/// \param ln Pointer to listener.
+/// \return Pointer to event loop, or \c NULL if \a ln is \c NULL.
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln);
+
+/// \brief Gets the user data pointer associated with \a ln.
+///
+/// \param ln Pointer to listener.
+/// \return Any user data pointer previously set via
+///         ah_tcp_conn_set_user_data(), or \c NULL if no such has been set or
+///         if \a ln is \c NULL.
 ah_extern void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln);
+
+/// \brief Checks if \a ln is closed.
+///
+/// \param ln Pointer to listener.
+/// \return \c true only if \a ln is not \c NULL and is currently closed.
+///         \c false otherwise.
 ah_extern bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln);
+
+/// \brief Sets the \e keep-alive option of \a ln to \a is_enabled.
+///
+/// This option enables or disables keep-alive messaging for accepted
+/// connections. Generally, using such messaging means that messages are
+/// automatically sent at sensible times to check if connections are in
+/// usable conditions. The exact implications of this option depends on the
+/// platform.
+///
+/// \param ln         Pointer to listener.
+/// \param is_enabled Whether keep-alive is to be enabled or not.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - The operation was successful.
+///   <li><b>AH_EINVAL</b>           - \a ln is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
+///   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>           - \a ln is closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled);
+
+/// \brief Sets the \e no-delay option of \a ln to \a is_enabled.
+///
+/// This option being enabled means that use of Nagle's algorithm is disabled
+/// for accepted connections. The mentioned algorithm queues up messages for a
+/// short time before sending them over the network. The purpose of this is to
+/// reduce the number of TCP segments submitted over the used network. Its
+/// disadvantage is that it may increase messaging latency.
+///
+/// \param ln         Pointer to listener.
+/// \param is_enabled Whether keep-alive is to be enabled or not.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - The operation was successful.
+///   <li><b>AH_EINVAL</b>           - \a ln is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
+///   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>           - \a ln is closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled);
+
+/// \brief Sets the <em>reuse address</em> option of \a ln to \a is_enabled.
+///
+/// Address reuse generally means that a the specific combination of local
+/// interface address and port number bound by this listener can be reused
+/// right after it closes. Address reuse can lead to security implications as
+/// it may enable a malicious process on the same platform to hijack a closed
+/// connection.
+///
+/// \param ln         Pointer to listener.
+/// \param is_enabled Whether keep-alive is to be enabled or not.
+/// \return <ul>
+///   <li><b>AH_ENONE</b>            - The operation was successful.
+///   <li><b>AH_EINVAL</b>           - \a ln is \c NULL.
+///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+///   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
+///   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
+///   <li><b>AH_ESTATE</b>           - \a ln is closed.
+/// </ul>
 ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled);
+
+/// \brief Sets the user data pointer associated with \a ln.
+///
+/// \param ln        Pointer to listener.
+/// \param user_data User data pointer, referring to whatever context you want
+///                  to associate with \a ln.
+///
+/// \note If \a ln is \c NULL, this function does nothing.
 ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data);
 
 /// \}
