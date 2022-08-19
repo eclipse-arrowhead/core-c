@@ -104,7 +104,7 @@ struct ah_tcp_conn_cbs {
     /// \param conn Pointer to connection.
     /// \param err One of the following codes: <ul>
     ///   <li><b>AH_ENONE</b>                          - Connection opened successfully.
-    ///   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open socket.
+    ///   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open connection.
     ///   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
     ///   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
     ///                                                  associated with the given local address.
@@ -224,8 +224,8 @@ struct ah_tcp_conn_cbs {
     /// ah_tcp_conn_close().
     ///
     /// \param conn Pointer to connection.
-    /// \param out  Pointer to output data representation, or \c NULL if \a err
-    ///             is not \c AH_ENONE.
+    /// \param out  Pointer to output buffer provided to ah_tcp_conn_write(), or
+    ///             \c NULL if \a err is not \c AH_ENONE.
     /// \param err  One of the following codes: <ul>
     ///   <li><b>AH_ENONE</b>                             - Data sent successfully.
     ///   <li><b>AH_ECANCELED</b>                         - Connection event loop is shutting down.
@@ -275,7 +275,7 @@ struct ah_tcp_listener_cbs {
     /// \param conn Pointer to listener.
     /// \param err  One of the following codes: <ul>
     ///   <li><b>AH_ENONE</b>                          - Listener opened successfully.
-    ///   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open socket.
+    ///   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open listener.
     ///   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
     ///   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
     ///                                                  associated with the given local address.
@@ -781,8 +781,8 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 ///   <li><b>AH_EINVAL</b>    - \a owner_ptr is \c NULL.
 ///   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned \c NULL).
 ///   <li><b>AH_EOVERFLOW</b> - \c AH_CONF_PSIZE is too small for it to be possible to store both an
-//                              ah_tcp_in instance \e and have room for input data in a single page
-//                              provided by the page allocator (see ah_palloc()).
+///                             ah_tcp_in instance \e and have room for input data in a single page
+///                             provided by the page allocator (see ah_palloc()).
 /// </ul>
 ///
 /// \note This function should primarily be of interest to those both wishing to

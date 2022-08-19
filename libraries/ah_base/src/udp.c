@@ -55,7 +55,7 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp
     if (sock == NULL || loop == NULL || cbs == NULL) {
         return AH_EINVAL;
     }
-    if (cbs->on_open == NULL || cbs->on_close == NULL) {
+    if (cbs->on_open == NULL || cbs->on_recv == NULL || cbs->on_send == NULL || cbs->on_close == NULL) {
         return AH_EINVAL;
     }
 
@@ -156,6 +156,14 @@ ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data)
     ah_assert(sock != NULL);
 
     sock->_user_data = user_data;
+}
+
+ah_extern ah_err_t ah_udp_in_alloc_for(ah_udp_in_t** owner_ptr)
+{
+    if (owner_ptr == NULL) {
+        return AH_EINVAL;
+    }
+    return ah_i_udp_in_alloc_for(owner_ptr);
 }
 
 ah_extern ah_err_t ah_udp_in_detach(ah_udp_in_t* in)

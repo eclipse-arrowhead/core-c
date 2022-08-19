@@ -76,6 +76,9 @@ static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
     if (res == SOCKET_ERROR) {
         err = WSAGetLastError();
         if (err != WSA_IO_PENDING) {
+            if (err == WSA_OPERATION_ABORTED) {
+                err = AH_EEOF;
+            }
             return err;
         }
     }
@@ -186,6 +189,9 @@ ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
         err = WSAGetLastError();
         if (err == WSA_IO_PENDING) {
             err = AH_ENONE;
+        }
+        else if (err == WSA_OPERATION_ABORTED) {
+            err = AH_EEOF;
         }
     }
 
