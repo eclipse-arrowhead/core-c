@@ -692,6 +692,8 @@ ah_extern void ah_udp_in_free(ah_udp_in_t* in);
 /// \note This function does nothing if \a in is \c NULL.
 ah_extern void ah_udp_in_reset(ah_udp_in_t* in);
 
+/// \}
+
 /// \name UDP Output Buffer
 ///
 /// Operations on ah_udp_out instances.
