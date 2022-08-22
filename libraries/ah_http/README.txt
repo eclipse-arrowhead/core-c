@@ -30,11 +30,9 @@ a good balance between HTTP conformance, small memory and CPU footprint, as well
 as making it convenient to make HTTP RPCs. For these reasons, this library
 provides utilities for parsing and, to a lesser extent, generating HTTP request
 lines, status lines, headers, chunks and trailers, as well as help handle a
-minimal set of headers. Those headers are (1) "content-length", (2)
-"transfer-encoding" (only the "chunked" value is considered), (3) "connection"
-and (4) "host" (it is inserted into sent requests but not validated when
-received) headers. Any functionality a particular application needs beyond this
-minimal set can be implemented on top of this library, which means that complete
-HTTP conformance is a theoretical possibility.
+minimal set of headers (described further in include/ah/http.h). Any
+functionality a particular application needs beyond this minimal set can be
+implemented on top of this library, which means that complete HTTP conformance
+is a theoretical possibility.
 
 */

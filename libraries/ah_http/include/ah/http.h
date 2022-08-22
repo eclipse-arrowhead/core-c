@@ -3,6 +3,49 @@
 #ifndef AH_HTTP_H_
 #define AH_HTTP_H_
 
+/**
+ * @file
+ * HTTP/1 client and server.
+ *
+ * Here, data structures and functions are provided for representing, setting up
+ * and communicating via HTTP/1 clients and servers. As described in the
+ * directory-level documentation for this library, only a small subset of all
+ * headers part of the HTTP standards are handled automatically. Those headers
+ * are outlined in the below table.
+ *
+ * <table>
+ *   <caption id="http-headers">Automatically Handled HTTP Headers</caption>
+ *   <tr>
+ *     <th>Header
+ *     <th>Automatic Behavior
+ *   <tr>
+ *     <td>\c Connection
+ *     <td>The options (1) \c close and (2) \c keep-alive automatically cause HTTP connections to
+ *         either (1) be closed after the current request/response exchange or (2) remain open
+ *         between exchanges. Which of the two behaviors represented by these options is the default
+ *         varies between HTTP versions. In version 1.0 \c close is default, while on all subsequent
+ *         versions \c keep-alive is the default.
+ *   <tr>
+ *     <td>\c Content-Length
+ *     <td>When receiving incoming requests and responses, the \c Content-Length is used
+ *         automatically to determine when and if a message body is expected, and when all of it has
+ *         been received. Incoming messages that neither specify a \c Content-Length nor
+ *         <code>Transfer-Encoding: chunked</code> are assumed to not have bodies at all. Note that
+ *         no \c Content-Length header is added automatically to outgoing requests or responses. You
+ *         must make sure to add it when relevant.
+ *   <tr>
+ *     <td>\c Host
+ *     <td>When sending outgoing requests, if this header is left unspecified, it is automatically
+ *         populated with the IP address of the targeted server.
+ *   <tr>
+ *     <td>\c Transfer-Encoding
+ *     <td>If <code>Transfer-Encoding: chunked</code> is specified in an incoming request or
+ *         response, the individual chunks are decoded and presented automatically. Other transfer
+ *         encoding options are ignored. This means that body compression and decompression is not
+ *         handled automatically.
+ * </table>
+ */
+
 #include "internal/_http.h"
 
 #include <stdbool.h>
