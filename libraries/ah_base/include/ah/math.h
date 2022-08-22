@@ -1,31 +1,29 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #ifndef AH_MATH_H_
 #define AH_MATH_H_
 
-/// \brief Safe integer operations.
-/// \file
-///
-/// This file provides a rather long list of functions that can be used to
-/// ensure that certain integer operations never produce undefined behavior.
-///
-/// The functions behave as follows: All \c add, \c div, \c mul and \c sub
-/// functions return \c AH_ENONE if successful, \c AH_EINVAL if the \c result
-/// argument is \c NULL or \c AH_ERANGE if the operation overflowed. The \c div
-/// functions additionally return \c AH_EDOM if their \c b argument is zero.
-/// Unsigned divisions are guaranteed to never yield \c AH_RANGE. In every case,
-/// the \c result value is only updated if the return value is \c AH_ENONE.
-///
-/// Note that signed divisions can overflow, causing \c AH_ERANGE to be
-/// returned, if their \c a argument is the lowest representable such and their
-/// \c b argument is \c -1. This is a consequence of the two's complement
-/// integer representation having a negative number range being larger than its
-/// positive counterpart. Only two's complement signed integer representations
-/// are supported by this library.
+/**
+ * @file
+ * Safe integer operations.
+ *
+ * This file provides a rather long list of functions that can be used to
+ * ensure that certain integer operations never produce undefined behavior.
+ *
+ * The functions behave as follows: All @c add, @c div, @c mul and @c sub
+ * functions return @c AH_ENONE if successful, @c AH_EINVAL if the @c result
+ * argument is @c NULL or @c AH_ERANGE if the operation overflowed. The @c div
+ * functions additionally return @c AH_EDOM if their @c b argument is zero.
+ * Unsigned divisions are guaranteed to never yield @c AH_RANGE. In every case,
+ * the @c result value is only updated if the return value is @c AH_ENONE.
+ *
+ * Note that signed divisions can overflow, causing @c AH_ERANGE to be
+ * returned, if their @c a argument is the lowest representable such and their
+ * @c b argument is @c -1. This is a consequence of the two's complement
+ * integer representation having a negative number range being larger than its
+ * positive counterpart. Only two's complement signed integer representations
+ * are supported by this library.
+ */
 
 #include "defs.h"
 

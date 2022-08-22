@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/mbedtls.h"
@@ -315,7 +311,7 @@ static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err)
     }
 
     // Open connection that will connect to our listener.
-    err = ah_tcp_conn_open(user_data->conn, NULL);
+    err = ah_tcp_conn_open(user_data->conn, (const ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -558,7 +554,7 @@ static void s_should_read_and_write_data(ah_unit_t* unit)
 
     // Open listener, which will open the connection, and so on.
 
-    err = ah_tcp_listener_open(&ln, NULL);
+    err = ah_tcp_listener_open(&ln, (const ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

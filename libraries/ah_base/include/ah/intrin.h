@@ -1,80 +1,92 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #ifndef AH_INTRIN_H_
 #define AH_INTRIN_H_
 
-/// \brief Compiler intrinsics.
-/// \file
-///
-/// A compiler intrinsic is a special function provided by the compiler, causing
-/// it to optimize or add to its output. This file provides two categories of
-/// intrinsics, (1) such supported by all supported compilers and (2) those only
-/// supported by some supported compilers. The former category are prefixed with
-/// the usual "ah_", while the latter category have the slightly longer "ah_p_"
-/// prefix.
+/**
+ * Compiler intrinsics.
+ * @file
+ *
+ * A compiler intrinsic is a special function provided by the compiler, causing
+ * it to optimize or add to its output. This file provides two categories of
+ * intrinsics, (1) such supported by all supported compilers and (2) those only
+ * supported by some supported compilers. The former category are prefixed with
+ * the usual "ah_", while the latter category have the slightly longer "ah_p_"
+ * prefix.
+ */
 
 #include "defs.h"
 
 #if defined(AH_DOXYGEN)
 
-/// \brief Indicates that \a expr is most likely going to evaluate to \c true.
-///
-/// \param expr Arbitrary expression.
-/// \return Whatever \a expr returns.
+/**
+ * Indicates that @a expr is most likely going to evaluate to @c true.
+ *
+ * @param expr Arbitrary expression.
+ * @return Whatever @a expr returns.
+ */
 # define ah_likely(expr)
 
-/// \brief Traps execution, preventing the application process from progressing
-///        any further.
-///
-/// Traps can be useful while debugging, or as a last resort when all other ways
-/// of stopping the application fails.
+/**
+ * Traps execution, preventing the application process from progressing
+ *        any further.
+ *
+ * Traps can be useful while debugging, or as a last resort when all other ways
+ * of stopping the application fails.
+ */
 # define ah_trap()
 
-/// \brief Indicates that \a expr is most likely going to evaluate to \c false.
-///
-/// \param expr Arbitrary expression.
-/// \return Whatever \a expr returns.
+/**
+ * Indicates that @a expr is most likely going to evaluate to @c false.
+ *
+ * @param expr Arbitrary expression.
+ * @return Whatever @a expr returns.
+ */
 # define ah_unlikely(expr)
 
-/// \brief Informs the compiler that the line at which this intrinsic is used
-///        will never be executed.
-///
-/// \warning If the line is reached during execution anyway, the result is
-///          undefined. The platform \a may chose to ah_trap(), but that is not
-///          guaranteed.
+/**
+ * Informs the compiler that the line at which this intrinsic is used
+ *        will never be executed.
+ *
+ * @warning If the line is reached during execution anyway, the result is
+ *          undefined. The platform @a may chose to ah_trap(), but that is not
+ *          guaranteed.
+ */
 # define ah_unreachable()
 
-/// \brief <b>[Clang, GCC]</b> Adds \a a and \a b, storing the sum to \a result.
-///
-/// \param a Value of an arbitrary integer type.
-/// \param b Value of an arbitrary integer type.
-/// \param result Pointer to value of an arbitrary integer type.
-/// \return \c true if the sum of \a a and \a b cannot be represented by
-///         \a result. \c false otherwise.
+/**
+ * <b>[Clang, GCC]</b> Adds @a a and @a b, storing the sum to @a result.
+ *
+ * @param a Value of an arbitrary integer type.
+ * @param b Value of an arbitrary integer type.
+ * @param result Pointer to value of an arbitrary integer type.
+ * @return @c true if the sum of @a a and @a b cannot be represented by
+ *         @a result. @c false otherwise.
+ */
 # define ah_p_add_overflow(a, b, result)
 
-/// \brief <b>[Clang, GCC]</b> Multiplties \a a and \a b, storing the product to
-///        \a result.
-///
-/// \param a Value of an arbitrary integer type.
-/// \param b Value of an arbitrary integer type.
-/// \param result Pointer to value of an arbitrary integer type.
-/// \return \c true if the product of \a a and \a b cannot be represented by
-///         \a result. \c false otherwise.
+/**
+ * <b>[Clang, GCC]</b> Multiplties @a a and @a b, storing the product to
+ *        @a result.
+ *
+ * @param a Value of an arbitrary integer type.
+ * @param b Value of an arbitrary integer type.
+ * @param result Pointer to value of an arbitrary integer type.
+ * @return @c true if the product of @a a and @a b cannot be represented by
+ *         @a result. @c false otherwise.
+ */
 # define ah_p_mul_overflow(a, b, result)
 
-/// \brief <b>[Clang, GCC]</b> Subtracts \a a and \a b, storing the difference
-///        to \a result.
-///
-/// \param a Value of an arbitrary integer type.
-/// \param b Value of an arbitrary integer type.
-/// \param result Pointer to value of an arbitrary integer type.
-/// \return \c true if the difference of \a a and \a b cannot be represented by
-///         \a result. \c false otherwise.
+/**
+ * <b>[Clang, GCC]</b> Subtracts @a a and @a b, storing the difference
+ *        to @a result.
+ *
+ * @param a Value of an arbitrary integer type.
+ * @param b Value of an arbitrary integer type.
+ * @param result Pointer to value of an arbitrary integer type.
+ * @return @c true if the difference of @a a and @a b cannot be represented by
+ *         @a result. @c false otherwise.
+ */
 # define ah_p_sub_overflow(a, b, result)
 
 #elif AH_VIA_CLANG || AH_VIA_GCC
