@@ -46,13 +46,6 @@
 /// \brief An integer identifying the IPv6 socket family.
 #define AH_SOCKFAMILY_IPV6 AH_I_SOCKFAMILY_IPV6
 
-#ifndef AH_SOCKFAMILY_DEFAULT
-/// \brief An integer identifying the default socket family.
-# define AH_SOCKFAMILY_DEFAULT AH_SOCKFAMILY_IPV4
-#elif (AH_SOCKFAMILY_DEFAULT != AH_SOCKFAMILY_IPV4) && (AH_SOCKFAMILY_DEFAULT != AH_SOCKFAMILY_IPV6)
-# error "AH_SOCKFAMILY_DEFAULT value is invalid; expected AH_SOCKFAMILY_IPV4 or AH_SOCKFAMILY_IPV6"
-#endif
-
 /// \brief Variant of ah_sockaddr that exposes struct members present on all
 ///        supported socket address types.
 struct ah_sockaddr_any {

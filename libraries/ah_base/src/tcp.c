@@ -9,7 +9,6 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
-#include "tcp-in.h"
 
 ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
@@ -161,6 +160,14 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
     return conn->_trans.vtab->conn_close(conn->_trans.ctx, conn);
 }
 
+ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn)
+{
+    if (conn == NULL) {
+        return -1;
+    }
+    return conn->_is_ipv6 ? AH_SOCKFAMILY_IPV6 : AH_SOCKFAMILY_IPV4;
+}
+
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
 {
     if (conn == NULL) {
@@ -187,10 +194,7 @@ ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
 
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn)
 {
-    if (conn == NULL) {
-        return true;
-    }
-    return conn->_state == AH_I_TCP_CONN_STATE_CLOSED;
+    return conn == NULL || conn->_state == AH_I_TCP_CONN_STATE_CLOSED;
 }
 
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
@@ -223,6 +227,38 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
     }
 }
 
+ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
+{
+    if (owner_ptr == NULL) {
+        return AH_EINVAL;
+    }
+
+    uint8_t* page = ah_palloc();
+    if (page == NULL) {
+        return AH_ENOMEM;
+    }
+
+    ah_tcp_in_t* in = (void*) page;
+
+    uint8_t* base = &page[sizeof(ah_tcp_in_t)];
+    uint8_t* end = &page[AH_PSIZE];
+
+    if (base >= end) {
+        return AH_EOVERFLOW;
+    }
+
+    *in = (ah_tcp_in_t) {
+        .rw.r = base,
+        .rw.w = base,
+        .rw.e = end,
+        ._owner_ptr = owner_ptr,
+    };
+
+    *owner_ptr = in;
+
+    return AH_ENONE;
+}
+
 ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in)
 {
     if (in == NULL) {
@@ -232,22 +268,24 @@ ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in)
         return AH_ESTATE;
     }
 
-    return ah_i_tcp_in_detach(in);
+    ah_err_t err = ah_tcp_in_alloc_for(in->_owner_ptr);
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    in->_owner_ptr = NULL;
+
+    return AH_ENONE;
 }
 
 ah_extern void ah_tcp_in_free(ah_tcp_in_t* in)
 {
     if (in != NULL) {
-        ah_i_tcp_in_free(in);
+#ifndef NDEBUG
+        memset(in, 0, AH_PSIZE);
+#endif
+        ah_pfree(in);
     }
-}
-
-ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
-{
-    if (owner_ptr == NULL) {
-        return AH_EINVAL;
-    }
-    return ah_i_tcp_in_alloc_for(owner_ptr);
 }
 
 ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in)
@@ -255,7 +293,37 @@ ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in)
     if (in == NULL) {
         return AH_EINVAL;
     }
-    return ah_i_tcp_in_repackage(in);
+
+    uint8_t* r_off = in->rw.r;
+    size_t r_size = ah_rw_get_readable_size(&in->rw);
+
+    ah_tcp_in_reset(in);
+
+    if (in->rw.r == r_off) {
+        if (ah_unlikely(in->rw.w == in->rw.e)) {
+            return AH_ENOSPC;
+        }
+        return AH_ENONE;
+    }
+
+    memmove(in->rw.r, r_off, r_size);
+
+    in->rw.w = &in->rw.r[r_size];
+
+    return AH_ENONE;
+}
+
+ah_extern void ah_tcp_in_reset(ah_tcp_in_t* in)
+{
+    if (in == NULL) {
+        return;
+    }
+
+    uint8_t* page = (uint8_t*) in;
+
+    uint8_t* base = &page[sizeof(ah_tcp_in_t)];
+    in->rw.r = base;
+    in->rw.w = base;
 }
 
 ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void)
@@ -268,7 +336,7 @@ ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void)
     ah_tcp_out_t* out = (void*) page;
 
     *out = (ah_tcp_out_t) {
-        .buf = ah_buf_from(&page[sizeof(ah_tcp_out_t)], AH_PSIZE - sizeof(ah_tcp_out_t)),
+        .buf = ah_buf_from(&page[sizeof(ah_tcp_out_t)], AH_TCP_OUT_BUF_SIZE),
     };
 
     if (out->buf.size > AH_PSIZE) {
@@ -350,6 +418,14 @@ ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln)
     ah_i_slab_term(&ln->_conn_slab, NULL);
 
     return AH_ENONE;
+}
+
+ah_extern int ah_tcp_listener_get_family(const ah_tcp_listener_t* ln)
+{
+    if (ln == NULL) {
+        return -1;
+    }
+    return ln->_is_ipv6 ? AH_SOCKFAMILY_IPV6 : AH_SOCKFAMILY_IPV4;
 }
 
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln)

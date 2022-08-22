@@ -119,27 +119,11 @@ close_fd0_and_return:
 ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd)
 {
     ah_assert_if_debug(loop != NULL);
+    ah_assert_if_debug(laddr != NULL);
     ah_assert_if_debug(fd != NULL);
 
-#if AH_IS_WIN32
-    int sockfamily;
-    if (laddr != NULL) {
-        sockfamily = laddr->as_any.family;
-    }
-    else {
-        sockfamily = AH_SOCKFAMILY_DEFAULT;
-# if AH_SOCKFAMILY_DEFAULT == AH_SOCKFAMILY_IPV6
-        laddr = (ah_sockaddr_t*) &ah_sockaddr_ipv6_wildcard;
-# else
-        laddr = (ah_sockaddr_t*) &ah_sockaddr_ipv4_wildcard;
-# endif
-    }
-#else
-    const int sockfamily = laddr != NULL ? laddr->as_any.family : AH_SOCKFAMILY_DEFAULT;
-#endif
-
     ah_i_sockfd_t fd0;
-    ah_err_t err = ah_i_sock_open(loop, sockfamily, type, &fd0);
+    ah_err_t err = ah_i_sock_open(loop, laddr->as_any.family, type, &fd0);
     if (err != AH_ENONE) {
         return err;
     }
@@ -152,7 +136,7 @@ ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* lad
         goto close_fd0_and_return;
     }
 #else
-    if (laddr != NULL && (laddr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(laddr))) {
+    if (laddr->as_ip.port != 0u || !ah_sockaddr_is_ip_wildcard(laddr)) {
         ah_sockaddr_t laddr_copy = *laddr;
         laddr_copy.as_ip.port = htons(laddr->as_ip.port);
         if (bind(fd0, ah_i_sockaddr_const_into_bsd(&laddr_copy), ah_i_sockaddr_get_size(laddr)) != 0) {

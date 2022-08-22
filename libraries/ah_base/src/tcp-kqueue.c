@@ -11,7 +11,6 @@
 #include "ah/internal/collections/list.h"
 #include "ah/loop.h"
 #include "ah/sock.h"
-#include "tcp-in.h"
 
 #include <sys/uio.h>
 
@@ -104,7 +103,7 @@ ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
 
     ah_err_t err;
 
-    err = ah_i_tcp_in_alloc_for(&conn->_in);
+    err = ah_tcp_in_alloc_for(&conn->_in);
     if (err != AH_ENONE) {
         return err;
     }
@@ -114,7 +113,7 @@ ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
 
     err = ah_i_loop_evt_alloc_with_kev(conn->_loop, &evt, &kev);
     if (err != AH_ENONE) {
-        ah_i_tcp_in_free(conn->_in);
+        ah_tcp_in_free(conn->_in);
         return err;
     }
 
@@ -185,7 +184,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt, struct kevent* kev)
         }
 
         if (!ah_rw_is_readable(&conn->_in->rw)) {
-            ah_i_tcp_in_reset(conn->_in);
+            ah_tcp_in_reset(conn->_in);
         }
 
         n_bytes_left -= (size_t) nread;
@@ -216,7 +215,7 @@ ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
     conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
 
     if (conn->_in != NULL) {
-        ah_i_tcp_in_free(conn->_in);
+        ah_tcp_in_free(conn->_in);
         conn->_in = NULL;
     }
 
@@ -381,7 +380,7 @@ ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn)
     }
 
     if (conn->_in != NULL) {
-        ah_i_tcp_in_free(conn->_in);
+        ah_tcp_in_free(conn->_in);
 #ifndef NDEBUG
         conn->_in = NULL;
 #endif

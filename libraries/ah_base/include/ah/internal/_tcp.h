@@ -37,6 +37,7 @@
                                  \
  ah_tcp_in_t* _in;               \
                                  \
+ bool _is_ipv6;                  \
  uint8_t _shutdown_flags;        \
  uint8_t _state;                 \
                                  \
@@ -55,6 +56,7 @@
  const ah_tcp_listener_cbs_t* _cbs;  \
  const ah_tcp_conn_cbs_t* _conn_cbs; \
                                      \
+ bool _is_ipv6;                      \
  uint8_t _state;                     \
                                      \
  AH_I_TCP_LISTENER_PLATFORM_FIELDS   \

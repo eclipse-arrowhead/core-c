@@ -10,7 +10,6 @@
 #include "ah/err.h"
 #include "ah/loop.h"
 #include "ah/sock.h"
-#include "tcp-in.h"
 #include "winapi.h"
 
 #include <stddef.h>
@@ -117,7 +116,7 @@ ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
 
     ah_err_t err;
 
-    err = ah_i_tcp_in_alloc_for(&conn->_in);
+    err = ah_tcp_in_alloc_for(&conn->_in);
     if (err != AH_ENONE) {
         return err;
     }
@@ -213,7 +212,7 @@ static void s_on_conn_read(ah_i_loop_evt_t* evt)
     }
 
     if (!ah_rw_is_readable(&conn->_in->rw)) {
-        ah_i_tcp_in_reset(conn->_in);
+        ah_tcp_in_reset(conn->_in);
     }
 
     err = s_conn_read_prep(conn);
@@ -251,7 +250,7 @@ static void s_conn_read_stop(ah_tcp_conn_t* conn)
     ah_assert_if_debug(conn != NULL);
 
     if (conn->_in != NULL) {
-        ah_i_tcp_in_free(conn->_in);
+        ah_tcp_in_free(conn->_in);
     }
 }
 

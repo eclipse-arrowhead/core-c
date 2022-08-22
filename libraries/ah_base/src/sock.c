@@ -50,13 +50,14 @@ ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port,
 
 ah_extern bool ah_sockaddr_is_ip(const ah_sockaddr_t* sockaddr)
 {
-    ah_assert_if_debug(sockaddr != NULL);
-    return sockaddr->as_any.family == AH_SOCKFAMILY_IPV4 || sockaddr->as_any.family == AH_SOCKFAMILY_IPV6;
+    return sockaddr != NULL && (sockaddr->as_any.family == AH_SOCKFAMILY_IPV4 || sockaddr->as_any.family == AH_SOCKFAMILY_IPV6);
 }
 
 ah_extern bool ah_sockaddr_is_ip_wildcard(const ah_sockaddr_t* sockaddr)
 {
-    ah_assert_if_debug(sockaddr != NULL);
+    if (sockaddr == NULL) {
+        return false;
+    }
 
     switch (sockaddr->as_any.family) {
     case AH_SOCKFAMILY_IPV4:
@@ -72,7 +73,9 @@ ah_extern bool ah_sockaddr_is_ip_wildcard(const ah_sockaddr_t* sockaddr)
 
 ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr)
 {
-    ah_assert_if_debug(sockaddr != NULL);
+    if (sockaddr == NULL) {
+        return false;
+    }
 
     switch (sockaddr->as_any.family) {
     case AH_SOCKFAMILY_IPV4:
@@ -86,9 +89,9 @@ ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr)
 
 ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* dest, size_t* dest_size)
 {
-    ah_assert_if_debug(sockaddr != NULL);
-    ah_assert_if_debug(dest != NULL);
-    ah_assert_if_debug(dest_size != NULL);
+    if (sockaddr == NULL || dest == NULL || dest_size == NULL) {
+        return AH_EINVAL;
+    }
 
     ah_err_t err;
     size_t dest_rem = *dest_size;

@@ -9,7 +9,6 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
-#include "udp-in.h"
 
 static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev);
 static void s_on_sock_send(ah_i_loop_evt_t* evt, struct kevent* kev);
@@ -29,7 +28,7 @@ ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 
     ah_err_t err;
 
-    err = ah_i_udp_in_alloc_for(&sock->_in);
+    err = ah_udp_in_alloc_for(&sock->_in);
     if (err != AH_ENONE) {
         return err;
     }
@@ -39,7 +38,7 @@ ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 
     err = ah_i_loop_evt_alloc_with_kev(sock->_loop, &evt, &kev);
     if (err != AH_ENONE) {
-        ah_i_udp_in_free(sock->_in);
+        ah_udp_in_free(sock->_in);
         return err;
     }
 
@@ -97,7 +96,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct kevent* kev)
         return;
     }
 
-    ah_i_udp_in_reset(sock->_in);
+    ah_udp_in_reset(sock->_in);
 
     if (ah_unlikely((kev->flags & EV_EOF) != 0)) {
         err = kev->fflags != 0 ? (ah_err_t) kev->fflags : AH_EEOF;
@@ -123,7 +122,7 @@ ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
     sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
 
     if (sock->_in != NULL) {
-        ah_i_udp_in_free(sock->_in);
+        ah_udp_in_free(sock->_in);
         sock->_in = NULL;
     }
 
@@ -272,7 +271,7 @@ ah_err_t ah_i_udp_sock_close(void* ctx, ah_udp_sock_t* sock)
 #endif
 
     if (sock->_in != NULL) {
-        ah_i_udp_in_free(sock->_in);
+        ah_udp_in_free(sock->_in);
     }
 
     sock->_cbs->on_close(sock, err);

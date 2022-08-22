@@ -9,7 +9,6 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
-#include "udp-in.h"
 
 static void s_on_sock_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
@@ -26,13 +25,13 @@ ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_recv == NULL) {
+    if (sock->_state != AH_I_UDP_SOCK_STATE_OPEN) {
         return AH_ESTATE;
     }
 
     ah_err_t err;
 
-    err = ah_i_udp_in_alloc_for(&sock->_in);
+    err = ah_udp_in_alloc_for(&sock->_in);
     if (err != AH_ENONE) {
         return err;
     }
@@ -46,13 +45,13 @@ ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
         .msg_iovlen = 1u,
     };
 
+    sock->_state = AH_I_UDP_SOCK_STATE_RECEIVING;
+
     err = s_sock_recv_prep(sock);
     if (err != AH_ENONE) {
-        ah_i_udp_in_free(sock->_in);
+        ah_udp_in_free(sock->_in);
         return err;
     }
-
-    sock->_state = AH_I_UDP_SOCK_STATE_RECEIVING;
 
     return AH_ENONE;
 }
@@ -60,6 +59,7 @@ ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
+    ah_assert_if_debug(sock->_state == AH_I_UDP_SOCK_STATE_RECEIVING);
 
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;
@@ -114,7 +114,7 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         return;
     }
 
-    ah_i_udp_in_reset(sock->_in);
+    ah_udp_in_reset(sock->_in);
 
     err = s_sock_recv_prep(sock);
     if (err != AH_ENONE) {
@@ -149,7 +149,7 @@ static void s_sock_recv_stop(ah_udp_sock_t* sock)
     ah_assert_if_debug(sock != NULL);
 
     if (sock->_in != NULL) {
-        ah_i_udp_in_free(sock->_in);
+        ah_udp_in_free(sock->_in);
     }
 
     if (sock->_recv_evt != NULL) {

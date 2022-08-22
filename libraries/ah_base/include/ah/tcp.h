@@ -33,6 +33,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/// \brief The maximum payload size of an ah_tcp_in instance allocated via
+///        ah_tcp_in_alloc_for().
+#define AH_TCP_IN_BUF_SIZE (AH_PSIZE - sizeof(ah_tcp_in_t))
+
+/// \brief The maximum payload size of an ah_tcp_out instance allocated via
+///        ah_tcp_out_alloc().
+#define AH_TCP_OUT_BUF_SIZE (AH_PSIZE - sizeof(ah_tcp_out_t))
+
 /// \brief Read shutdown flag that can be provided as argument to
 ///        ah_tcp_conn_shutdown().
 #define AH_TCP_SHUTDOWN_RD 1u
@@ -146,7 +154,7 @@ struct ah_tcp_conn_cbs {
     ///                                                     by targeted remote host.
     ///   <li><b>AH_ECONNRESET [Darwin]</b>               - Connection attempt reset by targeted
     ///                                                     remote host.
-    ///   <li><b>AH_EHOSTUNREACH [Darwin, Win32]</b>      - The targeted remote host could not be
+    ///   <li><b>AH_EHOSTUNREACH</b>                      - The targeted remote host could not be
     ///                                                     reached.
     ///   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
     ///   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
@@ -379,8 +387,8 @@ struct ah_tcp_out {
 
 /// \brief Gets a copy of the default TCP transport.
 ///
-/// The default TCP transport represents a plain connection via the network
-/// subsystem of the current platform. This transport may be used directly with
+/// The default TCP transport directly utilizes the network subsystem of the
+/// current platform. This transport may be used directly with
 /// ah_tcp_conn_init() and ah_tcp_listener_init() to establish plain TCP
 /// connections, which is to say that they are not encrypted or analyzed in any
 /// way.
@@ -427,8 +435,8 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
 /// </ul>
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs);
 
-/// \brief Schedules opening of \a conn, which must be initialized, via the
-///        local network interface represented by \a laddr.
+/// \brief Schedules opening of \a conn, which must be initialized, and its
+///        binding to the local network interface represented by \a laddr.
 ///
 /// If the return value of this function is \c AH_ENONE, meaning that the open
 /// attempt could indeed be scheduled, its result will eventually be presented
@@ -439,10 +447,10 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
 ///              interface through which the connection must later be
 ///              established. If opening is successful, the referenced address
 ///              must remain valid for the entire lifetime of the created
-///              connection. If \c NULL, the connection is bound to the wildcard
-///              address and the zero port, which means that it can be
-///              established through any available local network interface and
-///              that a concrete port number is chosen automatically.
+///              connection. To bind to all or any local network interface,
+///              provide the wildcard address (see ah_sockaddr_ipv4_wildcard and
+///              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
+///              port number automatically, specify port \c 0.
 /// \return <ul>
 ///   <li><b>AH_ENONE</b>        - \a conn opening successfully scheduled.
 ///   <li><b>AH_EAFNOSUPPORT</b> - \a laddr is not \c NULL and is not an IP-based address.
@@ -500,9 +508,9 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
 ///   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
 ///   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
 ///   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
-///   <li><b>AH_EOVERFLOW</b>        - \c AH_CONF_PSIZE is too small for it to be possible to store
-//                                     both required metadata \e and read data in a single page
-//                                     provided by the page allocator (see ah_palloc()).
+///   <li><b>AH_EOVERFLOW</b>        - \c AH_PSIZE is too small for it to be possible to store both
+///                                    required metadata \e and read data in a single page provided
+///                                    by the page allocator (see ah_palloc()).
 ///   <li><b>AH_ESTATE</b>           - \a conn is not connected or its read direction has been shut
 ///                                    down.
 /// </ul>
@@ -517,9 +525,9 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 ///
 /// \param conn Pointer to connection.
 /// \return <ul>
-///   <li><b>AH_ENONE</b>            - Receiving of data via \a conn successfully stopped.
-///   <li><b>AH_EINVAL</b>           - \a conn is \c NULL.
-///   <li><b>AH_ESTATE</b>           - \a conn reading not started.
+///   <li><b>AH_ENONE</b>  - Receiving of data via \a conn successfully stopped.
+///   <li><b>AH_EINVAL</b> - \a conn is \c NULL.
+///   <li><b>AH_ESTATE</b> - \a conn reading not started.
 /// </ul>
 ///
 /// \note It is acceptable to call this function immediately after a successful
@@ -587,6 +595,16 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags);
 ///   <li><b>AH_ESTATE</b> - \a conn is already closed.
 /// </ul>
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
+
+/// \brief Checks the socket family of \a conn.
+///
+/// \param conn Pointer to connection.
+/// \return <ul>
+///   <li><b>AH_SOCKFAMILY_IPV4</b> - IPv4 family identifier.
+///   <li><b>AH_SOCKFAMILY_IPV6</b> - IPv6 family identifier.
+///   <li><b>-1</b>                 - \a conn is \c NULL.
+/// </ul>
+ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn);
 
 /// \brief Stores local address bound by \a conn into \a laddr.
 ///
@@ -780,7 +798,7 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 ///   <li><b>AH_ENONE</b>     - The operation was successful.
 ///   <li><b>AH_EINVAL</b>    - \a owner_ptr is \c NULL.
 ///   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned \c NULL).
-///   <li><b>AH_EOVERFLOW</b> - \c AH_CONF_PSIZE is too small for it to be possible to store both an
+///   <li><b>AH_EOVERFLOW</b> - \c AH_PSIZE is too small for it to be possible to store both an
 ///                             ah_tcp_in instance \e and have room for input data in a single page
 ///                             provided by the page allocator (see ah_palloc()).
 /// </ul>
@@ -797,7 +815,15 @@ ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr);
 /// associates the newly allocated input buffer with that owner.
 ///
 /// \param in Pointer to input buffer.
-/// \return
+/// \return <ul>
+///   <li><b>AH_ENONE</b>     - The operation was successful.
+///   <li><b>AH_EINVAL</b>    - \a in is \c NULL.
+///   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned \c NULL).
+///   <li><b>AH_EOVERFLOW</b> - \c AH_PSIZE is too small for it to be possible to store both an
+///                             ah_tcp_in instance \e and have room for input data in a single page
+///                             provided by the page allocator (see ah_palloc()).
+///   <li><b>AH_ESTATE</b>    - \a in is currently not owned and cannot be detached.
+/// </ul>
 ///
 /// \warning As the previous owner of \a in is no longer responsible for it or
 ///          its memory, you must manually free it using ah_tcp_in_free() once
@@ -847,6 +873,13 @@ ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
 /// </ul>
 ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
 
+/// \brief Resets \a in, making all of its payload memory writable.
+///
+/// \param in Pointer to input buffer to reset.
+///
+/// \note This function does nothing if \a in is \c NULL.
+ah_extern void ah_tcp_in_reset(ah_tcp_in_t* in);
+
 /// \}
 
 /// \name TCP Output Buffer
@@ -866,8 +899,8 @@ ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
 ///
 /// \return Pointer to new output buffer, or \c NULL if the allocation failed.
 ///
-/// \warning If \c AH_CONF_PSIZE is configured to a too small value
-///          (see conf.h), this function always fails.
+/// \warning If \c AH_PSIZE is configured to a too small value (see conf.h),
+///          this function always fails.
 ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void);
 
 /// \brief Frees output buffer previously allocated using ah_tcp_out_alloc().
@@ -902,7 +935,7 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
 ///   <li><b>AH_EINVAL</b>    - \c on_open, \c on_listen, \c on_accept or \c on_close of \a cbs is
 ///                             \c NULL.
 ///   <li><b>AH_ENOMEM</b>    - Heap memory could not be allocated for storing incoming connections.
-///   <li><b>AH_EOVERFLOW</b> - \c AH_CONF_PSIZE is too small for it to be possible to store both
+///   <li><b>AH_EOVERFLOW</b> - \c AH_PSIZE is too small for it to be possible to store both
 ////                            metadata \e and have room for at least one incoming connection in a
 ///                             single page provided by the page allocator (see ah_palloc()).
 /// </ul>
@@ -923,11 +956,11 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
 ///              interface through which the listener must later receive
 ///              incoming connections. If opening is successful, the referenced
 ///              address must remain valid for the entire lifetime of the
-///              created connection. If \c NULL, the listener is bound to the
-///              wildcard address and the zero port, which means that it can be
-///              accept connections through all available local network
-///              interfaces and that a concrete port number is chosen
-///              automatically.
+///              created connection. To bind to all or any local network
+///              interface, provide the wildcard address (see
+///              ah_sockaddr_ipv4_wildcard and ah_sockaddr_ipv6_wildcard). If
+///              you want the platform to chose port number automatically,
+///              specify port \c 0.
 /// \return <ul>
 ///   <li><b>AH_ENONE</b>        - \a ln opening successfully scheduled.
 ///   <li><b>AH_EAFNOSUPPORT</b> - \a laddr is not \c NULL and is not an IP-based address.
@@ -1004,6 +1037,16 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
 ///       resources \a ln shares with those connections are not freed until they
 ///       are all closed.
 ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln);
+
+/// \brief Checks the socket family of \a ln.
+///
+/// \param ln Pointer to connection.
+/// \return <ul>
+///   <li><b>AH_SOCKFAMILY_IPV4</b> - IPv4 family identifier.
+///   <li><b>AH_SOCKFAMILY_IPV6</b> - IPv6 family identifier.
+///   <li><b>-1</b>                 - \a ln is \c NULL.
+/// </ul>
+ah_extern int ah_tcp_listener_get_family(const ah_tcp_listener_t* ln);
 
 /// \brief Stores local address bound by \a ln into \a laddr.
 ///

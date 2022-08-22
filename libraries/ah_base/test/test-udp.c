@@ -75,7 +75,7 @@ static void s_on_open(ah_udp_sock_t* sock, ah_err_t err)
             return;
         }
 
-        err = ah_udp_sock_open(user_data->rsock, (ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
+        err = ah_udp_sock_open(user_data->rsock, (const ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
         if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
             return;
         }
@@ -245,7 +245,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
     // Open receiver socket, which will open sender socket, and so on.
 
     recv_sock_user_data.rsock = &send_sock;
-    err = ah_udp_sock_open(&recv_sock, (ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
+    err = ah_udp_sock_open(&recv_sock, (const ah_sockaddr_t*) &ah_sockaddr_ipv4_loopback);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

@@ -30,10 +30,10 @@ ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t*
 {
     (void) ctx;
 
-    if (conn == NULL) {
+    if (conn == NULL || laddr == NULL) {
         return AH_EINVAL;
     }
-    if (laddr != NULL && !ah_sockaddr_is_ip(laddr)) {
+    if (!ah_sockaddr_is_ip(laddr)) {
         return AH_EAFNOSUPPORT;
     }
     if (conn->_state != AH_I_TCP_CONN_STATE_CLOSED) {
@@ -43,6 +43,7 @@ ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t*
     ah_err_t err = ah_i_sock_open_bind(conn->_loop, laddr, SOCK_STREAM, &conn->_fd);
 
     if (err == AH_ENONE) {
+        conn->_is_ipv6 = laddr->as_any.family == AH_SOCKFAMILY_IPV6;
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
     }
 
@@ -167,10 +168,10 @@ ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_socka
 {
     (void) ctx;
 
-    if (ln == NULL) {
+    if (ln == NULL || laddr == NULL) {
         return AH_EINVAL;
     }
-    if (laddr != NULL && !ah_sockaddr_is_ip(laddr)) {
+    if (!ah_sockaddr_is_ip(laddr)) {
         return AH_EAFNOSUPPORT;
     }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_CLOSED) {
@@ -184,6 +185,7 @@ ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_socka
 #endif
 
     if (err == AH_ENONE) {
+        ln->_is_ipv6 = laddr->as_any.family == AH_SOCKFAMILY_IPV6;
         ln->_state = AH_I_TCP_LISTENER_STATE_OPEN;
     }
 

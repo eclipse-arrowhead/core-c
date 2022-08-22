@@ -18,8 +18,11 @@ ah_err_t ah_i_udp_sock_open(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t*
 {
     (void) ctx;
 
-    if (sock == NULL || sock->_loop == NULL) {
+    if (sock == NULL || laddr == NULL) {
         return AH_EINVAL;
+    }
+    if (!ah_sockaddr_is_ip(laddr)) {
+        return AH_EAFNOSUPPORT;
     }
     if (sock->_state != AH_I_UDP_SOCK_STATE_CLOSED) {
         return AH_ESTATE;
@@ -28,7 +31,7 @@ ah_err_t ah_i_udp_sock_open(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t*
     ah_err_t err = ah_i_sock_open_bind(sock->_loop, laddr, SOCK_DGRAM, &sock->_fd);
 
     if (err == AH_ENONE) {
-        sock->_is_ipv6 = (laddr != NULL ? laddr->as_any.family : AH_SOCKFAMILY_DEFAULT) == AH_SOCKFAMILY_IPV6;
+        sock->_is_ipv6 = laddr->as_any.family == AH_SOCKFAMILY_IPV6;
         sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
     }
 
