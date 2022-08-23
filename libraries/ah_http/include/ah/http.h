@@ -62,12 +62,26 @@ typedef struct ah_http_server_cbs ah_http_server_cbs_t;
 typedef struct ah_http_trailer ah_http_trailer_t;
 typedef struct ah_http_ver ah_http_ver_t;
 
-// An HTTP client.
+/**
+ * An HTTP client.
+ *
+ * Clients are either (1) initiated, opened and connected explicitly, or (2)
+ * listened for using an ah_http_server instance.
+ *
+ * Clients send HTTP requests and receive HTTP responses.
+ *
+* @note All members of this data structure are @e private in the sense that
+*       a user of this API should not access them directly.
+ */
 struct ah_http_client {
     AH_I_HTTP_CLIENT_FIELDS
 };
 
-// Virtual function table of an HTTP client.
+/**
+ * An HTTP client callback set.
+ *
+ * A set of function pointers used to handle events on HTTP clients.
+ */
 struct ah_http_client_cbs {
     void (*on_open)(ah_http_client_t* cln, ah_err_t err);    // Never called for accepted clients.
     void (*on_connect)(ah_http_client_t* cln, ah_err_t err); // Never called for accepted clients.
@@ -87,12 +101,26 @@ struct ah_http_client_cbs {
     void (*on_close)(ah_http_client_t* cln, ah_err_t err);
 };
 
-// An HTTP server.
+/**
+ * An HTTP server.
+ *
+ * Servers are used to accept incoming HTTP clients, represented by
+ * ah_http_client instances.
+ *
+ * Servers receive HTTP requests and send HTTP responses.
+ *
+* @note All members of this data structure are @e private in the sense that
+*       a user of this API should not access them directly.
+ */
 struct ah_http_server {
     AH_I_HTTP_SERVER_FIELDS
 };
 
-// Virtual function table of local HTTP server.
+/**
+ * An HTTP server callback set.
+ *
+ * A set of function pointers used to handle events on HTTP servers.
+ */
 struct ah_http_server_cbs {
     void (*on_open)(ah_http_server_t* srv, ah_err_t err);
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
@@ -100,16 +128,27 @@ struct ah_http_server_cbs {
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 };
 
-// An HTTP version indicator.
+/**
+ * An HTTP version indicator.
+ *
+ * Its major and minor versions are only valid if they are in the range [0,9].
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9112#section-2.3
+ */
 struct ah_http_ver {
-    uint8_t major;
-    uint8_t minor;
+    uint8_t major; /**< Major version indicator. Must be between 0 and 9. */
+    uint8_t minor; /**< Minor version indicator. Must be between 0 and 9. */
 };
 
-// An HTTP header.
+/**
+ * An HTTP header, or name/value pair.
+ *
+ * Concretely consists of two NULL-terminated C strings. The data structure is
+ * used to represent headers in both sent and received HTTP messages.
+ */
 struct ah_http_header {
-    const char* name;
-    const char* value;
+    const char* name;  /**< Header name. Case insensitive. */
+    const char* value; /**< Header values. Case sensitive. */
 };
 
 // The meta-information of an outgoing HTTP request or response.
