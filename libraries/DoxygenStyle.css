@@ -389,6 +389,7 @@ body .contents table.directory > tbody > tr > .entry > .icona {
 body .contents .doxtable {
     border: 0.125rem solid var(--ahf-grey-background);
     border-spacing: 0;
+    line-height: 1.15em;
     padding: 1rem;
 }
 
@@ -576,6 +577,11 @@ body > address.footer {
 body > address.footer img {
     vertical-align: middle;
     margin: -0.25rem 0.25rem 0 0.25rem;
+}
+
+#details,
+#details + .groupheader {
+    display: none;
 }
 
 #MSearchBox {
