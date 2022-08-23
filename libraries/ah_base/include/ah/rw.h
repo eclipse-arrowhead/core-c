@@ -42,7 +42,8 @@
 #include <stdint.h>
 
 /**
- * An (R/W) pointer set.
+ * An R/W pointer set, used to coordinate writes and reads to and from the same
+ * buffer.
  *
  * Please refer to the documentation for rw.h for a more detailed description
  * of this data structure.
