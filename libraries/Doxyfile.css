@@ -481,8 +481,17 @@ body .contents .fragment > .ttc {
     position: absolute;
 }
 
-body .contents .groupheader {
+body .contents .memberdecls {
     margin-top: 2rem;
+}
+
+body .contents .memberdecls .groupHeader {
+    font-weight: bold;
+}
+
+body .contents .memberdecls .groupText {
+    color: var(--ahf-grey-text);
+    font-weight: 300;
 }
 
 body .contents .memberdecls > tbody > :not(.heading) {
@@ -493,13 +502,13 @@ body .contents .memberdecls > tbody > tr > td.memItemLeft {
     padding-right: 0.5rem;
 }
 
-body .contents .memberdecls .groupHeader {
-    font-weight: bold;
+body .contents .memberdecls > tbody > tr > td.memSeparator {
+    font-size: 0;
+    height: 0.25rem;
 }
 
-body .contents .memberdecls .groupText {
-    color: var(--ahf-grey-text);
-    font-weight: 300;
+body .contents .memberdecls > tbody > tr:last-child > td.memSeparator {
+    display: none;
 }
 
 body .contents .memtitle {
@@ -541,6 +550,10 @@ body .contents .memitem > .memdoc > dl.params .paramname {
     font-style: italic;
     padding-right: 1rem;
     vertical-align: top;
+}
+
+body .contents .textblock {
+    font-weight: 300;
 }
 
 body .contents div.qindex {
