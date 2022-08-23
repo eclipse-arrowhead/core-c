@@ -302,6 +302,7 @@ body > .contents {
 
 #top > .navpath > ul > li {
     list-style-type: none;
+    padding: 0;
 }
 
 #top > .navpath > ul > li:first-child:before {
@@ -478,6 +479,10 @@ body .contents .fragment > .line > .preprocessor {
 body .contents .fragment > .ttc {
     display: none;
     position: absolute;
+}
+
+body .contents .groupheader {
+    margin-top: 2rem;
 }
 
 body .contents .memberdecls > tbody > :not(.heading) {
