@@ -38,15 +38,16 @@
  *
  * When sending and receiving data, @e metadata, such as start lines, headers
  * and chunks, are gathered into dynamically allocated buffers maintained by
- * each client. One such buffer is reused for all received data and another is
- * allocated for each sent message. If a certain metadata item exceeds the size
- * of its receive buffer, or a send buffer is too small to contain all relevant
- * items, the message transmission is failed with error code @c AH_EOVERFLOW.
- * Limiting sizes in this way helps reduce the complexity the client
- * implementation and works as a form of protection from exploits that use large
- * metadata items. Generally, the size of each of these buffers will be limited
- * by the page allocator page size, @c AH_PSIZE, more of which you can read in
- * the documentation for ah_palloc().
+ * each client. Each client owns one such buffer it reuses for all data it
+ * receives data by and one more is allocated for each sent message. If a
+ * certain metadata item exceeds the size of its receive buffer, or a send
+ * buffer is too small to contain all relevant metadata items, the message
+ * transmission is failed with error code @c AH_EOVERFLOW. Limiting sizes in
+ * this way helps reduce the complexity the client implementation and works as a
+ * form of protection from exploits that use large metadata items. Generally,
+ * the size of each of these buffers will be limited by the page allocator page
+ * size, @c AH_PSIZE, more of which you can read in the documentation for
+ * ah_palloc().
  *
  * <h3>Servers</h3>
  *
@@ -85,8 +86,9 @@
  *         must make sure to add it when relevant.
  *   <tr>
  *     <td>\c Host
- *     <td>When sending requests, if this header is left unspecified, it is automatically populated
- *         with the IP address and port number of the targeted server.
+ *     <td>When sending requests, if this header is left unspecified and the used HTTP version is
+ *         1.1 or higher, the header is automatically populated with the IP address and port number
+ *         of the targeted server.
  *   <tr>
  *     <td>\c Transfer-Encoding
  *     <td>If <code>Transfer-Encoding: chunked</code> is specified in an incoming request or
@@ -220,7 +222,9 @@ struct ah_http_client_cbs {
      *             ah_http_client_send_head().
      * @param err  One of the following codes: <ul>
      *   <li><b>AH_ENONE</b>                             - Message sent successfully.
-     *   <li><b>AH_ECANCELED</b>                         - Client event loop is shutting down.
+     *   <li><b>AH_ECANCELED</b>                         - Client event loop is shutting down or it
+     *                                                     was closed before the message represented
+     *                                                     by @a head could be transmitted.
      *   <li><b>AH_ECONNABORTED [Win32]</b>              - Virtual circuit terminated due to
      *                                                     time-out or other failure.
      *   <li><b>AH_ECONNRESET [Darwin, Linux, Win32]</b> - Client connection reset by remote host.
@@ -353,7 +357,7 @@ struct ah_http_client_cbs {
      *
      * If this callback is invoked with an error code (@a err is not equal to
      * @c AH_ENONE), or if connection keep-alive is disabled, the client will be
-     * closed automatically right after this function returns.
+     * closed automatically at some point after this function returns.
      *
      * @param cln Pointer to client.
      * @param err One of the following codes: <ul>
@@ -655,20 +659,347 @@ struct ah_http_trailer {
     AH_I_HTTP_TRAILER_FIELDS
 };
 
+/**
+ * Initializes @a cln for subsequent use.
+ *
+ * @param cln   Pointer to client.
+ * @param loop  Pointer to event loop.
+ * @param trans Desired transport.
+ * @param cbs   Pointer to event callback set.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>  - @a cln successfully initialized.
+ *   <li><b>AH_EINVAL</b> - @a cln or @a loop or @a cbs is @c NULL.
+ *   <li><b>AH_EINVAL</b> - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li><b>AH_EINVAL</b> - @c on_open, @c on_connect, @c on_send, @c on_recv_line,
+ *                          @c on_recv_header, @c on_recv_data, @c on_recv_end, or @c on_close of
+ *                          @a cbs is @c NULL.
+ * </ul>
+ */
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_cbs_t* cbs);
+
+/**
+ * Schedules opening of @a cln, which must be initialized, and its binding to
+ * the local network interface represented by @a laddr.
+ *
+ * If the return value of this function is @c AH_ENONE, meaning that the open
+ * attempt could indeed be scheduled, its result will eventually be presented
+ * via the ah_http_client_cbs::on_open callback of @a cln.
+ *
+ * @param cln   Pointer to client.
+ * @param laddr Pointer to socket address representing a local network interface
+ *              through which the client connection must later be established.
+ *              If opening is successful, the referenced address must remain
+ *              valid for the entire lifetime of the created client. To bind to
+ *              all or any local network interface, provide the wildcard address
+ *              (see ah_sockaddr_ipv4_wildcard and ah_sockaddr_ipv6_wildcard).
+ *              If you want the platform to chose port number automatically,
+ *              specify port @c 0.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>        - @a cln opening successfully scheduled.
+ *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not @c NULL and is not an IP-based address.
+ *   <li><b>AH_ECANCELED</b>    - The event loop of @a cln is shutting down.
+ *   <li><b>AH_EINVAL</b>       - @a cln is @c NULL.
+ *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
+ *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
+ *   <li><b>AH_ESTATE</b>       - @a cln is not closed.
+ * </ul>
+ *
+ * @note Every successfully opened @a cln must eventually be provided to
+ *       ah_http_client_close().
+ */
 ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_t* laddr);
+
+/**
+ * Schedules connection of @a cln, which must be open, to @a raddr.
+ *
+ * If the return value of this function is @c AH_ENONE, meaning that connection
+ * could indeed be scheduled, its result will eventually be presented via the
+ * ah_http_client_cbs::on_connect callback of @a cln.
+ *
+ * @param cln   Pointer to client.
+ * @param raddr Pointer to socket address representing the remote host to which
+ *              the client connection is to be established. If connection is
+ *              successful, the referenced address must remain valid until
+ *              @a cln is closed.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>        - @a cln opening successfully scheduled.
+ *   <li><b>AH_EAFNOSUPPORT</b> - @a raddr is not an IP-based address.
+ *   <li><b>AH_ECANCELED</b>    - The event loop of @a cln is shutting down.
+ *   <li><b>AH_EINVAL</b>       - @a cln or @a raddr is @c NULL.
+ *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
+ *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
+ *   <li><b>AH_ESTATE</b>       - @a cln is not open.
+ * </ul>
+ *
+ * @warning This function must be called with a successfully opened connection.
+ *          An appropriate place to call this function is often going to be in
+ *          an ah_http_client_cbs::on_open callback after a check that opening
+ *          was successful.
+ */
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
+
+/**
+ * Schedules sending of HTTP message head.
+ *
+ * Calling this function initiates the send procedure by enqueuing the
+ * transmission of the message start line and headers. You must finalize that
+ * procedure in one out of three ways, depending on if an HTTP body is to be
+ * included in the message and, if so, that body has a size known when starting
+ * to send it it or not. The following table specifies what functions to call
+ * to finalize the procedure in one of these ways:
+ *
+ * <table>
+ *   <caption id="http-send-procedures">Possible Continuations of the Send Procedure</caption>
+ *   <tr>
+ *     <th>Prerequisite
+ *     <th>Description
+ *   <tr>
+ *     <td>No body
+ *     <td>Call ah_http_client_send_end().
+ *   <tr>
+ *     <td>Body with initially known size
+ *     <td>Call ah_http_client_send_data() until there is no more
+ *         data to send. Finally, call ah_http_client_send_end().
+ *   <tr>
+ *     <td>Body with initially unknown size
+ *     <td>Call ah_http_client_send_chunk() until there is no more
+ *         data to send. Finally, call ah_http_client_send_trailer().
+ * </table>
+ *
+ * The invocation of this function must be successful in order for it to be
+ * possible to follow any of the above procedures. Please refer to the
+ * documentation for the functions in the above table for further details.
+ *
+ * @param cln  Pointer to client.
+ * @param head Pointer to head, specifying a start line and set of headers.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>           - Transmission of @a head enqueued successfully.
+ *   <li><b>AH_EINVAL</b>          - @a cln or @a head is @c NULL.
+ *   <li><b>AH_EPROTONOSUPPORT</b> - The HTTP version specified in
+ *                                   <code>head->version</code> is not
+ *                                   supported.
+ * </ul>
+ */
 ah_extern ah_err_t ah_http_client_send_head(ah_http_client_t* cln, ah_http_head_t* head);
-ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_out_t* data);
+
+/**
+ * Schedules sending of HTTP message body data.
+ *
+ * This function is used to continue the send procedure, which must have been
+ * initiated for @a cln via a call to ah_http_client_send_head(). It is meant to
+ * be used when a @c Content-Length header is specified in the head with a value
+ * larger than zero. The function schedules the transmission of some or all of
+ * the data indicated by that @c Content-Length. You must ensure that exactly
+ * @c Content-Length bytes of body data is sent, via one or more calls to this
+ * function, before ah_http_client_send_end() is called with @a cln to end the
+ * message.
+ *
+ * @param cln Pointer to client.
+ * @param out Pointer to TCP output buffer.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>            - Transmission of @a out enqueued successfully.
+ *   <li><b>AH_ECANCELED</b>        - The event loop of @a cln is shutting down.
+ *   <li><b>AH_EINVAL</b>           - @a cln or @a out is @c NULL.
+ *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+ *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
+ *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
+ *   <li><b>AH_ERANGE</b>           - The variable keeping track of the number
+ *                                    of currently enqueued data transmissions
+ *                                    would overflow if @a out was accepted.
+ *   <li><b>AH_ESTATE</b>           - @a cln is not currently sending any HTTP
+ *                                    message, @a cln is not open, or the write
+ *                                    direction of the connection of @a cln has
+ *                                    been shut down.
+ * </ul>
+ */
+ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_out_t* out);
+
+/**
+ * Ends current HTTP message of @a cln.
+ *
+ * Call this function after a successful call to either
+ * ah_http_client_send_head() or ah_http_client_send_data() to indicate that the
+ * current message is complete.
+ *
+ * @param cln Pointer to client.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>  - Transmission of @a out ended successfully.
+ *   <li><b>AH_EINVAL</b> - @a cln is @c NULL.
+ *   <li><b>AH_ESTATE</b> - @a cln is not currently sending any HTTP message.
+ * </ul>
+ *
+ * @note This function returning with the error code @c AH_ENONE, which
+ *       indicates success, only means that all parts of the message have been
+ *       enqueued. Whether or not their actual transmission is successful is
+ *       reported later via ah_http_client_cbs::on_send.
+ */
 ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
+
+/**
+ * Schedules sending of HTTP message body data in the form of a @e chunk.
+ *
+ * This function is used to continue a send procedure initiated for @a cln via a
+ * call to ah_http_client_send_head(). It is meant to be used when no
+ * @c Content-Length header is specified in the head. Concretely, it schedules
+ * the sending of @a chunk, which is sent asynchronously as soon as the
+ * underlying TCP transport is able to. You may call this function with the same
+ * @a cln as many times as you want before ending the sending procedure by
+ * providing @a cln to ah_http_client_send_trailer().
+ *
+ * @param cln   Pointer to client.
+ * @param chunk Pointer to chunk.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>            - Transmission of @a out enqueued successfully.
+ *   <li><b>AH_ECANCELED</b>        - The event loop of @a cln is shutting down.
+ *   <li><b>AH_EILSEQ</b>           - The @c ext field of @a chunk is not @c NULL, an empty
+ *                                    NULL-terminated C string and it does not begin with a
+ *                                    semicolon @c ;, which means that inserting @c ext into the
+ *                                    chunk will make it syntactically invalid. <em>This error code
+ *                                    is only returned when running in @c DEBUG mode.</em>
+ *   <li><b>AH_EINVAL</b>           - @a cln or @a chunk is @c NULL.
+ *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+ *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
+ *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
+ *   <li><b>AH_EOVERFLOW</b>        - The used output buffer, which is always allocated via the page
+ *                                    allocator (see ah_palloc()) is too small for it to be possible
+ *                                    to store the @c size and @c ext specified in @a chunk.
+ *   <li><b>AH_ERANGE</b>           - The variable keeping track of the number of currently enqueued
+ *                                    data transmissions would overflow if @a chunk was accepted.
+ *   <li><b>AH_ESTATE</b>           - @a cln is not currently sending any HTTP message, @a cln is
+ *                                    not open, or the write direction of the connection of @a cln
+ *                                    has been shut down.
+ * </ul>
+ */
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_t* chunk);
-ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_trailer_t* trailer); // Implies *_end().
+
+/**
+ * Schedules sending of last chunk and trailer of and ends the current message
+ * of @a cln.
+ *
+ * Call this function after a successful call to either
+ * ah_http_client_send_head() or ah_http_client_send_chunk() to send the last
+ * chunk and trailer, as well as to indicate that the current message is
+ * complete.
+ *
+ * @param cln     Pointer to client.
+ * @param trailer Pointer to trailer.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>            - Transmission of @a trailer enqueued and current message ended
+ *                                    successfully.
+ *   <li><b>AH_ECANCELED</b>        - The event loop of @a cln is shutting down.
+ *   <li><b>AH_EILSEQ</b>           - The @c ext field of @a trailer is not @c NULL, an empty
+ *                                    NULL-terminated C string and it does not begin with a
+ *                                    semicolon @c ;, which means that inserting @c ext into the
+ *                                    last chunk will make it syntactically invalid. <em>This error
+ *                                    code is only returned when running in @c DEBUG mode.</em>
+ *   <li><b>AH_EINVAL</b>           - @a cln or @a trailer is @c NULL.
+ *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
+ *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
+ *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
+ *   <li><b>AH_EOVERFLOW</b>        - The used output buffer, which is always allocated via the page
+ *                                    allocator (see ah_palloc()) is too small for it to be possible
+ *                                    to store the @c size and @c ext specified in @a trailer.
+ *   <li><b>AH_ERANGE</b>           - The variable keeping track of the number of currently enqueued
+ *                                    data transmissions would overflow if @a trailer was accepted.
+ *   <li><b>AH_ESTATE</b>           - @a cln is not currently sending any HTTP message, @a cln is
+ *                                    not open, or the write direction of the connection of @a cln
+ *                                    has been shut down.
+ * </ul>
+ */
+ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_trailer_t* trailer);
+
+/**
+ * Schedules closing of @a cln.
+ *
+ * If the return value of this function is @c AH_ENONE, meaning that the
+ * closing could indeed be scheduled, its result will eventually be presented
+ * via the ah_http_client_cbs::on_close callback of @a cln.
+ *
+ * @param cln Pointer to client.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>  - Close of @a cln successfully scheduled.
+ *   <li><b>AH_EINVAL</b> - @a cln is @c NULL.
+ *   <li><b>AH_ESTATE</b> - @a cln is already closed.
+ * </ul>
+ */
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
+
+/**
+ * Gets the TCP connection of @a cln.
+ *
+ * @param cln Pointer to client.
+ * @return Pointer to TCP connection of @a cln, or @c NULL if @a cln is @c NULL.
+ */
 ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln);
+
+/**
+ * Stores local address bound by @a cln into @a laddr.
+ *
+ * If @a cln was opened with a zero port, this function will report what
+ * concrete port was assigned to @a cln.
+ *
+ * @param cln   Pointer to client.
+ * @param laddr Pointer to socket address to be set by this operation.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>                   - The operation was successful.
+ *   <li><b>AH_EINVAL</b>                  - @a cln or @a laddr is @c NULL.
+ *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
+ *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
+ *   <li><b>AH_ESTATE</b>                  - @a cln is closed.
+ * </ul>
+ */
 ah_extern ah_err_t ah_http_client_get_laddr(const ah_http_client_t* cln, ah_sockaddr_t* laddr);
+
+/**
+ * Stores remote address of @a cln into @a raddr.
+ *
+ * @param cln   Pointer to client.
+ * @param raddr Pointer to socket address to be set by this operation.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>                   - The operation was successful.
+ *   <li><b>AH_EINVAL</b>                  - @a cln or @a raddr is @c NULL.
+ *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
+ *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
+ *   <li><b>AH_ESTATE</b>                  - @a cln is not connected to a remote host.
+ * </ul>
+ */
 ah_extern ah_err_t ah_http_client_get_raddr(const ah_http_client_t* cln, ah_sockaddr_t* raddr);
+
+/**
+ * Gets pointer to event loop of @a cln.
+ *
+ * @param cln Pointer to client.
+ * @return Pointer to event loop, or @c NULL if @a cln is @c NULL.
+ */
 ah_extern ah_loop_t* ah_http_client_get_loop(const ah_http_client_t* cln);
+
+/**
+ * Gets the user data pointer associated with @a cln.
+ *
+ * @param cln Pointer to client.
+ * @return Any user data pointer previously set via
+ *         ah_http_client_set_user_data(), or @c NULL if no such has been set or
+ *         if @a cln is @c NULL.
+ *
+ * @note This function gets the user data pointer of the ah_tcp_conn owned by
+ *       @a cln, which you can get a pointer to by calling
+ *       ah_http_client_get_conn() with @a cln as argument.
+ */
 ah_extern void* ah_http_client_get_user_data(const ah_http_client_t* cln);
+
+/**
+ * Sets the user data pointer associated with @a cln.
+ *
+ * @param cln       Pointer to client.
+ * @param user_data User data pointer, referring to whatever context you want
+ *                  to associate with @a cln.
+ *
+ * @note If @a cln is @c NULL, this function does nothing.
+ *
+ * @note This function sets the user data pointer of the ah_tcp_conn owned by
+ *       @a cln, which you can get a pointer to by calling
+ *       ah_http_client_get_conn() with @a cln as argument.
+ */
 ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data);
 
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_server_cbs_t* cbs);

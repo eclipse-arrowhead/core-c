@@ -490,8 +490,8 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs);
 
 /**
- * Schedules opening of @a conn, which must be initialized, and its
- *        binding to the local network interface represented by @a laddr.
+ * Schedules opening of @a conn, which must be initialized, and its binding to
+ * the local network interface represented by @a laddr.
  *
  * If the return value of this function is @c AH_ENONE, meaning that the open
  * attempt could indeed be scheduled, its result will eventually be presented
