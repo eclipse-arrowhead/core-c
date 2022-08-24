@@ -40,12 +40,13 @@
  * and chunks, are gathered into dynamically allocated buffers maintained by
  * each client. One such buffer is reused for all received data and another is
  * allocated for each sent message. If a certain metadata item exceeds the size
- * of one of the mentioned buffers, the message transmission is failed with
- * error code @c AH_EOVERFLOW. Limiting the sizes of these items in this way
- * helps reduce the complexity the client implementation and works as a form of
- * protection from exploits that use large metadata items. Generally, the size
- * of each of these buffers will be limited by the page allocator page size,
- * @c AH_PSIZE, more of which you can read in the documentation of ah_palloc().
+ * of its receive buffer, or a send buffer is too small to contain all relevant
+ * items, the message transmission is failed with error code @c AH_EOVERFLOW.
+ * Limiting sizes in this way helps reduce the complexity the client
+ * implementation and works as a form of protection from exploits that use large
+ * metadata items. Generally, the size of each of these buffers will be limited
+ * by the page allocator page size, @c AH_PSIZE, more of which you can read in
+ * the documentation for ah_palloc().
  *
  * <h3>Servers</h3>
  *
@@ -208,7 +209,7 @@ struct ah_http_client_cbs {
     void (*on_connect)(ah_http_client_t* cln, ah_err_t err);
 
     /**
-     * @a cln finished sending an HTTP message or an attempt failed.
+     * @a cln finished sending an HTTP message or the attempt failed.
      *
      * This callback is invoked if a complete HTTP message could be sent, in
      * which case @a err is @c AH_ENONE, or if sending it failed, which should
@@ -244,14 +245,149 @@ struct ah_http_client_cbs {
      */
     void (*on_send)(ah_http_client_t* cln, ah_http_head_t* head, ah_err_t err);
 
+    /**
+     * @a cln has received a start line.
+     *
+     * A start line begins an HTTP message. Whether the start line is a request
+     * line or a status line depends on whether the entity receiving the message
+     * is a client or a server. Clients you connect using
+     * ah_http_client_connect() receive status lines while clients accepted via
+     * servers via ah_http_server_listen() receive request lines.
+     *
+     * If an error occurred before or while parsing the start line,
+     * ah_http_client_cbs::on_recv_end is called before this callback is ever
+     * invoked.
+     *
+     * @param cln     Pointer to client receiving start line.
+     * @param line    Message start line.
+     * @param version HTTP version indicator. The major version is always @c 1.
+     *
+     * @note If you need to maintain state about the received message, you may
+     *       do so by referring to that state using the user data pointer of
+     *       @a cln (see ah_http_client_get_user_data() and
+     *       ah_http_client_set_user_data()). Messages are always received in
+     *       sequence over the same connection, which means that this callback
+     *       will not be called again for the current @a cln until
+     *       ah_http_client_cbs::on_recv_end has been called to end the
+     *       receiving of this message.
+     *
+     * @warning @a line is not guaranteed to be valid, as per RFC9112. It is up
+     *          to you to determine that it both is valid and specifies
+     *          something of relevance.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112.html
+     */
     void (*on_recv_line)(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
+
+    /**
+     * @a cln has received a header field.
+     *
+     * This callback is invoked both for regular headers and for those in the
+     * trailer of a chunked message. If you need to know which of the two
+     * sources a particular header is from, make sure to set
+     * ah_http_client_cbs::on_recv_headers, which is called after all regular
+     * headers have been received.
+     *
+     * @param cln    Pointer to client receiving header.
+     * @param header HTTP header, consisting of a name and a value.
+     */
     void (*on_recv_header)(ah_http_client_t* cln, ah_http_header_t header);
-    void (*on_recv_headers)(ah_http_client_t* cln);                                  // Optional.
-    void (*on_recv_chunk_line)(ah_http_client_t* cln, size_t size, const char* ext); // Optional.
+
+    /**
+     * @a cln has seen all headers in the currently received message.
+     *
+     * @param cln Pointer to client.
+     *
+     * @note This callback is optional. Set if to @c NULL if not relevant.
+     */
+    void (*on_recv_headers)(ah_http_client_t* cln);
+
+    /**
+     * @a cln has received a chunk size and a chunk extension.
+     *
+     * @param cln  Pointer to client.
+     * @param size Size, in bytes, of the incoming chunk.
+     * @param ext  Chunk extension, provided as a NULL-terminated string if
+     *             present in received chunk. Otherwise @c NULL.
+     *
+     * @note The chunk size is handled automatically by the HTTP implementation.
+     *       Setting this callback is primarily useful for inspecting chunk
+     *       extensions, which are ignored if this callback is unset.
+     *
+     * @note This callback is optional. Set if to @c NULL if not relevant.
+     *
+     * @warning @a ext is not guaranteed to be valid, as per RFC9112. It is up
+     *          to you to determine that it both is valid and specifies
+     *          something of relevance.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112.html
+     */
+    void (*on_recv_chunk_line)(ah_http_client_t* cln, size_t size, const char* ext);
+
+    /**
+     * @a cln has received data part of a message body.
+     *
+     * The ah_tcp_in instance referenced by @a in is reused by @a cln every time
+     * this callback is invoked. If the ah_rw field of that instance is not read
+     * in its entirety, whatever unread contents remain when this callback
+     * returns will be presented again in another call to this callback. If not
+     * all of the contents of @a in are read or discarded every time this
+     * callback is invoked, or the buffer is repackaged via
+     * ah_tcp_in_repackage(), that buffer may eventually become full, triggering
+     * the @c AH_EOVERFLOW error. If you wish to save the contents of @a in
+     * without having to copy it over to another buffer, you can detach it from
+     * @a conn using ah_tcp_in_detach(), which allocates a new input buffer for
+     * @a conn.
+     *
+     * @param cln Pointer to client.
+     * @param in  Input buffer containing message body data.
+     *
+     * @note If you feel surprised by TCP data structures and functions
+     *       appearing here, remember that HTTP/1 is specified as an extension
+     *       of the TCP protocol.
+     */
     void (*on_recv_data)(ah_http_client_t* cln, ah_tcp_in_t* in);
 
-    // If `err` is not AH_ENONE or if connection keep-alive is disabled, the
-    // client will be closed right after this function returns.
+    /**
+     * @a cln has finished receiving a message.
+     *
+     * If this callback is invoked with an error code (@a err is not equal to
+     * @c AH_ENONE), or if connection keep-alive is disabled, the client will be
+     * closed automatically right after this function returns.
+     *
+     * @param cln Pointer to client.
+     * @param err One of the following codes: <ul>
+     *   <li><b>AH_ENONE</b>                      - Message received successfully.
+     *   <li><b>AH_EBADMSG</b>                    - Message metadata violates HTTP specification.
+     *   <li><b>AH_ECANCELED</b>                  - Client event loop is shutting down.
+     *   <li><b>AH_ECONNABORTED [Win32]</b>       - Virtual circuit terminated due to time-out or
+     *                                              other failure.
+     *   <li><b>AH_ECONNRESET [Darwin, Win32]</b> - Connection reset by remote host.
+     *   <li><b>AH_EDISCON [Win32]</b>            - Connection gracefully closed by remote host.
+     *   <li><b>AH_EDUP</b>                       - Supported header or header value that may only
+     *                                              occur once has been seen multiple times.
+     *   <li><b>AH_EEOF</b>                       - Connection closed for reading.
+     *   <li><b>AH_EILSEQ</b>                     - Message syntax not valid according to RFC9112.
+     *   <li><b>AH_ENETDOWN [Win32]</b>           - The network subsystem has failed.
+     *   <li><b>AH_ENETRESET [Win32]</b>          - Keep-alive is enabled for the connection and a
+     *                                              related failure was detected.
+     *   <li><b>AH_ENOBUFS [Darwin, Linux]</b>    - Not enough buffer space available.
+     *   <li><b>AH_ENOMEM [Linux]</b>             - Not enough heap memory available.
+     *   <li><b>AH_EOVERFLOW</b>                  - The input buffer of @a cln is full. To prevent
+     *                                              this error from occurring when receiving body
+     *                                              data, you must ensure that the input buffer
+     *                                              never gets exhausted by reading, discarding,
+     *                                              repackaging or detaching its contents. The same
+     *                                              error also occurs when a received metadata item
+     *                                              is too large, which can only be avoided by the
+     *                                              sender ensuring that no individual start line,
+     *                                              header or chunk line exceeds the size
+     *                                              @c AH_TCP_IN_BUF_SIZE.
+     *   <li><b>AH_EPROTONOSUPPORT</b>            - Received message uses an unsupported version of
+     *                                              HTTP.
+     *   <li><b>AH_ETIMEDOUT</b>                  - Connection timed out.
+     * </ul>
+     */
     void (*on_recv_end)(ah_http_client_t* cln, ah_err_t err);
 
     /**

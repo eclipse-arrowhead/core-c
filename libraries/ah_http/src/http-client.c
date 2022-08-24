@@ -384,6 +384,9 @@ handle_parse_err:
     }
     err = ah_tcp_in_repackage(in);
     if (err != AH_ENONE) {
+        if (err == AH_ENOSPC) {
+            err = AH_EOVERFLOW;
+        }
         goto report_err_and_close_conn;
     }
     return;

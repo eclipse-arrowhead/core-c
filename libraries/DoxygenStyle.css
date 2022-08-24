@@ -54,6 +54,7 @@ dl {
     display: flex;
     flex-direction: column;
     font-weight: 300;
+    line-height: 1.25em;
     padding-left: 1rem;
 }
 
@@ -515,10 +516,6 @@ body .contents .memberdecls > tbody > tr > td.memItemRight {
 
 body .contents .memberdecls > tbody > tr > td.memItemLeft {
     padding-right: 0.5em;
-}
-
-body .contents .memberdecls > tbody > tr > td.memItemRight > *:first-child {
-    color: black;
 }
 
 body .contents .memberdecls > tbody > tr > td.memSeparator {
