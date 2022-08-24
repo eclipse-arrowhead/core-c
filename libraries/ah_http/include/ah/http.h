@@ -8,10 +8,48 @@
  * HTTP/1 client and server.
  *
  * Here, data structures and functions are provided for representing, setting up
- * and communicating via HTTP/1 clients and servers. As described in the
- * directory-level documentation for this library, only a small subset of all
- * headers part of the HTTP standards are handled automatically. Those headers
- * are outlined in the below table.
+ * and communicating via HTTP/1 clients and servers.
+ *
+ * <h3>Clients</h3>
+ *
+ * HTTP clients are set up using ah_http_client_init(), ah_http_client_open()
+ * and ah_http_client_connect(). Successfully opened clients are closed with
+ * ah_http_client_close(). Clients receive data and are notified of other events
+ * via their callback sets (see ah_http_client_cbs), which they must be provided
+ * with when they are initialized or when they are listened for. Clients
+ * transmit data by first calling ah_http_client_send_head(), ensuring the call
+ * was successful, and then adhering to one of the following patterns.
+ *
+ * <ol>
+ *   <li>If <em>no message body</em> is relevant, ah_http_client_send_end() must
+ *       be called to indicate that sending is complete.
+ *   <li>If a <em>non-chunked body</em> is to be sent, which is recommended when
+ *       the final size of the transmitted body @c is known in advance,
+ *       ah_http_client_send_data() must be called repeatedly until all body
+ *       data has been enqueued. Finally, ah_http_client_send_end() must be
+ *       called to indicate that the complete body has been enqueued.
+ *   <li>If a <em>chunked body</em> is to be sent, which is recommended when the
+ *       final size of the transmitted body is @e not known in advance,
+ *       ah_http_client_send_chunk() must be called repeatedly until all body
+ *       chunks have been enqueued. Finally, ah_http_client_send_trailer() must
+ *       be called to submit any trailing chunk extension and headers, and to
+ *       indicate that the complete body has been enqueued.
+ * </ol>
+ *
+ * <h3>Servers</h3>
+ *
+ * HTTP servers are set up using ah_http_server_init(), ah_http_server_open()
+ * and ah_http_server_listen(). Successfully initialized servers are
+ * terminated with ah_http_server_term() and successfully opened servers are
+ * closed with ah_http_server_close(). Servers receive incoming client and are
+ * notified of other events via their callback sets (see ah_http_server_cbs),
+ * which must be provided when they are initialized.
+ *
+ * <h3>Automatic Headers</h3>
+ *
+ * As described in the directory-level documentation for this library, only a
+ * small subset of all headers part of the HTTP standards are handled
+ * automatically. Those headers are outlined in the below table.
  *
  * <table>
  *   <caption id="http-headers">Automatically Handled HTTP Headers</caption>
@@ -23,20 +61,20 @@
  *     <td>The options (1) \c close and (2) \c keep-alive automatically cause HTTP connections to
  *         either (1) be closed after the current request/response exchange or (2) remain open
  *         between exchanges. Which of the two behaviors represented by these options is the default
- *         varies between HTTP versions. In version 1.0 \c close is default, while on all subsequent
- *         versions \c keep-alive is the default.
+ *         varies between HTTP versions. In version 1.0 \c close is the default, while on all
+ *         subsequent versions \c keep-alive is the default.
  *   <tr>
  *     <td>\c Content-Length
  *     <td>When receiving incoming requests and responses, the \c Content-Length is used
  *         automatically to determine when and if a message body is expected, and when all of it has
  *         been received. Incoming messages that neither specify a \c Content-Length nor
  *         <code>Transfer-Encoding: chunked</code> are assumed to not have bodies at all. Note that
- *         no \c Content-Length header is added automatically to outgoing requests or responses. You
+ *         no \c Content-Length header is added automatically to sent requests or responses. You
  *         must make sure to add it when relevant.
  *   <tr>
  *     <td>\c Host
- *     <td>When sending outgoing requests, if this header is left unspecified, it is automatically
- *         populated with the IP address of the targeted server.
+ *     <td>When sending requests, if this header is left unspecified, it is automatically populated
+ *         with the IP address of the targeted server.
  *   <tr>
  *     <td>\c Transfer-Encoding
  *     <td>If <code>Transfer-Encoding: chunked</code> is specified in an incoming request or
@@ -44,6 +82,9 @@
  *         encoding options are ignored. This means that body compression and decompression is not
  *         handled automatically.
  * </table>
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9110.html
+ * @see https://www.rfc-editor.org/rfc/rfc9112.html
  */
 
 #include "internal/_http.h"
@@ -63,22 +104,22 @@ typedef struct ah_http_trailer ah_http_trailer_t;
 typedef struct ah_http_ver ah_http_ver_t;
 
 /**
- * An HTTP client.
+ * HTTP client.
  *
  * Clients are either (1) initiated, opened and connected explicitly, or (2)
  * listened for using an ah_http_server instance.
  *
  * Clients send HTTP requests and receive HTTP responses.
  *
-* @note All members of this data structure are @e private in the sense that
-*       a user of this API should not access them directly.
+ * @note All fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly.
  */
 struct ah_http_client {
     AH_I_HTTP_CLIENT_FIELDS
 };
 
 /**
- * An HTTP client callback set.
+ * HTTP client callback set.
  *
  * A set of function pointers used to handle events on HTTP clients.
  */
@@ -102,22 +143,22 @@ struct ah_http_client_cbs {
 };
 
 /**
- * An HTTP server.
+ * HTTP server.
  *
  * Servers are used to accept incoming HTTP clients, represented by
  * ah_http_client instances.
  *
  * Servers receive HTTP requests and send HTTP responses.
  *
-* @note All members of this data structure are @e private in the sense that
-*       a user of this API should not access them directly.
+ * @note All fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly.
  */
 struct ah_http_server {
     AH_I_HTTP_SERVER_FIELDS
 };
 
 /**
- * An HTTP server callback set.
+ * HTTP server callback set.
  *
  * A set of function pointers used to handle events on HTTP servers.
  */
@@ -129,7 +170,7 @@ struct ah_http_server_cbs {
 };
 
 /**
- * An HTTP version indicator.
+ * HTTP version indicator.
  *
  * Its major and minor versions are only valid if they are in the range [0,9].
  *
@@ -141,7 +182,7 @@ struct ah_http_ver {
 };
 
 /**
- * An HTTP header, or name/value pair.
+ * HTTP header field, which is a name/value pair.
  *
  * Concretely consists of two NULL-terminated C strings. The data structure is
  * used to represent headers in both sent and received HTTP messages.
@@ -151,33 +192,124 @@ struct ah_http_header {
     const char* value; /**< Header values. Case sensitive. */
 };
 
-// The meta-information of an outgoing HTTP request or response.
+/**
+ * HTTP start line and field lines.
+ *
+ * Gathers meta-information that must be including in sent HTTP requests and
+ * responses.
+ *
+ * @note Some fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly. All private fields
+ *       have names beginning with an underscore.
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9112#section-2
+ */
 struct ah_http_head {
-    const char* line; // "<method> <target>" or "<code> <reason phrase>".
+    /**
+     * Start line, excluding HTTP version.
+     *
+     * As the field is provided as a plain NULL-terminated C string, it is up to
+     * you to make sure its contents are correct. If this ah_http_head is used
+     * in a sent \e request, it must contain a \e method and \e target separated
+     * by a single space (e.g. <code>"GET /objects/143"</code>). If it is used
+     * in a sent \e response, it must contain a three digit <em>status
+     * code</em>, a space, and a <em>reason phrase</em> consisting of zero or
+     * more characters (e.g. <code>"400 Not Found"</code>, or
+     * <code>"200 "</code>. The position of the HTTP version relative to this
+     * field is handled automatically.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112#section-3
+     * @see https://www.rfc-editor.org/rfc/rfc9112#section-4
+     */
+    const char* line;
+
+    /**
+     * HTTP version of request.
+     *
+     * @note Only HTTP versions 1.* are currently supported by this library.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112#section-2.3
+     */
     ah_http_ver_t version;
-    ah_http_header_t* headers; // Array terminated by { NULL, * } pair.
+
+    /**
+     * Pointer to array of headers, terminated by a <code>{ NULL, NULL }</code>
+     * header, or @c NULL.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112#section-5
+     */
+    ah_http_header_t* headers;
 
     AH_I_HTTP_HEAD_FIELDS
 };
 
-// An outgoing HTTP chunk.
+/**
+ * HTTP chunk, including data and an arbitrary extension.
+ *
+ * Used with ah_http_client_send_chunk() to send chunked HTTP messages.
+ *
+ * @note Some fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly. All private fields
+ *       have names beginning with an underscore.
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1
+ */
 struct ah_http_chunk {
-    // Must be NULL, an empty string, or adhere to the chunk-ext syntax, as
-    // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
+    /**
+     * Arbitrary chunk extension.
+     *
+     * This field must be @c NULL, contain an empty NULL-terminated string, or
+     * adhere to the @c chunk-ext syntax outlined in RFC9112.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1.1
+     */
     const char* ext;
 
+    /**
+     * Data to include in chunk.
+     *
+     * The size of the @c buf of this field will be used as @c chunk-size when
+     * this chunk is sent.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1
+     */
     ah_tcp_out_t data;
 
     AH_I_HTTP_CHUNK_FIELDS
 };
 
-// The ending part of an outgoing chunked message transmission.
+/**
+ * Last chunk extension and trailer section of a chunked HTTP message.
+ *
+ * An instance of this message is used to end a chunked HTTP transmission in a
+ * call to ah_http_client_send_trailer(). It allows for you to specify an
+ * extension for the @c last-chunk and any headers for the @c trailer-section.
+ *
+ * @note Some fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly. All private fields
+ *       have names beginning with an underscore.
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1
+ * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1.2
+ */
 struct ah_http_trailer {
-    // Must be NULL, an empty string, or adhere to the chunk-ext syntax, as
-    // described in https://www.rfc-editor.org/rfc/rfc7230#section-4.1.1.
+    /**
+     * Arbitrary chunk extension.
+     *
+     * This field must be @c NULL, contain an empty NULL-terminated string, or
+     * adhere to the @c chunk-ext syntax outlined in RFC9112.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1.1
+     */
     const char* ext;
 
-    ah_http_header_t* headers; // Array terminated by { NULL, * } pair.
+    /**
+     * Pointer to array of headers, terminated by a <code>{ NULL, NULL }</code>
+     * header, or @c NULL.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc9112#section-5
+     */
+    ah_http_header_t* headers;
 
     AH_I_HTTP_TRAILER_FIELDS
 };
