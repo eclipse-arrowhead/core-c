@@ -39,8 +39,8 @@
  * A reference to a certain point in time, as measured from an arbitrary
  *        point in the past.
  *
- * @note All members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly.
+ * @note All fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly.
  */
 struct ah_time {
     AH_I_TIME_FIELDS

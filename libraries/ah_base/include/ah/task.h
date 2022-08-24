@@ -38,8 +38,8 @@ typedef void (*ah_task_cb)(ah_task_t* task, ah_err_t err);
 /**
  * A task that can be scheduled for execution in the future.
  *
- * @note All members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly.
+ * @note All fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly.
  */
 struct ah_task {
     AH_I_TASK_FIELDS

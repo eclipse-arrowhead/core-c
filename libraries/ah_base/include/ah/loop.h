@@ -47,8 +47,8 @@
 /**
  * An event loop.
  *
- * @note All members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly.
+ * @note All fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly.
  */
 struct ah_loop {
     AH_I_LOOP_FIELDS

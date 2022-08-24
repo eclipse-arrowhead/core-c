@@ -83,7 +83,7 @@ struct ah_tcp_trans {
  * implemented by every valid transport (see ah_tcp_trans). The functions must
  * behave as documented by the regular functions they are named after. Each of
  * them takes a void pointer @c ctx argument, which corresponds to the
- * ah_tcp_trans::ctx member of the transport owning the function table in
+ * ah_tcp_trans::ctx field of the transport owning the function table in
  * question.
  *
  * @note This structure is primarily useful to those wishing to implement their
@@ -110,8 +110,8 @@ struct ah_tcp_vtab {
  * via ah_tcp_conn_connect() or by accepting connections via
  * ah_tcp_listener_listen().
  *
- * @note All members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly.
+ * @note All fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly.
  */
 struct ah_tcp_conn {
     AH_I_TCP_CONN_FIELDS
@@ -200,7 +200,7 @@ struct ah_tcp_conn_cbs {
      * Successful calls to this function (meaning that @a err is equal to
      * @c AH_ENONE) always carry a pointer to an ah_tcp_in instance. That
      * instance is reused by @a conn every time this callback is invoked. If
-     * the ah_rw member of that instance is not read in its entirety, whatever
+     * the ah_rw field of that instance is not read in its entirety, whatever
      * unread contents remain when this callback returns will be presented
      * again in another call to this callback. If not all of the contents of
      * @a in are read or discarded every time this callback is invoked, or
@@ -295,8 +295,8 @@ struct ah_tcp_conn_cbs {
  *
  * Such a handle may represent the attempt to accept incoming TCP connections.
  *
- * @note All members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly.
+ * @note All fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly.
  */
 struct ah_tcp_listener {
     AH_I_TCP_LISTENER_FIELDS
@@ -396,9 +396,9 @@ struct ah_tcp_listener_cbs {
 /**
  * An incoming stream of bytes.
  *
- * @note Some members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly. All private
- *       members have names beginning with an underscore.
+ * @note Some fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly. All private fields
+ *       have names beginning with an underscore.
  */
 struct ah_tcp_in {
     /** Reader/writer referring to incoming data. */
@@ -410,9 +410,9 @@ struct ah_tcp_in {
 /**
  * An outgoing buffer of bytes.
  *
- * @note Some members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly. All private
- *       members have names beginning with an underscore.
+ * @note Some fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly. All private fields
+ *       have names beginning with an underscore.
  */
 struct ah_tcp_out {
     /** Buffer referring to outgoing data. */
@@ -603,7 +603,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
  *
  * An output buffer can be allocated on the heap using ah_tcp_out_alloc(). If
  * you want to store the buffer memory somewhere else, just zero an ah_tcp_out
- * instance and then initialize its @c buf member.
+ * instance and then initialize its @c buf field.
  *
  * If the return value of this function is @c AH_ENONE, meaning that the
  * sending could indeed be scheduled, the result of the sending will eventually

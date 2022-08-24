@@ -49,7 +49,7 @@
 #define AH_SOCKFAMILY_IPV6 AH_I_SOCKFAMILY_IPV6
 
 /**
- * Variant of ah_sockaddr that exposes struct members present on all supported
+ * Variant of ah_sockaddr that exposes struct fields present on all supported
  * socket address types.
  */
 struct ah_sockaddr_any {
@@ -62,7 +62,7 @@ struct ah_sockaddr_any {
 };
 
 /**
- * Variant of ah_sockaddr that exposes struct members present on all IP-based
+ * Variant of ah_sockaddr that exposes struct fields present on all IP-based
  * socket address types.
  */
 struct ah_sockaddr_ip {

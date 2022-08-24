@@ -117,7 +117,7 @@ struct ah_udp_trans {
  * implemented by every valid transport (see ah_udp_trans). The functions must
  * behave as documented by the regular functions they are named after. Each of
  * them takes a void pointer @c ctx argument, which corresponds to the
- * ah_udp_trans::ctx member of the transport owning the function table in
+ * ah_udp_trans::ctx field of the transport owning the function table in
  * question.
  *
  * @note This structure is primarily useful to those wishing to implement their
@@ -137,8 +137,8 @@ struct ah_udp_vtab {
  * Such a handle can be used to both send and/or receive UDP datagrams
  * (messages).
  *
- * @note All members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly.
+ * @note All fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly.
  */
 struct ah_udp_sock {
     AH_I_UDP_SOCK_FIELDS
@@ -147,9 +147,9 @@ struct ah_udp_sock {
 /**
  * An incoming UDP datagram (message).
  *
- * @note Some members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly. All private
- *       members have names beginning with an underscore.
+ * @note Some fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly. All private fields
+ *       have names beginning with an underscore.
  */
 struct ah_udp_in {
     /** Pointer to the address from which the datagram was received. */
@@ -167,9 +167,9 @@ struct ah_udp_in {
 /**
  * An outgoing UDP datagram (message).
  *
- * @note Some members of this data structure are @e private in the sense that
- *       a user of this API should not access them directly. All private
- *       members have names beginning with an underscore.
+ * @note Some fields of this data structure are @e private in the sense that a
+ *       user of this API should not access them directly. All private fields
+ *       have names beginning with an underscore.
  */
 struct ah_udp_out {
     /** Pointer to the address at which the datagram is to be sent. */
@@ -445,7 +445,7 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
  *
  * An output buffer can be allocated on the heap using ah_udp_out_alloc(). If
  * you want to store the buffer memory somewhere else, just zero an ah_udp_out
- * instance and then initialize its @c buf member.
+ * instance and then initialize its @c buf field.
  *
  * If the return value of this function is @c AH_ENONE, meaning that the
  * sending could indeed be scheduled, the result of the sending will eventually

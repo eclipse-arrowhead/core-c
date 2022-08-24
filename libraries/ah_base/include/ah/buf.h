@@ -9,7 +9,7 @@
  *
  * This file provides a simple data structure, ah_buf, that is used to refer to
  * contiguous chunks of memory. The data structure may be used internally by
- * various platform APIs, for which reason its layout and members may vary
+ * various platform APIs, for which reason its layout and fields may vary
  * across platforms.
  */
 #include "internal/_buf.h"
@@ -24,8 +24,8 @@
 /**
  * A sized reference to a contiguous chunk of memory.
  *
- * @warning The order of its members, as well as the type of its @a size
- *          member, may vary across supported platforms.
+ * @warning The order of its fields, as well as the type of its @a size
+ *          field, may vary across supported platforms.
  */
 struct ah_buf {
 #if AH_IS_WIN32
