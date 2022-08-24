@@ -27,14 +27,25 @@
  *       the final size of the transmitted body @c is known in advance,
  *       ah_http_client_send_data() must be called repeatedly until all body
  *       data has been enqueued. Finally, ah_http_client_send_end() must be
- *       called to indicate that the complete body has been enqueued.
+ *       called to indicate that the complete body is in the send queue.
  *   <li>If a <em>chunked body</em> is to be sent, which is recommended when the
  *       final size of the transmitted body is @e not known in advance,
  *       ah_http_client_send_chunk() must be called repeatedly until all body
  *       chunks have been enqueued. Finally, ah_http_client_send_trailer() must
  *       be called to submit any trailing chunk extension and headers, and to
- *       indicate that the complete body has been enqueued.
+ *       indicate that the complete body is in the send queue.
  * </ol>
+ *
+ * When sending and receiving data, @e metadata, such as start lines, headers
+ * and chunks, are gathered into dynamically allocated buffers maintained by
+ * each client. One such buffer is reused for all received data and another is
+ * allocated for each sent message. If a certain metadata item exceeds the size
+ * of one of the mentioned buffers, the message transmission is failed with
+ * error code @c AH_EOVERFLOW. Limiting the sizes of these items in this way
+ * helps reduce the complexity the client implementation and works as a form of
+ * protection from exploits that use large metadata items. Generally, the size
+ * of each of these buffers will be limited by the page allocator page size,
+ * @c AH_PSIZE, more of which you can read in the documentation of ah_palloc().
  *
  * <h3>Servers</h3>
  *
@@ -124,9 +135,113 @@ struct ah_http_client {
  * A set of function pointers used to handle events on HTTP clients.
  */
 struct ah_http_client_cbs {
-    void (*on_open)(ah_http_client_t* cln, ah_err_t err);    // Never called for accepted clients.
-    void (*on_connect)(ah_http_client_t* cln, ah_err_t err); // Never called for accepted clients.
+    /**
+     * @a cln has been opened, or the attempt failed.
+     *
+     * @param cln Pointer to client.
+     * @param err One of the following codes: <ul>
+     *   <li><b>AH_ENONE</b>                          - Client opened successfully.
+     *   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open TCP connection.
+     *   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
+     *   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
+     *                                                  associated with the given local address.
+     *   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
+     *   <li><b>AH_ECANCELED</b>                      - Client event loop is shutting down.
+     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
+     *   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
+     *   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
+     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
+     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
+     *   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>    - Network service failed to initialize.
+     * </ul>
+     *
+     * @note This function is never called for accepted clients, which
+     *       means it may be set to @c NULL when this data structure is used
+     *       with ah_http_server_listen().
+     *
+     * @note Every successfully opened @a cln must eventually be provided to
+     *       ah_http_client_close().
+     */
+    void (*on_open)(ah_http_client_t* cln, ah_err_t err);
 
+    /**
+     * @a cln has been connected to a specified remote host, or the attempt to
+     * connect it has failed.
+     *
+     * @param cln Pointer to client.
+     * @param err One of the following codes: <ul>
+     *   <li><b>AH_ENONE</b>                             - Connection established successfully.
+     *   <li><b>AH_EADDRINUSE [Darwin, Linux, Win32]</b> - Failed to bind a concrete local address.
+     *                                                     This error only occurs if the client
+     *                                                     was opened with the wildcard address,
+     *                                                     which means that network interface
+     *                                                     binding is delayed until connection.
+     *   <li><b>AH_EADDRNOTAVAIL [Darwin, Win32]</b>     - The specified remote address is invalid.
+     *   <li><b>AH_EADDRNOTAVAIL [Linux]</b>             - No ephemeral TCP port is available.
+     *   <li><b>AH_EAFNOSUPPORT</b>                      - The IP version of the specified remote
+     *                                                     address does not match that of the bound
+     *                                                     local address.
+     *   <li><b>AH_ECANCELED</b>                         - The event loop of @a cln has shut down.
+     *   <li><b>AH_ECONNREFUSED</b>                      - Connection attempt ignored or rejected
+     *                                                     by targeted remote host.
+     *   <li><b>AH_ECONNRESET [Darwin]</b>               - Connection attempt reset by targeted
+     *                                                     remote host.
+     *   <li><b>AH_EHOSTUNREACH</b>                      - The targeted remote host could not be
+     *                                                     reached.
+     *   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
+     *   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
+     *   <li><b>AH_ENETUNREACH</b>                       - Network of targeted remote host not
+     *                                                     reachable.
+     *   <li><b>AH_ENOBUFS</b>                           - Not enough buffer space available.
+     *   <li><b>AH_ENOMEM</b>                            - Not enough heap memory available.
+     *   <li><b>AH_ETIMEDOUT</b>                         - The connection attempt did not complete
+     *                                                     before its deadline.
+     * </ul>
+     *
+     * @note In contrast to plain TCP connections, data receiving is always
+     *       enabled for new HTTP connections.
+     *
+     * @note This function is never called for accepted HTTP clients, which
+     *       means it may be set to @c NULL when this data structure is used
+     *       with ah_http_server_listen().
+     */
+    void (*on_connect)(ah_http_client_t* cln, ah_err_t err);
+
+    /**
+     * @a cln finished sending an HTTP message or an attempt failed.
+     *
+     * This callback is invoked if a complete HTTP message could be sent, in
+     * which case @a err is @c AH_ENONE, or if sending it failed, which should
+     * prompt you to close @a cln using ah_http_client_close().
+     *
+     * @param cln  Pointer to client.
+     * @param head Pointer to ah_http_head instance provided earlier to
+     *             ah_http_client_send_head().
+     * @param err  One of the following codes: <ul>
+     *   <li><b>AH_ENONE</b>                             - Message sent successfully.
+     *   <li><b>AH_ECANCELED</b>                         - Client event loop is shutting down.
+     *   <li><b>AH_ECONNABORTED [Win32]</b>              - Virtual circuit terminated due to
+     *                                                     time-out or other failure.
+     *   <li><b>AH_ECONNRESET [Darwin, Linux, Win32]</b> - Client connection reset by remote host.
+     *   <li><b>AH_EEOF</b>                              - Client connection closed for writing.
+     *   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
+     *   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
+     *   <li><b>AH_ENETRESET [Win32]</b>                 - Keep-alive is enabled for the connection
+     *                                                     and a related failure was detected.
+     *   <li><b>AH_ENETUNREACH [Darwin]</b>              - Network of remote host not reachable.
+     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b>    - Not enough buffer space available.
+     *   <li><b>AH_ENOMEM</b>                            - Not enough heap memory available.
+     *   <li><b>AH_EOVERFLOW</b>                         - The used output buffer, which is always
+     *                                                     allocated via the page allocator (see
+     *                                                     ah_palloc()) is too small for it to be
+     *                                                     possible to store the start line, headers
+     *                                                     and/or chunk extension of some
+     *                                                     ah_http_head, ah_http_chunk or
+     *                                                     ah_http_trailer part of the message
+     *                                                     transmission.
+     *   <li><b>AH_ETIMEDOUT</b>                         - Client connection timed out.
+     * </ul>
+     */
     void (*on_send)(ah_http_client_t* cln, ah_http_head_t* head, ah_err_t err);
 
     void (*on_recv_line)(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
@@ -139,6 +254,17 @@ struct ah_http_client_cbs {
     // client will be closed right after this function returns.
     void (*on_recv_end)(ah_http_client_t* cln, ah_err_t err);
 
+    /**
+     * @a cln has been closed.
+     *
+     * @param cln Pointer to connection.
+     * @param err Should always be @c AH_ENONE. Other codes may be provided if
+     *            an unexpected platform error occurs.
+     *
+     * @note This function is guaranteed to be called after every call to
+     *       ah_http_client_close(), which makes it an excellent place to
+     *       release any resources associated with @a cln.
+     */
     void (*on_close)(ah_http_client_t* cln, ah_err_t err);
 };
 

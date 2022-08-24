@@ -137,7 +137,7 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
             err = ah_i_http_parse_req_line(&in->rw, &line, &version);
         }
         if (err != AH_ENONE) {
-            goto handle_head_parse_err;
+            goto handle_parse_err;
         }
 
         if (version.major != 1u) {
@@ -167,7 +167,7 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
             ah_http_header_t header;
             err = ah_i_http_parse_header(&in->rw, &header);
             if (err != AH_ENONE) {
-                goto handle_head_parse_err;
+                goto handle_parse_err;
             }
 
             if (header.name == NULL) {
@@ -260,7 +260,7 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 
         err = ah_i_http_parse_chunk_line(&in->rw, &chunk_length, &ext);
         if (err != AH_ENONE) {
-            goto handle_chunk_or_trailer_parse_err;
+            goto handle_parse_err;
         }
 
         if (cln->_cbs->on_recv_chunk_line != NULL) {
@@ -319,7 +319,7 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
             ah_http_header_t header;
             err = ah_i_http_parse_header(&in->rw, &header);
             if (err != AH_ENONE) {
-                goto handle_chunk_or_trailer_parse_err;
+                goto handle_parse_err;
             }
 
             if (header.name == NULL) {
@@ -378,7 +378,7 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
         ah_unreachable();
     }
 
-handle_chunk_or_trailer_parse_err:
+handle_parse_err:
     if (err != AH_EAGAIN) {
         goto report_err_and_close_conn;
     }
@@ -387,11 +387,6 @@ handle_chunk_or_trailer_parse_err:
         goto report_err_and_close_conn;
     }
     return;
-
-handle_head_parse_err:
-    if (err == AH_EAGAIN) {
-        return;
-    }
 
 report_err_and_close_conn:
     cln->_cbs->on_recv_end(cln, err);
@@ -484,6 +479,9 @@ try_next:
             size_t nwritten = buf.size;
             err = ah_sockaddr_stringify(&raddr, (char*) buf.base, &nwritten);
             if (err != AH_ENONE) {
+                if (err == AH_ENOSPC) {
+                    err = AH_EOVERFLOW;
+                }
                 goto handle_err;
             }
             (void) ah_rw_juken(&rw, nwritten);

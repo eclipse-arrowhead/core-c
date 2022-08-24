@@ -45,7 +45,8 @@ code {
     background-color: var(--ahf-grey-light);
     border-radius: 0.25em;
     display: inline-block;
-    padding: 0.2em 0.4em;
+    margin: -0.1em 0;
+    padding: 0.1em 0.4em;
     white-space: nowrap;
 }
 
@@ -397,7 +398,6 @@ body .contents table.directory > tbody > tr > .entry > .icona {
 body .contents .doxtable {
     border: 0.125rem solid var(--ahf-grey-background);
     border-spacing: 0;
-    line-height: 1.15em;
     padding: 1rem;
 }
 
@@ -573,7 +573,7 @@ body .contents .memitem > .memdoc > dl.params .paramname {
 }
 
 body .contents .textblock {
-    font-weight: 300;
+    line-height: 1.25em;
 }
 
 body .contents div.qindex {
