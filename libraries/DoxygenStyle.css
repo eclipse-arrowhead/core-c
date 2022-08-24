@@ -47,14 +47,12 @@ code {
     display: inline-block;
     margin: -0.1em 0;
     padding: 0.1em 0.4em;
-    white-space: nowrap;
 }
 
 dl {
     display: flex;
     flex-direction: column;
     font-weight: 300;
-    line-height: 1.25em;
     padding-left: 1rem;
 }
 
@@ -124,12 +122,12 @@ hr {
 
 ol, ul {
     margin-top: 0.25rem;
-    padding-left: 0.8rem;
+    padding-left: 1.5em;
 }
 
 ol > li,
 ul > li {
-    padding-bottom: 0.125rem;
+    padding-bottom: 0.25em;
 }
 
 ol > li:last-child,
@@ -353,7 +351,12 @@ body .header > *:last-child {
 body .contents {
     background-color: white;
     font-weight: 300;
+    line-height: 1.25em;
     padding: 1rem 1.5rem;
+}
+
+body .contents > * {
+    margin-bottom: 1rem;
 }
 
 body .contents dl.classindex > dt.alphachar > a {
@@ -521,6 +524,7 @@ body .contents .memberdecls > tbody > tr > td.memItemLeft {
 body .contents .memberdecls > tbody > tr > td.memSeparator {
     font-size: 0;
     height: 0.25rem;
+    line-height: 0;
 }
 
 body .contents .memberdecls > tbody > tr:last-child > td.memSeparator {
@@ -569,10 +573,6 @@ body .contents .memitem > .memdoc > dl.params .paramname {
     vertical-align: top;
 }
 
-body .contents .textblock {
-    line-height: 1.25em;
-}
-
 body .contents div.qindex {
     margin-left: 1.5rem;
 }
@@ -605,6 +605,10 @@ body > address.footer img {
 }
 
 @media (min-width: 67rem) {
+    code {
+        white-space: nowrap;
+    }
+
     body .contents,
     body .header {
         margin: 0 auto;
