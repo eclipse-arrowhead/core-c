@@ -68,12 +68,15 @@ dl.warning {
 
 dl > dt {
     font-weight: bold;
-    padding: 0.5rem 0.5rem 0 0.5rem;
+    margin: 0.5rem;
+}
+
+dl > dt + dt {
+    margin-top: 0;
 }
 
 dl > dd {
-    margin-left: 2rem;
-    padding: 0.5rem;
+    margin: 0 0.5rem 0.5rem 2rem;
 }
 
 em {
@@ -83,7 +86,7 @@ em {
 h1, h2, h3, h4, h5, h6 {
     color: var(--ahf-blue-text);
     font-weight: normal;
-    margin-top: 0;
+    margin: 0 0 1rem 0;
 }
 
 h1 {
@@ -347,7 +350,7 @@ body .header > *:last-child {
 
 body .contents {
     background-color: white;
-    flex-direction: column;
+    font-weight: 300;
     padding: 1rem 1.5rem;
 }
 
@@ -554,12 +557,12 @@ body .contents .memitem > .memproto {
     font-family: monospace;
     font-size: 1.125em;
     font-weight: bold;
-    padding: 1rem;
+    margin: 1rem;
 }
 
 body .contents .memitem > .memdoc {
     font-size: 0.9em;
-    padding-left: 1rem;
+    margin: 1rem;
 }
 
 body .contents .memitem > .memdoc > dl.params .paramname {
