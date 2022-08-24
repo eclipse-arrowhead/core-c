@@ -311,8 +311,8 @@ struct ah_tcp_listener_cbs {
     /**
      * Listener @a ln has been opened, or the attempt failed.
      *
-     * @param conn Pointer to listener.
-     * @param err  One of the following codes: <ul>
+     * @param ln  Pointer to listener.
+     * @param err One of the following codes: <ul>
      *   <li><b>AH_ENONE</b>                          - Listener opened successfully.
      *   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open listener.
      *   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
@@ -333,8 +333,8 @@ struct ah_tcp_listener_cbs {
      * Listener @a ln has started to listen for incoming connections, or the
      * attempt failed.
      *
-     * @param conn Pointer to listener.
-     * @param err  One of the following codes: <ul>
+     * @param ln  Pointer to listener.
+     * @param err One of the following codes: <ul>
      *   <li><b>AH_ENONE</b>                     - Listener started to listen successfully.
      *   <li><b>AH_EACCESS [Darwin]</b>          - Not permitted to listen.
      *   <li><b>AH_EADDRINUSE [Linux, Win32]</b> - No ephemeral TCP port is available. This error

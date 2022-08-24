@@ -86,7 +86,7 @@
  *   <tr>
  *     <td>\c Host
  *     <td>When sending requests, if this header is left unspecified, it is automatically populated
- *         with the IP address of the targeted server.
+ *         with the IP address and port number of the targeted server.
  *   <tr>
  *     <td>\c Transfer-Encoding
  *     <td>If <code>Transfer-Encoding: chunked</code> is specified in an incoming request or
@@ -336,8 +336,8 @@ struct ah_http_client_cbs {
      * ah_tcp_in_repackage(), that buffer may eventually become full, triggering
      * the @c AH_EOVERFLOW error. If you wish to save the contents of @a in
      * without having to copy it over to another buffer, you can detach it from
-     * @a conn using ah_tcp_in_detach(), which allocates a new input buffer for
-     * @a conn.
+     * @a cln using ah_tcp_in_detach(), which allocates a new input buffer for
+     * @a cln.
      *
      * @param cln Pointer to client.
      * @param in  Input buffer containing message body data.
@@ -371,8 +371,8 @@ struct ah_http_client_cbs {
      *   <li><b>AH_ENETDOWN [Win32]</b>           - The network subsystem has failed.
      *   <li><b>AH_ENETRESET [Win32]</b>          - Keep-alive is enabled for the connection and a
      *                                              related failure was detected.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux]</b>    - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Linux]</b>             - Not enough heap memory available.
+     *   <li><b>AH_ENOBUFS</b>                    - Not enough buffer space available.
+     *   <li><b>AH_ENOMEM</b>                     - Not enough heap memory available.
      *   <li><b>AH_EOVERFLOW</b>                  - The input buffer of @a cln is full. To prevent
      *                                              this error from occurring when receiving body
      *                                              data, you must ensure that the input buffer
@@ -425,9 +425,88 @@ struct ah_http_server {
  * A set of function pointers used to handle events on HTTP servers.
  */
 struct ah_http_server_cbs {
+    /**
+     * @a srv has been opened, or the attempt failed.
+     *
+     * @param srv Pointer to server.
+     * @param err One of the following codes: <ul>
+     *   <li><b>AH_ENONE</b>                          - Server opened successfully.
+     *   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open TCP listener.
+     *   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
+     *   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
+     *                                                  associated with the given local address.
+     *   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
+     *   <li><b>AH_ECANCELED</b>                      - Server event loop is shutting down.
+     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
+     *   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
+     *   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
+     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
+     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
+     * </ul>
+     */
     void (*on_open)(ah_http_server_t* srv, ah_err_t err);
+
+    /**
+     * @a srv has started to listen for connecting clients, or the attempt
+     * failed.
+     *
+     * @param srv Pointer to server.
+     * @param err One of the following codes: <ul>
+     *   <li><b>AH_ENONE</b>                     - Server started to listen successfully.
+     *   <li><b>AH_EACCESS [Darwin]</b>          - Not permitted to listen for TCP connections.
+     *   <li><b>AH_EADDRINUSE [Linux, Win32]</b> - No ephemeral TCP port is available. This error
+     *                                             can only occur if the server was opened with the
+     *                                             wildcard address, which means that network
+     *                                             interface binding is delayed until listening.
+     *   <li><b>AH_ECANCELED</b>                 - Server event loop is shutting down.
+     *   <li><b>AH_ENETDOWN [Win32]</b>          - The network subsystem has failed.
+     *   <li><b>AH_ENFILE [Win32]</b>            - System file table is full.
+     *   <li><b>AH_ENOBUFS [Win32]</b>           - Not enough buffer space available.
+     * </ul>
+     */
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
+
+    /**
+     * @a srv has accepted the client @a cln.
+     *
+     * If @a err is @c AH_ENONE, which indicates a successful acceptance, all
+     * further events related to @a cln will be dealt with via the client
+     * callback set (see ah_http_client_cbs) provided when listening was started
+     * via ah_http_server_listen().
+     *
+     * @param srv   Pointer to listener.
+     * @param cln   Pointer to accepted client, or @c NULL if @a err is not
+     *              @c AH_ENONE.
+     * @param raddr Pointer to address of @a cln, or @c NULL if @a err is not
+     *              @c AH_ENONE.
+     * @param err  One of the following codes: <ul>
+     *   <li><b>AH_ENONE</b>                         - Client accepted successfully.
+     *   <li><b>AH_ECANCELED</b>                     - Server event loop is shutting down.
+     *   <li><b>AH_ECONNABORTED [Darwin, Linux]</b>  - Connection aborted before finalization.
+     *   <li><b>AH_ECONNRESET [Win32]</b>            - Connection aborted before finalization.
+     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b> - Process descriptor table is full.
+     *   <li><b>AH_ENETDOWN [Win32]</b>              - The network subsystem has failed.
+     *   <li><b>AH_ENFILE [Darwin, Linux]</b>        - System file table is full.
+     *   <li><b>AH_ENOBUFS [Linux, Win32]</b>        - Not enough buffer space available.
+     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>        - Not enough heap memory available.
+     *   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>   - Network service failed to initialize.
+     * </ul>
+     *
+     * @note Every successfully accepted @a cln must eventually be provided to
+     *       ah_http_client_close().
+     *
+     * @note In contrast to plain TCP connections, data receiving is always
+     *       enabled for new HTTP connections.
+     */
     void (*on_accept)(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err);
+
+    /**
+     * @a srv has been closed.
+     *
+     * @param srv Pointer to server.
+     * @param err Should always be @c AH_ENONE. Other codes may be provided if
+     *            an unexpected platform error occurs.
+     */
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 };
 
