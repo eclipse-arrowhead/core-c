@@ -4,13 +4,14 @@ html {
 
 body {
     --ahf-blue-background: #325b85;
-    --ahf-blue-background-highlight: #517ca9;
+    --ahf-blue-highlight: #517ca9;
     --ahf-blue-text: #004676;
-    --ahf-blue-text-highlight: #337ab7;
-    --ahf-grey-background: #f5f5f5;
+    --ahf-blue-link: #337ab7;
+    --ahf-grey-background: #dedede;
+    --ahf-grey-light: #f5f5f5;
     --ahf-grey-text: #636363;
-    --ahf-red-background: #e02746;
-    --ahf-yellow-background: #f1d01d;
+    --ahf-red-highlight: #e02746;
+    --ahf-yellow-highlight: #f1d01d;
 
     border: none;
     display: flex;
@@ -27,7 +28,7 @@ body > div:last-of-type {
 }
 
 a {
-    color: var(--ahf-blue-text-highlight);
+    color: var(--ahf-blue-link);
     font-weight: bold;
     text-decoration: none;
 }
@@ -41,6 +42,10 @@ b {
 }
 
 code {
+    background-color: var(--ahf-grey-light);
+    border-radius: 0.25em;
+    display: inline-block;
+    padding: 0.2em 0.4em;
     white-space: nowrap;
 }
 
@@ -52,12 +57,12 @@ dl {
 }
 
 dl.note {
-    border-left: 0.25rem solid var(--ahf-yellow-background);
+    border-left: 0.25rem solid var(--ahf-yellow-highlight);
     padding-left: 0.75rem;
 }
 
 dl.warning {
-    border-left: 0.25rem solid var(--ahf-red-background);
+    border-left: 0.25rem solid var(--ahf-red-highlight);
     padding-left: 0.75rem;
 }
 
@@ -210,11 +215,11 @@ body > .contents {
 }
 
 #top > .tabs > .tablist > li:hover {
-    border-bottom-color: var(--ahf-blue-background-highlight);
+    border-bottom-color: var(--ahf-blue-highlight);
 }
 
 #top > .tabs > .tablist > li:hover > a {
-    background-color: var(--ahf-blue-background-highlight);
+    background-color: var(--ahf-blue-highlight);
 }
 
 #top > .tabs > .tablist > li.current {
@@ -247,7 +252,7 @@ body > .contents {
 }
 
 #top > .tabs2 > .tablist > li:hover {
-    border-bottom-color: var(--ahf-blue-background-highlight);
+    border-bottom-color: var(--ahf-blue-highlight);
 }
 
 #top > .tabs2 > .tablist > li.current {
@@ -260,7 +265,7 @@ body > .contents {
 }
 
 #navrow2, #navrow3, #nav-path {
-    border-bottom: 1px solid var(--ahf-blue-background-highlight);
+    border-bottom: 1px solid var(--ahf-blue-highlight);
 }
 
 #top > .tabs3 {
@@ -277,7 +282,7 @@ body > .contents {
 }
 
 #top > .tabs3 > .tablist > li:hover {
-    border-bottom-color: var(--ahf-blue-background-highlight);
+    border-bottom-color: var(--ahf-blue-highlight);
 }
 
 #top > .tabs3 > .tablist > li.current {
@@ -290,7 +295,7 @@ body > .contents {
 }
 
 #top > .navpath {
-    background-color: var(--ahf-grey-background);
+    background-color: var(--ahf-grey-light);
     font-size: 0.8em;
 }
 
@@ -357,7 +362,7 @@ body .contents .directory > .levels {
 }
 
 body .contents .directory > .levels > span {
-    color: var(--ahf-blue-text-highlight);
+    color: var(--ahf-blue-link);
     cursor: pointer;
     display: inline-block;
     font-weight: bold;
@@ -375,7 +380,7 @@ body .contents table.directory {
 }
 
 body .contents table.directory > tbody > tr.even {
-    background-color: var(--ahf-grey-background);
+    background-color: var(--ahf-grey-light);
 }
 
 body .contents table.directory > tbody > tr > td {
@@ -483,6 +488,7 @@ body .contents .fragment > .ttc {
 }
 
 body .contents .memberdecls {
+    margin-bottom: 2rem;
     margin-top: 2rem;
 }
 
@@ -499,8 +505,17 @@ body .contents .memberdecls > tbody > :not(.heading) {
     font-size: 0.9em;
 }
 
+body .contents .memberdecls > tbody > tr > td.memItemLeft,
+body .contents .memberdecls > tbody > tr > td.memItemRight {
+    color: var(--ahf-grey-text);
+}
+
 body .contents .memberdecls > tbody > tr > td.memItemLeft {
-    padding-right: 0.5rem;
+    padding-right: 0.5em;
+}
+
+body .contents .memberdecls > tbody > tr > td.memItemRight > *:first-child {
+    color: black;
 }
 
 body .contents .memberdecls > tbody > tr > td.memSeparator {
@@ -549,6 +564,7 @@ body .contents .memitem > .memdoc {
 
 body .contents .memitem > .memdoc > dl.params .paramname {
     font-style: italic;
+    font-weight: normal;
     padding-right: 1rem;
     vertical-align: top;
 }
@@ -559,6 +575,10 @@ body .contents .textblock {
 
 body .contents div.qindex {
     margin-left: 1.5rem;
+}
+
+body .contents > #details + .groupheader {
+    display: none;
 }
 
 body .contents > * {
@@ -577,11 +597,6 @@ body > address.footer {
 body > address.footer img {
     vertical-align: middle;
     margin: -0.25rem 0.25rem 0 0.25rem;
-}
-
-#details,
-#details + .groupheader {
-    display: none;
 }
 
 #MSearchBox {
