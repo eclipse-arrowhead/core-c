@@ -45,7 +45,7 @@ ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity);
 ah_extern ah_err_t ah_i_loop_get_pending_err(ah_loop_t* loop);
 ah_extern bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err);
 
-ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time);
+ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time);
 
 ah_extern ah_err_t ah_i_loop_evt_alloc(ah_loop_t* loop, ah_i_loop_evt_t** evt);
 ah_extern void ah_i_loop_evt_dealloc(ah_loop_t* loop, ah_i_loop_evt_t* evt);

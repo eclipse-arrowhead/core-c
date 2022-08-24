@@ -56,7 +56,7 @@ static void s_should_execute_task_with_no_err(ah_unit_t* unit)
     ah_task_init(&task, &loop, s_on_execution);
     ah_task_set_user_data(&task, &task_data);
 
-    err = ah_task_schedule_at(&task, (struct ah_time) { 0u });
+    err = ah_task_schedule_at(&task, (ah_time_t) { 0u });
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
@@ -98,14 +98,14 @@ static void s_should_execute_cancelled_task_with_correct_err(ah_unit_t* unit)
     ah_task_init(&task, &loop, s_on_execution);
     ah_task_set_user_data(&task, &task_data);
 
-    err = ah_task_schedule_at(&task, (struct ah_time) { 0u });
+    err = ah_task_schedule_at(&task, (ah_time_t) { 0u });
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }
 
     ah_task_cancel(&task);
 
-    err = ah_loop_run_until(&loop, &(struct ah_time) { 0u });
+    err = ah_loop_run_until(&loop, &(ah_time_t) { 0u });
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;
     }

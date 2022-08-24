@@ -56,7 +56,7 @@ ah_extern bool ah_task_cancel(ah_task_t* task)
     return false;
 }
 
-ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline)
+ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, ah_time_t baseline)
 {
     if (task == NULL) {
         return AH_EINVAL;

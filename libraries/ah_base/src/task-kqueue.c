@@ -32,7 +32,7 @@ ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
     EV_SET(kev, (uintptr_t) task, EVFILT_TIMER, EV_DELETE, 0u, 0, 0u);
 }
 
-ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baseline)
+ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, ah_time_t baseline)
 {
     ah_i_loop_evt_t* evt;
     struct kevent* kev;

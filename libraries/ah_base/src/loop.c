@@ -52,7 +52,7 @@ ah_extern bool ah_loop_is_term(const ah_loop_t* loop)
     return loop->_state == AH_I_LOOP_STATE_TERMINATING || loop->_state == AH_I_LOOP_STATE_TERMINATED;
 }
 
-ah_extern struct ah_time ah_loop_now(const ah_loop_t* loop)
+ah_extern ah_time_t ah_loop_now(const ah_loop_t* loop)
 {
     ah_assert(loop != NULL);
 
@@ -64,7 +64,7 @@ ah_extern ah_err_t ah_loop_run(ah_loop_t* loop)
     return ah_loop_run_until(loop, NULL);
 }
 
-ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, struct ah_time* time)
+ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, ah_time_t* time)
 {
     if (loop == NULL) {
         return AH_EINVAL;

@@ -122,7 +122,7 @@ ah_extern bool ah_task_cancel(ah_task_t* task);
  *                                                 been cancelled or executed.
  * </ul>
  */
-ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, struct ah_time baseline);
+ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, ah_time_t baseline);
 
 /**
  * Terminates @a task, releasing any resources associated with it.

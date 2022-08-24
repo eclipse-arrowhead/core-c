@@ -26,6 +26,6 @@
  AH_I_TASK_PLATFORM_FIELDS
 
 ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task);
-ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baseline);
+ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, ah_time_t baseline);
 
 #endif

@@ -65,7 +65,7 @@ close_fd_and_return_err:
     return err;
 }
 
-ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time)
+ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
 {
     ah_assert_if_debug(loop != NULL);
 

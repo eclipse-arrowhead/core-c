@@ -248,7 +248,7 @@ static void s_should_send_and_receive_data(ah_unit_t* unit)
 
     // Submit issued events for execution.
 
-    struct ah_time deadline;
+    ah_time_t deadline;
     err = ah_time_add(ah_time_now(), 1000 * AH_TIMEDIFF_MS, &deadline);
     if (!ah_unit_assert_err_eq(unit, AH_ENONE, err)) {
         return;

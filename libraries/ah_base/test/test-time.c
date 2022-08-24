@@ -12,6 +12,6 @@ void test_time(ah_unit_t* unit)
 
 void s_should_return_non_zero_time(ah_unit_t* unit)
 {
-    struct ah_time time = ah_time_now();
+    ah_time_t time = ah_time_now();
     ah_unit_assert(unit, !ah_time_is_zero(time), "current time must not be zero");
 }
