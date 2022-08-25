@@ -3,8 +3,8 @@
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "Arrowhead Core C Libraries"
 PROJECT_NUMBER         =
-PROJECT_BRIEF          = "Various C libraries useful for implementing Arrowhead systems."
-PROJECT_LOGO           =
+PROJECT_BRIEF          = "C libraries useful for implementing Arrowhead systems."
+PROJECT_LOGO           = arrowhead-logo.svg
 OUTPUT_DIRECTORY       = ../doxygen-build
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO

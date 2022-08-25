@@ -151,6 +151,15 @@ body > .contents {
     padding: 1rem 1.5rem;
 }
 
+#projectlogo {
+    padding-right: 1.5rem;
+}
+
+#projectlogo > img {
+    margin: -0.125rem;
+    width: 4rem;
+}
+
 #projectname {
     color: var(--ahf-blue-text);
     font-size: 2rem;
