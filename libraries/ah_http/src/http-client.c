@@ -461,8 +461,8 @@ try_next:
     }
     (void) ah_i_http_write_crlf(&rw);
 
-    // Write host header to head buffer of outgoing request, if HTTP version is
-    // 1.1 or above and no such header has been provided.
+    // Write host header to head buffer of outgoing request, if the HTTP version
+    // is 1.1 or higher and no such header has been explicitly provided.
     if (cln->_is_local && head->version.minor != 0u) {
         bool host_is_not_specified = true;
         if (head->headers != NULL) {

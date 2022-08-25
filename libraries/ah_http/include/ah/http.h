@@ -8,55 +8,58 @@
  * HTTP/1 client and server.
  *
  * Here, data structures and functions are provided for representing, setting up
- * and communicating via HTTP/1 clients and servers.
+ * and communicating via HTTP/1 clients and servers. To learn more about the
+ * HTTP/1 protocol itself, please refer to
+ * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC9110</a>. Below, we
+ * briefly describe how to use this C API.
  *
  * <h3>Clients</h3>
  *
  * HTTP clients are set up using ah_http_client_init(), ah_http_client_open()
- * and ah_http_client_connect(). Successfully opened clients are closed with
- * ah_http_client_close(). Clients receive data and are notified of other events
- * via their callback sets (see ah_http_client_cbs), which they must be provided
- * with when they are initialized or when they are listened for. Clients
- * transmit data by first calling ah_http_client_send_head(), ensuring the call
- * was successful, and then adhering to one of the following patterns.
+ * and ah_http_client_connect(), in that order. Successfully opened clients are
+ * closed with ah_http_client_close(). Every client receives data, and is
+ * notified of other events, via a callback set of type ah_http_client_cbs. To
+ * send a message, you must provide a certain client with a @e head, a number of
+ * <em>body parts</em> and indicate the end of the message. The head and body
+ * parts are added to the <em>send queue</em> of the client, which is processed
+ * and emptied asynchronously when possible. The message head, which consists of
+ * a <em>start line</em> and zero or more headers, is added by a call to
+ * ah_http_client_send_head(). After a head has been successfully submitted, you
+ * must continue in one of the following ways:
  *
  * <ol>
- *   <li>If <em>no message body</em> is relevant, ah_http_client_send_end() must
- *       be called to indicate that sending is complete.
- *   <li>If a <em>non-chunked body</em> is to be sent, which is recommended when
- *       the final size of the transmitted body @c is known in advance,
- *       ah_http_client_send_data() must be called repeatedly until all body
- *       data has been enqueued. Finally, ah_http_client_send_end() must be
- *       called to indicate that the complete body is in the send queue.
- *   <li>If a <em>chunked body</em> is to be sent, which is recommended when the
- *       final size of the transmitted body is @e not known in advance,
- *       ah_http_client_send_chunk() must be called repeatedly until all body
- *       chunks have been enqueued. Finally, ah_http_client_send_trailer() must
- *       be called to submit any trailing chunk extension and headers, and to
- *       indicate that the complete body is in the send queue.
+ *   <li>If <em>no message body</em> is to be sent, call ah_http_client_send_end() directly.
+ *   <li>If a <em>non-chunked body</em> is to be sent, which is recommended when the final size of
+ *       the send body is @e known in advance, call ah_http_client_send_data() repeatedly until all
+ *       body parts have been added. Finally, call ah_http_client_send_end() to end the message.
+ *   <li>If a <em>chunked body</em> is to be sent, which is recommended when the final size of the
+ *       send body is <em>not known</em> in advance, call ah_http_client_send_chunk() repeatedly
+ *       until all body chunks have been added. Finally, call ah_http_client_send_trailer() to
+ *       submit any last chunk extension and trailer headers, as well as to indicate the end of the
+ *       current message.
  * </ol>
  *
- * When sending and receiving data, @e metadata, such as start lines, headers
- * and chunks, are gathered into dynamically allocated buffers maintained by
- * each client. Each client owns one such buffer it reuses for all data it
- * receives data by and one more is allocated for each sent message. If a
- * certain metadata item exceeds the size of its receive buffer, or a send
- * buffer is too small to contain all relevant metadata items, the message
- * transmission is failed with error code @c AH_EOVERFLOW. Limiting sizes in
- * this way helps reduce the complexity the client implementation and works as a
- * form of protection from exploits that use large metadata items. Generally,
- * the size of each of these buffers will be limited by the page allocator page
- * size, @c AH_PSIZE, more of which you can read in the documentation for
- * ah_palloc().
+ * When sending and receiving @e metadata, such as start lines, headers and
+ * chunks, that metadata is gathered automatically into dynamically allocated
+ * buffers. Each client owns one such buffer it reuses for all data it receives.
+ * Another is allocated for the duration of each on-going message send
+ * procedure. If a certain metadata item, such as a header or chunk extension,
+ * exceeds the size of its receive buffer, or a send buffer is too small to
+ * contain @e all relevant metadata items, the message transmission is failed
+ * with error code @c AH_EOVERFLOW. Limiting sizes in this way helps reduce the
+ * complexity the client implementation and works as a form of protection from
+ * exploits that use large metadata items. Generally, the size of each of these
+ * buffers will be limited by the page allocator page size, @c AH_PSIZE, more of
+ * which you can read in the documentation for ah_palloc().
  *
  * <h3>Servers</h3>
  *
  * HTTP servers are set up using ah_http_server_init(), ah_http_server_open()
  * and ah_http_server_listen(). Successfully initialized servers are
  * terminated with ah_http_server_term() and successfully opened servers are
- * closed with ah_http_server_close(). Servers receive incoming client and are
- * notified of other events via their callback sets (see ah_http_server_cbs),
- * which must be provided when they are initialized.
+ * closed with ah_http_server_close(). Servers receive incoming clients and are
+ * notified of other events via their callback sets, which are of type
+ * ah_http_server_cbs.
  *
  * <h3>Automatic Headers</h3>
  *
@@ -731,22 +734,21 @@ ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_
  *   <li><b>AH_ESTATE</b>       - @a cln is not open.
  * </ul>
  *
- * @warning This function must be called with a successfully opened connection.
- *          An appropriate place to call this function is often going to be in
- *          an ah_http_client_cbs::on_open callback after a check that opening
- *          was successful.
+ * @warning This function must be called with a successfully opened client. An
+ *          appropriate place to call this function is often going to be in an
+ *          ah_http_client_cbs::on_open callback after a check that opening was
+ *          successful.
  */
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
 
 /**
  * Schedules sending of HTTP message head.
  *
- * Calling this function initiates the send procedure by enqueuing the
- * transmission of the message start line and headers. You must finalize that
- * procedure in one out of three ways, depending on if an HTTP body is to be
- * included in the message and, if so, that body has a size known when starting
- * to send it it or not. The following table specifies what functions to call
- * to finalize the procedure in one of these ways:
+ * Calling this function initiates a send procedure by adding @a head to the
+ * send queue of @a cln. You must finalize that procedure in one out of three
+ * ways, outlined in the below table. How depends on if an HTTP body is to be
+ * included in the message and, if so, the final size of that body known in
+ * advance.
  *
  * <table>
  *   <caption id="http-send-procedures">Possible Continuations of the Send Procedure</caption>
@@ -757,13 +759,13 @@ ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockad
  *     <td>No body
  *     <td>Call ah_http_client_send_end().
  *   <tr>
- *     <td>Body with initially known size
- *     <td>Call ah_http_client_send_data() until there is no more
- *         data to send. Finally, call ah_http_client_send_end().
+ *     <td>Body size known
+ *     <td>Call ah_http_client_send_data() until there are no more body parts to send. Finally, call
+ *         ah_http_client_send_end().
  *   <tr>
- *     <td>Body with initially unknown size
- *     <td>Call ah_http_client_send_chunk() until there is no more
- *         data to send. Finally, call ah_http_client_send_trailer().
+ *     <td>Body size unknown
+ *     <td>Call ah_http_client_send_chunk() until there are no more body parts to send. Finally,
+ *         call ah_http_client_send_trailer().
  * </table>
  *
  * The invocation of this function must be successful in order for it to be
@@ -775,8 +777,7 @@ ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockad
  * @return One of the following error codes: <ul>
  *   <li><b>AH_ENONE</b>           - Transmission of @a head enqueued successfully.
  *   <li><b>AH_EINVAL</b>          - @a cln or @a head is @c NULL.
- *   <li><b>AH_EPROTONOSUPPORT</b> - The HTTP version specified in
- *                                   <code>head->version</code> is not
+ *   <li><b>AH_EPROTONOSUPPORT</b> - The HTTP version specified in <code>head->version</code> is not
  *                                   supported.
  * </ul>
  */
@@ -929,6 +930,11 @@ ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
  *
  * @param cln Pointer to client.
  * @return Pointer to TCP connection of @a cln, or @c NULL if @a cln is @c NULL.
+ *
+ * @note @a cln notably shares <em>user data pointer</em> and <em>receive
+ *       buffer</em> with the TCP connection returned by this function. If you
+ *       change or update the user data or detach the receive buffer via either
+ *       @a cln or the connection, both are affected.
  */
 ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln);
 
@@ -947,6 +953,11 @@ ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln);
  *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
  *   <li><b>AH_ESTATE</b>                  - @a cln is closed.
  * </ul>
+ *
+ * @note This function will always report the same local address as the TCP
+ *       connection of @a cln would have reported if ah_tcp_conn_get_laddr() was
+ *       called. You can get a pointer to that TCP connection by calling
+ *       ah_http_client_get_conn() with @a cln as argument.
  */
 ah_extern ah_err_t ah_http_client_get_laddr(const ah_http_client_t* cln, ah_sockaddr_t* laddr);
 
@@ -962,6 +973,11 @@ ah_extern ah_err_t ah_http_client_get_laddr(const ah_http_client_t* cln, ah_sock
  *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
  *   <li><b>AH_ESTATE</b>                  - @a cln is not connected to a remote host.
  * </ul>
+ *
+ * @note This function will always report the same local address as the TCP
+ *       connection of @a cln would have reported if ah_tcp_conn_get_raddr() was
+ *       called. You can get a pointer to that TCP connection by calling
+ *       ah_http_client_get_conn() with @a cln as argument.
  */
 ah_extern ah_err_t ah_http_client_get_raddr(const ah_http_client_t* cln, ah_sockaddr_t* raddr);
 
@@ -970,6 +986,10 @@ ah_extern ah_err_t ah_http_client_get_raddr(const ah_http_client_t* cln, ah_sock
  *
  * @param cln Pointer to client.
  * @return Pointer to event loop, or @c NULL if @a cln is @c NULL.
+ *
+ * @note This function gets the event loop pointer of the ah_tcp_conn owned by
+ *       @a cln. You can get a pointer to that TCP connection by calling
+ *       ah_http_client_get_conn() with @a cln as argument.
  */
 ah_extern ah_loop_t* ah_http_client_get_loop(const ah_http_client_t* cln);
 
@@ -982,7 +1002,7 @@ ah_extern ah_loop_t* ah_http_client_get_loop(const ah_http_client_t* cln);
  *         if @a cln is @c NULL.
  *
  * @note This function gets the user data pointer of the ah_tcp_conn owned by
- *       @a cln, which you can get a pointer to by calling
+ *       @a cln. You can get a pointer to that TCP connection by calling
  *       ah_http_client_get_conn() with @a cln as argument.
  */
 ah_extern void* ah_http_client_get_user_data(const ah_http_client_t* cln);
@@ -997,7 +1017,7 @@ ah_extern void* ah_http_client_get_user_data(const ah_http_client_t* cln);
  * @note If @a cln is @c NULL, this function does nothing.
  *
  * @note This function sets the user data pointer of the ah_tcp_conn owned by
- *       @a cln, which you can get a pointer to by calling
+ *       @a cln. You can get a pointer to that TCP connection by calling
  *       ah_http_client_get_conn() with @a cln as argument.
  */
 ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data);
