@@ -78,15 +78,19 @@
  *
  * <h3>JSON Construction</h3>
  *
- * From the perspective of constructing JSON objects, this library most
- * significantly provides the ah_json_str_escape() function, which takes an
- * arbitrary C string and escapes any characters that are not allowed to occur
- * unescaped in a JSON document. The C99 standard library provides complementary
- * functions for converting numbers into strings, such as strtod() and
- * strtoul(), all of which produce numbers compatible with the JSON standard.
+ * To construct JSON objects, you must produce routines that take whatever data
+ * structures or values you need to encode and writes them as JSON to a buffer.
  *
- * To produce JSON objects and arrays, the snprintf() function can be used, as
- * in the below example:
+ * To help you, this library most significantly provides the
+ * ah_json_str_escape() function, which takes an arbitrary C string and escapes
+ * any characters that are not allowed to occur unescaped in a JSON string. The
+ * C99 standard library provides functions suitable for producing JSON numbers
+ * from C values, such as strtod() and strtoul(), both of which can produce
+ * numbers compatible with the JSON standard. To make sure they are producing
+ * compliant numbers, ensure that the current locale uses dot (<code>.</code>)
+ * as the <em>radix character</em>. The C locale, required to be set by default,
+ * does use this radix character. Another C99 function useful for producing
+ * compliant numbers is snprintf(), which is used in the below example:
  *
  * @code{.c}
  * #include <stddef.h>
@@ -128,9 +132,6 @@
  * }
  * @endcode
  *
- * By using snprintf() and other functions in clever ways, you can produce JSON
- * data relatively efficiently and correctly.
- *
  * <h3>JSON Interpretation</h3>
  *
  * @note Refer to the ECMA-404 standard for a formally correct syntax
@@ -138,10 +139,6 @@
  *
  * @see https://www.ecma-international.org/publications-and-standards/standards/ecma-404/
  */
-
-// JSON numbers are compatible with snprintf, sscanf, strfromd, strtod, etc. as
-// long as the set locale uses "." as radix character (which the default "C"
-// locale does). You may use those functions to read and write JSON numbers.
 
 #ifdef AH_DOXYGEN
 
@@ -293,10 +290,11 @@ struct ah_json_val {
 /**
  * Parses @a src into an array of ah_json_val instances stored in @a dst.
  *
- * This function operates either with or without dynamic memory reallocation. To
- * enable the former, make sure that the ah_json_buf::values field of @a dst is
- * set to @c NULL and that ah_json_buf::length is set to @c 0. The
- * ah_json_buf::capacity field determines the initially allocated capacity.
+ * This function operates either with or without dynamic memory reallocation
+ * using the C99 realloc() function. To enable the former, make sure that the
+ * ah_json_buf::values field of @a dst is set to @c NULL and that
+ * ah_json_buf::length is set to @c 0. The ah_json_buf::capacity field
+ * determines the initially allocated capacity.
  *
  * To make this function operate without dynamic memory allocation, make the
  * ah_json_buf::values field of @a dst point to an array you allocated. Its
@@ -345,8 +343,10 @@ ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length);
 
 /**
- * Substitutes any UTF-8 code point below 32 and <code>"</code> with its
- * corresponding JSON escape sequence and writes the result to @a dst.
+ * Substitutes any UTF-8 code point below 32, <code>"</code> and <code>\\</code>
+ * with its corresponding JSON escape sequence and writes the result to @a dst.
+ *
+ * The resulting string is safe to use as the characters of a JSON string.
  *
  * If the operation is successful, the value pointer at by @a dst_length is
  * updated to reflect the final length of the string actually written to @a dst.

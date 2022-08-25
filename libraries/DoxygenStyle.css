@@ -603,7 +603,11 @@ body .contents .memitem > .memdoc > * {
     margin-bottom: 1rem;
 }
 
-body .contents .memitem > .memdoc > dl.params .paramname {
+body .contents .memitem > .memdoc > .fragment {
+    padding: 1rem;
+}
+
+body .contents .memitem > .memdoc > .params .paramname {
     font-style: italic;
     font-weight: normal;
     padding-right: 1rem;
