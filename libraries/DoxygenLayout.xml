@@ -3,8 +3,6 @@
     <tab type="mainpage" visible="yes" title=""/>
     <tab type="pages" visible="yes" title="" intro=""/>
     <tab type="modules" visible="yes" title="" intro=""/>
-    <tab type="concepts" visible="yes" title="">
-    </tab>
     <tab type="classes" visible="yes" title="">
       <tab type="classlist" visible="yes" title="" intro=""/>
       <tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/>
@@ -79,14 +77,6 @@
     <authorsection visible="yes"/>
   </class>
 
-  <concept>
-    <briefdescription visible="no"/>
-    <detaileddescription title=""/>
-    <includes visible="no"/>
-    <definition visible="yes" title=""/>
-    <authorsection visible="yes"/>
-  </concept>
-
   <file>
     <briefdescription visible="no"/>
     <detaileddescription title=""/>
@@ -100,7 +90,6 @@
       <structs visible="yes" title=""/>
       <exceptions visible="yes" title=""/>
       <namespaces visible="yes" title=""/>
-      <concepts visible="yes" title=""/>
       <constantgroups visible="yes" title=""/>
       <defines title=""/>
       <typedefs title=""/>
@@ -133,7 +122,6 @@
       <dirs visible="yes" title=""/>
       <files visible="yes" title=""/>
       <namespaces visible="yes" title=""/>
-      <concepts visible="yes" title=""/>
       <classes visible="yes" title=""/>
       <defines title=""/>
       <typedefs title=""/>

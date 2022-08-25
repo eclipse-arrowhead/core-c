@@ -53,7 +53,7 @@ dl {
     display: flex;
     flex-direction: column;
     font-weight: 300;
-    padding-left: 1rem;
+    margin: 1rem;
 }
 
 dl.note {
@@ -361,16 +361,21 @@ body .contents {
     background-color: white;
     font-weight: 300;
     line-height: 1.25em;
-    padding: 1rem 1.5rem;
+    padding: 0 1.5rem;
 }
 
 body .contents > * {
     margin-bottom: 1rem;
 }
 
-body .contents dl.classindex > dt.alphachar > a {
+body .contents .classindex > .alphachar > a {
     color: black;
     font-size: 1.25em;
+}
+
+body .contents .classindex {
+    margin-left: 0;
+    margin-right: 0;
 }
 
 body .contents .directory > .levels {
@@ -406,6 +411,25 @@ body .contents table.directory > tbody > tr > td {
 
 body .contents table.directory > tbody > tr > .entry > .icona {
     display: none;
+}
+
+body .contents table.directory > tbody > #row_0_ > td,
+body .contents table.directory > tbody > #row_1_ > td,
+body .contents table.directory > tbody > #row_2_ > td,
+body .contents table.directory > tbody > #row_3_ > td,
+body .contents table.directory > tbody > #row_4_ > td,
+body .contents table.directory > tbody > #row_5_ > td,
+body .contents table.directory > tbody > #row_6_ > td,
+body .contents table.directory > tbody > #row_7_ > td,
+body .contents table.directory > tbody > #row_8_ > td,
+body .contents table.directory > tbody > #row_9_ > td,
+body .contents table.directory > tbody > #row_10_ > td,
+body .contents table.directory > tbody > #row_11_ > td,
+body .contents table.directory > tbody > #row_12_ > td,
+body .contents table.directory > tbody > #row_13_ > td,
+body .contents table.directory > tbody > #row_14_ > td,
+body .contents table.directory > tbody > #row_15_ > td {
+    font-weight: bold;
 }
 
 body .contents .doxtable {
@@ -594,16 +618,31 @@ body .contents .textblock > .fragment {
     padding: 1rem;
 }
 
-body .contents .qindex {
-    margin-left: 1.5rem;
+body .contents > .qindex > a {
+    font-size: 1.25em;
+    margin: 0 1rem;
+}
+
+body .contents > .qindex > a:first-child {
+    margin-left: 0;
+}
+
+body .contents > .qindex > a:last-child {
+    margin-right: 0;
 }
 
 body .contents > #details + .groupheader {
     display: none;
 }
 
+body .contents > #details + .groupheader + p,
+body .contents > #details + .groupheader + .textblock > p:first-child {
+    font-size: 1.05em;
+    font-weight: bold;
+}
+
 body .contents > * {
-    margin: 1rem 0;
+    margin: 2rem 0;
 }
 
 body > hr.footer {

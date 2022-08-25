@@ -75,7 +75,7 @@ struct ah_loop {
  *   <li>@ref AH_ENOMEM [Darwin, Linux] - Failed to allocate kernel memory for event queue.
  *   <li>@ref AH_EOVERFLOW [Linux]      - More than 32-bits of heap memory was requested on a 32-bit system.
  *   <li>@ref AH_EPERM [Linux]          - Permission denied to set up required kernel resource.
- *   <li>@ref AH_EPROCLIM [Win32]       - Windows task limit reached.
+ *   <li>@ref AH_EPROCLIM_W [Win32]     - Windows task limit reached.
  *   <li>@ref AH_ESYSNOTREADY [Win32]   - Network subsystem not ready.
  * </ul>
  *

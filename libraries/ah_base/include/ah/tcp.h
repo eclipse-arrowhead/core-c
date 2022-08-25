@@ -129,7 +129,7 @@ struct ah_tcp_conn_cbs {
      * @param conn Pointer to connection.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Connection opened successfully.
-     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open connection.
+     *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open connection.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
      *                                                associated with the given local address.

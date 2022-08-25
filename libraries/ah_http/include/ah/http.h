@@ -147,7 +147,7 @@ struct ah_http_client_cbs {
      * @param cln Pointer to client.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Client opened successfully.
-     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open TCP connection.
+     *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open TCP connection.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
      *                                                associated with the given local address.
@@ -438,7 +438,7 @@ struct ah_http_server_cbs {
      * @param srv Pointer to server.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Server opened successfully.
-     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open TCP listener.
+     *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open TCP listener.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
      *                                                associated with the given local address.
@@ -460,7 +460,7 @@ struct ah_http_server_cbs {
      * @param srv Pointer to server.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                     - Server started to listen successfully.
-     *   <li>@ref AH_EACCESS [Darwin]          - Not permitted to listen for TCP connections.
+     *   <li>@ref AH_EACCES [Darwin]           - Not permitted to listen for TCP connections.
      *   <li>@ref AH_EADDRINUSE [Linux, Win32] - No ephemeral TCP port is available. This error
      *                                           can only occur if the server was opened with the
      *                                           wildcard address, which means that network
@@ -1119,7 +1119,7 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
  *                 clients wait to get accepted. If @c 0, a platform default
  *                 will be chosen. If larger than some arbitrary platform
  *                 maximum, it will be set to that maximum.
- * @param conn_cbs Pointer to event callback set to provide to all accepted
+ * @param cbs      Pointer to event callback set to provide to all accepted
  *                 clients.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a srv listening successfully scheduled.
