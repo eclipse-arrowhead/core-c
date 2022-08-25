@@ -314,7 +314,7 @@ struct ah_tcp_listener_cbs {
      * @param ln  Pointer to listener.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Listener opened successfully.
-     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open listener.
+     *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open listener.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
      *                                                associated with the given local address.
@@ -336,7 +336,7 @@ struct ah_tcp_listener_cbs {
      * @param ln  Pointer to listener.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                     - Listener started to listen successfully.
-     *   <li>@ref AH_EACCESS [Darwin]          - Not permitted to listen.
+     *   <li>@ref AH_EACCES [Darwin]           - Not permitted to listen.
      *   <li>@ref AH_EADDRINUSE [Linux, Win32] - No ephemeral TCP port is available. This error
      *                                           can only occur if the listener was opened with
      *                                           the wildcard address, which means that network

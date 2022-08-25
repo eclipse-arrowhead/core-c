@@ -11,7 +11,130 @@
 
 /**
  * @file
- * JSON.
+ * JavaScript Object Notation (JSON) utilities.
+ *
+ * As a data interchange format, JSON is mainly dealt with directly in two
+ * cases: (1) when constructing JSON representations and (2) when interpreting
+ * JSON representations. Here, we primarily provide utilities for interpreting
+ * JSON. That being said, we will consider how to accomplish these two
+ * activities using only the C99 standard library and this library. First,
+ * however, we will consider what kinds of data structures JSON can represent.
+ *
+ * <h3>JSON Representation</h3>
+ *
+ * A json representation, or @e Value, can take any out of seven distinct types,
+ * outlined in the following table:
+ *
+ * <table>
+ *   <caption id="json-types">JSON Value Types</caption>
+ *   <tr>
+ *     <th>Name
+ *     <th>Description
+ *     <th>Example
+ *   <tr>
+ *     <td>@e Object
+ *     <td><code>'{'</code>, a sequence of <code>String ':' Value</code> pairs separated by
+ *         <code>','</code>, and <code>'}'</code>.
+ *     <td><code>{"celsius": 26.3}</code>
+ *   <tr>
+ *     <td>@e Array
+ *     <td><code>'['</code>, a sequence of <code>Value</code> elements separated by
+ *         <code>','</code>, and <code>']'</code>.
+ *     <td><code>[1, 2, 3]</code>
+ *   <tr>
+ *     <td>@e String
+ *     <td>A UTF-8 text that may contain escape sequences.
+ *     <td><code>"Arrowhead"</code>
+ *   <tr>
+ *     <td>@e Number
+ *     <td>A decimal number with an optional fraction and an optional exponent.
+ *     <td><code>0.031415e2</code>
+ *   <tr>
+ *     <td>@e True
+ *     <td>Boolean true, represented by the string @c true.
+ *     <td><code>true</code>
+ *   <tr>
+ *     <td>@e False
+ *     <td>Boolean false, represented by the string @c false.
+ *     <td><code>false</code>
+ *   <tr>
+ *     <td>@e Null
+ *     <td>The absence of a meaningful value, represented by the string @c null.
+ *     <td><code>null</code>
+ * </table>
+ *
+ * Objects and arrays are <em>data structures</em> in the sense that they can
+ * contain, or @e structure, other values. The other types can be considered
+ * primitives, by which we simply mean that they do not directly contain other
+ * values. Using objects and arrays, arbitrarily complex data structures can be
+ * constructed, such as
+ * <code>{"id": 1937321, "colors": [{"r": 0, "g": 0, "b": 255}, "red"]}</code>.
+ *
+ * @note JSON lacks a type for representing binary strings, and it cannot
+ *       directly associate metadata, such as type information, with objects or
+ *       other types. That being said, there are ways to circumvent these
+ *       shortcomings, such as by <a href="https://www.rfc-editor.org/rfc/rfc4648.html">Base64-encoding</a>
+ *       binary data and using custom schemes for representing metadata.
+ *
+ * <h3>JSON Construction</h3>
+ *
+ * From the perspective of constructing JSON objects, this library most
+ * significantly provides the ah_json_str_escape() function, which takes an
+ * arbitrary C string and escapes any characters that are not allowed to occur
+ * unescaped in a JSON document. The C99 standard library provides complementary
+ * functions for converting numbers into strings, such as strtod() and
+ * strtoul(), all of which produce numbers compatible with the JSON standard.
+ *
+ * To produce JSON objects and arrays, the snprintf() function can be used, as
+ * in the below example:
+ *
+ * @code{.c}
+ * #include <stddef.h>
+ * #include <stdio.h>
+ *
+ * struct Temperature {
+ *   char sensor_name[32];
+ *   float kelvin;
+ * };
+ *
+ * int main(void) {
+ *   char buf[128u];
+ *
+ *   // Data to encode.
+ *   struct Temperature temp = {
+ *       .sensor_name = "aa-xx-142b", // We "know" this string will not need to be escaped.
+ *       .kelvin = 296.55f,
+ *   };
+ *
+ *   // Encode.
+ *   int res = snprintf(buf, sizeof(buf), "{\"sensor_name\":\"%s\",\"kelvin\":%f}",
+ *       temp.sensor_name, temp.kelvin);
+ *
+ *   if (res < 0) {
+ *       perror(NULL);
+ *       return 1;
+ *   }
+ *
+ *   if (res > sizeof(buf)) {
+ *      fprintf(stderr, "result too large");
+ *      return 1;
+ *   }
+ *
+ *   // `buf` now contains a JSON object of size `res`.
+ *
+ *   printf("%.*s\n", res, buf); // Prints `{"sensor_name":"aa-xx-142b","kelvin":296.55}`.
+ *
+ *   return 0;
+ * }
+ * @endcode
+ *
+ * By using snprintf() and other functions in clever ways, you can produce JSON
+ * data relatively efficiently and correctly.
+ *
+ * <h3>JSON Interpretation</h3>
+ *
+ * @note Refer to the ECMA-404 standard for a formally correct syntax
+ *       description. The standard to is linked further down.
  *
  * @see https://www.ecma-international.org/publications-and-standards/standards/ecma-404/
  */
@@ -206,7 +329,7 @@ ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
  * account.
  *
  * If, for example, this function is provided the two strings
- * <code>"I'm a 猫"</code> and <code>"I'm a \\u732B"</code>, it will correctly
+ * <code>"I'm a 猫"</code> and <code>"I'm a \u732B"</code>, it will correctly
  * report them as being equal, despite the Chinese sign for "cat" being given as
  * an escape sequence in the second string.
  *
@@ -222,13 +345,34 @@ ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length);
 
 /**
+ * Substitutes any UTF-8 code point below 32 and <code>"</code> with its
+ * corresponding JSON escape sequence and writes the result to @a dst.
+ *
+ * If the operation is successful, the value pointer at by @a dst_length is
+ * updated to reflect the final length of the string actually written to @a dst.
+ *
+ * @param src        Pointer to input buffer.
+ * @param src_length Length of @a src, excluding any NULL-terminator.
+ * @param dst        Pointer to output buffer.
+ * @param dst_length Pointer to length of @a dst, in bytes.
+ * @return One of the following error codes: <ul>
+ *   <li>@ref AH_ENONE     - The operation was successful.
+ *   <li>@ref AH_EINVAL    - @a src is @c NULL and @a src_length is not @c 0.
+ *   <li>@ref AH_EINVAL    - @a dst_length is @c NULL.
+ *   <li>@ref AH_EINVAL    - @a dst is @c NULL and the value pointed at by @a dst_length is not @c 0.
+ *   <li>@ref AH_EOVERFLOW - @a dst not large enough to hold the escaped string.
+ * </ul>
+ */
+ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* dst, size_t* dst_length);
+
+/**
  * Substitutes any JSON escape sequences in @a src with their UTF-8 equivalents
  * and writes the result to @a dst.
  *
  * If the operation is successful, the value pointer at by @a dst_length is
  * updated to reflect the final length of the string actually written to @a dst.
  *
- * @param src        Pointer to escaped string.
+ * @param src        Pointer to input buffer.
  * @param src_length Length of @a src, excluding any NULL-terminator.
  * @param dst        Pointer to output buffer.
  * @param dst_length Pointer to length of @a dst, in bytes.

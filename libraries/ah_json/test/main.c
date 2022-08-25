@@ -7,6 +7,7 @@
 
 void test_json_parse(ah_unit_t* unit);
 void test_json_str_compare(ah_unit_t* unit);
+void test_json_str_escape(ah_unit_t* unit);
 void test_json_str_unescape(ah_unit_t* unit);
 
 int main(void)
@@ -21,6 +22,7 @@ int main(void)
 
     test_json_parse(&unit);
     test_json_str_compare(&unit);
+    test_json_str_escape(&unit);
     test_json_str_unescape(&unit);
 
     ah_unit_print_results(&unit);

@@ -26,6 +26,7 @@ void s_assert_json_unescape_tests(ah_unit_t* unit, const char* label, struct s_j
 
     size_t test_i = 0u;
     for (struct s_json_unescape_test* test = &tests[0u]; test->input != NULL; test = &test[1u], test_i += 1u) {
+        memset(buf, 0, sizeof(buf));
         size_t actual_length = sizeof(buf);
 
         ah_err_t err = ah_json_str_unescape(test->input, strlen(test->input), buf, &actual_length);
@@ -36,7 +37,7 @@ void s_assert_json_unescape_tests(ah_unit_t* unit, const char* label, struct s_j
             char expected_err_buf[128u];
             ah_strerror_r(test->expected_err, expected_err_buf, sizeof(expected_err_buf));
 
-            ah_unit_failf(unit, "%s [%zu]:\n\tparsing failed with error `%d: %s`; expected error `%d: %s`",
+            ah_unit_failf(unit, "%s [%zu]:\n\tescaping failed with error `%d: %s`; expected error `%d: %s`",
                 label, test_i, err, actual_err_buf, test->expected_err, expected_err_buf);
             continue;
         }
@@ -44,7 +45,7 @@ void s_assert_json_unescape_tests(ah_unit_t* unit, const char* label, struct s_j
 
         if (actual_length != strlen(test->expected_output) || memcmp(buf, test->expected_output, actual_length) != 0) {
             ah_unit_failf(unit, "%s [%zu]:\n\texpected value `%s` not matching actual value `%s`",
-                label, test_i, test, test->expected_output, buf);
+                label, test_i, test->expected_output, buf);
             continue;
         }
         ah_unit_pass(unit);

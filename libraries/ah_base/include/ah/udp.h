@@ -196,7 +196,7 @@ struct ah_udp_sock_cbs {
      * @param sock Pointer to socket.
      * @param err  One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Socket opened successfully.
-     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open socket.
+     *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open socket.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
      *                                                associated with the given local address.

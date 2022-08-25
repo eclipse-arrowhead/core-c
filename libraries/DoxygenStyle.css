@@ -586,7 +586,15 @@ body .contents .memitem > .memdoc > dl.params .paramname {
     vertical-align: top;
 }
 
-body .contents div.qindex {
+body .contents .textblock > * {
+    margin: 1rem 0;
+}
+
+body .contents .textblock > .fragment {
+    padding: 1rem;
+}
+
+body .contents .qindex {
     margin-left: 1.5rem;
 }
 

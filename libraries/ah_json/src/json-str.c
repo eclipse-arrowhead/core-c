@@ -6,6 +6,7 @@
 #include <ah/err.h>
 
 static uint32_t s_integer_from_hex_digit(char hex_digit);
+static char s_integer_into_hex_digit(char i);
 static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char* dst, size_t* dst_length);
 
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length)
@@ -171,6 +172,124 @@ static uint32_t s_integer_from_hex_digit(char hex_digit)
     }
 
     return 0xFFFFFFFF; // No valid UTF-16 codepoint has this code.
+}
+
+ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* dst, size_t* dst_length)
+{
+    if (src == NULL && src_length != 0u) {
+        return AH_EINVAL;
+    }
+    if (dst_length == NULL) {
+        return AH_EINVAL;
+    }
+    if (dst == NULL && *dst_length != 0u) {
+        return AH_EINVAL;
+    }
+
+    ah_err_t err;
+
+    size_t dst_length0 = *dst_length;
+
+    while (src_length != 0u) {
+        if (dst_length0 == 0u) {
+            goto handle_overflow;
+        }
+
+        char ch = src[0u];
+
+        src = &src[1u];
+        src_length -= 1u;
+
+        if (((unsigned char) ch) >= 0x20 && ch != '"' && ch != '\\') {
+            dst[0u] = ch;
+            dst = &dst[1u];
+            dst_length0 -= 1u;
+            continue;
+        }
+
+        switch (ch) {
+        case '\b':
+            ch = 'b';
+            break;
+
+        case '\f':
+            ch = 'f';
+            break;
+
+        case '\n':
+            ch = 'n';
+            break;
+
+        case '\r':
+            ch = 'r';
+            break;
+
+        case '\t':
+            ch = 't';
+            break;
+
+        case '"':
+            ch = '"';
+            break;
+
+        case '\\':
+            ch = '\\';
+            break;
+
+        default:
+            if (dst_length0 < 6u) {
+                goto handle_overflow;
+            }
+
+            dst[0u] = '\\';
+            dst[1u] = 'u';
+            dst[2u] = '0';
+            dst[3u] = '0';
+            dst[4u] = s_integer_into_hex_digit((char) ((ch & 0xf0) >> 4u));
+            dst[5u] = s_integer_into_hex_digit((char) ((ch & 0x0f) >> 0u));
+
+            dst = &dst[6u];
+            dst_length0 -= 6u;
+
+            continue;
+        }
+
+
+        if (dst_length0 < 2u) {
+            goto handle_overflow;
+        }
+
+        dst[0u] = '\\';
+        dst[1u] = ch;
+
+        dst = &dst[2u];
+        dst_length0 -= 2u;
+    }
+
+    err = AH_ENONE;
+    goto end;
+
+handle_overflow:
+    err = AH_EOVERFLOW;
+
+end:
+    *dst_length -= dst_length0;
+
+    return err;
+
+}
+
+static char s_integer_into_hex_digit(char i)
+{
+    if (i >= 0 && i <= 9) {
+        return (char) ('0' + i);
+    }
+
+    if (i >= 10 && i <= 15) {
+        return (char) ('A' + (i - 10));
+    }
+
+    ah_unreachable();
 }
 
 ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length)

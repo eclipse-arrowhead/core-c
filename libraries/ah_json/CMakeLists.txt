@@ -18,6 +18,7 @@ set(
     test/main.c
     test/test-json-parse.c
     test/test-json-str-compare.c
+    test/test-json-str-escape.c
     test/test-json-str-unescape.c
 )
 
