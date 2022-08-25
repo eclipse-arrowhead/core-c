@@ -523,7 +523,7 @@ body .contents .memberdecls > tbody > :not(.heading) {
 
 body .contents .memberdecls > tbody > tr > td.memItemLeft,
 body .contents .memberdecls > tbody > tr > td.memItemRight {
-    color: var(--ahf-grey-text);
+    font-weight: normal;
 }
 
 body .contents .memberdecls > tbody > tr > td.memItemLeft {
