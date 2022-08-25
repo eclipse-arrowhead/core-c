@@ -35,15 +35,22 @@ static void s_skip_whitespace(struct s_parser* parser);
 
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst)
 {
-    if ((src.base == NULL && src.size != 0u) || dst == NULL) {
+    if ((src.base == NULL && src.size != 0u) || dst == NULL || dst->length > dst->capacity) {
         return AH_EINVAL;
     }
 
     struct s_parser parser = {
         .src_off = src.base,
         .src_end = &src.base[src.size],
-        .is_realloc_enabled = dst->values == NULL,
+        .is_realloc_enabled = false,
     };
+
+    if (dst->values == NULL) {
+        if (dst->length != 0u) {
+            return AH_EINVAL;
+        }
+        parser.is_realloc_enabled = true;
+    }
 
     s_skip_whitespace(&parser);
 

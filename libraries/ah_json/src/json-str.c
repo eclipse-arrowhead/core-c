@@ -175,9 +175,15 @@ static uint32_t s_integer_from_hex_digit(char hex_digit)
 
 ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length)
 {
-    ah_assert_if_debug(src != NULL || src_length == 0u);
-    ah_assert_if_debug(dst_length != NULL);
-    ah_assert_if_debug(dst != NULL || *dst_length == 0u);
+    if (src == NULL && src_length != 0u) {
+        return AH_EINVAL;
+    }
+    if (dst_length == NULL) {
+        return AH_EINVAL;
+    }
+    if (dst == NULL && *dst_length != 0u) {
+        return AH_EINVAL;
+    }
 
     ah_err_t err;
 
