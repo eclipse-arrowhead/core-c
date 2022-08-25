@@ -389,6 +389,11 @@ struct ah_tcp_listener_cbs {
      * @param conn Pointer to listener.
      * @param err  Should always be @c AH_ENONE. Other codes may be provided if
      *             an unexpected platform error occurs.
+     *
+     * @note This function is guaranteed to be called after every call to
+     *       ah_tcp_listener_close(), which makes it an excellent place to
+     *       release any resources associated with @a ln. You may, for example,
+     *       elect to call ah_tcp_listener_term() in this callback.
      */
     void (*on_close)(ah_tcp_listener_t* ln, ah_err_t err);
 };
@@ -508,9 +513,9 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
  *              port number automatically, specify port @c 0.
  * @return One of the following error codes: <ul>
  *   <li><b>AH_ENONE</b>        - @a conn opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not @c NULL and is not an IP-based address.
+ *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not an IP-based address.
  *   <li><b>AH_ECANCELED</b>    - The event loop of @a conn is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a conn is @c NULL.
+ *   <li><b>AH_EINVAL</b>       - @a conn or @a laddr is @c NULL.
  *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
  *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
  *   <li><b>AH_ESTATE</b>       - @a conn is not closed.
@@ -1065,28 +1070,27 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs);
 
 /**
- * Schedules opening of @a ln, which must be initialized, bound to the
- *        local network interface represented by @a laddr.
+ * Schedules opening of @a ln, which must be initialized, and its binding to the
+ * local network interface represented by @a laddr.
  *
  * If the return value of this function is @c AH_ENONE, meaning that the open
  * attempt could indeed be scheduled, its result will eventually be presented
  * via the ah_tcp_listener_cbs::on_open callback of @a ln.
  *
  * @param ln    Pointer to listener.
- * @param laddr Pointer to socket address representing a local network
- *              interface through which the listener must later receive
- *              incoming connections. If opening is successful, the referenced
- *              address must remain valid for the entire lifetime of the
- *              created connection. To bind to all or any local network
- *              interface, provide the wildcard address (see
- *              ah_sockaddr_ipv4_wildcard and ah_sockaddr_ipv6_wildcard). If
- *              you want the platform to chose port number automatically,
- *              specify port @c 0.
+ * @param laddr Pointer to socket address representing a local network interface
+ *              through which the listener must later receive incoming
+ *              connections. If opening is successful, the referenced address
+ *              must remain valid for the remaining lifetime of @a ln. To bind
+ *              to all or any local network interface, provide the wildcard
+ *              address (see ah_sockaddr_ipv4_wildcard and
+ *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
+ *              port number automatically, specify port @c 0.
  * @return One of the following error codes: <ul>
  *   <li><b>AH_ENONE</b>        - @a ln opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not @c NULL and is not an IP-based address.
+ *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not an IP-based address.
  *   <li><b>AH_ECANCELED</b>    - The event loop of @a ln is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a ln is @c NULL.
+ *   <li><b>AH_EINVAL</b>       - @a ln or @a laddr is @c NULL.
  *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
  *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
  *   <li><b>AH_ESTATE</b>       - @a ln is not closed.
@@ -1099,8 +1103,8 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
 
 /**
- * Schedules for @a ln, which must be open, to start listening for
- *        incoming connections.
+ * Schedules for @a ln, which must be open, to start listening for incoming
+ * connections.
  *
  * If the return value of this function is @c AH_ENONE, meaning that listening
  * could indeed be scheduled, its result will eventually be presented via the
@@ -1160,7 +1164,7 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
  * </ul>
  *
  * @note Any already accepted connections that are still open are unaffected by
- *       the listener being terminated. It may, however, be the case at some
+ *       the listener being terminated. It may, however, be the case that some
  *       resources @a ln shares with those connections are not freed until they
  *       are all closed.
  */
