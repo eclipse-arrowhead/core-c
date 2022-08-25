@@ -36,8 +36,8 @@
 #define AH_TIMEDIFF_MAX INT64_MAX
 
 /**
- * A reference to a certain point in time, as measured from an arbitrary
- *        point in the past.
+ * A reference to a certain point in time, as measured from an arbitrary point
+ * in the past.
  *
  * @note All fields of this data structure are @e private in the sense that a
  *       user of this API should not access them directly.
@@ -47,8 +47,7 @@ struct ah_time {
 };
 
 /**
- * The difference between two ah_time instances, measured in
- *        nanoseconds.
+ * The difference between two ah_time instances, measured in nanoseconds.
  *
  * This type is guaranteed to be a signed 64-bit integer on all supported
  * platforms.
@@ -89,10 +88,9 @@ ah_extern ah_time_t ah_time_now(void);
  * @param b Second time.
  * @param diff Pointer to receiver of difference between @a a and @a b.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Operation successful.
- *   <li><b>AH_EINVAL</b> - @a diff is NULL.
- *   <li><b>AH_ERANGE</b> - Subtracting @a b from @a a produced an
- *                          unrepresentable result.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a diff is NULL.
+ *   <li>@ref AH_ERANGE - Subtracting @a b from @a a produced an unrepresentable result.
  * </ul>
  */
 ah_extern ah_err_t ah_time_diff(ah_time_t a, ah_time_t b, ah_timediff_t* diff);
@@ -123,10 +121,9 @@ ah_extern int ah_time_cmp(ah_time_t a, ah_time_t b);
  * @param diff Increment.
  * @param result Pointer to result receiver.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Operation successful.
- *   <li><b>AH_EINVAL</b> - @a result is @c NULL.
- *   <li><b>AH_ERANGE</b> - Adding @a diff to @a time produced an
- *                          unrepresentable result.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a result is @c NULL.
+ *   <li>@ref AH_ERANGE - Adding @a diff to @a time produced an unrepresentable result.
  * </ul>
  */
 ah_extern ah_err_t ah_time_add(ah_time_t time, ah_timediff_t diff, ah_time_t* result);
@@ -138,10 +135,9 @@ ah_extern ah_err_t ah_time_add(ah_time_t time, ah_timediff_t diff, ah_time_t* re
  * @param diff Decrement.
  * @param result Pointer to result receiver.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Operation successful.
- *   <li><b>AH_EINVAL</b> - @a result is @c NULL.
- *   <li><b>AH_ERANGE</b> - Subtracting @a diff from @a time produced an
- *                          unrepresentable result.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a result is @c NULL.
+ *   <li>@ref AH_ERANGE - Subtracting @a diff from @a time produced an unrepresentable result.
  * </ul>
  */
 ah_extern ah_err_t ah_time_sub(ah_time_t time, ah_timediff_t diff, ah_time_t* result);
@@ -182,10 +178,9 @@ ah_extern bool ah_time_is_zero(ah_time_t time);
  * @param b Second time difference.
  * @param result Pointer to result receiver.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Operation successful.
- *   <li><b>AH_EINVAL</b> - @a result is @c NULL.
- *   <li><b>AH_ERANGE</b> - Adding @a a and @a b produced an unrepresentable
- *                          result.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a result is @c NULL.
+ *   <li>@ref AH_ERANGE - Adding @a a and @a b produced an unrepresentable result.
  * </ul>
  */
 ah_extern ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);
@@ -197,11 +192,10 @@ ah_extern ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff
  * @param b Second time difference.
  * @param result Pointer to result receiver.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Operation successful.
+ *   <li>@ref AH_ENONE  - Operation successful.
  *   <li><b>AH_DOM</b>    - @a b is @c 0.
- *   <li><b>AH_EINVAL</b> - @a result is @c NULL.
- *   <li><b>AH_ERANGE</b> - Dividing @a a with @a b produced an unrepresentable
- *                          result.
+ *   <li>@ref AH_EINVAL - @a result is @c NULL.
+ *   <li>@ref AH_ERANGE - Dividing @a a with @a b produced an unrepresentable result.
  * </ul>
  */
 ah_extern ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);
@@ -213,10 +207,9 @@ ah_extern ah_err_t ah_timediff_div(ah_timediff_t a, ah_timediff_t b, ah_timediff
  * @param b Second time difference.
  * @param result Pointer to result receiver.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Operation successful.
- *   <li><b>AH_EINVAL</b> - @a result is @c NULL.
- *   <li><b>AH_ERANGE</b> - Multiplying @a a with @a b produced an
- *                          unrepresentable result.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a result is @c NULL.
+ *   <li>@ref AH_ERANGE - Multiplying @a a with @a b produced an unrepresentable result.
  * </ul>
  */
 ah_extern ah_err_t ah_timediff_mul(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);
@@ -228,10 +221,9 @@ ah_extern ah_err_t ah_timediff_mul(ah_timediff_t a, ah_timediff_t b, ah_timediff
  * @param b Second time difference.
  * @param result Pointer to result receiver.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Operation successful.
- *   <li><b>AH_EINVAL</b> - @a result is @c NULL.
- *   <li><b>AH_ERANGE</b> - Subtracting @a a and @a b produced an
- *                          unrepresentable result.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a result is @c NULL.
+ *   <li>@ref AH_ERANGE - Subtracting @a a and @a b produced an unrepresentable result.
  * </ul>
  */
 ah_extern ah_err_t ah_timediff_sub(ah_timediff_t a, ah_timediff_t b, ah_timediff_t* result);

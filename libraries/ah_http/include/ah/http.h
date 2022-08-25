@@ -46,11 +46,11 @@
  * procedure. If a certain metadata item, such as a header or chunk extension,
  * exceeds the size of its receive buffer, or a send buffer is too small to
  * contain @e all relevant metadata items, the message transmission is failed
- * with error code @c AH_EOVERFLOW. Limiting sizes in this way helps reduce the
- * complexity the client implementation and works as a form of protection from
- * exploits that use large metadata items. Generally, the size of each of these
- * buffers will be limited by the page allocator page size, @c AH_PSIZE, more of
- * which you can read in the documentation for ah_palloc().
+ * with error code @ref AH_EOVERFLOW. Limiting sizes in this way helps reduce
+ * the complexity the client implementation and works as a form of protection
+ * from exploits that use large metadata items. Generally, the size of each of
+ * these buffers will be limited by the page allocator page size, @c AH_PSIZE,
+ * more of which you can read in the documentation for ah_palloc().
  *
  * <h3>Servers</h3>
  *
@@ -146,19 +146,19 @@ struct ah_http_client_cbs {
      *
      * @param cln Pointer to client.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                          - Client opened successfully.
-     *   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open TCP connection.
-     *   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
-     *   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
-     *                                                  associated with the given local address.
-     *   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
-     *   <li><b>AH_ECANCELED</b>                      - Client event loop is shutting down.
-     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
-     *   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
-     *   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>    - Network service failed to initialize.
+     *   <li>@ref AH_ENONE                          - Client opened successfully.
+     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open TCP connection.
+     *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
+     *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
+     *                                                associated with the given local address.
+     *   <li>@ref AH_EAFNOSUPPORT                   - Specified IP version not supported.
+     *   <li>@ref AH_ECANCELED                      - Client event loop is shutting down.
+     *   <li>@ref AH_EMFILE [Darwin, Linux, Win32]  - Process descriptor table is full.
+     *   <li>@ref AH_ENETDOWN [Win32]               - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Darwin, Linux]         - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux, Win32] - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]         - Not enough heap memory available.
+     *   <li>@ref AH_EPROVIDERFAILEDINIT [Win32]    - Network service failed to initialize.
      * </ul>
      *
      * @note This function is never called for accepted clients, which
@@ -176,32 +176,32 @@ struct ah_http_client_cbs {
      *
      * @param cln Pointer to client.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                             - Connection established successfully.
-     *   <li><b>AH_EADDRINUSE [Darwin, Linux, Win32]</b> - Failed to bind a concrete local address.
-     *                                                     This error only occurs if the client
-     *                                                     was opened with the wildcard address,
-     *                                                     which means that network interface
-     *                                                     binding is delayed until connection.
-     *   <li><b>AH_EADDRNOTAVAIL [Darwin, Win32]</b>     - The specified remote address is invalid.
-     *   <li><b>AH_EADDRNOTAVAIL [Linux]</b>             - No ephemeral TCP port is available.
-     *   <li><b>AH_EAFNOSUPPORT</b>                      - The IP version of the specified remote
-     *                                                     address does not match that of the bound
-     *                                                     local address.
-     *   <li><b>AH_ECANCELED</b>                         - The event loop of @a cln has shut down.
-     *   <li><b>AH_ECONNREFUSED</b>                      - Connection attempt ignored or rejected
-     *                                                     by targeted remote host.
-     *   <li><b>AH_ECONNRESET [Darwin]</b>               - Connection attempt reset by targeted
-     *                                                     remote host.
-     *   <li><b>AH_EHOSTUNREACH</b>                      - The targeted remote host could not be
-     *                                                     reached.
-     *   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
-     *   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
-     *   <li><b>AH_ENETUNREACH</b>                       - Network of targeted remote host not
-     *                                                     reachable.
-     *   <li><b>AH_ENOBUFS</b>                           - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM</b>                            - Not enough heap memory available.
-     *   <li><b>AH_ETIMEDOUT</b>                         - The connection attempt did not complete
-     *                                                     before its deadline.
+     *   <li>@ref AH_ENONE                             - Connection established successfully.
+     *   <li>@ref AH_EADDRINUSE [Darwin, Linux, Win32] - Failed to bind a concrete local address.
+     *                                                   This error only occurs if the client was
+     *                                                   opened with the wildcard address, which
+     *                                                   means that network interface binding is
+     *                                                   delayed until connection.
+     *   <li>@ref AH_EADDRNOTAVAIL [Darwin, Win32]     - The specified remote address is invalid.
+     *   <li>@ref AH_EADDRNOTAVAIL [Linux]             - No ephemeral TCP port is available.
+     *   <li>@ref AH_EAFNOSUPPORT                      - The IP version of the specified remote
+     *                                                   address does not match that of the bound
+     *                                                   local address.
+     *   <li>@ref AH_ECANCELED                         - The event loop of @a cln has shut down.
+     *   <li>@ref AH_ECONNREFUSED                      - Connection attempt ignored or rejected by
+     *                                                   targeted remote host.
+     *   <li>@ref AH_ECONNRESET [Darwin]               - Connection attempt reset by targeted
+     *                                                   remote host.
+     *   <li>@ref AH_EHOSTUNREACH                      - The targeted remote host could not be
+     *                                                   reached.
+     *   <li>@ref AH_ENETDOWN [Darwin]                 - Local network not online.
+     *   <li>@ref AH_ENETDOWN [Win32]                  - The network subsystem has failed.
+     *   <li>@ref AH_ENETUNREACH                       - Network of targeted remote host not
+     *                                                   reachable.
+     *   <li>@ref AH_ENOBUFS                           - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM                            - Not enough heap memory available.
+     *   <li>@ref AH_ETIMEDOUT                         - The connection attempt did not complete
+     *                                                   before its deadline.
      * </ul>
      *
      * @note In contrast to plain TCP connections, data receiving is always
@@ -217,37 +217,37 @@ struct ah_http_client_cbs {
      * @a cln finished sending an HTTP message or the attempt failed.
      *
      * This callback is invoked if a complete HTTP message could be sent, in
-     * which case @a err is @c AH_ENONE, or if sending it failed, which should
+     * which case @a err is @ref AH_ENONE, or if sending it failed, which should
      * prompt you to close @a cln using ah_http_client_close().
      *
      * @param cln  Pointer to client.
      * @param head Pointer to ah_http_head instance provided earlier to
      *             ah_http_client_send_head().
      * @param err  One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                             - Message sent successfully.
-     *   <li><b>AH_ECANCELED</b>                         - Client event loop is shutting down or it
-     *                                                     was closed before the message represented
-     *                                                     by @a head could be transmitted.
-     *   <li><b>AH_ECONNABORTED [Win32]</b>              - Virtual circuit terminated due to
-     *                                                     time-out or other failure.
-     *   <li><b>AH_ECONNRESET [Darwin, Linux, Win32]</b> - Client connection reset by remote host.
-     *   <li><b>AH_EEOF</b>                              - Client connection closed for writing.
-     *   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
-     *   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
-     *   <li><b>AH_ENETRESET [Win32]</b>                 - Keep-alive is enabled for the connection
-     *                                                     and a related failure was detected.
-     *   <li><b>AH_ENETUNREACH [Darwin]</b>              - Network of remote host not reachable.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b>    - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM</b>                            - Not enough heap memory available.
-     *   <li><b>AH_EOVERFLOW</b>                         - The used output buffer, which is always
-     *                                                     allocated via the page allocator (see
-     *                                                     ah_palloc()) is too small for it to be
-     *                                                     possible to store the start line, headers
-     *                                                     and/or chunk extension of some
-     *                                                     ah_http_head, ah_http_chunk or
-     *                                                     ah_http_trailer part of the message
-     *                                                     transmission.
-     *   <li><b>AH_ETIMEDOUT</b>                         - Client connection timed out.
+     *   <li>@ref AH_ENONE                             - Message sent successfully.
+     *   <li>@ref AH_ECANCELED                         - Client event loop is shutting down or it
+     *                                                   was closed before the message represented
+     *                                                   by @a head could be transmitted.
+     *   <li>@ref AH_ECONNABORTED [Win32]              - Virtual circuit terminated due to time-out
+     *                                                   or other failure.
+     *   <li>@ref AH_ECONNRESET [Darwin, Linux, Win32] - Client connection reset by remote host.
+     *   <li>@ref AH_EEOF                              - Client connection closed for writing.
+     *   <li>@ref AH_ENETDOWN [Darwin]                 - Local network not online.
+     *   <li>@ref AH_ENETDOWN [Win32]                  - The network subsystem has failed.
+     *   <li>@ref AH_ENETRESET [Win32]                 - Keep-alive is enabled for the connection
+     *                                                   and a related failure was detected.
+     *   <li>@ref AH_ENETUNREACH [Darwin]              - Network of remote host not reachable.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux, Win32]    - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM                            - Not enough heap memory available.
+     *   <li>@ref AH_EOVERFLOW                         - The used output buffer, which is always
+     *                                                   allocated via the page allocator (see
+     *                                                   ah_palloc()) is too small for it to be
+     *                                                   possible to store the start line, headers
+     *                                                   and/or chunk extension of some
+     *                                                   ah_http_head, ah_http_chunk or
+     *                                                   ah_http_trailer part of the message
+     *                                                   transmission.
+     *   <li>@ref AH_ETIMEDOUT                         - Client connection timed out.
      * </ul>
      */
     void (*on_send)(ah_http_client_t* cln, ah_http_head_t* head, ah_err_t err);
@@ -341,7 +341,7 @@ struct ah_http_client_cbs {
      * all of the contents of @a in are read or discarded every time this
      * callback is invoked, or the buffer is repackaged via
      * ah_tcp_in_repackage(), that buffer may eventually become full, triggering
-     * the @c AH_EOVERFLOW error. If you wish to save the contents of @a in
+     * the @ref AH_EOVERFLOW error. If you wish to save the contents of @a in
      * without having to copy it over to another buffer, you can detach it from
      * @a cln using ah_tcp_in_detach(), which allocates a new input buffer for
      * @a cln.
@@ -359,40 +359,40 @@ struct ah_http_client_cbs {
      * @a cln has finished receiving a message.
      *
      * If this callback is invoked with an error code (@a err is not equal to
-     * @c AH_ENONE), or if connection keep-alive is disabled, the client will be
+     * @ref AH_ENONE), or if connection keep-alive is disabled, the client will be
      * closed automatically at some point after this function returns.
      *
      * @param cln Pointer to client.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                      - Message received successfully.
-     *   <li><b>AH_EBADMSG</b>                    - Message metadata violates HTTP specification.
-     *   <li><b>AH_ECANCELED</b>                  - Client event loop is shutting down.
-     *   <li><b>AH_ECONNABORTED [Win32]</b>       - Virtual circuit terminated due to time-out or
-     *                                              other failure.
-     *   <li><b>AH_ECONNRESET [Darwin, Win32]</b> - Connection reset by remote host.
-     *   <li><b>AH_EDISCON [Win32]</b>            - Connection gracefully closed by remote host.
-     *   <li><b>AH_EDUP</b>                       - Supported header or header value that may only
-     *                                              occur once has been seen multiple times.
-     *   <li><b>AH_EEOF</b>                       - Connection closed for reading.
-     *   <li><b>AH_EILSEQ</b>                     - Message syntax not valid according to RFC9112.
-     *   <li><b>AH_ENETDOWN [Win32]</b>           - The network subsystem has failed.
-     *   <li><b>AH_ENETRESET [Win32]</b>          - Keep-alive is enabled for the connection and a
-     *                                              related failure was detected.
-     *   <li><b>AH_ENOBUFS</b>                    - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM</b>                     - Not enough heap memory available.
-     *   <li><b>AH_EOVERFLOW</b>                  - The input buffer of @a cln is full. To prevent
-     *                                              this error from occurring when receiving body
-     *                                              data, you must ensure that the input buffer
-     *                                              never gets exhausted by reading, discarding,
-     *                                              repackaging or detaching its contents. The same
-     *                                              error also occurs when a received metadata item
-     *                                              is too large, which can only be avoided by the
-     *                                              sender ensuring that no individual start line,
-     *                                              header or chunk line exceeds the size
-     *                                              @c AH_TCP_IN_BUF_SIZE.
-     *   <li><b>AH_EPROTONOSUPPORT</b>            - Received message uses an unsupported version of
-     *                                              HTTP.
-     *   <li><b>AH_ETIMEDOUT</b>                  - Connection timed out.
+     *   <li>@ref AH_ENONE                      - Message received successfully.
+     *   <li>@ref AH_EBADMSG                    - Message metadata violates HTTP specification.
+     *   <li>@ref AH_ECANCELED                  - Client event loop is shutting down.
+     *   <li>@ref AH_ECONNABORTED [Win32]       - Virtual circuit terminated due to time-out or
+     *                                            other failure.
+     *   <li>@ref AH_ECONNRESET [Darwin, Win32] - Connection reset by remote host.
+     *   <li>@ref AH_EDISCON [Win32]            - Connection gracefully closed by remote host.
+     *   <li>@ref AH_EDUP                       - Supported header or header value that may only
+     *                                            occur once has been seen multiple times.
+     *   <li>@ref AH_EEOF                       - Connection closed for reading.
+     *   <li>@ref AH_EILSEQ                     - Message syntax not valid according to RFC9112.
+     *   <li>@ref AH_ENETDOWN [Win32]           - The network subsystem has failed.
+     *   <li>@ref AH_ENETRESET [Win32]          - Keep-alive is enabled for the connection and a
+     *                                            related failure was detected.
+     *   <li>@ref AH_ENOBUFS                    - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM                     - Not enough heap memory available.
+     *   <li>@ref AH_EOVERFLOW                  - The input buffer of @a cln is full. To prevent
+     *                                            this error from occurring when receiving body
+     *                                            data, you must ensure that the input buffer
+     *                                            never gets exhausted by reading, discarding,
+     *                                            repackaging or detaching its contents. The same
+     *                                            error also occurs when a received metadata item
+     *                                            is too large, which can only be avoided by the
+     *                                            sender ensuring that no individual start line,
+     *                                            header or chunk line exceeds the size
+     *                                            @c AH_TCP_IN_BUF_SIZE.
+     *   <li>@ref AH_EPROTONOSUPPORT            - Received message uses an unsupported version of
+     *                                            HTTP.
+     *   <li>@ref AH_ETIMEDOUT                  - Connection timed out.
      * </ul>
      */
     void (*on_recv_end)(ah_http_client_t* cln, ah_err_t err);
@@ -401,7 +401,7 @@ struct ah_http_client_cbs {
      * @a cln has been closed.
      *
      * @param cln Pointer to connection.
-     * @param err Should always be @c AH_ENONE. Other codes may be provided if
+     * @param err Should always be @ref AH_ENONE. Other codes may be provided if
      *            an unexpected platform error occurs.
      *
      * @note This function is guaranteed to be called after every call to
@@ -437,18 +437,18 @@ struct ah_http_server_cbs {
      *
      * @param srv Pointer to server.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                          - Server opened successfully.
-     *   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open TCP listener.
-     *   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
-     *   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
-     *                                                  associated with the given local address.
-     *   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
-     *   <li><b>AH_ECANCELED</b>                      - Server event loop is shutting down.
-     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
-     *   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
+     *   <li>@ref AH_ENONE                          - Server opened successfully.
+     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open TCP listener.
+     *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
+     *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
+     *                                                associated with the given local address.
+     *   <li>@ref AH_EAFNOSUPPORT                   - Specified IP version not supported.
+     *   <li>@ref AH_ECANCELED                      - Server event loop is shutting down.
+     *   <li>@ref AH_EMFILE [Darwin, Linux, Win32]  - Process descriptor table is full.
+     *   <li>@ref AH_ENETDOWN [Win32]               - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Darwin, Linux]         - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux, Win32] - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]         - Not enough heap memory available.
      * </ul>
      */
     void (*on_open)(ah_http_server_t* srv, ah_err_t err);
@@ -459,16 +459,16 @@ struct ah_http_server_cbs {
      *
      * @param srv Pointer to server.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                     - Server started to listen successfully.
-     *   <li><b>AH_EACCESS [Darwin]</b>          - Not permitted to listen for TCP connections.
-     *   <li><b>AH_EADDRINUSE [Linux, Win32]</b> - No ephemeral TCP port is available. This error
-     *                                             can only occur if the server was opened with the
-     *                                             wildcard address, which means that network
-     *                                             interface binding is delayed until listening.
-     *   <li><b>AH_ECANCELED</b>                 - Server event loop is shutting down.
-     *   <li><b>AH_ENETDOWN [Win32]</b>          - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Win32]</b>            - System file table is full.
-     *   <li><b>AH_ENOBUFS [Win32]</b>           - Not enough buffer space available.
+     *   <li>@ref AH_ENONE                     - Server started to listen successfully.
+     *   <li>@ref AH_EACCESS [Darwin]          - Not permitted to listen for TCP connections.
+     *   <li>@ref AH_EADDRINUSE [Linux, Win32] - No ephemeral TCP port is available. This error
+     *                                           can only occur if the server was opened with the
+     *                                           wildcard address, which means that network
+     *                                           interface binding is delayed until listening.
+     *   <li>@ref AH_ECANCELED                 - Server event loop is shutting down.
+     *   <li>@ref AH_ENETDOWN [Win32]          - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Win32]            - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Win32]           - Not enough buffer space available.
      * </ul>
      */
     void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
@@ -476,27 +476,27 @@ struct ah_http_server_cbs {
     /**
      * @a srv has accepted the client @a cln.
      *
-     * If @a err is @c AH_ENONE, which indicates a successful acceptance, all
+     * If @a err is @ref AH_ENONE, which indicates a successful acceptance, all
      * further events related to @a cln will be dealt with via the client
      * callback set (see ah_http_client_cbs) provided when listening was started
      * via ah_http_server_listen().
      *
      * @param srv   Pointer to listener.
      * @param cln   Pointer to accepted client, or @c NULL if @a err is not
-     *              @c AH_ENONE.
+     *              @ref AH_ENONE.
      * @param raddr Pointer to address of @a cln, or @c NULL if @a err is not
-     *              @c AH_ENONE.
+     *              @ref AH_ENONE.
      * @param err  One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                         - Client accepted successfully.
-     *   <li><b>AH_ECANCELED</b>                     - Server event loop is shutting down.
-     *   <li><b>AH_ECONNABORTED [Darwin, Linux]</b>  - Connection aborted before finalization.
-     *   <li><b>AH_ECONNRESET [Win32]</b>            - Connection aborted before finalization.
-     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b> - Process descriptor table is full.
-     *   <li><b>AH_ENETDOWN [Win32]</b>              - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Darwin, Linux]</b>        - System file table is full.
-     *   <li><b>AH_ENOBUFS [Linux, Win32]</b>        - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>        - Not enough heap memory available.
-     *   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>   - Network service failed to initialize.
+     *   <li>@ref AH_ENONE                         - Client accepted successfully.
+     *   <li>@ref AH_ECANCELED                     - Server event loop is shutting down.
+     *   <li>@ref AH_ECONNABORTED [Darwin, Linux]  - Connection aborted before finalization.
+     *   <li>@ref AH_ECONNRESET [Win32]            - Connection aborted before finalization.
+     *   <li>@ref AH_EMFILE [Darwin, Linux, Win32] - Process descriptor table is full.
+     *   <li>@ref AH_ENETDOWN [Win32]              - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Darwin, Linux]        - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Linux, Win32]        - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]        - Not enough heap memory available.
+     *   <li>@ref AH_EPROVIDERFAILEDINIT [Win32]   - Network service failed to initialize.
      * </ul>
      *
      * @note Every successfully accepted @a cln must eventually be provided to
@@ -511,7 +511,7 @@ struct ah_http_server_cbs {
      * @a srv has been closed.
      *
      * @param srv Pointer to server.
-     * @param err Should always be @c AH_ENONE. Other codes may be provided if
+     * @param err Should always be @ref AH_ENONE. Other codes may be provided if
      *            an unexpected platform error occurs.
      *
      * @note This function is guaranteed to be called after every call to
@@ -687,12 +687,11 @@ struct ah_http_trailer {
  * @param trans Desired transport.
  * @param cbs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a cln successfully initialized.
- *   <li><b>AH_EINVAL</b> - @a cln or @a loop or @a cbs is @c NULL.
- *   <li><b>AH_EINVAL</b> - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
- *   <li><b>AH_EINVAL</b> - @c on_open, @c on_connect, @c on_send, @c on_recv_line,
- *                          @c on_recv_header, @c on_recv_data, @c on_recv_end, or @c on_close of
- *                          @a cbs is @c NULL.
+ *   <li>@ref AH_ENONE  - @a cln successfully initialized.
+ *   <li>@ref AH_EINVAL - @a cln or @a loop or @a cbs is @c NULL.
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @c on_open, @c on_connect, @c on_send, @c on_recv_line, @c on_recv_header,
+ *                        @c on_recv_data, @c on_recv_end, or @c on_close of @a cbs is @c NULL.
  * </ul>
  */
 ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_cbs_t* cbs);
@@ -701,7 +700,7 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, a
  * Schedules opening of @a cln, which must be initialized, and its binding to
  * the local network interface represented by @a laddr.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the open
+ * If the return value of this function is @ref AH_ENONE, meaning that the open
  * attempt could indeed be scheduled, its result will eventually be presented
  * via the ah_http_client_cbs::on_open callback of @a cln.
  *
@@ -715,13 +714,13 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, a
  *              If you want the platform to chose port number automatically,
  *              specify port @c 0.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>        - @a cln opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not @c NULL and is not an IP-based address.
- *   <li><b>AH_ECANCELED</b>    - The event loop of @a cln is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a cln is @c NULL.
- *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>       - @a cln is not closed.
+ *   <li>@ref AH_ENONE        - @a cln opening successfully scheduled.
+ *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not @c NULL and is not an IP-based address.
+ *   <li>@ref AH_ECANCELED    - The event loop of @a cln is shutting down.
+ *   <li>@ref AH_EINVAL       - @a cln is @c NULL.
+ *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a cln is not closed.
  * </ul>
  *
  * @note Every successfully opened @a cln must eventually be provided to
@@ -732,7 +731,7 @@ ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_
 /**
  * Schedules connection of @a cln, which must be open, to @a raddr.
  *
- * If the return value of this function is @c AH_ENONE, meaning that connection
+ * If the return value of this function is @ref AH_ENONE, meaning that connection
  * could indeed be scheduled, its result will eventually be presented via the
  * ah_http_client_cbs::on_connect callback of @a cln.
  *
@@ -742,13 +741,13 @@ ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_
  *              successful, the referenced address must remain valid until
  *              @a cln is closed.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>        - @a cln opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a raddr is not an IP-based address.
- *   <li><b>AH_ECANCELED</b>    - The event loop of @a cln is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a cln or @a raddr is @c NULL.
- *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>       - @a cln is not open.
+ *   <li>@ref AH_ENONE        - @a cln opening successfully scheduled.
+ *   <li>@ref AH_EAFNOSUPPORT - @a raddr is not an IP-based address.
+ *   <li>@ref AH_ECANCELED    - The event loop of @a cln is shutting down.
+ *   <li>@ref AH_EINVAL       - @a cln or @a raddr is @c NULL.
+ *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a cln is not open.
  * </ul>
  *
  * @warning This function must be called with a successfully opened client. An
@@ -792,10 +791,10 @@ ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockad
  * @param cln  Pointer to client.
  * @param head Pointer to head, specifying a start line and set of headers.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>           - Transmission of @a head enqueued successfully.
- *   <li><b>AH_EINVAL</b>          - @a cln or @a head is @c NULL.
- *   <li><b>AH_EPROTONOSUPPORT</b> - The HTTP version specified in <code>head->version</code> is not
- *                                   supported.
+ *   <li>@ref AH_ENONE           - Transmission of @a head enqueued successfully.
+ *   <li>@ref AH_EINVAL          - @a cln or @a head is @c NULL.
+ *   <li>@ref AH_EPROTONOSUPPORT - The HTTP version specified in <code>head->version</code> is not
+ *                                 supported.
  * </ul>
  */
 ah_extern ah_err_t ah_http_client_send_head(ah_http_client_t* cln, ah_http_head_t* head);
@@ -815,19 +814,17 @@ ah_extern ah_err_t ah_http_client_send_head(ah_http_client_t* cln, ah_http_head_
  * @param cln Pointer to client.
  * @param out Pointer to TCP output buffer.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - Transmission of @a out enqueued successfully.
- *   <li><b>AH_ECANCELED</b>        - The event loop of @a cln is shutting down.
- *   <li><b>AH_EINVAL</b>           - @a cln or @a out is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
- *   <li><b>AH_ERANGE</b>           - The variable keeping track of the number
- *                                    of currently enqueued data transmissions
- *                                    would overflow if @a out was accepted.
- *   <li><b>AH_ESTATE</b>           - @a cln is not currently sending any HTTP
- *                                    message, @a cln is not open, or the write
- *                                    direction of the connection of @a cln has
- *                                    been shut down.
+ *   <li>@ref AH_ENONE            - Transmission of @a out enqueued successfully.
+ *   <li>@ref AH_ECANCELED        - The event loop of @a cln is shutting down.
+ *   <li>@ref AH_EINVAL           - @a cln or @a out is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
+ *   <li>@ref AH_ERANGE           - The variable keeping track of the number of currently enqueued
+ *                                  data transmissions would overflow if @a out was accepted.
+ *   <li>@ref AH_ESTATE           - @a cln is not currently sending any HTTP message, @a cln is not
+ *                                  open, or the write direction of the connection of @a cln has
+ *                                  been shut down.
  * </ul>
  */
 ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_out_t* out);
@@ -841,12 +838,12 @@ ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_out_t*
  *
  * @param cln Pointer to client.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Transmission of @a out ended successfully.
- *   <li><b>AH_EINVAL</b> - @a cln is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a cln is not currently sending any HTTP message.
+ *   <li>@ref AH_ENONE  - Transmission of @a out ended successfully.
+ *   <li>@ref AH_EINVAL - @a cln is @c NULL.
+ *   <li>@ref AH_ESTATE - @a cln is not currently sending any HTTP message.
  * </ul>
  *
- * @note This function returning with the error code @c AH_ENONE, which
+ * @note This function returning with the error code @ref AH_ENONE, which
  *       indicates success, only means that all parts of the message have been
  *       enqueued. Whether or not their actual transmission is successful is
  *       reported later via ah_http_client_cbs::on_send.
@@ -867,25 +864,25 @@ ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
  * @param cln   Pointer to client.
  * @param chunk Pointer to chunk.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - Transmission of @a out enqueued successfully.
- *   <li><b>AH_ECANCELED</b>        - The event loop of @a cln is shutting down.
- *   <li><b>AH_EILSEQ</b>           - The @c ext field of @a chunk is not @c NULL, an empty
- *                                    NULL-terminated C string and it does not begin with a
- *                                    semicolon @c ;, which means that inserting @c ext into the
- *                                    chunk will make it syntactically invalid. <em>This error code
- *                                    is only returned when running in @c DEBUG mode.</em>
- *   <li><b>AH_EINVAL</b>           - @a cln or @a chunk is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
- *   <li><b>AH_EOVERFLOW</b>        - The used output buffer, which is always allocated via the page
- *                                    allocator (see ah_palloc()) is too small for it to be possible
- *                                    to store the @c size and @c ext specified in @a chunk.
- *   <li><b>AH_ERANGE</b>           - The variable keeping track of the number of currently enqueued
- *                                    data transmissions would overflow if @a chunk was accepted.
- *   <li><b>AH_ESTATE</b>           - @a cln is not currently sending any HTTP message, @a cln is
- *                                    not open, or the write direction of the connection of @a cln
- *                                    has been shut down.
+ *   <li>@ref AH_ENONE            - Transmission of @a out enqueued successfully.
+ *   <li>@ref AH_ECANCELED        - The event loop of @a cln is shutting down.
+ *   <li>@ref AH_EILSEQ           - The @c ext field of @a chunk is not @c NULL, an empty
+ *                                  NULL-terminated C string and it does not begin with a
+ *                                  semicolon @c ;, which means that inserting @c ext into the
+ *                                  chunk will make it syntactically invalid. <em>This error code
+ *                                  is only returned when running in @c DEBUG mode.</em>
+ *   <li>@ref AH_EINVAL           - @a cln or @a chunk is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
+ *   <li>@ref AH_EOVERFLOW        - The used output buffer, which is always allocated via the page
+ *                                  allocator (see ah_palloc()) is too small for it to be possible
+ *                                  to store the @c size and @c ext specified in @a chunk.
+ *   <li>@ref AH_ERANGE           - The variable keeping track of the number of currently enqueued
+ *                                  data transmissions would overflow if @a chunk was accepted.
+ *   <li>@ref AH_ESTATE           - @a cln is not currently sending any HTTP message, @a cln is
+ *                                  not open, or the write direction of the connection of @a cln
+ *                                  has been shut down.
  * </ul>
  */
 ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chunk_t* chunk);
@@ -902,26 +899,26 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
  * @param cln     Pointer to client.
  * @param trailer Pointer to trailer.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - Transmission of @a trailer enqueued and current message ended
- *                                    successfully.
- *   <li><b>AH_ECANCELED</b>        - The event loop of @a cln is shutting down.
- *   <li><b>AH_EILSEQ</b>           - The @c ext field of @a trailer is not @c NULL, an empty
- *                                    NULL-terminated C string and it does not begin with a
- *                                    semicolon @c ;, which means that inserting @c ext into the
- *                                    last chunk will make it syntactically invalid. <em>This error
- *                                    code is only returned when running in @c DEBUG mode.</em>
- *   <li><b>AH_EINVAL</b>           - @a cln or @a trailer is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
- *   <li><b>AH_EOVERFLOW</b>        - The used output buffer, which is always allocated via the page
- *                                    allocator (see ah_palloc()) is too small for it to be possible
- *                                    to store the @c size and @c ext specified in @a trailer.
- *   <li><b>AH_ERANGE</b>           - The variable keeping track of the number of currently enqueued
- *                                    data transmissions would overflow if @a trailer was accepted.
- *   <li><b>AH_ESTATE</b>           - @a cln is not currently sending any HTTP message, @a cln is
- *                                    not open, or the write direction of the connection of @a cln
- *                                    has been shut down.
+ *   <li>@ref AH_ENONE            - Transmission of @a trailer enqueued and current message ended
+ *                                  successfully.
+ *   <li>@ref AH_ECANCELED        - The event loop of @a cln is shutting down.
+ *   <li>@ref AH_EILSEQ           - The @c ext field of @a trailer is not @c NULL, an empty
+ *                                  NULL-terminated C string and it does not begin with a
+ *                                  semicolon @c ;, which means that inserting @c ext into the
+ *                                  last chunk will make it syntactically invalid. <em>This error
+ *                                  code is only returned when running in @c DEBUG mode.</em>
+ *   <li>@ref AH_EINVAL           - @a cln or @a trailer is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
+ *   <li>@ref AH_EOVERFLOW        - The used output buffer, which is always allocated via the page
+ *                                  allocator (see ah_palloc()) is too small for it to be possible
+ *                                  to store the @c size and @c ext specified in @a trailer.
+ *   <li>@ref AH_ERANGE           - The variable keeping track of the number of currently enqueued
+ *                                  data transmissions would overflow if @a trailer was accepted.
+ *   <li>@ref AH_ESTATE           - @a cln is not currently sending any HTTP message, @a cln is
+ *                                  not open, or the write direction of the connection of @a cln
+ *                                  has been shut down.
  * </ul>
  */
 ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_trailer_t* trailer);
@@ -929,15 +926,15 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
 /**
  * Schedules closing of @a cln.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the
+ * If the return value of this function is @ref AH_ENONE, meaning that the
  * closing could indeed be scheduled, its result will eventually be presented
  * via the ah_http_client_cbs::on_close callback of @a cln.
  *
  * @param cln Pointer to client.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Close of @a cln successfully scheduled.
- *   <li><b>AH_EINVAL</b> - @a cln is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a cln is already closed.
+ *   <li>@ref AH_ENONE  - Close of @a cln successfully scheduled.
+ *   <li>@ref AH_EINVAL - @a cln is @c NULL.
+ *   <li>@ref AH_ESTATE - @a cln is already closed.
  * </ul>
  */
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
@@ -964,11 +961,11 @@ ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln);
  * @param cln   Pointer to client.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a cln or @a laddr is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ESTATE</b>                  - @a cln is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a cln or @a laddr is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ESTATE                  - @a cln is closed.
  * </ul>
  *
  * @note This function will always report the same local address as the TCP
@@ -984,11 +981,11 @@ ah_extern ah_err_t ah_http_client_get_laddr(const ah_http_client_t* cln, ah_sock
  * @param cln   Pointer to client.
  * @param raddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a cln or @a raddr is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ESTATE</b>                  - @a cln is not connected to a remote host.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a cln or @a raddr is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ESTATE                  - @a cln is not connected to a remote host.
  * </ul>
  *
  * @note This function will always report the same local address as the TCP
@@ -1061,15 +1058,15 @@ ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_da
  * @param trans Desired transport.
  * @param cbs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>     - @a srv successfully initialized.
- *   <li><b>AH_EINVAL</b>    - @a srv or @a loop or @a cbs is @c NULL.
- *   <li><b>AH_EINVAL</b>    - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
- *   <li><b>AH_EINVAL</b>    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
- *                             @c NULL.
- *   <li><b>AH_ENOMEM</b>    - Heap memory could not be allocated for storing incoming connections.
- *   <li><b>AH_EOVERFLOW</b> - @c AH_PSIZE is too small for it to be possible to store both
-/ *                            metadata @e and have room for at least one incoming connection in a
- *                             single page provided by the page allocator (see ah_palloc()).
+ *   <li>@ref AH_ENONE     - @a srv successfully initialized.
+ *   <li>@ref AH_EINVAL    - @a srv or @a loop or @a cbs is @c NULL.
+ *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
+ *                           @c NULL.
+ *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.
+ *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both
+/ *                          metadata @e and have room for at least one incoming connection in a
+ *                           single page provided by the page allocator (see ah_palloc()).
  * </ul>
  *
  * @note Every successfully initialized @a srv must eventually be provided to
@@ -1081,7 +1078,7 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, a
  * Schedules opening of @a srv, which must be initialized, and its binding to
  * the local network interface represented by @a laddr.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the open
+ * If the return value of this function is @ref AH_ENONE, meaning that the open
  * attempt could indeed be scheduled, its result will eventually be presented
  * via the ah_http_server_cbs::on_open callback of @a srv.
  *
@@ -1095,13 +1092,13 @@ ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, a
  *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
  *              port number automatically, specify port @c 0.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>        - @a srv opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not an IP-based address.
- *   <li><b>AH_ECANCELED</b>    - The event loop of @a srv is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a srv or @a laddr is @c NULL.
- *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>       - @a srv is not closed.
+ *   <li>@ref AH_ENONE        - @a srv opening successfully scheduled.
+ *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not an IP-based address.
+ *   <li>@ref AH_ECANCELED    - The event loop of @a srv is shutting down.
+ *   <li>@ref AH_EINVAL       - @a srv or @a laddr is @c NULL.
+ *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a srv is not closed.
  * </ul>
  *
  * @note Every successfully opened @a srv must eventually be provided to
@@ -1113,7 +1110,7 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
  * Schedules for @a srv, which must be open, to start listening for connecting
  * clients.
  *
- * If the return value of this function is @c AH_ENONE, meaning that listening
+ * If the return value of this function is @ref AH_ENONE, meaning that listening
  * could indeed be scheduled, its result will eventually be presented via the
  * ah_http_server_cbs::on_listen callback of @a srv.
  *
@@ -1125,14 +1122,14 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
  * @param conn_cbs Pointer to event callback set to provide to all accepted
  *                 clients.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>     - @a srv listening successfully scheduled.
- *   <li><b>AH_ECANCELED</b> - The event loop of @a srv is shutting down.
- *   <li><b>AH_EINVAL</b>    - @a srv or @a conn_cbs is @c NULL.
- *   <li><b>AH_EINVAL</b>    - @c on_send, @c on_recv_line, @c on_recv_header, @c on_recv_data,
- *                             @c on_recv_end, or @c on_close of @a cbs is @c NULL.
- *   <li><b>AH_ENOBUFS</b>   - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>    - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>    - @a srv is not open.
+ *   <li>@ref AH_ENONE     - @a srv listening successfully scheduled.
+ *   <li>@ref AH_ECANCELED - The event loop of @a srv is shutting down.
+ *   <li>@ref AH_EINVAL    - @a srv or @a conn_cbs is @c NULL.
+ *   <li>@ref AH_EINVAL    - @c on_send, @c on_recv_line, @c on_recv_header, @c on_recv_data,
+ *                           @c on_recv_end, or @c on_close of @a cbs is @c NULL.
+ *   <li>@ref AH_ENOBUFS   - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM    - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE    - @a srv is not open.
  * </ul>
  *
  * @warning This function must be called with a successfully opened server. An
@@ -1145,15 +1142,15 @@ ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog
 /**
  * Schedules closing of @a srv.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the closing
+ * If the return value of this function is @ref AH_ENONE, meaning that the closing
  * could indeed be scheduled, its result will eventually be presented via the
  * ah_http_server_cbs::on_close callback of @a srv.
  *
  * @param srv Pointer to server.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Close of @a srv successfully scheduled.
- *   <li><b>AH_EINVAL</b> - @a srv is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a srv is already closed.
+ *   <li>@ref AH_ENONE  - Close of @a srv successfully scheduled.
+ *   <li>@ref AH_EINVAL - @a srv is @c NULL.
+ *   <li>@ref AH_ESTATE - @a srv is already closed.
  * </ul>
  *
  * @note Any already accepted clients that are still open are unaffected by the
@@ -1166,9 +1163,9 @@ ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
  *
  * @param srv Pointer to server.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a srv successfully terminated.
- *   <li><b>AH_EINVAL</b> - @a srv is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a srv is not currently closed.
+ *   <li>@ref AH_ENONE  - @a srv successfully terminated.
+ *   <li>@ref AH_EINVAL - @a srv is @c NULL.
+ *   <li>@ref AH_ESTATE - @a srv is not currently closed.
  * </ul>
  *
  * @note Any already accepted clients that are still open are unaffected by the
@@ -1199,11 +1196,11 @@ ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv);
  * @param srv   Pointer to server.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a srv or @a laddr is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ESTATE</b>                  - @a srv is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a srv or @a laddr is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ESTATE                  - @a srv is closed.
  * </ul>
  *
  * @note This function will always report the same local address as the TCP

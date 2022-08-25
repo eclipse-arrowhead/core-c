@@ -47,10 +47,10 @@ struct ah_buf {
  * @param base Pointer to chunk of memory.
  * @param size Size of chunk of memory referred to by @a base.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>             - If initialization was successful.
- *   <li><b>AH_EINVAL</b>            - @a buf is @c NULL or @a base is @c NULL and @a size is
- *                                     positive.
- *   <li><b>AH_EOVERFLOW [Win32]</b> - @a size is larger than @c AH_BUF_SIZE_MAX.
+ *   <li>@ref AH_ENONE             - If initialization was successful.
+ *   <li>@ref AH_EINVAL            - @a buf is @c NULL or @a base is @c NULL and @a size is
+ *                                   positive.
+ *   <li>@ref AH_EOVERFLOW [Win32] - @a size is larger than @c AH_BUF_SIZE_MAX.
  * </ul>
  */
 ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size);

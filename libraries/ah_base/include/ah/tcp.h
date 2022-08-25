@@ -128,19 +128,19 @@ struct ah_tcp_conn_cbs {
      *
      * @param conn Pointer to connection.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                          - Connection opened successfully.
-     *   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open connection.
-     *   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
-     *   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
-     *                                                  associated with the given local address.
-     *   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
-     *   <li><b>AH_ECANCELED</b>                      - Connection event loop is shutting down.
-     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
-     *   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
-     *   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>    - Network service failed to initialize.
+     *   <li>@ref AH_ENONE                          - Connection opened successfully.
+     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open connection.
+     *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
+     *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
+     *                                                associated with the given local address.
+     *   <li>@ref AH_EAFNOSUPPORT                   - Specified IP version not supported.
+     *   <li>@ref AH_ECANCELED                      - Connection event loop is shutting down.
+     *   <li>@ref AH_EMFILE [Darwin, Linux, Win32]  - Process descriptor table is full.
+     *   <li>@ref AH_ENETDOWN [Win32]               - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Darwin, Linux]         - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux, Win32] - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]         - Not enough heap memory available.
+     *   <li>@ref AH_EPROVIDERFAILEDINIT [Win32]    - Network service failed to initialize.
      * </ul>
      *
      * @note This function is never called for accepted connections, which
@@ -157,32 +157,32 @@ struct ah_tcp_conn_cbs {
      *
      * @param conn Pointer to connection.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                             - Connection established successfully.
-     *   <li><b>AH_EADDRINUSE [Darwin, Linux, Win32]</b> - Failed to bind a concrete local address.
-     *                                                     This error only occurs if the connection
-     *                                                     was opened with the wildcard address,
-     *                                                     which means that network interface
-     *                                                     binding is delayed until connection.
-     *   <li><b>AH_EADDRNOTAVAIL [Darwin, Win32]</b>     - The specified remote address is invalid.
-     *   <li><b>AH_EADDRNOTAVAIL [Linux]</b>             - No ephemeral TCP port is available.
-     *   <li><b>AH_EAFNOSUPPORT</b>                      - The IP version of the specified remote
-     *                                                     address does not match that of the bound
-     *                                                     local address.
-     *   <li><b>AH_ECANCELED</b>                         - The event loop of @a conn has shut down.
-     *   <li><b>AH_ECONNREFUSED</b>                      - Connection attempt ignored or rejected
-     *                                                     by targeted remote host.
-     *   <li><b>AH_ECONNRESET [Darwin]</b>               - Connection attempt reset by targeted
-     *                                                     remote host.
-     *   <li><b>AH_EHOSTUNREACH</b>                      - The targeted remote host could not be
-     *                                                     reached.
-     *   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
-     *   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
-     *   <li><b>AH_ENETUNREACH</b>                       - Network of targeted remote host not
-     *                                                     reachable.
-     *   <li><b>AH_ENOBUFS</b>                           - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM</b>                            - Not enough heap memory available.
-     *   <li><b>AH_ETIMEDOUT</b>                         - The connection attempt did not complete
-     *                                                     before its deadline.
+     *   <li>@ref AH_ENONE                             - Connection established successfully.
+     *   <li>@ref AH_EADDRINUSE [Darwin, Linux, Win32] - Failed to bind a concrete local address.
+     *                                                   This error only occurs if the connection
+     *                                                   was opened with the wildcard address,
+     *                                                   which means that network interface
+     *                                                   binding is delayed until connection.
+     *   <li>@ref AH_EADDRNOTAVAIL [Darwin, Win32]     - The specified remote address is invalid.
+     *   <li>@ref AH_EADDRNOTAVAIL [Linux]             - No ephemeral TCP port is available.
+     *   <li>@ref AH_EAFNOSUPPORT                      - The IP version of the specified remote
+     *                                                   address does not match that of the bound
+     *                                                   local address.
+     *   <li>@ref AH_ECANCELED                         - The event loop of @a conn has shut down.
+     *   <li>@ref AH_ECONNREFUSED                      - Connection attempt ignored or rejected
+     *                                                   by targeted remote host.
+     *   <li>@ref AH_ECONNRESET [Darwin]               - Connection attempt reset by targeted
+     *                                                   remote host.
+     *   <li>@ref AH_EHOSTUNREACH                      - The targeted remote host could not be
+     *                                                   reached.
+     *   <li>@ref AH_ENETDOWN [Darwin]                 - Local network not online.
+     *   <li>@ref AH_ENETDOWN [Win32]                  - The network subsystem has failed.
+     *   <li>@ref AH_ENETUNREACH                       - Network of targeted remote host not
+     *                                                   reachable.
+     *   <li>@ref AH_ENOBUFS                           - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM                            - Not enough heap memory available.
+     *   <li>@ref AH_ETIMEDOUT                         - The connection attempt did not complete
+     *                                                   before its deadline.
      * </ul>
      *
      * @note Data receiving is disabled for new connections by default. It must
@@ -198,48 +198,48 @@ struct ah_tcp_conn_cbs {
      * Data has been received via @a conn.
      *
      * Successful calls to this function (meaning that @a err is equal to
-     * @c AH_ENONE) always carry a pointer to an ah_tcp_in instance. That
+     * @ref AH_ENONE) always carry a pointer to an ah_tcp_in instance. That
      * instance is reused by @a conn every time this callback is invoked. If
      * the ah_rw field of that instance is not read in its entirety, whatever
      * unread contents remain when this callback returns will be presented
      * again in another call to this callback. If not all of the contents of
      * @a in are read or discarded every time this callback is invoked, or
      * the buffer is repackaged via ah_tcp_in_repackage(), that buffer may
-     * eventually become full, triggering the @c AH_EOVERFLOW error. If you
+     * eventually become full, triggering the @ref AH_EOVERFLOW error. If you
      * wish to save the contents of @a in without having to copy it over to
      * another buffer, you can detach it from @a conn using ah_tcp_in_detach(),
      * which allocates a new input buffer for @a conn.
      *
      * If this callback is invoked with an error code (@a err is not equal to
-     * @c AH_ENONE), @a conn should always be closed via a call to
+     * @ref AH_ENONE), @a conn should always be closed via a call to
      * ah_tcp_conn_close().
      *
      * @param conn Pointer to connection.
      * @param in   Pointer to input data representation, or @c NULL if @a err
-     *             is not @c AH_ENONE.
+     *             is not @ref AH_ENONE.
      * @param err  One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                      - Data received successfully.
-     *   <li><b>AH_ECANCELED</b>                  - Connection event loop is shutting down.
-     *   <li><b>AH_ECONNABORTED [Win32]</b>       - Virtual circuit terminated due to time-out or
-     *                                              other failure.
-     *   <li><b>AH_ECONNRESET [Darwin, Win32]</b> - Connection reset by remote host.
-     *   <li><b>AH_EDISCON [Win32]</b>            - Connection gracefully closed by remote host.
-     *   <li><b>AH_EEOF</b>                       - Connection closed for reading.
-     *   <li><b>AH_ENETDOWN [Win32]</b>           - The network subsystem has failed.
-     *   <li><b>AH_ENETRESET [Win32]</b>          - Keep-alive is enabled for the connection and a
-     *                                              related failure was detected.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux]</b>    - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Linux]</b>             - Not enough heap memory available.
-     *   <li><b>AH_EOVERFLOW</b>                  - The input buffer of @a conn is full. Note that
-     *                                              the input buffer is not available via @a in if
-     *                                              this error code is provided. The only way to
-     *                                              recover from this error is by closing the
-     *                                              connection. To prevent this error from
-     *                                              occurring, you must ensure that the input
-     *                                              buffer never gets exhausted by reading,
-     *                                              discarding, repackaging or detaching
-     *                                              its contents, as described further above.
-     *   <li><b>AH_ETIMEDOUT</b>                  - Connection timed out.
+     *   <li>@ref AH_ENONE                      - Data received successfully.
+     *   <li>@ref AH_ECANCELED                  - Connection event loop is shutting down.
+     *   <li>@ref AH_ECONNABORTED [Win32]       - Virtual circuit terminated due to time-out or
+     *                                            other failure.
+     *   <li>@ref AH_ECONNRESET [Darwin, Win32] - Connection reset by remote host.
+     *   <li>@ref AH_EDISCON [Win32]            - Connection gracefully closed by remote host.
+     *   <li>@ref AH_EEOF                       - Connection closed for reading.
+     *   <li>@ref AH_ENETDOWN [Win32]           - The network subsystem has failed.
+     *   <li>@ref AH_ENETRESET [Win32]          - Keep-alive is enabled for the connection and a
+     *                                            related failure was detected.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux]    - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Linux]             - Not enough heap memory available.
+     *   <li>@ref AH_EOVERFLOW                  - The input buffer of @a conn is full. Note that
+     *                                            the input buffer is not available via @a in if
+     *                                            this error code is provided. The only way to
+     *                                            recover from this error is by closing the
+     *                                            connection. To prevent this error from
+     *                                            occurring, you must ensure that the input
+     *                                            buffer never gets exhausted by reading,
+     *                                            discarding, repackaging or detaching
+     *                                            its contents, as described further above.
+     *   <li>@ref AH_ETIMEDOUT                  - Connection timed out.
      * </ul>
      */
     void (*on_read)(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
@@ -248,7 +248,7 @@ struct ah_tcp_conn_cbs {
      * Data has been sent via the connection.
      *
      * This callback is always invoked after a successful call to
-     * ah_tcp_conn_write(). If @a err is @c AH_ENONE, all outgoing data
+     * ah_tcp_conn_write(). If @a err is @ref AH_ENONE, all outgoing data
      * provided to the mentioned function was transmitted successfully. If @a
      * err has any other value, an error occurred before the transmission could
      * be completed. If an error has occurred, @a conn should be closed using
@@ -256,22 +256,22 @@ struct ah_tcp_conn_cbs {
      *
      * @param conn Pointer to connection.
      * @param out  Pointer to output buffer provided to ah_tcp_conn_write(), or
-     *             @c NULL if @a err is not @c AH_ENONE.
+     *             @c NULL if @a err is not @ref AH_ENONE.
      * @param err  One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                             - Data sent successfully.
-     *   <li><b>AH_ECANCELED</b>                         - Connection event loop is shutting down.
-     *   <li><b>AH_ECONNABORTED [Win32]</b>              - Virtual circuit terminated due to
+     *   <li>@ref AH_ENONE                             - Data sent successfully.
+     *   <li>@ref AH_ECANCELED                         - Connection event loop is shutting down.
+     *   <li>@ref AH_ECONNABORTED [Win32]              - Virtual circuit terminated due to
      *                                                     time-out or other failure.
-     *   <li><b>AH_ECONNRESET [Darwin, Linux, Win32]</b> - Connection reset by remote host.
-     *   <li><b>AH_EEOF</b>                              - Connection closed for writing.
-     *   <li><b>AH_ENETDOWN [Darwin]</b>                 - Local network not online.
-     *   <li><b>AH_ENETDOWN [Win32]</b>                  - The network subsystem has failed.
-     *   <li><b>AH_ENETRESET [Win32]</b>                 - Keep-alive is enabled for the connection
-     *                                                     and a related failure was detected.
-     *   <li><b>AH_ENETUNREACH [Darwin]</b>              - Network of remote host not reachable.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b>    - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>            - Not enough heap memory available.
-     *   <li><b>AH_ETIMEDOUT</b>                         - Connection timed out.
+     *   <li>@ref AH_ECONNRESET [Darwin, Linux, Win32] - Connection reset by remote host.
+     *   <li>@ref AH_EEOF                              - Connection closed for writing.
+     *   <li>@ref AH_ENETDOWN [Darwin]                 - Local network not online.
+     *   <li>@ref AH_ENETDOWN [Win32]                  - The network subsystem has failed.
+     *   <li>@ref AH_ENETRESET [Win32]                 - Keep-alive is enabled for the connection
+     *                                                   and a related failure was detected.
+     *   <li>@ref AH_ENETUNREACH [Darwin]              - Network of remote host not reachable.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux, Win32]    - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]            - Not enough heap memory available.
+     *   <li>@ref AH_ETIMEDOUT                         - Connection timed out.
      * </ul>
      */
     void (*on_write)(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
@@ -280,7 +280,7 @@ struct ah_tcp_conn_cbs {
      * The connection has been closed.
      *
      * @param conn Pointer to connection.
-     * @param err  Should always be @c AH_ENONE. Other codes may be provided if
+     * @param err  Should always be @ref AH_ENONE. Other codes may be provided if
      *             an unexpected platform error occurs.
      *
      * @note This function is guaranteed to be called after every call to
@@ -313,18 +313,18 @@ struct ah_tcp_listener_cbs {
      *
      * @param ln  Pointer to listener.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                          - Listener opened successfully.
-     *   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open listener.
-     *   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
-     *   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
-     *                                                  associated with the given local address.
-     *   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
-     *   <li><b>AH_ECANCELED</b>                      - Connection event loop is shutting down.
-     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
-     *   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
+     *   <li>@ref AH_ENONE                          - Listener opened successfully.
+     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open listener.
+     *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
+     *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
+     *                                                associated with the given local address.
+     *   <li>@ref AH_EAFNOSUPPORT                   - Specified IP version not supported.
+     *   <li>@ref AH_ECANCELED                      - Connection event loop is shutting down.
+     *   <li>@ref AH_EMFILE [Darwin, Linux, Win32]  - Process descriptor table is full.
+     *   <li>@ref AH_ENETDOWN [Win32]               - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Darwin, Linux]         - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux, Win32] - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]         - Not enough heap memory available.
      * </ul>
      */
     void (*on_open)(ah_tcp_listener_t* ln, ah_err_t err);
@@ -335,16 +335,16 @@ struct ah_tcp_listener_cbs {
      *
      * @param ln  Pointer to listener.
      * @param err One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                     - Listener started to listen successfully.
-     *   <li><b>AH_EACCESS [Darwin]</b>          - Not permitted to listen.
-     *   <li><b>AH_EADDRINUSE [Linux, Win32]</b> - No ephemeral TCP port is available. This error
-     *                                             can only occur if the listener was opened with
-     *                                             the wildcard address, which means that network
-     *                                             interface binding is delayed until listening.
-     *   <li><b>AH_ECANCELED</b>                 - Listener event loop is shutting down.
-     *   <li><b>AH_ENETDOWN [Win32]</b>          - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Win32]</b>            - System file table is full.
-     *   <li><b>AH_ENOBUFS [Win32]</b>           - Not enough buffer space available.
+     *   <li>@ref AH_ENONE                     - Listener started to listen successfully.
+     *   <li>@ref AH_EACCESS [Darwin]          - Not permitted to listen.
+     *   <li>@ref AH_EADDRINUSE [Linux, Win32] - No ephemeral TCP port is available. This error
+     *                                           can only occur if the listener was opened with
+     *                                           the wildcard address, which means that network
+     *                                           interface binding is delayed until listening.
+     *   <li>@ref AH_ECANCELED                 - Listener event loop is shutting down.
+     *   <li>@ref AH_ENETDOWN [Win32]          - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Win32]            - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Win32]           - Not enough buffer space available.
      * </ul>
      */
     void (*on_listen)(ah_tcp_listener_t* ln, ah_err_t err);
@@ -352,27 +352,27 @@ struct ah_tcp_listener_cbs {
     /**
      * Listener @a ln has accepted the connection @a conn.
      *
-     * If @a err is @c AH_ENONE, which indicates a successful acceptance, all
+     * If @a err is @ref AH_ENONE, which indicates a successful acceptance, all
      * further events related to @a conn will be dealt with via the connection
      * callback set (see ah_tcp_conn_cbs) provided when listening was started
      * via ah_tcp_listener_listen().
      *
      * @param ln    Pointer to listener.
      * @param conn  Pointer to accepted connection, or @c NULL if @a err is not
-     *              @c AH_ENONE.
+     *              @ref AH_ENONE.
      * @param raddr Pointer to address of @a conn, or @c NULL if @a err is not
-     *              @c AH_ENONE.
+     *              @ref AH_ENONE.
      * @param err  One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                         - Connection accepted successfully.
-     *   <li><b>AH_ECANCELED</b>                     - Listener event loop is shutting down.
-     *   <li><b>AH_ECONNABORTED [Darwin, Linux]</b>  - Connection aborted before finalization.
-     *   <li><b>AH_ECONNRESET [Win32]</b>            - Connection aborted before finalization.
-     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b> - Process descriptor table is full.
-     *   <li><b>AH_ENETDOWN [Win32]</b>              - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Darwin, Linux]</b>        - System file table is full.
-     *   <li><b>AH_ENOBUFS [Linux, Win32]</b>        - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>        - Not enough heap memory available.
-     *   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>   - Network service failed to initialize.
+     *   <li>@ref AH_ENONE                         - Connection accepted successfully.
+     *   <li>@ref AH_ECANCELED                     - Listener event loop is shutting down.
+     *   <li>@ref AH_ECONNABORTED [Darwin, Linux]  - Connection aborted before finalization.
+     *   <li>@ref AH_ECONNRESET [Win32]            - Connection aborted before finalization.
+     *   <li>@ref AH_EMFILE [Darwin, Linux, Win32] - Process descriptor table is full.
+     *   <li>@ref AH_ENETDOWN [Win32]              - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Darwin, Linux]        - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Linux, Win32]        - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]        - Not enough heap memory available.
+     *   <li>@ref AH_EPROVIDERFAILEDINIT [Win32]   - Network service failed to initialize.
      * </ul>
      *
      * @note Every successfully accepted @a conn must eventually be provided to
@@ -387,7 +387,7 @@ struct ah_tcp_listener_cbs {
      * Listener @a ln has been closed.
      *
      * @param conn Pointer to listener.
-     * @param err  Should always be @c AH_ENONE. Other codes may be provided if
+     * @param err  Should always be @ref AH_ENONE. Other codes may be provided if
      *             an unexpected platform error occurs.
      *
      * @note This function is guaranteed to be called after every call to
@@ -485,11 +485,11 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
  * @param trans Desired transport.
  * @param cbs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a conn successfully initialized.
- *   <li><b>AH_EINVAL</b> - @a conn or @a loop or @a cbs is @c NULL.
- *   <li><b>AH_EINVAL</b> - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
- *   <li><b>AH_EINVAL</b> - @c on_open, @c on_connect, @c on_read, @c on_write or @c on_close of
- *                          @a cbs is @c NULL.
+ *   <li>@ref AH_ENONE  - @a conn successfully initialized.
+ *   <li>@ref AH_EINVAL - @a conn or @a loop or @a cbs is @c NULL.
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @c on_open, @c on_connect, @c on_read, @c on_write or @c on_close of
+ *                        @a cbs is @c NULL.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs);
@@ -498,7 +498,7 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
  * Schedules opening of @a conn, which must be initialized, and its binding to
  * the local network interface represented by @a laddr.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the open
+ * If the return value of this function is @ref AH_ENONE, meaning that the open
  * attempt could indeed be scheduled, its result will eventually be presented
  * via the ah_tcp_conn_cbs::on_open callback of @a conn.
  *
@@ -512,13 +512,13 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
  *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
  *              port number automatically, specify port @c 0.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>        - @a conn opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not an IP-based address.
- *   <li><b>AH_ECANCELED</b>    - The event loop of @a conn is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a conn or @a laddr is @c NULL.
- *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>       - @a conn is not closed.
+ *   <li>@ref AH_ENONE        - @a conn opening successfully scheduled.
+ *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not an IP-based address.
+ *   <li>@ref AH_ECANCELED    - The event loop of @a conn is shutting down.
+ *   <li>@ref AH_EINVAL       - @a conn or @a laddr is @c NULL.
+ *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a conn is not closed.
  * </ul>
  *
  * @note Every successfully opened @a conn must eventually be provided to
@@ -529,9 +529,9 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
 /**
  * Schedules connection of @a conn, which must be open, to @a raddr.
  *
- * If the return value of this function is @c AH_ENONE, meaning that connection
- * could indeed be scheduled, its result will eventually be presented via the
- * ah_tcp_conn_cbs::on_connect callback of @a conn.
+ * If the return value of this function is @ref AH_ENONE, meaning that
+ * connection could indeed be scheduled, its result will eventually be presented
+ * via the ah_tcp_conn_cbs::on_connect callback of @a conn.
  *
  * @param conn  Pointer to connection.
  * @param raddr Pointer to socket address representing the remote host to which
@@ -539,13 +539,13 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
  *              successful, the referenced address must remain valid until
  *              @a conn is closed.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>        - @a conn opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a raddr is not an IP-based address.
- *   <li><b>AH_ECANCELED</b>    - The event loop of @a conn is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a conn or @a raddr is @c NULL.
- *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>       - @a conn is not open.
+ *   <li>@ref AH_ENONE        - @a conn opening successfully scheduled.
+ *   <li>@ref AH_EAFNOSUPPORT - @a raddr is not an IP-based address.
+ *   <li>@ref AH_ECANCELED    - The event loop of @a conn is shutting down.
+ *   <li>@ref AH_EINVAL       - @a conn or @a raddr is @c NULL.
+ *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a conn is not open.
  * </ul>
  *
  * @note Data receiving is disabled for new connections by default. Is must be
@@ -566,16 +566,16 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
  *
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - Start of receiving data via @a conn successfully scheduled.
- *   <li><b>AH_ECANCELED</b>        - The event loop of @a conn is shutting down.
- *   <li><b>AH_EINVAL</b>           - @a conn is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
- *   <li><b>AH_EOVERFLOW</b>        - @c AH_PSIZE is too small for it to be possible to store both
+ *   <li>@ref AH_ENONE            - Start of receiving data via @a conn successfully scheduled.
+ *   <li>@ref AH_ECANCELED        - The event loop of @a conn is shutting down.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
+ *   <li>@ref AH_EOVERFLOW        - @c AH_PSIZE is too small for it to be possible to store both
  *                                    required metadata @e and read data in a single page provided
  *                                    by the page allocator (see ah_palloc()).
- *   <li><b>AH_ESTATE</b>           - @a conn is not connected or its read direction has been shut
+ *   <li>@ref AH_ESTATE           - @a conn is not connected or its read direction has been shut
  *                                    down.
  * </ul>
  *
@@ -591,9 +591,9 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
  *
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Receiving of data via @a conn successfully stopped.
- *   <li><b>AH_EINVAL</b> - @a conn is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a conn reading not started.
+ *   <li>@ref AH_ENONE  - Receiving of data via @a conn successfully stopped.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL.
+ *   <li>@ref AH_ESTATE - @a conn reading not started.
  * </ul>
  *
  * @note It is acceptable to call this function immediately after a successful
@@ -610,7 +610,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
  * you want to store the buffer memory somewhere else, just zero an ah_tcp_out
  * instance and then initialize its @c buf field.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the
+ * If the return value of this function is @ref AH_ENONE, meaning that the
  * sending could indeed be scheduled, the result of the sending will eventually
  * be presented via the ah_tcp_conn_cbs::on_write callback of @a conn. More
  * specifically, the callback is invoked either if an error occurs or after all
@@ -619,14 +619,13 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
  * @param conn Pointer to connection.
  * @param out  Pointer to outgoing data.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - Data transmission scheduled successfully.
- *   <li><b>AH_ECANCELED</b>        - The event loop of @a conn is shutting down.
- *   <li><b>AH_EINVAL</b>           - @a conn or @a out is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>           - @a conn is not open or its write direction has been shut
- *                                    down.
+ *   <li>@ref AH_ENONE            - Data transmission scheduled successfully.
+ *   <li>@ref AH_ECANCELED        - The event loop of @a conn is shutting down.
+ *   <li>@ref AH_EINVAL           - @a conn or @a out is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE           - @a conn is not open or its write direction has been shut down.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
@@ -638,12 +637,12 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
  * @param conn  Pointer to connection.
  * @param flags Shutdown flags.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                - Receiving of data via @a conn successfully stopped.
- *   <li><b>AH_ECONNABORTED [Win32]</b> - Connection has been aborted.
- *   <li><b>AH_ECONNRESET [Win32]</b>   - Connection has been reset by its remote host.
- *   <li><b>AH_EINVAL</b>               - @a conn is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>     - The network subsystem has failed.
- *   <li><b>AH_ESTATE</b>               - @a conn is not connected.
+ *   <li>@ref AH_ENONE                - Receiving of data via @a conn successfully stopped.
+ *   <li>@ref AH_ECONNABORTED [Win32] - Connection has been aborted.
+ *   <li>@ref AH_ECONNRESET [Win32]   - Connection has been reset by its remote host.
+ *   <li>@ref AH_EINVAL               - @a conn is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]     - The network subsystem has failed.
+ *   <li>@ref AH_ESTATE               - @a conn is not connected.
  * </ul>
  *
  * @warning A connection with both of its read and write directions shut down
@@ -656,15 +655,15 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags);
 /**
  * Schedules closing of @a conn.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the
+ * If the return value of this function is @ref AH_ENONE, meaning that the
  * closing could indeed be scheduled, its result will eventually be presented
  * via the ah_tcp_conn_cbs::on_close callback of @a conn.
  *
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Close of @a conn successfully scheduled.
- *   <li><b>AH_EINVAL</b> - @a conn is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a conn is already closed.
+ *   <li>@ref AH_ENONE  - Close of @a conn successfully scheduled.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL.
+ *   <li>@ref AH_ESTATE - @a conn is already closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
@@ -674,9 +673,9 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
  *
  * @param conn Pointer to connection.
  * @return One of the following identifiers: <ul>
- *   <li><b>AH_SOCKFAMILY_IPV4</b> - IPv4 family identifier.
- *   <li><b>AH_SOCKFAMILY_IPV6</b> - IPv6 family identifier.
- *   <li><b>-1</b>                 - @a conn is @c NULL.
+ *   <li>@ref AH_SOCKFAMILY_IPV4 - IPv4 family identifier.
+ *   <li>@ref AH_SOCKFAMILY_IPV6 - IPv6 family identifier.
+ *   <li>@c -1                   - @a conn is @c NULL.
  * </ul>
  */
 ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn);
@@ -690,11 +689,11 @@ ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn);
  * @param conn  Pointer to connection.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a conn or @a laddr is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ESTATE</b>                  - @a conn is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a conn or @a laddr is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ESTATE                  - @a conn is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
@@ -705,11 +704,11 @@ ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_
  * @param conn  Pointer to connection.
  * @param raddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a conn or @a raddr is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ESTATE</b>                  - @a conn is not connected to a remote host.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a conn or @a raddr is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ESTATE                  - @a conn is not connected to a remote host.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr);
@@ -812,12 +811,12 @@ ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
  * @param conn       Pointer to connection.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - The operation was successful.
- *   <li><b>AH_EINVAL</b>           - @a conn is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>           - @a conn is closed.
+ *   <li>@ref AH_ENONE            - The operation was successful.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE           - @a conn is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled);
@@ -834,12 +833,12 @@ ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enable
  * @param conn       Pointer to connection.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - The operation was successful.
- *   <li><b>AH_EINVAL</b>           - @a conn is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>           - @a conn is closed.
+ *   <li>@ref AH_ENONE            - The operation was successful.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE           - @a conn is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled);
@@ -856,12 +855,12 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
  * @param conn       Pointer to connection.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - The operation was successful.
- *   <li><b>AH_EINVAL</b>           - @a conn is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>           - @a conn is closed.
+ *   <li>@ref AH_ENONE            - The operation was successful.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE           - @a conn is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
@@ -901,12 +900,12 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
  *
  * @param owner_ptr Pointer to own pointer to allocated input buffer.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>     - The operation was successful.
- *   <li><b>AH_EINVAL</b>    - @a owner_ptr is @c NULL.
- *   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned @c NULL).
- *   <li><b>AH_EOVERFLOW</b> - @c AH_PSIZE is too small for it to be possible to store both an
- *                             ah_tcp_in instance @e and have room for input data in a single page
- *                             provided by the page allocator (see ah_palloc()).
+ *   <li>@ref AH_ENONE     - The operation was successful.
+ *   <li>@ref AH_EINVAL    - @a owner_ptr is @c NULL.
+ *   <li>@ref AH_ENOMEM    - No enough heap memory available (ah_palloc() returned @c NULL).
+ *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both an
+ *                           ah_tcp_in instance @e and have room for input data in a single page
+ *                           provided by the page allocator (see ah_palloc()).
  * </ul>
  *
  * @note This function should primarily be of interest to those both wishing to
@@ -924,13 +923,13 @@ ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr);
  *
  * @param in Pointer to input buffer.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>     - The operation was successful.
- *   <li><b>AH_EINVAL</b>    - @a in is @c NULL.
- *   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned @c NULL).
- *   <li><b>AH_EOVERFLOW</b> - @c AH_PSIZE is too small for it to be possible to store both an
- *                             ah_tcp_in instance @e and have room for input data in a single page
- *                             provided by the page allocator (see ah_palloc()).
- *   <li><b>AH_ESTATE</b>    - @a in is currently not owned and cannot be detached.
+ *   <li>@ref AH_ENONE     - The operation was successful.
+ *   <li>@ref AH_EINVAL    - @a in is @c NULL.
+ *   <li>@ref AH_ENOMEM    - No enough heap memory available (ah_palloc() returned @c NULL).
+ *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both an
+ *                           ah_tcp_in instance @e and have room for input data in a single page
+ *                           provided by the page allocator (see ah_palloc()).
+ *   <li>@ref AH_ESTATE    - @a in is currently not owned and cannot be detached.
  * </ul>
  *
  * @warning As the previous owner of @a in is no longer responsible for it or
@@ -979,9 +978,9 @@ ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
  *
  * @param in Pointer to input buffer.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - The operation was successful.
- *   <li><b>AH_EINVAL</b> - @a in is @c NULL.
- *   <li><b>AH_ENOSPC</b> - @a in is full. Nothing can be moved.
+ *   <li>@ref AH_ENONE  - The operation was successful.
+ *   <li>@ref AH_EINVAL - @a in is @c NULL.
+ *   <li>@ref AH_ENOSPC - @a in is full. Nothing can be moved.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);
@@ -1053,15 +1052,15 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
  * @param trans Desired transport.
  * @param cbs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>     - @a ln successfully initialized.
- *   <li><b>AH_EINVAL</b>    - @a ln or @a loop or @a cbs is @c NULL.
- *   <li><b>AH_EINVAL</b>    - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
- *   <li><b>AH_EINVAL</b>    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
- *                             @c NULL.
- *   <li><b>AH_ENOMEM</b>    - Heap memory could not be allocated for storing incoming connections.
- *   <li><b>AH_EOVERFLOW</b> - @c AH_PSIZE is too small for it to be possible to store both
-/ *                            metadata @e and have room for at least one incoming connection in a
- *                             single page provided by the page allocator (see ah_palloc()).
+ *   <li>@ref AH_ENONE     - @a ln successfully initialized.
+ *   <li>@ref AH_EINVAL    - @a ln or @a loop or @a cbs is @c NULL.
+ *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
+ *                           @c NULL.
+ *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.
+ *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both metadata
+ *                           @e and have room for at least one incoming connection in a single page
+ *                           provided by the page allocator (see ah_palloc()).
  * </ul>
  *
  * @note Every successfully initialized @a ln must eventually be provided to
@@ -1073,7 +1072,7 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
  * Schedules opening of @a ln, which must be initialized, and its binding to the
  * local network interface represented by @a laddr.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the open
+ * If the return value of this function is @ref AH_ENONE, meaning that the open
  * attempt could indeed be scheduled, its result will eventually be presented
  * via the ah_tcp_listener_cbs::on_open callback of @a ln.
  *
@@ -1087,13 +1086,13 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
  *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
  *              port number automatically, specify port @c 0.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>        - @a ln opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not an IP-based address.
- *   <li><b>AH_ECANCELED</b>    - The event loop of @a ln is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a ln or @a laddr is @c NULL.
- *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>       - @a ln is not closed.
+ *   <li>@ref AH_ENONE        - @a ln opening successfully scheduled.
+ *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not an IP-based address.
+ *   <li>@ref AH_ECANCELED    - The event loop of @a ln is shutting down.
+ *   <li>@ref AH_EINVAL       - @a ln or @a laddr is @c NULL.
+ *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a ln is not closed.
  * </ul>
  *
  * @note Every successfully opened @a ln must eventually be provided to
@@ -1106,7 +1105,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  * Schedules for @a ln, which must be open, to start listening for incoming
  * connections.
  *
- * If the return value of this function is @c AH_ENONE, meaning that listening
+ * If the return value of this function is @ref AH_ENONE, meaning that listening
  * could indeed be scheduled, its result will eventually be presented via the
  * ah_tcp_conn_cbs::on_listen callback of @a ln.
  *
@@ -1118,13 +1117,13 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  * @param conn_cbs Pointer to event callback set to provide to all accepted
  *                 connections.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>     - @a ln listening successfully scheduled.
- *   <li><b>AH_ECANCELED</b> - The event loop of @a ln is shutting down.
- *   <li><b>AH_EINVAL</b>    - @a ln or @a conn_cbs is @c NULL.
- *   <li><b>AH_EINVAL</b>    - @c on_read, @c on_write or @c on_close of @a conn_cbs is @c NULL.
- *   <li><b>AH_ENOBUFS</b>   - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>    - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>    - @a ln is not open.
+ *   <li>@ref AH_ENONE     - @a ln listening successfully scheduled.
+ *   <li>@ref AH_ECANCELED - The event loop of @a ln is shutting down.
+ *   <li>@ref AH_EINVAL    - @a ln or @a conn_cbs is @c NULL.
+ *   <li>@ref AH_EINVAL    - @c on_read, @c on_write or @c on_close of @a conn_cbs is @c NULL.
+ *   <li>@ref AH_ENOBUFS   - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM    - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE    - @a ln is not open.
  * </ul>
  *
  * @warning This function must be called with a successfully opened listener.
@@ -1137,15 +1136,15 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
 /**
  * Schedules closing of @a ln.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the
+ * If the return value of this function is @ref AH_ENONE, meaning that the
  * closing could indeed be scheduled, its result will eventually be presented
  * via the ah_tcp_listener_cbs::on_close callback of @a ln.
  *
  * @param ln Pointer to listener.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Close of @a ln successfully scheduled.
- *   <li><b>AH_EINVAL</b> - @a ln is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a ln is already closed.
+ *   <li>@ref AH_ENONE  - Close of @a ln successfully scheduled.
+ *   <li>@ref AH_EINVAL - @a ln is @c NULL.
+ *   <li>@ref AH_ESTATE - @a ln is already closed.
  * </ul>
  *
  * @note Any already accepted connections that are still open are unaffected by
@@ -1158,9 +1157,9 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
  *
  * @param ln Pointer to listener.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a ln successfully terminated.
- *   <li><b>AH_EINVAL</b> - @a ln is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a ln is not currently closed.
+ *   <li>@ref AH_ENONE  - @a ln successfully terminated.
+ *   <li>@ref AH_EINVAL - @a ln is @c NULL.
+ *   <li>@ref AH_ESTATE - @a ln is not currently closed.
  * </ul>
  *
  * @note Any already accepted connections that are still open are unaffected by
@@ -1191,11 +1190,11 @@ ah_extern int ah_tcp_listener_get_family(const ah_tcp_listener_t* ln);
  * @param ln    Pointer to listener.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a ln or @a laddr is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ESTATE</b>                  - @a ln is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a ln or @a laddr is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ESTATE                  - @a ln is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr);
@@ -1239,12 +1238,12 @@ ah_extern bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln);
  * @param ln         Pointer to listener.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - The operation was successful.
- *   <li><b>AH_EINVAL</b>           - @a ln is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>           - @a ln is closed.
+ *   <li>@ref AH_ENONE            - The operation was successful.
+ *   <li>@ref AH_EINVAL           - @a ln is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE           - @a ln is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled);
@@ -1261,12 +1260,12 @@ ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_
  * @param ln         Pointer to listener.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - The operation was successful.
- *   <li><b>AH_EINVAL</b>           - @a ln is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>           - @a ln is closed.
+ *   <li>@ref AH_ENONE            - The operation was successful.
+ *   <li>@ref AH_EINVAL           - @a ln is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE           - @a ln is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled);
@@ -1283,12 +1282,12 @@ ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_en
  * @param ln         Pointer to listener.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - The operation was successful.
- *   <li><b>AH_EINVAL</b>           - @a ln is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>           - @a ln is closed.
+ *   <li>@ref AH_ENONE            - The operation was successful.
+ *   <li>@ref AH_EINVAL           - @a ln is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE           - @a ln is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled);

@@ -11,13 +11,14 @@
  * ensure that certain integer operations never produce undefined behavior.
  *
  * The functions behave as follows: All @c add, @c div, @c mul and @c sub
- * functions return @c AH_ENONE if successful, @c AH_EINVAL if the @c result
- * argument is @c NULL or @c AH_ERANGE if the operation overflowed. The @c div
- * functions additionally return @c AH_EDOM if their @c b argument is zero.
- * Unsigned divisions are guaranteed to never yield @c AH_RANGE. In every case,
- * the @c result value is only updated if the return value is @c AH_ENONE.
+ * functions return @ref AH_ENONE if successful, @ref AH_EINVAL if the @c result
+ * argument is @c NULL or @ref AH_ERANGE if the operation overflowed. The @c div
+ * functions additionally return @ref AH_EDOM if their @c b argument is zero.
+ * Unsigned divisions are guaranteed to never yield @ref AH_ERANGE. In every
+ * case, the @c result value is only updated if the return value is
+ * @ref AH_ENONE.
  *
- * Note that signed divisions can overflow, causing @c AH_ERANGE to be
+ * Note that signed divisions can overflow, causing @ref AH_ERANGE to be
  * returned, if their @c a argument is the lowest representable such and their
  * @c b argument is @c -1. This is a consequence of the two's complement
  * integer representation having a negative number range being larger than its

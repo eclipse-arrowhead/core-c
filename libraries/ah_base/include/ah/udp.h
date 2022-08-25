@@ -195,19 +195,19 @@ struct ah_udp_sock_cbs {
      *
      * @param sock Pointer to socket.
      * @param err  One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                          - Socket opened successfully.
-     *   <li><b>AH_EACCESS [Darwin, Linux]</b>        - Not permitted to open socket.
-     *   <li><b>AH_EADDRINUSE</b>                     - Specified local address already in use.
-     *   <li><b>AH_EADDRNOTAVAIL</b>                  - No available local network interface is
-     *                                                  associated with the given local address.
-     *   <li><b>AH_EAFNOSUPPORT</b>                   - Specified IP version not supported.
-     *   <li><b>AH_ECANCELED</b>                      - Socket event loop is shutting down.
-     *   <li><b>AH_EMFILE [Darwin, Linux, Win32]</b>  - Process descriptor table is full.
-     *   <li><b>AH_ENETDOWN [Win32]</b>               - The network subsystem has failed.
-     *   <li><b>AH_ENFILE [Darwin, Linux]</b>         - System file table is full.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux, Win32]</b> - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>         - Not enough heap memory available.
-     *   <li><b>AH_EPROVIDERFAILEDINIT [Win32]</b>    - Network service failed to initialize.
+     *   <li>@ref AH_ENONE                          - Socket opened successfully.
+     *   <li>@ref AH_EACCESS [Darwin, Linux]        - Not permitted to open socket.
+     *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
+     *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
+     *                                                associated with the given local address.
+     *   <li>@ref AH_EAFNOSUPPORT                   - Specified IP version not supported.
+     *   <li>@ref AH_ECANCELED                      - Socket event loop is shutting down.
+     *   <li>@ref AH_EMFILE [Darwin, Linux, Win32]  - Process descriptor table is full.
+     *   <li>@ref AH_ENETDOWN [Win32]               - The network subsystem has failed.
+     *   <li>@ref AH_ENFILE [Darwin, Linux]         - System file table is full.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux, Win32] - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]         - Not enough heap memory available.
+     *   <li>@ref AH_EPROVIDERFAILEDINIT [Win32]    - Network service failed to initialize.
      * </ul>
      *
      * @note Every successfully opened @a sock must eventually be provided to
@@ -219,7 +219,7 @@ struct ah_udp_sock_cbs {
      * Data has been received via @a sock.
      *
      * Successful calls to this function (meaning that @a err is equal to
-     * @c AH_ENONE) always carry a pointer to an ah_udp_in instance. That
+     * @ref AH_ENONE) always carry a pointer to an ah_udp_in instance. That
      * instance is reset and reused by @a sock every time this callback is
      * invoked. If you wish to save the contents of @a in without having to
      * copy it over to another buffer, you can detach it from @a sock using
@@ -227,24 +227,24 @@ struct ah_udp_sock_cbs {
      * for @a sock.
      *
      * If this callback is invoked with an error code (@a err is not equal to
-     * @c AH_ENONE), @a sock should always be closed via a call to
+     * @ref AH_ENONE), @a sock should always be closed via a call to
      * ah_udp_sock_close().
      *
      * @param sock Pointer to socket.
      * @param in   Pointer to input data representation, or @c NULL if @a err
-     *             is not @c AH_ENONE.
+     *             is not @ref AH_ENONE.
      * @param err  One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                   - Data received successfully.
-     *   <li><b>AH_ECANCELED</b>               - Socket event loop is shutting down.
-     *   <li><b>AH_ECONNRESET [Win32]</b>      - A previous send operation resulted in an ICMP
-     *                                           "Port Unreachable" message.
-     *   <li><b>AH_EEOF</b>                    - Socket closed.
-     *   <li><b>AH_EMSGSIZE [Win32]</b>        - Received message too large to fit inside @a in.
-     *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
-     *   <li><b>AH_ENETRESET [Win32]</b>       - Time to live is enabled for the socket and a
-     *                                           related failure was detected.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>  - Not enough heap memory available.
+     *   <li>@ref AH_ENONE                   - Data received successfully.
+     *   <li>@ref AH_ECANCELED               - Socket event loop is shutting down.
+     *   <li>@ref AH_ECONNRESET [Win32]      - A previous send operation resulted in an ICMP
+     *                                         "Port Unreachable" message.
+     *   <li>@ref AH_EEOF                    - Socket closed.
+     *   <li>@ref AH_EMSGSIZE [Win32]        - Received message too large to fit inside @a in.
+     *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+     *   <li>@ref AH_ENETRESET [Win32]       - Time to live is enabled for the socket and a related
+     *                                         failure was detected.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
      * </ul>
      */
     void (*on_recv)(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
@@ -253,7 +253,7 @@ struct ah_udp_sock_cbs {
      * Data has been sent via @a sock.
      *
      * This callback is always invoked after a successful call to
-     * ah_udp_sock_write(). If @a err is @c AH_ENONE, all outgoing data
+     * ah_udp_sock_write(). If @a err is @ref AH_ENONE, all outgoing data
      * provided to the mentioned function was transmitted successfully. If @a
      * err has any other value, an error occurred before the transmission could
      * be completed. If an error has occurred, @a sock should be closed using
@@ -261,24 +261,23 @@ struct ah_udp_sock_cbs {
      *
      * @param sock Pointer to socket.
      * @param out  Pointer to output buffer provided to ah_udp_sock_write(),
-     *             or @c NULL if @a err is not @c AH_ENONE.
+     *             or @c NULL if @a err is not @ref AH_ENONE.
      * @param err  One of the following codes: <ul>
-     *   <li><b>AH_ENONE</b>                        - Data sent successfully.
-     *   <li><b>AH_ECANCELED</b>                    - Socket event loop is shutting down.
-     *   <li><b>AH_ECONNRESET [Win32]</b>           - A previous send operation resulted in an ICMP
-     *                                                "Port Unreachable" message.
-     *   <li><b>AH_EEOF</b>                         - Socket closed.
-     *   <li><b>AH_EHOSTUNREACH [Darwin, Linux]</b> - The targeted remote host could not be
-     *                                                reached.
-     *   <li><b>AH_EMSGSIZE</b>                     - Sent message size exceeds supported maximum.
-     *   <li><b>AH_ENETDOWN [Darwin, Linux]</b>     - The local network interface required to send
-     *                                                the message is down.
-     *   <li><b>AH_ENETDOWN [Win32]</b>             - The network subsystem has failed.
-     *   <li><b>AH_ENETRESET [Win32]</b>            - Time to live is enabled for the socket and a
-     *                                                related failure was detected.
-     *   <li><b>AH_ENETUNREACH [Darwin]</b>         - Network of remote host not reachable.
-     *   <li><b>AH_ENOBUFS [Darwin, Linux]</b>      - Not enough buffer space available.
-     *   <li><b>AH_ENOMEM [Darwin, Linux]</b>       - Not enough heap memory available.
+     *   <li>@ref AH_ENONE                        - Data sent successfully.
+     *   <li>@ref AH_ECANCELED                    - Socket event loop is shutting down.
+     *   <li>@ref AH_ECONNRESET [Win32]           - A previous send operation resulted in an ICMP
+     *                                              "Port Unreachable" message.
+     *   <li>@ref AH_EEOF                         - Socket closed.
+     *   <li>@ref AH_EHOSTUNREACH [Darwin, Linux] - The targeted remote host could not be reached.
+     *   <li>@ref AH_EMSGSIZE                     - Sent message size exceeds supported maximum.
+     *   <li>@ref AH_ENETDOWN [Darwin, Linux]     - The local network interface required to send
+     *                                              the message is down.
+     *   <li>@ref AH_ENETDOWN [Win32]             - The network subsystem has failed.
+     *   <li>@ref AH_ENETRESET [Win32]            - Time to live is enabled for the socket and a
+     *                                              related failure was detected.
+     *   <li>@ref AH_ENETUNREACH [Darwin]         - Network of remote host not reachable.
+     *   <li>@ref AH_ENOBUFS [Darwin, Linux]      - Not enough buffer space available.
+     *   <li>@ref AH_ENOMEM [Darwin, Linux]       - Not enough heap memory available.
      * </ul>
      */
     void (*on_send)(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err);
@@ -287,8 +286,8 @@ struct ah_udp_sock_cbs {
      * The socket has been closed.
      *
      * @param sock Pointer to socket.
-     * @param err  Should always be @c AH_ENONE. Other codes may be provided if
-     *             an unexpected platform error occurs.
+     * @param err  Should always be @ref AH_ENONE. Other codes may be provided
+     *             if an unexpected platform error occurs.
      *
      * @note This function is guaranteed to be called after every call to
      *       ah_udp_sock_close(), which makes it an excellent place to release
@@ -354,10 +353,10 @@ ah_extern bool ah_udp_vtab_is_valid(const ah_udp_vtab_t* vtab);
  * @param trans Desired transport.
  * @param cbs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a sock successfully initialized.
- *   <li><b>AH_EINVAL</b> - @a sock or @a loop or @a cbs is @c NULL.
- *   <li><b>AH_EINVAL</b> - @a trans @c vtab is invalid, as reported by ah_udp_vtab_is_valid().
- *   <li><b>AH_EINVAL</b> - @c on_open, @c on_recv, @c on_send or @c on_close of @a cbs is @c NULL.
+ *   <li>@ref AH_ENONE  - @a sock successfully initialized.
+ *   <li>@ref AH_EINVAL - @a sock or @a loop or @a cbs is @c NULL.
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_udp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @c on_open, @c on_recv, @c on_send or @c on_close of @a cbs is @c NULL.
  * </ul>
  */
 ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, const ah_udp_sock_cbs_t* cbs);
@@ -366,7 +365,7 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp
  * Schedules opening of @a sock, which must be initialized, and its
  *        binding to the local network interface represented by @a laddr.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the open
+ * If the return value of this function is @ref AH_ENONE, meaning that the open
  * attempt could indeed be scheduled, its result will eventually be presented
  * via the ah_udp_sock_cbs::on_open callback of @a sock.
  *
@@ -381,13 +380,13 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp
  *              port number automatically, specify port @c 0.
 
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>        - @a sock opening successfully scheduled.
- *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not @c NULL and is not an IP-based address.
- *   <li><b>AH_ECANCELED</b>    - The event loop of @a sock is shutting down.
- *   <li><b>AH_EINVAL</b>       - @a sock is @c NULL.
- *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>       - @a sock is not closed.
+ *   <li>@ref AH_ENONE        - @a sock opening successfully scheduled.
+ *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not @c NULL and is not an IP-based address.
+ *   <li>@ref AH_ECANCELED    - The event loop of @a sock is shutting down.
+ *   <li>@ref AH_EINVAL       - @a sock is @c NULL.
+ *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a sock is not closed.
  * </ul>
  *
  * @note Every successfully opened @a sock must eventually be provided to
@@ -403,16 +402,16 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* la
  *
  * @param sock Pointer to socket.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - Start of receiving data via @a sock successfully scheduled.
- *   <li><b>AH_ECANCELED</b>        - The event loop of @a sock is shutting down.
- *   <li><b>AH_EINVAL</b>           - @a sock is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
- *   <li><b>AH_EOVERFLOW</b>        - @c AH_PSIZE is too small for it to be possible to store both
- *                                    required metadata @e and read data in a single page provided
- *                                    by the page allocator (see ah_palloc()).
- *   <li><b>AH_ESTATE</b>           - @a sock is not open.
+ *   <li>@ref AH_ENONE            - Start of receiving data via @a sock successfully scheduled.
+ *   <li>@ref AH_ECANCELED        - The event loop of @a sock is shutting down.
+ *   <li>@ref AH_EINVAL           - @a sock is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
+ *   <li>@ref AH_EOVERFLOW        - @c AH_PSIZE is too small for it to be possible to store both
+ *                                  required metadata @e and read data in a single page provided by
+ *                                  the page allocator (see ah_palloc()).
+ *   <li>@ref AH_ESTATE           - @a sock is not open.
  * </ul>
  *
  * @warning This function must be called with a successfully opened socket. An
@@ -427,9 +426,9 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
  *
  * @param sock Pointer to socket.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Receiving of data via @a sock successfully stopped.
- *   <li><b>AH_EINVAL</b> - @a sock is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a sock reading not started.
+ *   <li>@ref AH_ENONE  - Receiving of data via @a sock successfully stopped.
+ *   <li>@ref AH_EINVAL - @a sock is @c NULL.
+ *   <li>@ref AH_ESTATE - @a sock reading not started.
  * </ul>
  *
  * @note It is acceptable to call this function immediately after a successful
@@ -447,7 +446,7 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
  * you want to store the buffer memory somewhere else, just zero an ah_udp_out
  * instance and then initialize its @c buf field.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the
+ * If the return value of this function is @ref AH_ENONE, meaning that the
  * sending could indeed be scheduled, the result of the sending will eventually
  * be presented via the ah_udp_sock_cbs::on_send callback of @a conn. More
  * specifically, the callback is invoked either if an error occurs or after all
@@ -456,13 +455,13 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
  * @param sock Pointer to socket.
  * @param out  Pointer to outgoing data.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>            - Data transmission scheduled successfully.
- *   <li><b>AH_ECANCELED</b>        - The event loop of @a sock is shutting down.
- *   <li><b>AH_EINVAL</b>           - @a sock or @a out is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b> - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS</b>          - Not enough buffer space available.
- *   <li><b>AH_ENOMEM</b>           - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>           - @a sock is not open.
+ *   <li>@ref AH_ENONE            - Data transmission scheduled successfully.
+ *   <li>@ref AH_ECANCELED        - The event loop of @a sock is shutting down.
+ *   <li>@ref AH_EINVAL           - @a sock or @a out is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE           - @a sock is not open.
  * </ul>
  */
 ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
@@ -470,15 +469,15 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
 /**
  * Schedules closing of @a sock.
  *
- * If the return value of this function is @c AH_ENONE, meaning that the
+ * If the return value of this function is @ref AH_ENONE, meaning that the
  * closing could indeed be scheduled, its result will eventually be presented
  * via the ah_udp_sock_cbs::on_close callback of @a sock.
  *
  * @param sock Pointer to socket.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - Close of @a sock successfully scheduled.
- *   <li><b>AH_EINVAL</b> - @a sock is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a sock is already closed.
+ *   <li>@ref AH_ENONE  - Close of @a sock successfully scheduled.
+ *   <li>@ref AH_EINVAL - @a sock is @c NULL.
+ *   <li>@ref AH_ESTATE - @a sock is already closed.
  * </ul>
  */
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
@@ -504,11 +503,11 @@ ah_extern int ah_udp_sock_get_family(const ah_udp_sock_t* sock);
  * @param sock  Pointer to socket.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a sock or @a laddr is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ESTATE</b>                  - @a sock is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a sock or @a laddr is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ESTATE                  - @a sock is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_t* laddr);
@@ -566,12 +565,12 @@ ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock);
  * @param sock      Pointer to socket.
  * @param hop_limit Desired hop limit.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a sock is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin, Linux]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>                  - @a sock is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE                  - @a sock is closed.
  * </ul>
  *
  * @note This option is an important way of preventing multicast messages from
@@ -591,12 +590,12 @@ ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint
  * @param sock       Pointer to socket.
  * @param is_enabled Whether multicast loopback is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a sock is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin, Linux]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>                  - @a sock is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE                  - @a sock is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool is_enabled);
@@ -612,12 +611,12 @@ ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool 
  * @param sock       Pointer to socket.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a sock is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin, Linux]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>                  - @a sock is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE                  - @a sock is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enabled);
@@ -633,12 +632,12 @@ ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enable
  * @param sock      Pointer to socket.
  * @param hop_limit Desired hop limit.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a sock is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin, Linux]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>                  - @a sock is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE                  - @a sock is closed.
  * </ul>
  */
 ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
@@ -660,12 +659,12 @@ ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data);
  * @param sock  Pointer to socket.
  * @param group Pointer to multicast group specification.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a sock is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin, Linux]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>                  - @a sock is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE                  - @a sock is closed.
  * </ul>
  *
  * @note This is a blocking operation on all supported platforms. It may entail
@@ -686,12 +685,12 @@ ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* g
  * @param sock  Pointer to socket.
  * @param group Pointer to multicast group specification.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                   - The operation was successful.
- *   <li><b>AH_EINVAL</b>                  - @a sock is @c NULL.
- *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
- *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
- *   <li><b>AH_ENOMEM [Darwin, Linux]</b>  - Not enough heap memory available.
- *   <li><b>AH_ESTATE</b>                  - @a sock is closed.
+ *   <li>@ref AH_ENONE                   - The operation was successful.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
+ *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE                  - @a sock is closed.
  * </ul>
  *
  * @note This is a blocking operation on all supported platforms. It may entail
@@ -720,12 +719,12 @@ ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* 
  *
  * @param owner_ptr Pointer to own pointer to allocated input buffer.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>     - The operation was successful.
- *   <li><b>AH_EINVAL</b>    - @a owner_ptr is @c NULL.
- *   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned @c NULL).
- *   <li><b>AH_EOVERFLOW</b> - @c AH_PSIZE is too small for it to be possible to store both an
- *                             ah_udp_in instance @e and have room for input data in a single page
- *                             provided by the page allocator (see ah_palloc()).
+ *   <li>@ref AH_ENONE     - The operation was successful.
+ *   <li>@ref AH_EINVAL    - @a owner_ptr is @c NULL.
+ *   <li>@ref AH_ENOMEM    - No enough heap memory available (ah_palloc() returned @c NULL).
+ *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both an
+ *                           ah_udp_in instance @e and have room for input data in a single page
+ *                           provided by the page allocator (see ah_palloc()).
  * </ul>
  *
  * @note This function should primarily be of interest to those both wishing to
@@ -743,13 +742,13 @@ ah_extern ah_err_t ah_udp_in_alloc_for(ah_udp_in_t** owner_ptr);
  *
  * @param in Pointer to input buffer.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>     - The operation was successful.
- *   <li><b>AH_EINVAL</b>    - @a in is @c NULL.
- *   <li><b>AH_ENOMEM</b>    - No enough heap memory available (ah_palloc() returned @c NULL).
- *   <li><b>AH_EOVERFLOW</b> - @c AH_PSIZE is too small for it to be possible to store both an
- *                             ah_udp_in instance @e and have room for input data in a single page
- *                             provided by the page allocator (see ah_palloc()).
- *   <li><b>AH_ESTATE</b>    - @a in is currently not owned and cannot be detached.
+ *   <li>@ref AH_ENONE     - The operation was successful.
+ *   <li>@ref AH_EINVAL    - @a in is @c NULL.
+ *   <li>@ref AH_ENOMEM    - No enough heap memory available (ah_palloc() returned @c NULL).
+ *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both an
+ *                           ah_udp_in instance @e and have room for input data in a single page
+ *                           provided by the page allocator (see ah_palloc()).
+ *   <li>@ref AH_ESTATE    - @a in is currently not owned and cannot be detached.
  * </ul>
  *
  * @warning As the previous owner of @a in is no longer responsible for it or

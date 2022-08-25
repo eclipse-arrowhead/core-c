@@ -68,15 +68,15 @@ struct ah_loop {
  * @param capacity Desired event capacity, or @c 0 if a default capacity is to
  *                 be used.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                  - @a loop was successfully initialized.
- *   <li><b>AH_EINVAL</b>                 - @a loop is @c NULL.
- *   <li><b>AH_EMFILE [Darwin, Linux]</b> - Per-process file descriptor table is full.
- *   <li><b>AH_ENFILE [Darwin, Linux]</b> - Platform file table is full.
- *   <li><b>AH_ENOMEM [Darwin, Linux]</b> - Failed to allocate kernel memory for event queue.
- *   <li><b>AH_EOVERFLOW [Linux]</b>      - More than 32-bits of heap memory was requested on a 32-bit system.
- *   <li><b>AH_EPERM [Linux]</b>          - Permission denied to set up required kernel resource.
- *   <li><b>AH_EPROCLIM [Win32]</b>       - Windows task limit reached.
- *   <li><b>AH_ESYSNOTREADY [Win32]</b>   - Network subsystem not ready.
+ *   <li>@ref AH_ENONE                  - @a loop was successfully initialized.
+ *   <li>@ref AH_EINVAL                 - @a loop is @c NULL.
+ *   <li>@ref AH_EMFILE [Darwin, Linux] - Per-process file descriptor table is full.
+ *   <li>@ref AH_ENFILE [Darwin, Linux] - Platform file table is full.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux] - Failed to allocate kernel memory for event queue.
+ *   <li>@ref AH_EOVERFLOW [Linux]      - More than 32-bits of heap memory was requested on a 32-bit system.
+ *   <li>@ref AH_EPERM [Linux]          - Permission denied to set up required kernel resource.
+ *   <li>@ref AH_EPROCLIM [Win32]       - Windows task limit reached.
+ *   <li>@ref AH_ESYSNOTREADY [Win32]   - Network subsystem not ready.
  * </ul>
  *
  * @warning No other functions operating on @a loop are safe to call until
@@ -142,18 +142,13 @@ ah_extern ah_time_t ah_loop_now(const ah_loop_t* loop);
  *
  * @param loop Pointer to event loop.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                 - @a loop ran until stopped or
- *                                         terminated.
- *   <li><b>AH_EINVAL</b>                - @a loop is @c NULL.
- *   <li><b>AH_ESTATE</b>                - @a loop is already running or has
- *                                         been terminated.
- *   <li><b>AH_EACCES [Darwin]</b>       - Process lacks permission to register
- *                                         KQueue filter.
- *   <li><b>AH_EINTR [Darwin, Linux]</b> - The process was interrupted by a
- *                                         signal.
- *   <li><b>AH_ENOMEM[Darwin, Linux]</b> - Failed to submit pending events due
- *                                         to no memory being available to the
- *                                         kernel.
+ *   <li>@ref AH_ENONE                  - @a loop ran until stopped or terminated.
+ *   <li>@ref AH_EINVAL                 - @a loop is @c NULL.
+ *   <li>@ref AH_ESTATE                 - @a loop is already running or has been terminated.
+ *   <li>@ref AH_EACCES [Darwin]        - Process lacks permission to register KQueue filter.
+ *   <li>@ref AH_EINTR [Darwin, Linux]  - The process was interrupted by a signal.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux] - Failed to submit pending events due to no memory being
+ *                                        available to the kernel.
  * </ul>
  */
 ah_extern ah_err_t ah_loop_run(ah_loop_t* loop);
@@ -175,21 +170,16 @@ ah_extern ah_err_t ah_loop_run(ah_loop_t* loop);
  * @param loop Pointer to event loop.
  * @param time Point after which @a loop execution is to stop.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>                 - @a loop ran until @a time expired,
- *                                         it was stopped or it was terminated.
- *   <li><b>AH_EDOM</b>                  - @a time is too far into the future
- *                                         for it to be representable by the
- *                                         kernel event queue system.
- *   <li><b>AH_EINVAL</b>                - @a loop is @c NULL.
- *   <li><b>AH_ESTATE</b>                - @a loop is already running or has
- *                                         been terminated.
- *   <li><b>AH_EACCES [Darwin]</b>       - Process lacks permission to register
- *                                         KQueue filter.
- *   <li><b>AH_EINTR [Darwin, Linux]</b> - The process was interrupted by a
- *                                         signal.
- *   <li><b>AH_ENOMEM[Darwin, Linux]</b> - Failed to submit pending events due
- *                                         to no memory being available to the
- *                                         kernel.
+ *   <li>@ref AH_ENONE                  - @a loop ran until @a time expired, it was stopped or it
+ *                                        was terminated.
+ *   <li>@ref AH_EDOM                   - @a time is too far into the future for it to be
+ *                                        representable by the kernel event queue system.
+ *   <li>@ref AH_EINVAL                 - @a loop is @c NULL.
+ *   <li>@ref AH_ESTATE                 - @a loop is already running or has been terminated.
+ *   <li>@ref AH_EACCES [Darwin]        - Process lacks permission to register KQueue filter.
+ *   <li>@ref AH_EINTR [Darwin, Linux]  - The process was interrupted by a signal.
+ *   <li>@ref AH_ENOMEM [Darwin, Linux] - Failed to submit pending events due to no memory being
+ *                                        available to the kernel.
  * </ul>
  */
 ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, ah_time_t* time);
@@ -199,9 +189,9 @@ ah_extern ah_err_t ah_loop_run_until(ah_loop_t* loop, ah_time_t* time);
  *
  * @param loop Pointer to event loop.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a loop was stopped.
- *   <li><b>AH_EINVAL</b> - @a loop is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a loop is not running.
+ *   <li>@ref AH_ENONE  - @a loop was stopped.
+ *   <li>@ref AH_EINVAL - @a loop is @c NULL.
+ *   <li>@ref AH_ESTATE - @a loop is not running.
  * </ul>
  */
 ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop);
@@ -210,7 +200,7 @@ ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop);
  * Terminates @a loop, cancelling all of its pending events and releases
  *        all of its resources.
  *
- * All pending events of @a loop will be invoked with @c AH_ECANCELED before
+ * All pending events of @a loop will be invoked with @ref AH_ECANCELED before
  * termination completes.
  *
  * If this function is called from an event handler while ah_loop_run() or
@@ -221,10 +211,9 @@ ah_extern ah_err_t ah_loop_stop(ah_loop_t* loop);
  *
  * @param loop Pointer to event loop.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a loop was terminated or is scheduled for
- *                          termination.
- *   <li><b>AH_EINVAL</b> - @a loop is @c NULL.
- *   <li><b>AH_ESTATE</b> - @a loop is already terminating or terminated.
+ *   <li>@ref AH_ENONE  - @a loop was terminated or is scheduled for termination.
+ *   <li>@ref AH_EINVAL - @a loop is @c NULL.
+ *   <li>@ref AH_ESTATE - @a loop is already terminating or terminated.
  * </ul>
  */
 ah_extern ah_err_t ah_loop_term(ah_loop_t* loop);

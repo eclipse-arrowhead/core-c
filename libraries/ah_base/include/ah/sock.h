@@ -159,8 +159,8 @@ static const ah_sockaddr_ipv6_t ah_sockaddr_ipv6_wildcard = {
  * @param port     UDP or TCP port number.
  * @param ipaddr   IPv4 address.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a sockaddr was successfully initialized.
- *   <li><b>AH_EINVAL</b> - Either of @a sockaddr or @a ipaddr is @c NULL.
+ *   <li>@ref AH_ENONE  - @a sockaddr was successfully initialized.
+ *   <li>@ref AH_EINVAL - Either of @a sockaddr or @a ipaddr is @c NULL.
  * </ul>
  */
 ah_extern ah_err_t ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port, const ah_ipaddr_v4_t* ipaddr);
@@ -172,8 +172,8 @@ ah_extern ah_err_t ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port,
  * @param port     UDP or TCP port number.
  * @param ipaddr   IPv6 address.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - @a sockaddr was successfully initialized.
- *   <li><b>AH_EINVAL</b> - Either of @a sockaddr or @a ipaddr is @c NULL.
+ *   <li>@ref AH_ENONE  - @a sockaddr was successfully initialized.
+ *   <li>@ref AH_EINVAL - Either of @a sockaddr or @a ipaddr is @c NULL.
  * </ul>
  */
 ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const ah_ipaddr_v6_t* ipaddr);
@@ -219,9 +219,9 @@ ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr);
  * @param dest      Pointer to buffer to receive stringification.
  * @param dest_size Size of @a dest, in bytes.
  * @return One of the following error codes: <ul>
- *   <li><b>AH_ENONE</b>  - If the complete representation could be written to @a dest.
- *   <li><b>AH_EINVAL</b> - If any of @a sockaddr, @a dest or @a dest_size is @c NULL.
- *   <li><b>AH_ENOSPC</b> - If the representation would not fit in @a dest.
+ *   <li>@ref AH_ENONE  - If the complete representation could be written to @a dest.
+ *   <li>@ref AH_EINVAL - If any of @a sockaddr, @a dest or @a dest_size is @c NULL.
+ *   <li>@ref AH_ENOSPC - If the representation would not fit in @a dest.
  * </ul>
  *
  * @see ah_ipaddr_v4_stringify()
