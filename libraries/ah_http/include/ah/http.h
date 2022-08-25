@@ -513,6 +513,11 @@ struct ah_http_server_cbs {
      * @param srv Pointer to server.
      * @param err Should always be @c AH_ENONE. Other codes may be provided if
      *            an unexpected platform error occurs.
+     *
+     * @note This function is guaranteed to be called after every call to
+     *       ah_http_server_close(), which makes it an excellent place to
+     *       release any resources associated with @a srv. You may, for example,
+     *       elect to call ah_http_server_term() in this callback.
      */
     void (*on_close)(ah_http_server_t* srv, ah_err_t err);
 };
@@ -661,6 +666,18 @@ struct ah_http_trailer {
 
     AH_I_HTTP_TRAILER_FIELDS
 };
+
+/**
+ * @name HTTP Client
+ *
+ * Operations on ah_http_client instances. All such instances must be
+ * initialized using ah_http_client_init() before they are provided to any other
+ * functions listed here. Any other requirements regarding the state of clients
+ * are described in the documentation of each respective function, sometimes
+ * only via the error codes it lists.
+ *
+ * @{
+ */
 
 /**
  * Initializes @a cln for subsequent use.
@@ -1022,15 +1039,221 @@ ah_extern void* ah_http_client_get_user_data(const ah_http_client_t* cln);
  */
 ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data);
 
+/** @} */
+
+/**
+ * @name HTTP Server
+ *
+ * Operations on ah_http_server instances. All such instances must be
+ * initialized using ah_http_server_init() before they are provided to any other
+ * functions listed here. Any other requirements regarding the state of servers
+ * are described in the documentation of each respective function, sometimes
+ * only via the error codes it lists.
+ *
+ * @{
+ */
+
+/**
+ * Initializes @a srv for subsequent use.
+ *
+ * @param srv   Pointer to server.
+ * @param loop  Pointer to event loop.
+ * @param trans Desired transport.
+ * @param cbs   Pointer to event callback set.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>     - @a srv successfully initialized.
+ *   <li><b>AH_EINVAL</b>    - @a srv or @a loop or @a cbs is @c NULL.
+ *   <li><b>AH_EINVAL</b>    - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li><b>AH_EINVAL</b>    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
+ *                             @c NULL.
+ *   <li><b>AH_ENOMEM</b>    - Heap memory could not be allocated for storing incoming connections.
+ *   <li><b>AH_EOVERFLOW</b> - @c AH_PSIZE is too small for it to be possible to store both
+/ *                            metadata @e and have room for at least one incoming connection in a
+ *                             single page provided by the page allocator (see ah_palloc()).
+ * </ul>
+ *
+ * @note Every successfully initialized @a srv must eventually be provided to
+ *       ah_http_server_term().
+ */
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_server_cbs_t* cbs);
+
+/**
+ * Schedules opening of @a srv, which must be initialized, and its binding to
+ * the local network interface represented by @a laddr.
+ *
+ * If the return value of this function is @c AH_ENONE, meaning that the open
+ * attempt could indeed be scheduled, its result will eventually be presented
+ * via the ah_http_server_cbs::on_open callback of @a srv.
+ *
+ * @param srv   Pointer to server.
+ * @param laddr Pointer to socket address representing a local network interface
+ *              through which the listener must later receive incoming
+ *              connections. If opening is successful, the referenced address
+ *              must remain valid for the remaining lifetime of @a srv. To bind
+ *              to all or any local network interface, provide the wildcard
+ *              address (see ah_sockaddr_ipv4_wildcard and
+ *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
+ *              port number automatically, specify port @c 0.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>        - @a srv opening successfully scheduled.
+ *   <li><b>AH_EAFNOSUPPORT</b> - @a laddr is not an IP-based address.
+ *   <li><b>AH_ECANCELED</b>    - The event loop of @a srv is shutting down.
+ *   <li><b>AH_EINVAL</b>       - @a srv or @a laddr is @c NULL.
+ *   <li><b>AH_ENOBUFS</b>      - Not enough buffer space available.
+ *   <li><b>AH_ENOMEM</b>       - Not enough heap memory available.
+ *   <li><b>AH_ESTATE</b>       - @a srv is not closed.
+ * </ul>
+ *
+ * @note Every successfully opened @a srv must eventually be provided to
+ *       ah_http_server_close() before it is provided to ah_http_server_term().
+ */
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr);
+
+/**
+ * Schedules for @a srv, which must be open, to start listening for connecting
+ * clients.
+ *
+ * If the return value of this function is @c AH_ENONE, meaning that listening
+ * could indeed be scheduled, its result will eventually be presented via the
+ * ah_http_server_cbs::on_listen callback of @a srv.
+ *
+ * @param srv      Pointer to server.
+ * @param backlog  Capacity, in connections, of the queue in which incoming
+ *                 clients wait to get accepted. If @c 0, a platform default
+ *                 will be chosen. If larger than some arbitrary platform
+ *                 maximum, it will be set to that maximum.
+ * @param conn_cbs Pointer to event callback set to provide to all accepted
+ *                 clients.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>     - @a srv listening successfully scheduled.
+ *   <li><b>AH_ECANCELED</b> - The event loop of @a srv is shutting down.
+ *   <li><b>AH_EINVAL</b>    - @a srv or @a conn_cbs is @c NULL.
+ *   <li><b>AH_EINVAL</b>    - @c on_send, @c on_recv_line, @c on_recv_header, @c on_recv_data,
+ *                             @c on_recv_end, or @c on_close of @a cbs is @c NULL.
+ *   <li><b>AH_ENOBUFS</b>   - Not enough buffer space available.
+ *   <li><b>AH_ENOMEM</b>    - Not enough heap memory available.
+ *   <li><b>AH_ESTATE</b>    - @a srv is not open.
+ * </ul>
+ *
+ * @warning This function must be called with a successfully opened server. An
+ *          appropriate place to call this function is often going to be in an
+ *          ah_http_server_cbs::on_open callback after a check that opening
+ *          was successful.
+ */
 ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog, const ah_http_client_cbs_t* cbs);
+
+/**
+ * Schedules closing of @a srv.
+ *
+ * If the return value of this function is @c AH_ENONE, meaning that the closing
+ * could indeed be scheduled, its result will eventually be presented via the
+ * ah_http_server_cbs::on_close callback of @a srv.
+ *
+ * @param srv Pointer to server.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>  - Close of @a srv successfully scheduled.
+ *   <li><b>AH_EINVAL</b> - @a srv is @c NULL.
+ *   <li><b>AH_ESTATE</b> - @a srv is already closed.
+ * </ul>
+ *
+ * @note Any already accepted clients that are still open are unaffected by the
+ *       server being closed.
+ */
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv);
+
+/**
+ * Terminates @a srv, freeing any resources it holds.
+ *
+ * @param srv Pointer to server.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>  - @a srv successfully terminated.
+ *   <li><b>AH_EINVAL</b> - @a srv is @c NULL.
+ *   <li><b>AH_ESTATE</b> - @a srv is not currently closed.
+ * </ul>
+ *
+ * @note Any already accepted clients that are still open are unaffected by the
+ *       server being terminated. It may, however, be the case at some resources
+ *       @a srv shares with those clients are not freed until they are all
+ *       closed.
+ */
 ah_extern ah_err_t ah_http_server_term(ah_http_server_t* srv);
+
+/**
+ * Gets the TCP listener of @a srv.
+ *
+ * @param srv Pointer to server.
+ * @return Pointer to TCP listener of @a srv, or @c NULL if @a srv is @c NULL.
+ *
+ * @note @a srv notably shares <em>user data pointer</em> with the TCP listener
+ *       returned by this function. If you change or update the user data via
+ *       either @a srv or the listener, both are affected.
+ */
 ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv);
+
+/**
+ * Stores local address bound by @a srv into @a laddr.
+ *
+ * If @a srv was opened with a zero port, this function will report what
+ * concrete port was assigned to @a srv.
+ *
+ * @param srv   Pointer to server.
+ * @param laddr Pointer to socket address to be set by this operation.
+ * @return One of the following error codes: <ul>
+ *   <li><b>AH_ENONE</b>                   - The operation was successful.
+ *   <li><b>AH_EINVAL</b>                  - @a srv or @a laddr is @c NULL.
+ *   <li><b>AH_ENETDOWN [Win32]</b>        - The network subsystem has failed.
+ *   <li><b>AH_ENOBUFS [Darwin, Linux]</b> - Not enough buffer space available.
+ *   <li><b>AH_ESTATE</b>                  - @a srv is closed.
+ * </ul>
+ *
+ * @note This function will always report the same local address as the TCP
+ *       listener of @a srv would have reported if ah_tcp_listener_get_laddr()
+ *       was called. You can get a pointer to that TCP listener by calling
+ *       ah_http_server_get_listener() with @a srv as argument.
+ */
 ah_extern ah_err_t ah_http_server_get_laddr(const ah_http_server_t* srv, ah_sockaddr_t* laddr);
+
+/**
+ * Gets pointer to event loop of @a srv.
+ *
+ * @param srv Pointer to server.
+ * @return Pointer to event loop, or @c NULL if @a srv is @c NULL.
+ *
+ * @note This function gets the event loop pointer of the ah_tcp_listener owned
+ *       by @a srv. You can get a pointer to that TCP listener by calling
+ *       ah_http_server_get_listener() with @a srv as argument.
+ */
 ah_extern ah_loop_t* ah_http_server_get_loop(const ah_http_server_t* srv);
+
+/**
+ * Gets the user data pointer associated with @a srv.
+ *
+ * @param srv Pointer to server.
+ * @return Any user data pointer previously set via
+ *         ah_http_server_set_user_data(), or @c NULL if no such has been set or
+ *         if @a srv is @c NULL.
+ *
+ * @note This function gets the user data pointer of the ah_tcp_listener owned
+ *       by @a srv. You can get a pointer to that TCP listener by calling
+ *       ah_http_server_get_listener() with @a srv as argument.
+ */
 ah_extern void* ah_http_server_get_user_data(const ah_http_server_t* srv);
+
+/**
+ * Sets the user data pointer associated with @a srv.
+ *
+ * @param srv       Pointer to server.
+ * @param user_data User data pointer, referring to whatever context you want
+ *                  to associate with @a srv.
+ *
+ * @note If @a srv is @c NULL, this function does nothing.
+ *
+ * @note This function sets the user data pointer of the ah_tcp_listener owned
+ *       by @a srv. You can get a pointer to that TCP listener by calling
+ *       ah_http_server_get_listener() with @a srv as argument.
+ */
 ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data);
+
+/** @} */
 
 #endif
