@@ -11,8 +11,9 @@ static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char
 
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length)
 {
-    ah_assert_if_debug(a != NULL || a_length == 0u);
-    ah_assert_if_debug(b != NULL || b_length == 0u);
+    if ((a == NULL && a_length != 0u) || (b == NULL && b_length != 0u)) {
+        return -1;
+    }
 
     while (a_length != 0u && b_length != 0u) {
         int diff = a[0u] - b[0u];

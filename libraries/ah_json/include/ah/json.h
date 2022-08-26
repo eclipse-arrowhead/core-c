@@ -17,122 +17,44 @@
  * cases: (1) when constructing JSON representations and (2) when interpreting
  * JSON representations. Here, we primarily provide utilities for interpreting
  * JSON. That being said, we will consider how to accomplish these two
- * activities using only the C99 standard library and this library. First,
- * however, we will consider what kinds of data structures JSON can represent.
- *
- * <h3>JSON Representation</h3>
- *
- * A json representation, or @e Value, can take any out of seven distinct types,
- * outlined in the following table:
- *
- * <table>
- *   <caption id="json-types">JSON Value Types</caption>
- *   <tr>
- *     <th>Name
- *     <th>Description
- *     <th>Example
- *   <tr>
- *     <td>@e Object
- *     <td><code>'{'</code>, a sequence of <code>String ':' Value</code> pairs separated by
- *         <code>','</code>, and <code>'}'</code>.
- *     <td><code>{"celsius": 26.3}</code>
- *   <tr>
- *     <td>@e Array
- *     <td><code>'['</code>, a sequence of <code>Value</code> elements separated by
- *         <code>','</code>, and <code>']'</code>.
- *     <td><code>[1, 2, 3]</code>
- *   <tr>
- *     <td>@e String
- *     <td>A UTF-8 text that may contain escape sequences.
- *     <td><code>"Arrowhead"</code>
- *   <tr>
- *     <td>@e Number
- *     <td>A decimal number with an optional fraction and an optional exponent.
- *     <td><code>0.031415e2</code>
- *   <tr>
- *     <td>@e True
- *     <td>Boolean true, represented by the string @c true.
- *     <td><code>true</code>
- *   <tr>
- *     <td>@e False
- *     <td>Boolean false, represented by the string @c false.
- *     <td><code>false</code>
- *   <tr>
- *     <td>@e Null
- *     <td>The absence of a meaningful value, represented by the string @c null.
- *     <td><code>null</code>
- * </table>
- *
- * Objects and arrays are <em>data structures</em> in the sense that they can
- * contain, or @e structure, other values. The other types can be considered
- * primitives, by which we simply mean that they do not directly contain other
- * values. Using objects and arrays, arbitrarily complex data structures can be
- * constructed, such as
- * <code>{"id": 1937321, "colors": [{"r": 0, "g": 0, "b": 255}, "red"]}</code>.
- *
- * @note JSON lacks a type for representing binary strings, and it cannot
- *       directly associate metadata, such as type information, with objects or
- *       other types. That being said, there are ways to circumvent these
- *       shortcomings, such as by <a href="https://www.rfc-editor.org/rfc/rfc4648.html">Base64-encoding</a>
- *       binary data and using custom schemes for representing metadata.
+ * activities using only the C99 standard library and this library.
  *
  * <h3>JSON Construction</h3>
  *
- * To construct JSON objects, you must produce routines that take whatever data
+ * To construct JSON objects, you must produce code that take whatever data
  * structures or values you need to encode and writes them as JSON to a buffer.
  *
  * To help you, this library most significantly provides the
  * ah_json_str_escape() function, which takes an arbitrary C string and escapes
  * any characters that are not allowed to occur unescaped in a JSON string. The
- * C99 standard library provides functions suitable for producing JSON numbers
- * from C values, such as strtod() and strtoul(), both of which can produce
- * numbers compatible with the JSON standard. To make sure they are producing
- * compliant numbers, ensure that the current locale uses dot (<code>.</code>)
- * as the <em>radix character</em>. The C locale, required to be set by default,
- * does use this radix character. Another C99 function useful for producing
- * compliant numbers is snprintf(), which is used in the below example:
+ * C99 standard library provides the printf() family of functions, which are
+ * able to produce JSON-compliant numbers from C variables. Using them requires,
+ * however, that the current locale uses the dot character (<code>.</code>) as
+ * <em>radix character</em>. The C locale, required to be set by default by C99,
+ * does use this radix character. Below, an example using snprintf(), to produce
+ * a JSON object is given:
  *
  * @code{.c}
- * #include <stddef.h>
- * #include <stdio.h>
+ * const char* sensor_id = "aa-xx-142b";
+ * float kelvin = 296.55f;
  *
- * struct Temperature {
- *   char sensor_name[32];
- *   float kelvin;
- * };
- *
- * int main(void) {
- *   char buf[128u];
- *
- *   // Data to encode.
- *   struct Temperature temp = {
- *       .sensor_name = "aa-xx-142b", // We "know" this string will not need to be escaped.
- *       .kelvin = 296.55f,
- *   };
- *
- *   // Encode.
- *   int res = snprintf(buf, sizeof(buf), "{\"sensor_name\":\"%s\",\"kelvin\":%f}",
- *       temp.sensor_name, temp.kelvin);
- *
- *   if (res < 0) {
- *       perror(NULL);
- *       return 1;
- *   }
- *
- *   if (res > sizeof(buf)) {
- *      fprintf(stderr, "result too large");
- *      return 1;
- *   }
- *
- *   // `buf` now contains a JSON object of size `res`.
- *
- *   printf("%.*s\n", res, buf); // Prints `{"sensor_name":"aa-xx-142b","kelvin":296.55}`.
- *
- *   return 0;
+ * char buffer[128u];
+ * int size = snprintf(buffer, sizeof(buffer), "{\"sensor-id\":\"%s\",\"kelvin\":%f}", sensor_id, kelvin);
+ * if (size < 0 || size > (int) sizeof(buffer)) {
+ *     perror("failed to generate JSON object");
+ *     exit(1);
  * }
+ *
+ * printf("%.*s\n", size, buffer); // Prints `{"sensor-id":"aa-xx-142b","kelvin":296.549988}`.
  * @endcode
  *
  * <h3>JSON Interpretation</h3>
+ *
+ * Just as in the case of constructing JSON values, interpreting them requires
+ * you to provide code for each value you want to handle. A major difference,
+ * however, is that this library helps you with this interpretation by dividing
+ * up the JSON data into <em>value tokens</em>, each represented by an instance
+ * of ah_json_val, using the ah_json_parse() function.
  *
  * @note Refer to the ECMA-404 standard for a formally correct syntax
  *       description. The standard to is linked further down.
@@ -319,6 +241,18 @@ struct ah_json_val {
  * @note When this function returns, @a dst will be in a valid state unless the
  *       returned error code is @ref AH_EINVAL, in which case @a dst remains
  *       unmodified.
+ *
+ * @warning This function returning @ref AH_ENONE does @e not guarantee that the
+ *          JSON data in @a src is strictly conformant to ECMA-404. It does
+ *          guarantee that all opened objects, arrays and strings are properly
+ *          closed, as well as that the values @c true, @c false and @c null are
+ *          identified correctly. This does, however, leave room for strings to
+ *          contain invalid escape sequences and for numbers to be invalid. If
+ *          ah_json_str_unescape() returns @ref AH_ENONE in response to being
+ *          given the contents of a JSON string, that string is guaranteed to be
+ *          valid. If the C99 strtod() function is successful in converting all
+ *          characters of a JSON number, that number is guaranteed to be valid
+ *          if it is in decimal form.
  */
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 
@@ -335,10 +269,14 @@ ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
  * @param a_length Length of @a a, excluding any NULL-terminator.
  * @param b        Pointer to second string.
  * @param b_length Length of @a b, excluding any NULL-terminator.
- * @return An integer greater than, equal to, or less than 0, depending on
- *         whether @a a is greater than, equal to, or less than @a b. The
- *         comparison is done using unsigned characters, so that @c \\200 is
- *         greater than @c \\0.
+ * @return An integer greater than, equal to, or less than @c 0, depending on
+ *         whether @a a is greater than, equal to, or less than @a b.
+ *
+ * @note This function treats the individual bytes of @a a and @a b as unsigned
+ *       8-bit bytes when performing the comparison.
+ *
+ * @warning If @a a is @c NULL and @a a_length is not @c 0, or if @a b is
+ *          @c NULL and @a b_length is not @c 0, this function returns @c -1.
  */
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length);
 
