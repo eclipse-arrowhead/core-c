@@ -31,6 +31,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+ah_extern ah_err_t ah_add_int8(int8_t a, int8_t b, int8_t* result);
+ah_extern ah_err_t ah_div_int8(int8_t a, int8_t b, int8_t* result);
+ah_extern ah_err_t ah_mul_int8(int8_t a, int8_t b, int8_t* result);
+ah_extern ah_err_t ah_sub_int8(int8_t a, int8_t b, int8_t* result);
+
 ah_extern ah_err_t ah_add_int16(int16_t a, int16_t b, int16_t* result);
 ah_extern ah_err_t ah_div_int16(int16_t a, int16_t b, int16_t* result);
 ah_extern ah_err_t ah_mul_int16(int16_t a, int16_t b, int16_t* result);
@@ -55,6 +60,11 @@ ah_extern ah_err_t ah_add_size(size_t a, size_t b, size_t* result);
 ah_extern ah_err_t ah_div_size(size_t a, size_t b, size_t* result);
 ah_extern ah_err_t ah_mul_size(size_t a, size_t b, size_t* result);
 ah_extern ah_err_t ah_sub_size(size_t a, size_t b, size_t* result);
+
+ah_extern ah_err_t ah_add_uint8(uint8_t a, uint8_t b, uint8_t* result);
+ah_extern ah_err_t ah_div_uint8(uint8_t a, uint8_t b, uint8_t* result);
+ah_extern ah_err_t ah_mul_uint8(uint8_t a, uint8_t b, uint8_t* result);
+ah_extern ah_err_t ah_sub_uint8(uint8_t a, uint8_t b, uint8_t* result);
 
 ah_extern ah_err_t ah_add_uint16(uint16_t a, uint16_t b, uint16_t* result);
 ah_extern ah_err_t ah_div_uint16(uint16_t a, uint16_t b, uint16_t* result);
