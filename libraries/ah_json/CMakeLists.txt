@@ -5,6 +5,7 @@ set(CMAKE_C_STANDARD 99)
 set(
     SOURCE_FILES
     include/ah/json.h
+    src/json-num.c
     src/json-parse.c
     src/json-str.c
 )
@@ -17,6 +18,7 @@ set(
     TEST_FILES
     test/main.c
     test/test-json-parse.c
+    test/test-json-num-parse.c
     test/test-json-str-compare.c
     test/test-json-str-escape.c
     test/test-json-str-unescape.c

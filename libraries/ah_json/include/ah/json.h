@@ -256,6 +256,8 @@ struct ah_json_val {
  */
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 
+ah_extern ah_err_t ah_json_num_parse_int32(const char* src, size_t src_length, int32_t* dst);
+
 /**
  * Compares strings @a a and @a b while taking JSON escape sequences into
  * account.
