@@ -336,7 +336,7 @@ static ah_err_t s_parse_keyword(struct s_parser* parser, ah_json_val_t* parent, 
     if (n_read_chars == 0u) {
         val->type = AH_JSON_TYPE_ERROR;
         val->length = 1u;
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     val->length = n_read_chars;
@@ -358,7 +358,7 @@ static ah_err_t s_report_error(struct s_parser* parser, ah_json_val_t* parent, u
 
     val->length = 1u;
 
-    return AH_EILSEQ;
+    return AH_ESYNTAX;
 }
 
 static ah_err_t s_alloc_value(struct s_parser* parser, ah_json_val_t* parent, uint16_t type, uint16_t level, ah_json_buf_t* dst, ah_json_val_t** out)

@@ -26,6 +26,7 @@
 #define AH_EINTERN 5404 /**< Internal error. */
 #define AH_ERECONN 5406 /**< Reconnection underway. */
 #define AH_ESTATE  5402 /**< State invalid. */
+#define AH_ESYNTAX 5407 /**< Syntax invalid. */
 /** @} */
 
 /**

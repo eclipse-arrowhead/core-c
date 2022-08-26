@@ -331,7 +331,7 @@ ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char
 
         size_t n_read = s_escape_sequence_to_utf8(src, src_length, buf, &buf_length);
         if (n_read == 0u) {
-            err = AH_EILSEQ;
+            err = AH_ESYNTAX;
             goto handle_err;
         }
         src = &src[n_read];

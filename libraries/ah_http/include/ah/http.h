@@ -374,7 +374,7 @@ struct ah_http_client_cbs {
      *   <li>@ref AH_EDUP                       - Supported header or header value that may only
      *                                            occur once has been seen multiple times.
      *   <li>@ref AH_EEOF                       - Connection closed for reading.
-     *   <li>@ref AH_EILSEQ                     - Message syntax not valid according to RFC9112.
+     *   <li>@ref AH_ESYNTAX                    - Message syntax not valid according to RFC9112.
      *   <li>@ref AH_ENETDOWN [Win32]           - The network subsystem has failed.
      *   <li>@ref AH_ENETRESET [Win32]          - Keep-alive is enabled for the connection and a
      *                                            related failure was detected.
@@ -866,7 +866,7 @@ ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - Transmission of @a out enqueued successfully.
  *   <li>@ref AH_ECANCELED        - The event loop of @a cln is shutting down.
- *   <li>@ref AH_EILSEQ           - The @c ext field of @a chunk is not @c NULL, an empty
+ *   <li>@ref AH_ESYNTAX          - The @c ext field of @a chunk is not @c NULL, an empty
  *                                  NULL-terminated C string and it does not begin with a
  *                                  semicolon @c ;, which means that inserting @c ext into the
  *                                  chunk will make it syntactically invalid. <em>This error code
@@ -902,7 +902,7 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
  *   <li>@ref AH_ENONE            - Transmission of @a trailer enqueued and current message ended
  *                                  successfully.
  *   <li>@ref AH_ECANCELED        - The event loop of @a cln is shutting down.
- *   <li>@ref AH_EILSEQ           - The @c ext field of @a trailer is not @c NULL, an empty
+ *   <li>@ref AH_ESYNTAX          - The @c ext field of @a trailer is not @c NULL, an empty
  *                                  NULL-terminated C string and it does not begin with a
  *                                  semicolon @c ;, which means that inserting @c ext into the
  *                                  last chunk will make it syntactically invalid. <em>This error

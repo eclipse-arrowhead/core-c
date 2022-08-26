@@ -56,16 +56,16 @@ void s_should_fail_to_unescape_invalid_strings(ah_unit_t* unit)
 {
     s_assert_json_unescape_tests(unit, __func__,
         (struct s_json_unescape_test[]) {
-            [0] = { "\\", AH_EILSEQ, "" },
-            [1] = { "\\0", AH_EILSEQ, "" },
-            [2] = { "\\0F", AH_EILSEQ, "" },
-            [3] = { "\\u00d", AH_EILSEQ, "" },
-            [4] = { "\\u?", AH_EILSEQ, "" },
-            [5] = { "\\u00FZ", AH_EILSEQ, "" },
-            [6] = { "Hello \\xFF!", AH_EILSEQ, "Hello " },
-            [7] = { "\\u", AH_EILSEQ, "" },
-            [8] = { "\\t\\x", AH_EILSEQ, "\t" },
-            [9] = { "\\x\\t", AH_EILSEQ, "" },
+            [0] = { "\\", AH_ESYNTAX, "" },
+            [1] = { "\\0", AH_ESYNTAX, "" },
+            [2] = { "\\0F", AH_ESYNTAX, "" },
+            [3] = { "\\u00d", AH_ESYNTAX, "" },
+            [4] = { "\\u?", AH_ESYNTAX, "" },
+            [5] = { "\\u00FZ", AH_ESYNTAX, "" },
+            [6] = { "Hello \\xFF!", AH_ESYNTAX, "Hello " },
+            [7] = { "\\u", AH_ESYNTAX, "" },
+            [8] = { "\\t\\x", AH_ESYNTAX, "\t" },
+            [9] = { "\\x\\t", AH_ESYNTAX, "" },
             { 0u },
         });
 }

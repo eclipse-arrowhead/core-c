@@ -306,7 +306,7 @@ struct ah_json_val {
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - The operation was successful.
  *   <li>@ref AH_EEOF      - @a src ended unexpectedly.
- *   <li>@ref AH_EILSEQ    - @a src contains invalid JSON.
+ *   <li>@ref AH_ESYNTAX    - @a src contains invalid JSON.
  *   <li>@ref AH_EINVAL    - @a src is invalid, @a dst is @c NULL or @c dst->length is larger than
  *                           @c dst->capacity.
  *   <li>@ref AH_EINVAL    - @c dst->values is @c NULL, which enables dynamic reallocation, and
@@ -378,7 +378,7 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
  * @param dst_length Pointer to length of @a dst, in bytes.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - The operation was successful.
- *   <li>@ref AH_EILSEQ    - @a src contains an invalid JSON escape sequence.
+ *   <li>@ref AH_ESYNTAX    - @a src contains an invalid JSON escape sequence.
  *   <li>@ref AH_EINVAL    - @a src is @c NULL and @a src_length is not @c 0.
  *   <li>@ref AH_EINVAL    - @a dst_length is @c NULL.
  *   <li>@ref AH_EINVAL    - @a dst is @c NULL and the value pointed at by @a dst_length is not @c 0.

@@ -58,7 +58,7 @@ ah_err_t ah_i_http_parse_chunk_line(ah_rw_t* rw, size_t* size, const char** ext)
             goto parse_ext;
         }
         else {
-            return AH_EILSEQ;
+            return AH_ESYNTAX;
         }
 
         err = ah_mul_size(size0, 16u, &size0);
@@ -90,7 +90,7 @@ parse_ext:
 
             goto finish;
         }
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     return AH_EAGAIN;
@@ -117,7 +117,7 @@ ah_err_t ah_i_http_parse_header(ah_rw_t* rw, ah_http_header_t* header)
         header->value = NULL;
         return AH_ENONE;
 
-    case AH_EILSEQ:
+    case AH_ESYNTAX:
         break;
 
     default:
@@ -130,7 +130,7 @@ ah_err_t ah_i_http_parse_header(ah_rw_t* rw, ah_http_header_t* header)
     uint8_t* name_end = rw->r;
 
     if (name[0u] == ':') {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     err = s_skip_ch(rw, ':');
@@ -154,7 +154,7 @@ ah_err_t ah_i_http_parse_header(ah_rw_t* rw, ah_http_header_t* header)
         return AH_EAGAIN;
     }
     if (!s_is_vchar_obs_text(ch)) {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     while (ah_rw_peek1(rw, &ch)) {
@@ -202,7 +202,7 @@ ah_err_t ah_i_http_parse_req_line(ah_rw_t* rw, const char** line, ah_http_ver_t*
         return AH_EAGAIN;
     }
     if (method_len == 0u) {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     err = s_skip_ch(rw, ' ');
@@ -215,7 +215,7 @@ ah_err_t ah_i_http_parse_req_line(ah_rw_t* rw, const char** line, ah_http_ver_t*
         return AH_EAGAIN;
     }
     if (target_len == 0u) {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     char* line_end = (char*) rw->r;
@@ -266,7 +266,7 @@ ah_err_t ah_i_http_parse_stat_line(ah_rw_t* rw, const char** line, ah_http_ver_t
         return AH_EAGAIN;
     }
     if (code_len != 3u) {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     err = s_skip_ch(rw, ' ');
@@ -295,10 +295,10 @@ static ah_err_t s_parse_version(ah_rw_t* rw, ah_http_ver_t* version)
         return AH_EAGAIN;
     }
     if (memcmp(rw->r, "HTTP/", 5u) != 0) {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
     if (!s_is_digit(rw->r[5u]) || rw->r[6u] != '.' || !s_is_digit(rw->r[7u])) {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     version->major = rw->r[5u] - '0';
@@ -408,7 +408,7 @@ ah_err_t ah_i_http_header_value_to_size(const char* value, size_t* size)
             if (ch == '\0') {
                 break;
             }
-            return AH_EILSEQ;
+            return AH_ESYNTAX;
         }
 
         err = ah_mul_size(size0, 10u, &size0);
@@ -486,7 +486,7 @@ static ah_err_t s_skip_ch(ah_rw_t* rw, char ch)
     }
 
     if (((uint8_t) ch) != ch0) {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     rw->r = &rw->r[1u];
@@ -500,7 +500,7 @@ static ah_err_t s_skip_crlf(ah_rw_t* rw)
         return AH_EAGAIN;
     }
     if (memcmp(rw->r, (uint8_t[]) { '\r', '\n' }, 2u) != 0) {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 
     rw->r = &rw->r[2u];

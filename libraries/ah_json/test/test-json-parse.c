@@ -134,7 +134,7 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_t* unit)
             },
             [3] = {
                 " 1 f",
-                AH_EILSEQ,
+                AH_ESYNTAX,
                 (ah_json_val_t[]) {
                     { "1", AH_JSON_TYPE_NUMBER, 0u, 1u },
                     { "f", AH_JSON_TYPE_ERROR, 0u, 1u },
@@ -143,7 +143,7 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_t* unit)
             },
             [4] = {
                 " [] bad",
-                AH_EILSEQ,
+                AH_ESYNTAX,
                 (ah_json_val_t[]) {
                     { "[", AH_JSON_TYPE_ARRAY, 0u, 0u },
                     { "b", AH_JSON_TYPE_ERROR, 0u, 1u },
@@ -152,7 +152,7 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_t* unit)
             },
             [5] = {
                 "{\"a\"}",
-                AH_EILSEQ,
+                AH_ESYNTAX,
                 (ah_json_val_t[]) {
                     { "{", AH_JSON_TYPE_OBJECT, 0u, 2u },
                     { "a", AH_JSON_TYPE_STRING, 1u, 1u },

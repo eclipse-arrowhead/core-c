@@ -659,7 +659,7 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
     }
 #ifndef NDEBUG
     if (chunk->ext != NULL && chunk->ext[0u] != '\0' && chunk->ext[0u] != ';') {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 #endif
 
@@ -723,7 +723,7 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
     }
 #ifndef NDEBUG
     if (trailer->ext != NULL && trailer->ext[0u] != '\0' && trailer->ext[0u] != ';') {
-        return AH_EILSEQ;
+        return AH_ESYNTAX;
     }
 #endif
 

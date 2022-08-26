@@ -41,6 +41,10 @@ ah_extern void ah_strerror_r(ah_err_t err, char* buf, size_t size)
         string = "state invalid";
         break;
 
+    case AH_ESYNTAX:
+        string = "syntax invalid";
+        break;
+
 #if AH_IS_DARWIN || AH_IS_LINUX
 
     default:
