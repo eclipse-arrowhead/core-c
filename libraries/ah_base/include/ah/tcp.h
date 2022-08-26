@@ -978,9 +978,9 @@ ah_extern void ah_tcp_in_free(ah_tcp_in_t* in);
  *
  * @param in Pointer to input buffer.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - The operation was successful.
- *   <li>@ref AH_EINVAL - @a in is @c NULL.
- *   <li>@ref AH_ENOSPC - @a in is full. Nothing can be moved.
+ *   <li>@ref AH_ENONE     - The operation was successful.
+ *   <li>@ref AH_EINVAL    - @a in is @c NULL.
+ *   <li>@ref AH_EOVERFLOW - @a in is full. Nothing can be moved.
  * </ul>
  */
 ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in);

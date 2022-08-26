@@ -219,9 +219,9 @@ ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr);
  * @param dest      Pointer to buffer to receive stringification.
  * @param dest_size Size of @a dest, in bytes.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - If the complete representation could be written to @a dest.
- *   <li>@ref AH_EINVAL - If any of @a sockaddr, @a dest or @a dest_size is @c NULL.
- *   <li>@ref AH_ENOSPC - If the representation would not fit in @a dest.
+ *   <li>@ref AH_ENONE     - If the complete representation could be written to @a dest.
+ *   <li>@ref AH_EINVAL    - If any of @a sockaddr, @a dest or @a dest_size is @c NULL.
+ *   <li>@ref AH_EOVERFLOW - If the representation would not fit in @a dest.
  * </ul>
  *
  * @see ah_ipaddr_v4_stringify()

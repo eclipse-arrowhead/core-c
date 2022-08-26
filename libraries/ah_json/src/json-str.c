@@ -4,6 +4,7 @@
 
 #include <ah/assert.h>
 #include <ah/err.h>
+#include <ah/utf8.h>
 
 static uint32_t s_integer_from_hex_digit(char hex_digit);
 static char s_integer_into_hex_digit(char i);
@@ -30,7 +31,12 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
 
         if (a[0u] == '\\') {
             size_t buf_length = sizeof(buf);
+
             size_t n_read = s_escape_sequence_to_utf8(a, a_length, buf, &buf_length);
+            if (n_read == 0u) {
+                return diff;
+            }
+
             diff = memcmp(buf, b, buf_length);
             if (diff == 0) {
                 a = &a[n_read];
@@ -43,7 +49,12 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
 
         if (b[0u] == '\\') {
             size_t buf_length = sizeof(buf);
+
             size_t n_read = s_escape_sequence_to_utf8(b, b_length, buf, &buf_length);
+            if (n_read == 0u) {
+                return diff;
+            }
+
             diff = memcmp(a, buf, buf_length);
             if (diff == 0) {
                 a = &a[buf_length];
@@ -126,27 +137,7 @@ static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char
             | (s_integer_from_hex_digit(src[4u]) << 4u)
             | (s_integer_from_hex_digit(src[5u]) << 0u);
 
-        if (codepoint < 0x80) {
-            // 0xxxxxxx
-            dst[0u] = (char) (codepoint & 0xFF);
-            *dst_length = 1u;
-            return 6u;
-        }
-
-        if (codepoint < 0x800) {
-            // 110xxxxx 10xxxxxx
-            dst[0u] = (char) (0xC0 | ((codepoint >> 6u) & 0x1F));
-            dst[1u] = (char) (0x80 | ((codepoint >> 0u) & 0x3F));
-            *dst_length = 2u;
-            return 6u;
-        }
-
-        if (codepoint < 0x100000) {
-            // 1110xxxx 10xxxxxx 10xxxxxx
-            dst[0u] = (char) (0xE0 | ((codepoint >> 12u) & 0x0F));
-            dst[1u] = (char) (0x80 | ((codepoint >> 6u) & 0x3F));
-            dst[2u] = (char) (0x80 | ((codepoint >> 0u) & 0x3F));
-            *dst_length = 3u;
+        if (ah_utf8_from_codepoint(codepoint, dst, dst_length) == AH_ENONE) {
             return 6u;
         }
 
@@ -230,11 +221,8 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
             break;
 
         case '"':
-            ch = '"';
-            break;
-
+        case '/':
         case '\\':
-            ch = '\\';
             break;
 
         default:
@@ -254,7 +242,6 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
 
             continue;
         }
-
 
         if (dst_length0 < 2u) {
             goto handle_overflow;
@@ -277,7 +264,6 @@ end:
     *dst_length -= dst_length0;
 
     return err;
-
 }
 
 static char s_integer_into_hex_digit(char i)
@@ -303,6 +289,10 @@ ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char
     }
     if (dst == NULL && *dst_length != 0u) {
         return AH_EINVAL;
+    }
+
+    if (!ah_utf8_validate(src, src_length)) {
+        return AH_ESYNTAX;
     }
 
     ah_err_t err;
@@ -353,4 +343,38 @@ handle_err:
     *dst_length -= dst_length0;
 
     return err;
+}
+
+ah_extern bool ah_json_str_validate(const char* src, size_t src_length)
+{
+    if (src == NULL || src_length == 0u) {
+        return false;
+    }
+
+    if (!ah_utf8_validate(src, src_length)) {
+        return false;
+    }
+
+    while (src_length != 0u) {
+        char ch = src[0u];
+
+        if (ch != '\\') {
+            src = &src[1u];
+            src_length -= 1u;
+            continue;
+        }
+
+        char buf[4u];
+        size_t buf_length = sizeof(buf);
+
+        size_t n_read = s_escape_sequence_to_utf8(src, src_length, buf, &buf_length);
+        if (n_read == 0u) {
+            return false;
+        }
+
+        src = &src[n_read];
+        src_length -= n_read;
+    }
+
+    return true;
 }

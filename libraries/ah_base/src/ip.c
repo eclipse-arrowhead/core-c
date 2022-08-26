@@ -57,7 +57,7 @@ ah_extern ah_err_t ah_ipaddr_v4_stringify(const struct ah_ipaddr_v4* addr, char*
         return AH_ENONE;
     }
 
-    return AH_ENOSPC;
+    return AH_EOVERFLOW;
 }
 
 ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char* dest, size_t* dest_size)
@@ -93,7 +93,7 @@ ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char*
             *dest_size = 2u;
             return AH_ENONE;
         }
-        return AH_ENOSPC;
+        return AH_EOVERFLOW;
     }
 
     int n;
@@ -150,5 +150,5 @@ ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char*
         return AH_ENONE;
     }
 
-    return AH_ENOSPC;
+    return AH_EOVERFLOW;
 }

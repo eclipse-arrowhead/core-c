@@ -34,6 +34,7 @@ set(
     include/ah/tcp.h
     include/ah/time.h
     include/ah/udp.h
+    include/ah/utf8.h
     src/abort.c
     src/buf.c
     src/collections/list.c
@@ -51,6 +52,7 @@ set(
     src/tcp.c
     src/time.c
     src/udp.c
+    src/utf8.c
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -177,6 +179,7 @@ set(
     test/test-tcp.c
     test/test-time.c
     test/test-udp.c
+    test/test-utf8.c
 )
 
 add_executable(ah_base_tests ${TEST_FILES})

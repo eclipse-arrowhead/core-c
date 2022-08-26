@@ -106,12 +106,12 @@ static void s_should_handle_too_small_output_buffer_when_stringifying_ipv4_addre
 
     size = 0u;
     err = ah_ipaddr_v4_stringify(&ipv4_address, buffer, &size);
-    ah_unit_assert_err_eq(unit, AH_ENOSPC, err);
+    ah_unit_assert_err_eq(unit, AH_EOVERFLOW, err);
     ah_unit_assert_unsigned_eq(unit, size, 0u);
 
     size = 11u;
     err = ah_ipaddr_v4_stringify(&ipv4_address, buffer, &size);
-    ah_unit_assert_err_eq(unit, AH_ENOSPC, err);
+    ah_unit_assert_err_eq(unit, AH_EOVERFLOW, err);
     ah_unit_assert_unsigned_eq(unit, size, 11u);
 
     size = 12u;
@@ -138,12 +138,12 @@ static void s_should_handle_too_small_output_buffer_when_stringifying_ipv6_addre
 
     size = 0u;
     err = ah_ipaddr_v6_stringify(&ipv6_address, buffer, &size);
-    ah_unit_assert_err_eq(unit, AH_ENOSPC, err);
+    ah_unit_assert_err_eq(unit, AH_EOVERFLOW, err);
     ah_unit_assert_unsigned_eq(unit, size, 0u);
 
     size = 39u;
     err = ah_ipaddr_v6_stringify(&ipv6_address, buffer, &size);
-    ah_unit_assert_err_eq(unit, AH_ENOSPC, err);
+    ah_unit_assert_err_eq(unit, AH_EOVERFLOW, err);
     ah_unit_assert_unsigned_eq(unit, size, 39u);
 
     size = 40u;

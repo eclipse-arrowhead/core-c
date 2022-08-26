@@ -541,6 +541,7 @@ body .contents .memberdecls > tbody > :not(.heading) {
 body .contents .memberdecls > tbody > tr > td.memItemLeft,
 body .contents .memberdecls > tbody > tr > td.memItemRight {
     font-weight: normal;
+    white-space: nowrap;
 }
 
 body .contents .memberdecls > tbody > tr > td.memItemLeft {

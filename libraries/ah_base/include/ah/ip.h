@@ -134,9 +134,9 @@ ah_extern bool ah_ipaddr_v6_is_wildcard(const ah_ipaddr_v6_t* addr);
  * @param dest Pointer to buffer to receive stringification.
  * @param dest_size Size of @a dest, in bytes.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - If the complete representation could be written to @a dest.
- *   <li>@ref AH_EINVAL - If any of @a addr, @a dest or @a dest_size is @c NULL.
- *   <li>@ref AH_ENOSPC - If the representation would not fit in @a dest.
+ *   <li>@ref AH_ENONE     - If the complete representation could be written to @a dest.
+ *   <li>@ref AH_EINVAL    - If any of @a addr, @a dest or @a dest_size is @c NULL.
+ *   <li>@ref AH_EOVERFLOW - If the representation would not fit in @a dest.
  * </ul>
  *
  * @see https://datatracker.ietf.org/doc/html/rfc1123#section-2.1
@@ -152,9 +152,9 @@ ah_extern ah_err_t ah_ipaddr_v4_stringify(const struct ah_ipaddr_v4* addr, char*
  * @param dest Pointer to buffer to receive stringification.
  * @param dest_size Size of @a dest, in bytes.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - If the complete representation could be written to @a dest.
- *   <li>@ref AH_EINVAL - If any of @a addr, @a dest or @a dest_size is @c NULL.
- *   <li>@ref AH_ENOSPC - If the representation would not fit in @a dest.
+ *   <li>@ref AH_ENONE     - If the complete representation could be written to @a dest.
+ *   <li>@ref AH_EINVAL    - If any of @a addr, @a dest or @a dest_size is @c NULL.
+ *   <li>@ref AH_EOVERFLOW - If the representation would not fit in @a dest.
  * </ul>
  *
  * @see https://www.rfc-editor.org/rfc/rfc4291#section-2.2

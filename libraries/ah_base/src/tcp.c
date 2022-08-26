@@ -298,7 +298,7 @@ ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in)
 
     if (in->rw.r == r_off) {
         if (ah_unlikely(in->rw.w == in->rw.e)) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
         return AH_ENONE;
     }

@@ -389,9 +389,6 @@ handle_parse_err:
     }
     err = ah_tcp_in_repackage(in);
     if (err != AH_ENONE) {
-        if (err == AH_ENOSPC) {
-            err = AH_EOVERFLOW;
-        }
         goto report_err_and_close_conn;
     }
     return;
@@ -487,7 +484,7 @@ try_next:
             size_t nwritten = buf.size;
             err = ah_sockaddr_stringify(&raddr, (char*) buf.base, &nwritten);
             if (err != AH_ENONE) {
-                if (err == AH_ENOSPC) {
+                if (err == AH_EOVERFLOW) {
                     err = AH_EOVERFLOW;
                 }
                 goto handle_err;

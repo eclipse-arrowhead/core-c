@@ -24,6 +24,14 @@ void s_assert_json_compare_tests(ah_unit_t* unit, const char* label, struct s_js
     size_t test_i = 0u;
     for (struct s_json_compare_test* test = &tests[0u]; test->a != NULL; test = &test[1u], test_i += 1u) {
         int actual_result = ah_json_str_compare(test->a, strlen(test->a), test->b, strlen(test->b));
+
+        if (actual_result > 0) {
+            actual_result = 1;
+        }
+        else if (actual_result < 0) {
+            actual_result = -1;
+        }
+
         if (actual_result != test->expected_result) {
             ah_unit_failf(unit, "%s [%zu]:\n\tcomparison of \"%s\" and \"%s\" produced %d; expected %d",
                 label, test_i, test->a, test->b, actual_result, test->expected_result);
@@ -61,10 +69,10 @@ void s_should_consider_certain_strings_not_equal(ah_unit_t* unit)
             [3] = { "aB", "bB", -1 },
             [4] = { "2", "1", 1 },
             [5] = { "Two words!!", "Two words!", 1 },
-            [6] = { "\\u00f6", "Ö", 32 },
-            [7] = { "ä", "\\u00C4", 32 },
+            [6] = { "\\u00f6", "Ö", 1 },
+            [7] = { "ä", "\\u00C4", 1 },
             [8] = { "猫", "\\u732C", -1 },
-            [9] = { "Åk?", "\\u00C5k!", 30 },
+            [9] = { "Åk?", "\\u00C5k!", 1 },
             { 0u },
         });
 }

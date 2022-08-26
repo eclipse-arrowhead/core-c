@@ -109,7 +109,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         }
         port_size = (size_t) n;
         if (port_size == dest_rem) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
 
         *dest_size = ipaddr_size + port_size;
@@ -118,7 +118,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
 
     case AH_SOCKFAMILY_IPV6: {
         if (dest_rem <= 1u) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
         dest[0u] = '[';
         dest = &dest[1u];
@@ -140,7 +140,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
             }
             zone_id_size = (size_t) n;
             if (zone_id_size == dest_rem) {
-                return AH_ENOSPC;
+                return AH_EOVERFLOW;
             }
             dest = &dest[zone_id_size];
             dest_rem -= ipaddr_size;
@@ -150,7 +150,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         }
 
         if (dest_rem <= 1u) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
         dest[0u] = ']';
         dest = &dest[1u];
@@ -163,7 +163,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         }
         port_size = (size_t) n;
         if (port_size == dest_rem) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
 
         *dest_size = 1u + ipaddr_size + zone_id_size + 1u + port_size;

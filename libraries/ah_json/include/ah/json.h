@@ -54,10 +54,16 @@
  * you to provide code for each value you want to handle. A major difference,
  * however, is that this library helps you with this interpretation by dividing
  * up the JSON data into <em>value tokens</em>, each represented by an instance
- * of ah_json_val, using the ah_json_parse() function.
+ * of ah_json_val, using the ah_json_parse() function. The string and number
+ * tokens produced by that function are, however, not guaranteed to be valid,
+ * as per the ECMA-404 standard. In addition, the tokens with JSON strings may
+ * contain escape sequences that need to be dealt with. To help with this, we
+ * provide functions for parsing and validating both JSON strings and numbers,
+ * as well as ah_json_str_compare(), that allows for JSON strings to be compared
+ * without having to unescape them first.
  *
  * @note Refer to the ECMA-404 standard for a formally correct syntax
- *       description. The standard to is linked further down.
+ *       description. The standard to is linked to below.
  *
  * @see https://www.ecma-international.org/publications-and-standards/standards/ecma-404/
  */
@@ -256,7 +262,34 @@ struct ah_json_val {
  */
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 
+/**
+ * Parses the JSON number encoded in @a src and stores it to @a dst.
+ *
+ * @param src        Pointer to string containing JSON number.
+ * @param src_length Size of @a src, in bytes, excluding NULL-terminator.
+ * @param dst        Pointer to receiver of integer value.
+ * @return One of the following error codes: <ul>
+ *   <li>@ref AH_ENONE      - The operation was successful.
+ *   <li>@ref AH_EDOM       - The operation was successful, but the number in @a src contains a
+ *                            non-zero fraction that was dropped in the result stored to @a dst.
+ *   <li>@ref AH_EINVAL     - @a src is @c NULL and @a src_length is not @c 0.
+ *   <li>@ref AH_EINVAL     - @a dst is @c NULL.
+ *   <li>@ref AH_EOPNOTSUPP - @a src contains both a non-zero fraction and a
+ *                            non-zero exponent.
+ *   <li>@ref AH_ESYNTAX    - @a dst does not contain a valid JSON number.
+ * </ul>
+ */
 ah_extern ah_err_t ah_json_num_parse_int32(const char* src, size_t src_length, int32_t* dst);
+
+/**
+ * Ensures the JSON number encoded in @a src is valid.
+ *
+ * @param src        Pointer to string containing JSON number.
+ * @param src_length Size of @a src, in bytes, excluding NULL-terminator.
+ * @return @c true only if @a src contains a valid JSON number. @c false
+ *         otherwise.
+ */
+ah_extern bool ah_json_num_validate(const char* src, size_t src_length);
 
 /**
  * Compares strings @a a and @a b while taking JSON escape sequences into
@@ -309,7 +342,7 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
  * Substitutes any JSON escape sequences in @a src with their UTF-8 equivalents
  * and writes the result to @a dst.
  *
- * If the operation is successful, the value pointer at by @a dst_length is
+ * If the operation is successful, the value pointed at by @a dst_length is
  * updated to reflect the final length of the string actually written to @a dst.
  *
  * @param src        Pointer to input buffer.
@@ -318,7 +351,7 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
  * @param dst_length Pointer to length of @a dst, in bytes.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - The operation was successful.
- *   <li>@ref AH_ESYNTAX    - @a src contains an invalid JSON escape sequence.
+ *   <li>@ref AH_ESYNTAX   - @a src contains an illegal UTF-8 sequence or an invalid JSON escape.
  *   <li>@ref AH_EINVAL    - @a src is @c NULL and @a src_length is not @c 0.
  *   <li>@ref AH_EINVAL    - @a dst_length is @c NULL.
  *   <li>@ref AH_EINVAL    - @a dst is @c NULL and the value pointed at by @a dst_length is not @c 0.
@@ -326,5 +359,18 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
  * </ul>
  */
 ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length);
+
+/**
+ * Ensures that @a src contains a valid JSON string.
+ *
+ * If the operation is successful, @a src is guaranteed to only contain valid
+ * UTF-8 sequences and JSON escape sequences.
+ *
+ * @param src        Pointer to JSON string.
+ * @param src_length Size of @a src, in bytes.
+ * @return @c true only if @a src refers to a valid JSON string. @c false
+ *         otherwise.
+ */
+ah_extern bool ah_json_str_validate(const char* src, size_t src_length);
 
 #endif

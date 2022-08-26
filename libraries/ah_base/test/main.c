@@ -16,6 +16,7 @@ void test_task(ah_unit_t* unit);
 void test_tcp(ah_unit_t* unit);
 void test_time(ah_unit_t* unit);
 void test_udp(ah_unit_t* unit);
+void test_utf8(ah_unit_t* unit);
 
 int main(void)
 {
@@ -37,6 +38,7 @@ int main(void)
     test_tcp(&unit);
     test_time(&unit);
     test_udp(&unit);
+    test_utf8(&unit);
 
     ah_unit_print_results(&unit);
 
