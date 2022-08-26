@@ -413,25 +413,6 @@ body .contents table.directory > tbody > tr > .entry > .icona {
     display: none;
 }
 
-body .contents table.directory > tbody > #row_0_ > td,
-body .contents table.directory > tbody > #row_1_ > td,
-body .contents table.directory > tbody > #row_2_ > td,
-body .contents table.directory > tbody > #row_3_ > td,
-body .contents table.directory > tbody > #row_4_ > td,
-body .contents table.directory > tbody > #row_5_ > td,
-body .contents table.directory > tbody > #row_6_ > td,
-body .contents table.directory > tbody > #row_7_ > td,
-body .contents table.directory > tbody > #row_8_ > td,
-body .contents table.directory > tbody > #row_9_ > td,
-body .contents table.directory > tbody > #row_10_ > td,
-body .contents table.directory > tbody > #row_11_ > td,
-body .contents table.directory > tbody > #row_12_ > td,
-body .contents table.directory > tbody > #row_13_ > td,
-body .contents table.directory > tbody > #row_14_ > td,
-body .contents table.directory > tbody > #row_15_ > td {
-    font-weight: bold;
-}
-
 body .contents .doxtable {
     border: 0.125rem solid var(--ahf-grey-background);
     border-spacing: 0;
@@ -470,10 +451,12 @@ body .contents .doxtable > tbody > tr > *:last-child {
 body .contents .fragment {
     --ahf-color-code-comment: #777c80;
     --ahf-color-code-keyword: #27881e;
+    --ahf-color-code-keywordflow: var(--ahf-blue-text);
     --ahf-color-code-keywordtype: #942fc1;
     --ahf-color-code-lineno: #b4bdc4;
     --ahf-color-code-lineno-link: #6d767d;
     --ahf-color-code-preprocessor: #9d800b;
+    --ahf-color-code-stringliteral: #D51CC0;
 
     border: 0.125rem solid #eaeaea;
     font-family: monospace;
@@ -500,6 +483,11 @@ body .contents .fragment > .line > .keyword {
     color: var(--ahf-color-code-keyword);
 }
 
+body .contents .fragment > .line > .keywordflow {
+    color: var(--ahf-color-code-keywordflow);
+    font-weight: bold;
+}
+
 body .contents .fragment > .line > .keywordtype {
     color: var(--ahf-color-code-keywordtype);
     font-weight: bold;
@@ -520,6 +508,11 @@ body .contents .fragment > .line > .lineno > a:hover {
 
 body .contents .fragment > .line > .preprocessor {
     color: var(--ahf-color-code-preprocessor);
+}
+
+body .contents .fragment > .line > .stringliteral {
+    color: var(--ahf-color-code-stringliteral);
+    font-weight: bold;
 }
 
 body .contents .fragment > .ttc {
@@ -616,6 +609,14 @@ body .contents .memitem > .memdoc > .params .paramname {
 
 body .contents .textblock > * {
     margin: 1rem 0;
+}
+
+body .contents .textblock > h3 {
+    margin-top: 2rem;
+}
+
+body .contents .textblock > h3:first-child {
+    margin-top: 0;
 }
 
 body .contents .textblock > .fragment {
