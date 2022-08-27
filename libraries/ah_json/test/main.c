@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void test_json_parse(ah_unit_t* unit);
-void test_json_num_parse(ah_unit_t* unit);
-void test_json_str_compare(ah_unit_t* unit);
-void test_json_str_escape(ah_unit_t* unit);
-void test_json_str_unescape(ah_unit_t* unit);
+void test_json_parse(ah_unit_res_t* res);
+void test_json_num_parse(ah_unit_res_t* res);
+void test_json_str_compare(ah_unit_res_t* res);
+void test_json_str_escape(ah_unit_res_t* res);
+void test_json_str_unescape(ah_unit_res_t* res);
 
 int main(void)
 {
@@ -19,17 +19,17 @@ int main(void)
         "- Platform:      %s\n",
         ah_lib_commit_str(), ah_lib_platform_str());
 
-    struct ah_unit unit = { 0 };
+    struct ah_unit_res res = { 0 };
 
-    test_json_parse(&unit);
+    test_json_parse(&res);
 
-    test_json_num_parse(&unit);
+    test_json_num_parse(&res);
 
-    test_json_str_compare(&unit);
-    test_json_str_escape(&unit);
-    test_json_str_unescape(&unit);
+    test_json_str_compare(&res);
+    test_json_str_escape(&res);
+    test_json_str_unescape(&res);
 
-    ah_unit_print_results(&unit);
+    ah_unit_print_results(&res);
 
-    return unit.fail_count == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    return res.fail_count == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

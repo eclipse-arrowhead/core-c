@@ -3,59 +3,38 @@
 #ifndef AH_UNIT_H_
 #define AH_UNIT_H_
 
-#include "internal/_unit.h"
+#include <ah/defs.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#define ah_unit_assert(unit, is_success, message) \
- ah_i_unit_assert(AH_I_UNIT_WRAP(unit), (is_success), (message))
+#define AH_UNIT_CTX \
+ ((ah_unit_ctx_t) { .file = __FILE__, .line = __LINE__ })
 
-#define ah_unit_assertf(unit, is_success, format, ...) \
- ah_i_unit_assertf(AH_I_UNIT_WRAP(unit), (is_success), (format), __VA_ARGS__)
+typedef struct ah_unit_ctx ah_unit_ctx_t;
+typedef struct ah_unit_res ah_unit_res_t;
 
-#define ah_unit_assert_cstr_eq(unit, a, b) \
- ah_i_unit_assert_cstr_eq(AH_I_UNIT_WRAP(unit), (a), (b), #a " != " #b)
+struct ah_unit_ctx {
+    const char* file;
+    int line;
+};
 
-#define ah_unit_assert_enum_eq(unit, a, b, tostr_cb) \
- ah_i_unit_assert_enum_eq(AH_I_UNIT_WRAP(unit), (a), (b), (tostr_cb))
-
-#define ah_unit_assert_err_eq(unit, a, b) \
- ah_i_unit_assert_err_eq(AH_I_UNIT_WRAP(unit), (a), (b), #a " != " #b)
-
-#define ah_unit_assert_mem_eq(unit, a, b, size) \
- ah_i_unit_assert_mem_eq(AH_I_UNIT_WRAP(unit), (a), (b), (size), #a " != " #b)
-
-#define ah_unit_assert_signed_eq(unit, a, b) \
- ah_i_unit_assert_signed_eq(AH_I_UNIT_WRAP(unit), (intmax_t) (a), (intmax_t) (b), #a " != " #b)
-
-#define ah_unit_assert_unsigned_eq(unit, a, b) \
- ah_i_unit_assert_unsigned_eq(AH_I_UNIT_WRAP(unit), (uintmax_t) (a), (uintmax_t) (b), #a " != " #b)
-
-#define ah_unit_fail(unit, message) \
- ((void) ah_i_unit_assert(AH_I_UNIT_WRAP(unit), false, (message)))
-
-#define ah_unit_failf(unit, format, ...) \
- ((void) ah_i_unit_assertf(AH_I_UNIT_WRAP(unit), false, (format), __VA_ARGS__))
-
-#define ah_unit_pass(unit)      \
- do {                           \
-  (unit)->assertion_count += 1; \
- } while (false)
-
-#define ah_unit_print(unit, message) \
- ah_i_unit_print(AH_I_UNIT_WRAP(unit), (message))
-
-#define ah_unit_printf(unit, format, ...) \
- ah_i_unit_printf(AH_I_UNIT_WRAP(unit), (format), __VA_ARGS__)
-
-#define AH_I_UNIT_WRAP(UNIT) \
- ((struct ah_i_unit) { .external = (UNIT), .file = __FILE__, .line = __LINE__, .func = __func__ })
-
-typedef struct ah_unit ah_unit_t;
-
-struct ah_unit {
+struct ah_unit_res {
     int assertion_count;
     int fail_count;
 };
 
-void ah_unit_print_results(const ah_unit_t* unit);
+bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_success, const char* format, ...);
+bool ah_unit_assert_eq_cstr(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, const char* expected);
+bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, int expected, const char* (*to_str)(int) );
+bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actual, ah_err_t expected);
+bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual, const void* expected, size_t size);
+bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, intmax_t actual, intmax_t expected);
+bool ah_unit_assert_eq_str(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, size_t actual_length, const char* expected, size_t expected_length);
+bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t actual, uintmax_t expected);
+void ah_unit_print(ah_unit_ctx_t ctx, const char* format, ...);
+void ah_unit_print_results(const ah_unit_res_t* res);
+void ah_unit_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, ...);
+void ah_unit_pass(ah_unit_res_t* res);
 
 #endif

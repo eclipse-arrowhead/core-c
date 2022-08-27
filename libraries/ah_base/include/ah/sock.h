@@ -171,12 +171,13 @@ ah_extern ah_err_t ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port,
  * @param sockaddr Pointer to initialized socket address.
  * @param port     UDP or TCP port number.
  * @param ipaddr   IPv6 address.
+ * @param zone_id  IPv6 zone identifier. Specify @c 0 if not relevant.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - @a sockaddr was successfully initialized.
  *   <li>@ref AH_EINVAL - Either of @a sockaddr or @a ipaddr is @c NULL.
  * </ul>
  */
-ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const ah_ipaddr_v6_t* ipaddr);
+ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v6* ipaddr, uint32_t zone_id);
 
 /**
  * Checks if @a sockaddr is an IP-based socket address.

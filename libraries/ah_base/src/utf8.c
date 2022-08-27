@@ -101,12 +101,11 @@ ah_extern ah_err_t ah_utf8_from_codepoint(uint32_t codepoint, char* dst, size_t*
     size_t dst_length0 = *dst_length;
 
     if (codepoint <= 0x7F) {
-        // 0xxxxxxx
-
         if (dst_length0 < 1u) {
             return AH_EOVERFLOW;
         }
 
+        // 0xxxxxxx
         dst[0u] = (char) (codepoint & 0xFF);
         *dst_length = 1u;
 
@@ -114,12 +113,11 @@ ah_extern ah_err_t ah_utf8_from_codepoint(uint32_t codepoint, char* dst, size_t*
     }
 
     if (codepoint <= 0x7FF) {
-        // 110xxxxx 10xxxxxx
-
         if (dst_length0 < 2u) {
             return AH_EOVERFLOW;
         }
 
+        // 110xxxxx 10xxxxxx
         dst[0u] = (char) (0xC0 | ((codepoint >> 6u) & 0x1F));
         dst[1u] = (char) (0x80 | ((codepoint >> 0u) & 0x3F));
         *dst_length = 2u;
@@ -128,9 +126,7 @@ ah_extern ah_err_t ah_utf8_from_codepoint(uint32_t codepoint, char* dst, size_t*
     }
 
     if (codepoint <= 0xFFFF) {
-        // 1110xxxx 10xxxxxx 10xxxxxx
-
-        // These codepoints represent surrogate parts of pairs that may only be
+        // These codepoints represent parts of surrogate pairs that may only be
         // used in UTF-16. See https://www.rfc-editor.org/rfc/rfc3629#section-3.
         if (codepoint >= 0xD800 && codepoint <= 0xDFFF) {
             return AH_EINVAL;
@@ -140,6 +136,7 @@ ah_extern ah_err_t ah_utf8_from_codepoint(uint32_t codepoint, char* dst, size_t*
             return AH_EOVERFLOW;
         }
 
+        // 1110xxxx 10xxxxxx 10xxxxxx
         dst[0u] = (char) (0xE0 | ((codepoint >> 12u) & 0x0F));
         dst[1u] = (char) (0x80 | ((codepoint >> 6u) & 0x3F));
         dst[2u] = (char) (0x80 | ((codepoint >> 0u) & 0x3F));
@@ -149,12 +146,11 @@ ah_extern ah_err_t ah_utf8_from_codepoint(uint32_t codepoint, char* dst, size_t*
     }
 
     if (codepoint <= 0x10FFFF) {
-        // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-
         if (dst_length0 < 4u) {
             return AH_EOVERFLOW;
         }
 
+        // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
         dst[0u] = (char) (0xF0 | ((codepoint >> 18u) & 0x07));
         dst[1u] = (char) (0x80 | ((codepoint >> 12u) & 0x3F));
         dst[2u] = (char) (0x80 | ((codepoint >> 6u) & 0x3F));

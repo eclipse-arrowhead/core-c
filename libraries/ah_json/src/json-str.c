@@ -126,7 +126,7 @@ static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char
         return 2u;
 
     case 'u':
-        if (src_length < 6) {
+        if (src_length < 6u) {
             *dst_length = 0u;
             return 0u;
         }

@@ -2,260 +2,225 @@
 
 #include "ah/unit.h"
 
+#include <ah/assert.h>
 #include <ah/err.h>
 #include <inttypes.h>
-#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
-void ah_unit_print_results(const struct ah_unit* unit)
+static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va_list args);
+static void s_print(ah_unit_ctx_t ctx, const char* format, va_list args);
+
+bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_success, const char* format, ...)
 {
-    if (unit == NULL) {
-        (void) fputs("Failed to print results; unit == NULL\n", stderr);
-        return;
-    }
-
-    if (unit->fail_count == 0) {
-        (void) printf("Passed all %d executed assertions.\n", unit->assertion_count);
-    }
-    else {
-        (void) printf("\nFailed %d out of %d executed assertions!\n", unit->fail_count, unit->assertion_count);
-    }
-}
-
-bool ah_i_unit_assert(struct ah_i_unit unit, bool is_success, const char* message)
-{
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
-
-    unit.external->assertion_count += 1;
-
     if (is_success) {
+        ah_unit_pass(res);
         return true;
     }
-
-    unit.external->fail_count += 1;
-
-    (void) printf("FAIL %s (%s:%d) %s\n", unit.func, unit.file, unit.line, message);
-
-    return false;
-}
-
-bool ah_i_unit_assertf(struct ah_i_unit unit, bool is_success, const char* format, ...)
-{
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
-    if (format == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; format == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
-
-    unit.external->assertion_count += 1;
-
-    if (is_success) {
-        return true;
-    }
-
-    unit.external->fail_count += 1;
-
-    (void) printf("FAIL %s (%s:%d) ", unit.func, unit.file, unit.line);
 
     va_list args;
     va_start(args, format);
-    (void) vprintf(format, args);
+    s_fail(ctx, res, format, args);
     va_end(args);
-
-    (void) putchar('\n');
 
     return false;
 }
 
-bool ah_i_unit_assert_cstr_eq(struct ah_i_unit unit, const char* a, const char* b, const char* message)
+bool ah_unit_assert_eq_cstr(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, const char* expected)
 {
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
+    if (actual == expected) {
+        goto pass;
     }
-
-    unit.external->assertion_count += 1;
-
-    if (a == b) {
-        return true;
-    }
-    if (a == NULL || b == NULL) {
+    if (actual == NULL || expected == NULL) {
         goto fail;
     }
-    if (strcmp(a, b) == 0) {
-        return true;
+    if (strcmp(actual, expected) != 0) {
+        goto fail;
     }
+
+pass:
+    ah_unit_pass(res);
+    return true;
 
 fail:
-    unit.external->fail_count += 1;
-
-    (void) printf("FAIL %s (%s:%d) %s\n\t\"%s\" != \"%s\"\n", unit.func, unit.file, unit.line, message, a, b);
-
+    ah_unit_fail(ctx, res, "got `%s`; expected `%s`", actual, expected);
     return false;
 }
 
-bool ah_i_unit_assert_enum_eq(struct ah_i_unit unit, int a, int b, const char* (*tostr_cb)(int) )
+bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, int expected, const char* (*to_str)(int) )
 {
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
-    if (tostr_cb == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; tostr_cb == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
+    ah_assert(res != NULL);
+    ah_assert(to_str != NULL);
 
-    unit.external->assertion_count += 1;
-
-    if (a == b) {
+    if (actual == expected) {
+        ah_unit_pass(res);
         return true;
     }
 
-    unit.external->fail_count += 1;
-
-    (void) printf("FAIL %s (%s:%d) [%s] != [%s]; %d != %d\n", unit.func, unit.file, unit.line, tostr_cb(a), tostr_cb(b),
-        a, b);
-
+    ah_unit_fail(ctx, res, "got `%s` (%d); expected `%s` (%d)", to_str(actual), actual, to_str(expected), expected);
     return false;
 }
 
-bool ah_i_unit_assert_err_eq(struct ah_i_unit unit, ah_err_t a, ah_err_t b, const char* message)
+bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actual, ah_err_t expected)
 {
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
+    ah_assert(res != NULL);
 
-    unit.external->assertion_count += 1;
-
-    if (a == b) {
+    if (actual == expected) {
+        ah_unit_pass(res);
         return true;
     }
 
-    unit.external->fail_count += 1;
+    char actual_buf[128u];
+    ah_strerror_r(actual, actual_buf, sizeof(actual_buf));
 
-    char a_buf[128u];
-    ah_strerror_r(a, a_buf, sizeof(a_buf));
+    char expected_buf[128u];
+    ah_strerror_r(expected, expected_buf, sizeof(expected_buf));
 
-    char b_buf[128u];
-    ah_strerror_r(b, b_buf, sizeof(b_buf));
-
-    (void) printf("FAIL %s (%s:%d) [%s] != [%s]; %d != %d\n\t%s\n", unit.func, unit.file, unit.line, a_buf, b_buf, a, b, message);
-
+    ah_unit_fail(ctx, res, "got `%s` (%d); expected `%s` (%d)", actual_buf, actual, expected_buf, expected);
     return false;
 }
 
-bool ah_i_unit_assert_mem_eq(struct ah_i_unit unit, const void* a_, const void* b_, size_t size, const char* message)
+bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual_, const void* expected_, size_t size)
 {
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
+    ah_assert(res != NULL);
 
-    const unsigned char* a = a_;
-    const unsigned char* b = b_;
+    const unsigned char* actual = actual_;
+    const unsigned char* expected = expected_;
 
-    unit.external->assertion_count += 1;
-
-    if (memcmp(a, b, size) == 0) {
+    if (memcmp(actual, expected, size) == 0) {
+        ah_unit_pass(res);
         return true;
     }
 
-    unit.external->fail_count += 1;
-    (void) printf("FAIL %s (%s:%d) %s\n\t", unit.func, unit.file, unit.line, message);
-
-    const unsigned char* a_end = &a[size];
-    for (; a != a_end; a = &a[1]) {
-        (void) printf("%02X", *a);
+    char actual_buf[128u];
+    const unsigned char* actual_end = &actual[size];
+    size_t actual_i = 0u;
+    while (actual_i < sizeof(actual_buf) - 4u && actual != actual_end) {
+        (void) snprintf(&actual_buf[actual_i], 4u, "%02X ", actual[0u]);
+        actual_i += 3u;
+        actual = &actual[1];
+    }
+    if (actual_i >= sizeof(actual_buf) - 4u) {
+        memcpy(&actual_buf[sizeof(actual_buf) - 4u], "...", 4);
     }
 
-    (void) printf(" !=\n\t");
-
-    const unsigned char* b_end = &b[size];
-    for (; b != b_end; b = &b[1]) {
-        (void) printf("%02X", *b);
+    char expected_buf[128u];
+    const unsigned char* expected_end = &expected[size];
+    size_t expected_i = 0u;
+    while (expected_i < sizeof(expected_buf) - 4u && expected != expected_end) {
+        (void) snprintf(&expected_buf[expected_i], 4u, "%02X ", expected[0u]);
+        expected_i += 3u;
+        expected = &expected[1];
+    }
+    if (expected_i >= sizeof(expected_buf) - 4u) {
+        memcpy(&expected_buf[sizeof(expected_buf) - 4u], "...", 4);
     }
 
-    (void) putchar('\n');
-
+    ah_unit_fail(ctx, res, "got %s; expected %s", actual_buf, expected_buf);
     return false;
 }
 
-bool ah_i_unit_assert_signed_eq(struct ah_i_unit unit, intmax_t a, intmax_t b, const char* message)
+bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, intmax_t actual, intmax_t expected)
 {
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
-    }
+    ah_assert(res != NULL);
 
-    unit.external->assertion_count += 1;
-
-    if (a == b) {
+    if (actual == expected) {
+        ah_unit_pass(res);
         return true;
     }
 
-    unit.external->fail_count += 1;
-
-    (void) printf("FAIL %s (%s:%d) %s; %" PRIiMAX " != %" PRIiMAX "\n", unit.func, unit.file, unit.line, message, a, b);
-
+    ah_unit_fail(ctx, res, "got %" PRIiMAX "; expected %" PRIiMAX, actual, expected);
     return false;
 }
 
-bool ah_i_unit_assert_unsigned_eq(struct ah_i_unit unit, uintmax_t a, uintmax_t b, const char* message)
+bool ah_unit_assert_eq_str(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, size_t actual_length, const char* expected, size_t expected_length)
 {
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return false;
+    if (actual == expected) {
+        goto pass;
+    }
+    if (actual == NULL || expected == NULL) {
+        goto fail;
+    }
+    if (actual_length != expected_length) {
+        goto fail;
+    }
+    if (memcmp(actual, expected, expected_length) != 0) {
+        goto fail;
     }
 
-    unit.external->assertion_count += 1;
+pass:
+    ah_unit_pass(res);
+    return true;
 
-    if (a == b) {
+fail:
+    ah_unit_fail(ctx, res, "got `%s`; expected `%s`", actual, expected);
+    return false;
+}
+
+bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t actual, uintmax_t expected)
+{
+    ah_assert(res != NULL);
+
+    if (actual == expected) {
+        ah_unit_pass(res);
         return true;
     }
 
-    unit.external->fail_count += 1;
-
-    (void) printf("FAIL %s (%s:%d) %s; %" PRIuMAX " != %" PRIuMAX "\n", unit.func, unit.file, unit.line, message, a, b);
-
+    ah_unit_fail(ctx, res, "got %" PRIuMAX "; expected %" PRIuMAX, actual, expected);
     return false;
 }
 
-void ah_i_unit_print(struct ah_i_unit unit, const char* message)
+void ah_unit_print(ah_unit_ctx_t ctx, const char* format, ...)
 {
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return;
-    }
-
-    (void) printf("INFO %s (%s:%d) %s\n", unit.func, unit.file, unit.line, message);
-}
-
-void ah_i_unit_printf(struct ah_i_unit unit, const char* format, ...)
-{
-    if (unit.external == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; unit == NULL\n", unit.func, unit.file, unit.line);
-        return;
-    }
-    if (format == NULL) {
-        (void) fprintf(stderr, "FAIL %s (%s:%d) Bad assertion; format == NULL\n", unit.func, unit.file, unit.line);
-        return;
-    }
-
-    (void) printf("INFO %s (%s:%d) ", unit.func, unit.file, unit.line);
-
     va_list args;
     va_start(args, format);
-    (void) vprintf(format, args);
+    s_print(ctx, format, args);
     va_end(args);
+}
 
-    (void) putchar('\n');
+void ah_unit_print_results(const struct ah_unit_res* res)
+{
+    ah_assert(res != NULL);
+
+    if (res->fail_count == 0) {
+        (void) printf("Passed all %d executed assertions.\n", res->assertion_count);
+    }
+    else {
+        (void) fprintf(stderr, "Failed %d out of %d executed assertions!\n", res->fail_count, res->assertion_count);
+    }
+}
+
+void ah_unit_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    s_fail(ctx, res, format, args);
+    va_end(args);
+}
+
+void ah_unit_pass(ah_unit_res_t* res)
+{
+    ah_assert(res != NULL);
+
+    res->assertion_count += 1u;
+}
+
+static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va_list args)
+{
+    ah_assert(res != NULL);
+
+    res->assertion_count += 1u;
+    res->fail_count += 1u;
+
+    (void) fputs("FAIL ", stderr);
+
+    s_print(ctx, format, args);
+}
+
+static void s_print(ah_unit_ctx_t ctx, const char* format, va_list args)
+{
+    (void) fprintf(stderr, "%s:%d ", ctx.file, ctx.line);
+    (void) vfprintf(stderr, format, args);
+    (void) fputc('\n', stderr);
 }

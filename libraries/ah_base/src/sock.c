@@ -27,7 +27,7 @@ ah_extern ah_err_t ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port,
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v6* ipaddr)
+ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v6* ipaddr, uint32_t zone_id)
 {
     if (sockaddr == NULL || ipaddr == NULL) {
         return AH_EINVAL;
@@ -38,7 +38,10 @@ ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port,
 #if AH_I_SOCKADDR_HAS_SIZE
         .size = sizeof(struct sockaddr_in6),
 #endif
-        .family = AH_SOCKFAMILY_IPV4, .port = port, .ipaddr = *ipaddr,
+        .family = AH_SOCKFAMILY_IPV6,
+        .port = port,
+        .ipaddr = *ipaddr,
+        .zone_id = zone_id,
     };
 
     return AH_ENONE;
