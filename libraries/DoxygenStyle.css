@@ -379,7 +379,9 @@ body .contents .classindex {
 }
 
 body .contents .directory > .levels {
-    padding: 0.5rem 0;
+    font-size: 0.9em;
+    line-height: 2rem;
+    margin: -2rem 0 0 0;
     text-align: right;
 }
 
