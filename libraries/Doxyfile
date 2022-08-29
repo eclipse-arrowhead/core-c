@@ -1,7 +1,7 @@
 # Project related configuration options.
 
 DOXYFILE_ENCODING      = UTF-8
-PROJECT_NAME           = "Arrowhead Core C Libraries"
+PROJECT_NAME           = "Eclipse Arrowhead™ Core C Libraries"
 PROJECT_NUMBER         =
 PROJECT_BRIEF          =
 PROJECT_LOGO           = arrowhead-logo.svg

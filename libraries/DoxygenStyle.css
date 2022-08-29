@@ -30,8 +30,8 @@ html {
 }
 
 body {
-    --ahf-blue-background: #325b85;
-    --ahf-blue-highlight: #517ca9;
+    --ahf-blue-background: #274872;
+    --ahf-blue-highlight: #6583a2;
     --ahf-blue-text: #004676;
     --ahf-blue-link: #337ab7;
     --ahf-grey-background: #dedede;
@@ -177,6 +177,7 @@ body > .contents {
 }
 
 #titlearea {
+    background-color: var(--ahf-blue-background);
     padding: 1rem 1.5rem;
 }
 
@@ -190,9 +191,9 @@ body > .contents {
 }
 
 #projectname {
-    color: var(--ahf-blue-text);
+    color: white;
     font-family: "Oswald", sans-serif;
-    font-size: 2rem;
+    font-size: 1.875rem;
 }
 
 #projectbrief {
