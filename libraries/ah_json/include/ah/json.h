@@ -43,7 +43,12 @@
  * does guarantee that a successfully parsed JSON text is ECMA-404 conformant,
  * it does not automatically escape JSON escape sequences in the string tokens
  * in the output, if any. To help with this, we provide functions for escaping
- * and comparing JSON strings.
+ * and comparing JSON strings, ah_json_str_unescape() and ah_json_str_compare().
+ * Another limitation of this library is that it does not automatically parse
+ * JSON numbers. You may do that with C99 standard library functions, such as
+ * strtoul() and strtod(). When using strtod() and strtof(), the same caveat
+ * applies regarding the locale radix character having to be the dot character
+ * as when constructing JSON using the printf() family of function.
  *
  * An example of a JSON representation being interpreted is available at
  * @ref ah_json/examples/interpret_object.c.
@@ -269,7 +274,7 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
  * The resulting string is safe to use as the characters of a JSON string. It
  * will not be enclosed in double quotes (<code>"</code>), however.
  *
- * If the operation is successful, the value pointer at by @a dst_length is
+ * If the operation is successful, the value pointed at by @a dst_length is
  * updated to reflect the final length of the string actually written to @a dst.
  *
  * @param src        Pointer to input buffer.
