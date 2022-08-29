@@ -496,10 +496,7 @@ body .contents .fragment {
     --ahf-color-code-preprocessor: #9d800b;
     --ahf-color-code-stringliteral: #D51CC0;
 
-    border: 0.125rem solid #eaeaea;
     font-family: "Source Code Pro", monospace;
-    overflow: scroll;
-    padding: 1rem 0;
 }
 
 body .contents .fragment > .line {
@@ -532,8 +529,14 @@ body .contents .fragment > .line > .keywordtype {
 }
 
 body .contents .fragment > .line > .lineno {
+    border-right: 0.125rem solid var(--ahf-grey-background);
     color: var(--ahf-color-code-lineno);
-    padding-right: 1.5rem;
+    display: inline-block;
+    margin-right: 1rem;
+    padding-right: 0.5rem;
+    text-align: right;
+    white-space: normal;
+    width: 3em;
 }
 
 body .contents .fragment > .line > .lineno > a {

@@ -193,7 +193,7 @@ ah_extern ah_err_t ah_timediff_add(ah_timediff_t a, ah_timediff_t b, ah_timediff
  * @param result Pointer to result receiver.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li><b>AH_DOM</b>    - @a b is @c 0.
+ *   <li>@ref AH_EDOM   - @a b is @c 0.
  *   <li>@ref AH_EINVAL - @a result is @c NULL.
  *   <li>@ref AH_ERANGE - Dividing @a a with @a b produced an unrepresentable result.
  * </ul>

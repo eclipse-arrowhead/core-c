@@ -50,39 +50,39 @@ static void s_assert_json_parse_tests(ah_unit_res_t* res, struct s_json_parse_te
             }
 
             if (expected_i == buf.length) {
-                ah_unit_fail(test->ctx, res, "expected another value of type `%" PRIuMAX "`; parse result contains no more values",
-                    (uintmax_t) expected_val->type);
+                ah_unit_fail(test->ctx, res, "[%zu] expected another value of type `%" PRIuMAX "`; parse result contains no more values",
+                    expected_i, (uintmax_t) expected_val->type);
                 break;
             }
             ah_unit_pass(res);
 
             if (expected_val->type != actual_val->type) {
-                ah_unit_fail(test->ctx, res, "got type `%" PRIuMAX "`; expected type `%" PRIuMAX "`",
-                    (uintmax_t) actual_val->type, (uintmax_t) expected_val->type);
+                ah_unit_fail(test->ctx, res, "[%zu] got type `%" PRIuMAX "`; expected type `%" PRIuMAX "`",
+                    expected_i, (uintmax_t) actual_val->type, (uintmax_t) expected_val->type);
                 continue;
             }
             ah_unit_pass(res);
 
             if (expected_val->type != AH_JSON_TYPE_OBJECT && expected_val->type != AH_JSON_TYPE_ARRAY) {
                 if (expected_val->length != actual_val->length || memcmp(expected_val->base, actual_val->base, expected_val->length) != 0) {
-                    ah_unit_fail(test->ctx, res, "got value `%.*s`; expected value `%.*s`",
-                        actual_val->length, actual_val->base, expected_val->length, expected_val->base);
+                    ah_unit_fail(test->ctx, res, "[%zu] got value `%.*s`; expected value `%.*s`",
+                        expected_i, actual_val->length, actual_val->base, expected_val->length, expected_val->base);
                     continue;
                 }
                 ah_unit_pass(res);
             }
             else {
                 if (expected_val->length != actual_val->length) {
-                    ah_unit_fail(test->ctx, res, "got length `%" PRIuMAX "`; expected length `%" PRIuMAX "`",
-                        (uintmax_t) actual_val->length, (uintmax_t) expected_val->length);
+                    ah_unit_fail(test->ctx, res, "[%zu] got length `%" PRIuMAX "`; expected length `%" PRIuMAX "`",
+                        expected_i, (uintmax_t) actual_val->length, (uintmax_t) expected_val->length);
                     continue;
                 }
                 ah_unit_pass(res);
             }
 
             if (expected_val->level != actual_val->level) {
-                ah_unit_fail(test->ctx, res, "got level `%" PRIuMAX "`; expected level `%" PRIuMAX "`",
-                    (uintmax_t) actual_val->level, (uintmax_t) expected_val->level);
+                ah_unit_fail(test->ctx, res, "[%zu] got level `%" PRIuMAX "`; expected level `%" PRIuMAX "`",
+                    expected_i, (uintmax_t) actual_val->level, (uintmax_t) expected_val->level);
                 continue;
             }
             ah_unit_pass(res);
@@ -119,6 +119,89 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_res_t* res)
             },
             {
                 AH_UNIT_CTX,
+                " 1 f",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "1", AH_JSON_TYPE_NUMBER, 0u, 1u },
+                    { "f", AH_JSON_TYPE_ERROR, 0u, 1u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "01",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "01", AH_JSON_TYPE_ERROR, 0u, 2u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "1.",
+                AH_EEOF,
+                (ah_json_val_t[]) {
+                    { "1.", AH_JSON_TYPE_NUMBER, 0u, 2u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "1e",
+                AH_EEOF,
+                (ah_json_val_t[]) {
+                    { "1e", AH_JSON_TYPE_NUMBER, 0u, 2u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "1.1e+",
+                AH_EEOF,
+                (ah_json_val_t[]) {
+                    { "1.1e+", AH_JSON_TYPE_NUMBER, 0u, 5u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "1E-",
+                AH_EEOF,
+                (ah_json_val_t[]) {
+                    { "1E-", AH_JSON_TYPE_NUMBER, 0u, 3u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "\"Invalid UTF-8 sequence: \xC0\x22\"",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "\"\\9\"",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "", AH_JSON_TYPE_STRING, 0u, 0u },
+                    { "\\9", AH_JSON_TYPE_ERROR, 0u, 2u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "\"Hey, \\u0F2X!\"",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "Hey, ", AH_JSON_TYPE_STRING, 0u, 5u },
+                    { "\\u0F2", AH_JSON_TYPE_ERROR, 0u, 5u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
                 "[",
                 AH_EEOF,
                 (ah_json_val_t[]) {
@@ -128,11 +211,22 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_res_t* res)
             },
             {
                 AH_UNIT_CTX,
-                " 1 f",
+                "[,]",
                 AH_ESYNTAX,
                 (ah_json_val_t[]) {
-                    { "1", AH_JSON_TYPE_NUMBER, 0u, 1u },
-                    { "f", AH_JSON_TYPE_ERROR, 0u, 1u },
+                    { "[", AH_JSON_TYPE_ARRAY, 0u, 1u },
+                    { ",", AH_JSON_TYPE_ERROR, 1u, 1u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "[1,]",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "[", AH_JSON_TYPE_ARRAY, 0u, 2u },
+                    { "1", AH_JSON_TYPE_NUMBER, 1u, 1u },
+                    { "]", AH_JSON_TYPE_ERROR, 1u, 1u },
                     { 0u },
                 },
             },
@@ -148,11 +242,56 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_res_t* res)
             },
             {
                 AH_UNIT_CTX,
+                "[1] also bad",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "[", AH_JSON_TYPE_ARRAY, 0u, 1u },
+                    { "1", AH_JSON_TYPE_NUMBER, 1u, 1u },
+                    { "a", AH_JSON_TYPE_ERROR, 0u, 1u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
                 "{\"a\"}",
                 AH_ESYNTAX,
                 (ah_json_val_t[]) {
                     { "{", AH_JSON_TYPE_OBJECT, 0u, 2u },
                     { "a", AH_JSON_TYPE_STRING, 1u, 1u },
+                    { "}", AH_JSON_TYPE_ERROR, 1u, 1u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "{\"a\":}",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "{", AH_JSON_TYPE_OBJECT, 0u, 2u },
+                    { "a", AH_JSON_TYPE_STRING, 1u, 1u },
+                    { "}", AH_JSON_TYPE_ERROR, 1u, 1u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "{\"a\",}",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "{", AH_JSON_TYPE_OBJECT, 0u, 2u },
+                    { "a", AH_JSON_TYPE_STRING, 1u, 1u },
+                    { ",", AH_JSON_TYPE_ERROR, 1u, 1u },
+                    { 0u },
+                },
+            },
+            {
+                AH_UNIT_CTX,
+                "{\"a\":false,}",
+                AH_ESYNTAX,
+                (ah_json_val_t[]) {
+                    { "{", AH_JSON_TYPE_OBJECT, 0u, 3u },
+                    { "a", AH_JSON_TYPE_STRING, 1u, 1u },
+                    { "false", AH_JSON_TYPE_FALSE, 1u, 5u },
                     { "}", AH_JSON_TYPE_ERROR, 1u, 1u },
                     { 0u },
                 },

@@ -291,10 +291,6 @@ ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char
         return AH_EINVAL;
     }
 
-    if (!ah_utf8_validate(src, src_length)) {
-        return AH_ESYNTAX;
-    }
-
     ah_err_t err;
 
     size_t dst_length0 = *dst_length;
@@ -343,38 +339,4 @@ handle_err:
     *dst_length -= dst_length0;
 
     return err;
-}
-
-ah_extern bool ah_json_str_validate(const char* src, size_t src_length)
-{
-    if (src == NULL || src_length == 0u) {
-        return false;
-    }
-
-    if (!ah_utf8_validate(src, src_length)) {
-        return false;
-    }
-
-    while (src_length != 0u) {
-        char ch = src[0u];
-
-        if (ch != '\\') {
-            src = &src[1u];
-            src_length -= 1u;
-            continue;
-        }
-
-        char buf[4u];
-        size_t buf_length = sizeof(buf);
-
-        size_t n_read = s_escape_sequence_to_utf8(src, src_length, buf, &buf_length);
-        if (n_read == 0u) {
-            return false;
-        }
-
-        src = &src[n_read];
-        src_length -= n_read;
-    }
-
-    return true;
 }

@@ -62,7 +62,7 @@ ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, ah_time_t baseline)
         data = 0;
     }
     else if (ah_p_sub_overflow(a, b, &data)) {
-        return AH_DOM;
+        return AH_EDOM;
     }
 
 #endif

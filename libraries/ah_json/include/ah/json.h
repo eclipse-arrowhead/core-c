@@ -16,8 +16,8 @@
  * As a data interchange format, JSON is mainly dealt with directly in two
  * cases: (1) when constructing JSON representations and (2) when interpreting
  * JSON representations. Here, we primarily provide utilities for interpreting
- * JSON. That being said, we will consider how to accomplish these two
- * activities using only the C99 standard library and this library.
+ * JSON. That being said, we do describe how to accomplish both construction and
+ * interpretation using only this and the C99 standard library here.
  *
  * <h3>JSON Construction</h3>
  *
@@ -25,28 +25,18 @@
  * structures or values you need to encode and writes them as JSON to a buffer.
  *
  * To help you, this library most significantly provides the
- * ah_json_str_escape() function, which takes an arbitrary C string and escapes
- * any characters that are not allowed to occur unescaped in a JSON string. The
- * C99 standard library provides the printf() family of functions, which are
- * able to produce JSON-compliant numbers from C variables. Using them requires,
- * however, that the current locale uses the dot character (<code>.</code>) as
- * <em>radix character</em>. The C locale, required to be set by default by C99,
- * does use this radix character. Below, an example using snprintf(), to produce
- * a JSON object is given:
+ * ah_json_str_escape() function, which takes an arbitrary C string produces a
+ * copy with any characters that are not allowed to occur in a JSON string
+ * replaced by their JSON escape sequences. The C99 standard library provides
+ * the printf() family of functions, which are able to produce JSON-compliant
+ * numbers from C variables. However, the current locale, configurable via the
+ * C99 setlocale() function, must use the dot character (<code>.</code>) as
+ * <em>radix character</em>, or numbers with fractions will be represented
+ * incorrectly. The default C locale does use this radix character, which means
+ * that you only need to consider it if you ever change the locale.
  *
- * @code{.c}
- * const char* sensor_id = "aa-xx-142b";
- * float kelvin = 296.55f;
- *
- * char buffer[128u];
- * int size = snprintf(buffer, sizeof(buffer), "{\"sensor-id\":\"%s\",\"kelvin\":%f}", sensor_id, kelvin);
- * if (size < 0 || size > (int) sizeof(buffer)) {
- *     perror("failed to generate JSON object");
- *     exit(1);
- * }
- *
- * printf("%.*s\n", size, buffer); // Prints `{"sensor-id":"aa-xx-142b","kelvin":296.549988}`.
- * @endcode
+ * An example of a JSON representation being constructed is available at
+ * @ref ah_json/examples/construct_object.c.
  *
  * <h3>JSON Interpretation</h3>
  *
@@ -54,16 +44,15 @@
  * you to provide code for each value you want to handle. A major difference,
  * however, is that this library helps you with this interpretation by dividing
  * up the JSON data into <em>value tokens</em>, each represented by an instance
- * of ah_json_val, using the ah_json_parse() function. The string and number
- * tokens produced by that function are, however, not guaranteed to be valid,
- * as per the ECMA-404 standard. In addition, the tokens with JSON strings may
- * contain escape sequences that need to be dealt with. To help with this, we
- * provide functions for parsing and validating both JSON strings and numbers,
- * as well as ah_json_str_compare(), that allows for JSON strings to be compared
- * without having to unescape them first.
+ * of ah_json_val. This division into tokens, or @e tokenization, is
+ * accomplished using the ah_json_parse() function. While the parsing function
+ * does guarantee that a successfully parsed JSON text is ECMA-404 conformant,
+ * it does not automatically escape JSON escape sequences in the string tokens
+ * in the output, if any. To help with this, we provide functions for escaping
+ * and comparing JSON strings.
  *
- * @note Refer to the ECMA-404 standard for a formally correct syntax
- *       description. The standard to is linked to below.
+ * An example of a JSON representation being interpreted is available at
+ * @ref ah_json/examples/interpret_object.c.
  *
  * @see https://www.ecma-international.org/publications-and-standards/standards/ecma-404/
  */
@@ -222,7 +211,8 @@ struct ah_json_val {
  * using the C99 realloc() function. To enable the former, make sure that the
  * ah_json_buf::values field of @a dst is set to @c NULL and that
  * ah_json_buf::length is set to @c 0. The ah_json_buf::capacity field
- * determines the initially allocated capacity.
+ * determines the initially allocated capacity when dynamic allocation is
+ * enabled.
  *
  * To make this function operate without dynamic memory allocation, make the
  * ah_json_buf::values field of @a dst point to an array you allocated. Its
@@ -234,7 +224,9 @@ struct ah_json_val {
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - The operation was successful.
  *   <li>@ref AH_EEOF      - @a src ended unexpectedly.
- *   <li>@ref AH_ESYNTAX    - @a src contains invalid JSON.
+ *   <li>@ref AH_ESYNTAX   - @a src either contains an invalid UTF-8 sequence or invalid JSON. The
+ *                           former error can be distinguished from the latter by @a dst containing
+ *                           a non-zero ah_json_buf::length only if the JSON is invalid.
  *   <li>@ref AH_EINVAL    - @a src is invalid, @a dst is @c NULL or @c dst->length is larger than
  *                           @c dst->capacity.
  *   <li>@ref AH_EINVAL    - @c dst->values is @c NULL, which enables dynamic reallocation, and
@@ -247,49 +239,8 @@ struct ah_json_val {
  * @note When this function returns, @a dst will be in a valid state unless the
  *       returned error code is @ref AH_EINVAL, in which case @a dst remains
  *       unmodified.
- *
- * @warning This function returning @ref AH_ENONE does @e not guarantee that the
- *          JSON data in @a src is strictly conformant to ECMA-404. It does
- *          guarantee that all opened objects, arrays and strings are properly
- *          closed, as well as that the values @c true, @c false and @c null are
- *          identified correctly. This does, however, leave room for strings to
- *          contain invalid escape sequences and for numbers to be invalid. If
- *          ah_json_str_unescape() returns @ref AH_ENONE in response to being
- *          given the contents of a JSON string, that string is guaranteed to be
- *          valid. If the C99 strtod() function is successful in converting all
- *          characters of a JSON number, that number is guaranteed to be valid
- *          if it is in decimal form.
  */
 ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
-
-/**
- * Parses the JSON number encoded in @a src and stores it to @a dst.
- *
- * @param src        Pointer to string containing JSON number.
- * @param src_length Size of @a src, in bytes, excluding NULL-terminator.
- * @param dst        Pointer to receiver of integer value.
- * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE      - The operation was successful.
- *   <li>@ref AH_EDOM       - The operation was successful, but the number in @a src contains a
- *                            non-zero fraction that was dropped in the result stored to @a dst.
- *   <li>@ref AH_EINVAL     - @a src is @c NULL and @a src_length is not @c 0.
- *   <li>@ref AH_EINVAL     - @a dst is @c NULL.
- *   <li>@ref AH_EOPNOTSUPP - @a src contains both a non-zero fraction and a
- *                            non-zero exponent.
- *   <li>@ref AH_ESYNTAX    - @a dst does not contain a valid JSON number.
- * </ul>
- */
-ah_extern ah_err_t ah_json_num_parse_int32(const char* src, size_t src_length, int32_t* dst);
-
-/**
- * Ensures the JSON number encoded in @a src is valid.
- *
- * @param src        Pointer to string containing JSON number.
- * @param src_length Size of @a src, in bytes, excluding NULL-terminator.
- * @return @c true only if @a src contains a valid JSON number. @c false
- *         otherwise.
- */
-ah_extern bool ah_json_num_validate(const char* src, size_t src_length);
 
 /**
  * Compares strings @a a and @a b while taking JSON escape sequences into
@@ -319,7 +270,8 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
  * Substitutes any UTF-8 code point below 32, <code>"</code> and <code>\\</code>
  * with its corresponding JSON escape sequence and writes the result to @a dst.
  *
- * The resulting string is safe to use as the characters of a JSON string.
+ * The resulting string is safe to use as the characters of a JSON string. It
+ * will not be enclosed in double quotes (<code>"</code>), however.
  *
  * If the operation is successful, the value pointer at by @a dst_length is
  * updated to reflect the final length of the string actually written to @a dst.
@@ -359,18 +311,5 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
  * </ul>
  */
 ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length);
-
-/**
- * Ensures that @a src contains a valid JSON string.
- *
- * If the operation is successful, @a src is guaranteed to only contain valid
- * UTF-8 sequences and JSON escape sequences.
- *
- * @param src        Pointer to JSON string.
- * @param src_length Size of @a src, in bytes.
- * @return @c true only if @a src refers to a valid JSON string. @c false
- *         otherwise.
- */
-ah_extern bool ah_json_str_validate(const char* src, size_t src_length);
 
 #endif

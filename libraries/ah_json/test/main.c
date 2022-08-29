@@ -6,7 +6,6 @@
 #include <stdlib.h>
 
 void test_json_parse(ah_unit_res_t* res);
-void test_json_num_parse(ah_unit_res_t* res);
 void test_json_str_compare(ah_unit_res_t* res);
 void test_json_str_escape(ah_unit_res_t* res);
 void test_json_str_unescape(ah_unit_res_t* res);
@@ -22,8 +21,6 @@ int main(void)
     struct ah_unit_res res = { 0 };
 
     test_json_parse(&res);
-
-    test_json_num_parse(&res);
 
     test_json_str_compare(&res);
     test_json_str_escape(&res);
