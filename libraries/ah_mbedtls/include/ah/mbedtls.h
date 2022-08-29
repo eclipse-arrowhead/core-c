@@ -3,6 +3,13 @@
 #ifndef AH_MBEDTLS_H_
 #define AH_MBEDTLS_H_
 
+/**
+ * @file
+ * Transport Layer Security (TLS) integration using MbedTLS.
+ *
+ * @see https://tls.mbed.org/
+ */
+
 #include "internal/_mbedtls.h"
 
 #include <ah/tcp.h>
