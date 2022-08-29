@@ -8,7 +8,16 @@
  * Error management
  *
  * This file lists most, if not all, error codes that can be returned by the
- * functions of the Core C library.
+ * functions of this library and other libraries that depend on it.
+ *
+ * Apart from @ref AH_ENONE, which indicates no error at all, and some custom
+ * error codes, all error codes listed here come directly from the platforms
+ * supported by this library. When a Core C library function invokes a platform
+ * function internally, the convention is for any errors that cannot be dealt
+ * with by the function to be passed on to the caller of the Core C function. As
+ * a consequence, many functions in this library return different error codes on
+ * different platforms. Every function dealing with error codes should list
+ * which of them only occur on some supported platforms.
  */
 
 #include "internal/_err.h"

@@ -40,22 +40,19 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, size_t capacity)
 
 ah_extern bool ah_loop_is_running(const ah_loop_t* loop)
 {
-    ah_assert(loop != NULL);
-
-    return loop->_state == AH_I_LOOP_STATE_RUNNING;
+    return loop != NULL && loop->_state == AH_I_LOOP_STATE_RUNNING;
 }
 
 ah_extern bool ah_loop_is_term(const ah_loop_t* loop)
 {
-    ah_assert(loop != NULL);
-
-    return loop->_state == AH_I_LOOP_STATE_TERMINATING || loop->_state == AH_I_LOOP_STATE_TERMINATED;
+    return loop == NULL || loop->_state == AH_I_LOOP_STATE_TERMINATING || loop->_state == AH_I_LOOP_STATE_TERMINATED;
 }
 
 ah_extern ah_time_t ah_loop_now(const ah_loop_t* loop)
 {
-    ah_assert(loop != NULL);
-
+    if (loop == NULL) {
+        return (ah_time_t) { 0u };
+    }
     return loop->_now;
 }
 

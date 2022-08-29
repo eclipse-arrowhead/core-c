@@ -61,7 +61,7 @@ static ah_rw_t s_rw_from(char* str, void* writable_memory, size_t writable_memor
     ah_assert_if_debug(str != NULL);
 
     const size_t len = strlen(str);
-    ah_assert(len < writable_memory_size);
+    ah_assert_always(len < writable_memory_size);
 
     uint8_t* off = (uint8_t*) memcpy(writable_memory, str, len + 1u);
     uint8_t* end = &off[len];

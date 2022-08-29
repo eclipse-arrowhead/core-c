@@ -50,8 +50,8 @@ fail:
 
 bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, int expected, const char* (*to_str)(int) )
 {
-    ah_assert(res != NULL);
-    ah_assert(to_str != NULL);
+    ah_assert_always(res != NULL);
+    ah_assert_always(to_str != NULL);
 
     if (actual == expected) {
         ah_unit_pass(res);
@@ -64,7 +64,7 @@ bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, i
 
 bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actual, ah_err_t expected)
 {
-    ah_assert(res != NULL);
+    ah_assert_always(res != NULL);
 
     if (actual == expected) {
         ah_unit_pass(res);
@@ -83,7 +83,7 @@ bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actua
 
 bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual_, const void* expected_, size_t size)
 {
-    ah_assert(res != NULL);
+    ah_assert_always(res != NULL);
 
     const unsigned char* actual = actual_;
     const unsigned char* expected = expected_;
@@ -123,7 +123,7 @@ bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* ac
 
 bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, intmax_t actual, intmax_t expected)
 {
-    ah_assert(res != NULL);
+    ah_assert_always(res != NULL);
 
     if (actual == expected) {
         ah_unit_pass(res);
@@ -160,7 +160,7 @@ fail:
 
 bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t actual, uintmax_t expected)
 {
-    ah_assert(res != NULL);
+    ah_assert_always(res != NULL);
 
     if (actual == expected) {
         ah_unit_pass(res);
@@ -181,7 +181,7 @@ void ah_unit_print(ah_unit_ctx_t ctx, const char* format, ...)
 
 void ah_unit_print_results(const struct ah_unit_res* res)
 {
-    ah_assert(res != NULL);
+    ah_assert_always(res != NULL);
 
     if (res->fail_count == 0) {
         (void) printf("Passed all %d executed assertions.\n", res->assertion_count);
@@ -201,14 +201,14 @@ void ah_unit_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, ...
 
 void ah_unit_pass(ah_unit_res_t* res)
 {
-    ah_assert(res != NULL);
+    ah_assert_always(res != NULL);
 
     res->assertion_count += 1u;
 }
 
 static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va_list args)
 {
-    ah_assert(res != NULL);
+    ah_assert_always(res != NULL);
 
     res->assertion_count += 1u;
     res->fail_count += 1u;

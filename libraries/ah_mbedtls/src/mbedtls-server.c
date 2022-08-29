@@ -40,15 +40,17 @@ ah_extern ah_err_t ah_mbedtls_server_init(ah_mbedtls_server_t* server, ah_tcp_tr
 
 ah_extern int ah_mbedtls_server_get_last_err(ah_mbedtls_server_t* server)
 {
-    ah_assert(server != NULL);
-
+    if (server == NULL) {
+        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
+    }
     return server->_errs._last_mbedtls_err;
 }
 
 ah_extern mbedtls_ssl_config* ah_mbedtls_server_get_ssl_config(ah_mbedtls_server_t* server)
 {
-    ah_assert(server != NULL);
-
+    if (server == NULL) {
+        return NULL;
+    }
     return server->_ssl_conf;
 }
 
@@ -62,7 +64,9 @@ ah_extern ah_tcp_trans_t ah_mbedtls_server_as_trans(ah_mbedtls_server_t* server)
 
 ah_extern void ah_mbedtls_server_term(ah_mbedtls_server_t* server)
 {
-    ah_assert_if_debug(server != NULL);
+    if (server == NULL) {
+        return;
+    }
 
     ah_i_slab_term(&server->_client_slab, NULL);
 }

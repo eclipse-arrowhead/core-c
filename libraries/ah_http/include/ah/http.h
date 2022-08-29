@@ -632,7 +632,7 @@ struct ah_http_chunk {
 };
 
 /**
- * Last chunk extension and trailer section of a chunked HTTP message.
+ * HTTP chunked message end, consisting of a last chunk extension and a trailer.
  *
  * An instance of this message is used to end a chunked HTTP transmission in a
  * call to ah_http_client_send_trailer(). It allows for you to specify an

@@ -18,7 +18,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/** Adds the appropriate postfix expression to number literal @a V. */
+/**
+ * Adds the appropriate ah_timediff_t postfix expression to number literal @a V.
+ */
 #define AH_TIMEDIFF_C(V) INT64_C(V)
 
 #define AH_TIMEDIFF_NS AH_TIMEDIFF_C(1)              /**< Nanosecond ah_timediff multiplier. */
@@ -36,8 +38,7 @@
 #define AH_TIMEDIFF_MAX INT64_MAX
 
 /**
- * A reference to a certain point in time, as measured from an arbitrary point
- * in the past.
+ * Reference to a point in time, measured from an arbitrary point in the past.
  *
  * @note All fields of this data structure are @e private in the sense that a
  *       user of this API should not access them directly.

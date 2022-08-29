@@ -23,8 +23,8 @@
  * The function triggers the following behaviors depending on the current
  * platform:
  *
- * @li <b>[POSIX]</b> The @c SIGABRT signal is unblocked and then raised.
- * @li <b>[Win32]</b> The @c SIGABRT signal is raised.
+ * @li [Darwin, Linux] The @c SIGABRT signal is unblocked and then raised.
+ * @li [Win32] The @c SIGABRT signal is raised.
  */
 ah_extern ah_noreturn void ah_abort(void);
 

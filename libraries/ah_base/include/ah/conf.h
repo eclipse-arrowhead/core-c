@@ -70,8 +70,8 @@
 #  define AH_CONF_IOCP_COMPLETION_ENTRY_BUFFER_SIZE 4u
 # else
 /**
- * <b>[IOCP]</b> The number I/O Completion Port @c OVERLAPPED_ENTRY
- * instances to be part of the buffer used when polling for completed events.
+ * [IOCP] The number I/O Completion Port @c OVERLAPPED_ENTRY instances to be
+ * part of the buffer used when polling for completed events.
  *
  * A higher value @e may lead to higher event loop throughput.
  */
@@ -84,8 +84,8 @@
 #  define AH_CONF_IOCP_DEFAULT_CAPACITY 32u
 # else
 /**
- * <b>[IOCP]</b> Default ah_loop @c capacity for platforms relying on
- *        Windows I/O Completion Ports.
+ * [IOCP] Default ah_loop @c capacity for platforms relying on Windows I/O
+ * Completion Ports.
  *
  * A higher value @e may lead to higher event loop throughput.
  */
@@ -98,8 +98,8 @@
 #  define AH_CONF_KQUEUE_DEFAULT_CAPACITY 32u
 # else
 /**
- * <b>[KQueue]</b> Default ah_loop @c capacity for platforms relying on
- *        BSD Kernel Queue API.
+ * [KQueue] Default ah_loop @c capacity for platforms relying on BSD Kernel
+ * Queue API.
  *
  * A higher value @e may lead to higher event loop throughput.
  */
@@ -172,8 +172,8 @@
 #  define AH_CONF_URING_DEFAULT_CAPACITY 32u
 # else
 /**
- * <b>[io_uring]</b> Default ah_loop @c capacity for platforms relying
- *        on the Linux io_uring API.
+ * [io_uring] Default ah_loop @c capacity for platforms relying on the Linux
+ * io_uring API.
  *
  * A higher value @e may lead to higher event loop throughput.
  */

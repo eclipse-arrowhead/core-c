@@ -8,11 +8,11 @@
  * Dynamic memory allocation.
  *
  * This file most significantly provides function for allocating and freeing
- * dynamic memory. If provides analogies to the malloc(), calloc(), realloc()
- * and free() functions of the C99 standard library, as well as functions for
- * allocating and freeing @e pages of memory. A @e page is a contiguous chunk of
- * @c AH_PSIZE bytes, aligned to a memory boundary deemed suitable by the
- * library implementation.
+ * dynamic memory. If provides the malloc(), calloc(), realloc() and free()
+ * functions of the C99 standard library, or your own implementations of them,
+ * as well as functions for allocating and freeing @e pages of memory. A @e page
+ * is a contiguous chunk of @c AH_PSIZE bytes, aligned to a memory boundary
+ * deemed suitable by the library implementation.
  *
  * In contrast to the C99 allocator, the page allocator is relatively simple to
  * implement such that it effectively avoids memory fragmentation. As all pages
@@ -26,7 +26,7 @@
 
 #include "conf.h"
 
-/** The size, in bytes, of the memory pages returned by ah_palloc(). */
+/** Size, in bytes, of the memory pages returned by ah_palloc(). */
 #define AH_PSIZE AH_CONF_PSIZE
 
 /**

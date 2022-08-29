@@ -62,7 +62,7 @@
 #define AH_TCP_SHUTDOWN_RDWR 3u
 
 /**
- * A TCP-based transport.
+ * TCP-based transport.
  *
  * A @e transport represents a medium through which TCP connections can be
  * established. Such a medium could be a plain connection via an underlying
@@ -104,7 +104,7 @@ struct ah_tcp_vtab {
 };
 
 /**
- * A TCP connection handle.
+ * TCP connection handle.
  *
  * Such a handle can be established either by connecting to a remote listener
  * via ah_tcp_conn_connect() or by accepting connections via
@@ -195,7 +195,7 @@ struct ah_tcp_conn_cbs {
     void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err);
 
     /**
-     * Data has been received via @a conn.
+     * @a conn has received data from its associated remote host.
      *
      * Successful calls to this function (meaning that @a err is equal to
      * @ref AH_ENONE) always carry a pointer to an ah_tcp_in instance. That
@@ -245,7 +245,7 @@ struct ah_tcp_conn_cbs {
     void (*on_read)(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
 
     /**
-     * Data has been sent via the connection.
+     * @a conn has sent data to its associated remote host.
      *
      * This callback is always invoked after a successful call to
      * ah_tcp_conn_write(). If @a err is @ref AH_ENONE, all outgoing data
@@ -277,7 +277,7 @@ struct ah_tcp_conn_cbs {
     void (*on_write)(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
 
     /**
-     * The connection has been closed.
+     * @a conn has been closed.
      *
      * @param conn Pointer to connection.
      * @param err  Should always be @ref AH_ENONE. Other codes may be provided if
@@ -291,7 +291,7 @@ struct ah_tcp_conn_cbs {
 };
 
 /**
- * A TCP listener handle.
+ * TCP listener handle.
  *
  * Such a handle may represent the attempt to accept incoming TCP connections.
  *
@@ -309,7 +309,7 @@ struct ah_tcp_listener {
  */
 struct ah_tcp_listener_cbs {
     /**
-     * Listener @a ln has been opened, or the attempt failed.
+     * @a ln has been opened, or the attempt failed.
      *
      * @param ln  Pointer to listener.
      * @param err One of the following codes: <ul>
@@ -330,8 +330,8 @@ struct ah_tcp_listener_cbs {
     void (*on_open)(ah_tcp_listener_t* ln, ah_err_t err);
 
     /**
-     * Listener @a ln has started to listen for incoming connections, or the
-     * attempt failed.
+     * @a ln has started to listen for incoming connections, or the attempt
+     * failed.
      *
      * @param ln  Pointer to listener.
      * @param err One of the following codes: <ul>
@@ -350,7 +350,7 @@ struct ah_tcp_listener_cbs {
     void (*on_listen)(ah_tcp_listener_t* ln, ah_err_t err);
 
     /**
-     * Listener @a ln has accepted the connection @a conn.
+     * @a ln has accepted the connection @a conn.
      *
      * If @a err is @ref AH_ENONE, which indicates a successful acceptance, all
      * further events related to @a conn will be dealt with via the connection
@@ -384,7 +384,7 @@ struct ah_tcp_listener_cbs {
     void (*on_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
     /**
-     * Listener @a ln has been closed.
+     * @a ln has been closed.
      *
      * @param conn Pointer to listener.
      * @param err  Should always be @ref AH_ENONE. Other codes may be provided if
@@ -399,7 +399,7 @@ struct ah_tcp_listener_cbs {
 };
 
 /**
- * An incoming stream of bytes.
+ * TCP input stream.
  *
  * @note Some fields of this data structure are @e private in the sense that a
  *       user of this API should not access them directly. All private fields
@@ -413,7 +413,7 @@ struct ah_tcp_in {
 };
 
 /**
- * An outgoing buffer of bytes.
+ * TCP output buffer.
  *
  * @note Some fields of this data structure are @e private in the sense that a
  *       user of this API should not access them directly. All private fields

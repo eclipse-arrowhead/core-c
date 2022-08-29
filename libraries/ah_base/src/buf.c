@@ -4,10 +4,10 @@
 
 #include "ah/assert.h"
 
-
 ah_extern bool ah_buf_is_empty(const ah_buf_t* buf)
 {
-    ah_assert(buf != NULL);
-
+    if (buf == NULL) {
+        return true;
+    }
     return buf->base == NULL || buf->size == 0u;
 }

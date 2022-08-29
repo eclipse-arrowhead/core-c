@@ -28,8 +28,8 @@
 # define ah_likely(expr)
 
 /**
- * Traps execution, preventing the application process from progressing
- *        any further.
+ * Traps execution, preventing the application process from progressing any
+ * further.
  *
  * Traps can be useful while debugging, or as a last resort when all other ways
  * of stopping the application fails.
@@ -45,8 +45,8 @@
 # define ah_unlikely(expr)
 
 /**
- * Informs the compiler that the line at which this intrinsic is used
- *        will never be executed.
+ * Informs the compiler that the line at which this intrinsic is used will never
+ * be executed.
  *
  * @warning If the line is reached during execution anyway, the result is
  *          undefined. The platform @a may chose to ah_trap(), but that is not
@@ -55,7 +55,7 @@
 # define ah_unreachable()
 
 /**
- * <b>[Clang, GCC]</b> Adds @a a and @a b, storing the sum to @a result.
+ * [Clang, GCC] Adds @a a and @a b, storing the sum to @a result.
  *
  * @param a Value of an arbitrary integer type.
  * @param b Value of an arbitrary integer type.
@@ -66,8 +66,7 @@
 # define ah_p_add_overflow(a, b, result)
 
 /**
- * <b>[Clang, GCC]</b> Multiplties @a a and @a b, storing the product to
- *        @a result.
+ * [Clang, GCC] Multiplties @a a and @a b, storing the product to @a result.
  *
  * @param a Value of an arbitrary integer type.
  * @param b Value of an arbitrary integer type.
@@ -78,8 +77,7 @@
 # define ah_p_mul_overflow(a, b, result)
 
 /**
- * <b>[Clang, GCC]</b> Subtracts @a a and @a b, storing the difference
- *        to @a result.
+ * [Clang, GCC] Subtracts @a a and @a b, storing the difference to @a result.
  *
  * @param a Value of an arbitrary integer type.
  * @param b Value of an arbitrary integer type.

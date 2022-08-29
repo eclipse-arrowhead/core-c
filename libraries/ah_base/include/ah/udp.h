@@ -37,7 +37,7 @@
 #define AH_UDP_OUT_BUF_SIZE (AH_PSIZE - sizeof(ah_udp_out_t))
 
 /**
- * A UDP/IPv4 multicast group.
+ * UDP/IPv4 multicast group.
  *
  * @see @see https://www.rfc-editor.org/rfc/rfc1112.html
  */
@@ -60,7 +60,7 @@ struct ah_udp_group_ipv4 {
 };
 
 /**
- * A UDP/IPv6 multicast group.
+ * UDP/IPv6 multicast group.
  *
  * @see https://datatracker.ietf.org/doc/html/rfc3306
  * @see https://datatracker.ietf.org/doc/html/rfc7371
@@ -83,7 +83,7 @@ struct ah_udp_group_ipv6 {
 };
 
 /**
- * Union over all supported types of UDP multicast groups.
+ * UDP multicast group union type.
  *
  * @warning There is no way of determining what kind of group is being used
  *          from looking at an instance of this data structure in isolation.
@@ -96,7 +96,7 @@ union ah_udp_group {
 };
 
 /**
- * A UDP-based message transport.
+ * UDP-based message transport.
  *
  * A @e transport represents a medium through which UDP messages can be sent or
  * received. Such a medium could be a plain socket via an underlying operating
@@ -132,7 +132,7 @@ struct ah_udp_vtab {
 };
 
 /**
- * A UDP socket handle.
+ * UDP socket handle.
  *
  * Such a handle can be used to both send and/or receive UDP datagrams
  * (messages).
@@ -145,7 +145,7 @@ struct ah_udp_sock {
 };
 
 /**
- * An incoming UDP datagram (message).
+ * UDP datagram input buffer.
  *
  * @note Some fields of this data structure are @e private in the sense that a
  *       user of this API should not access them directly. All private fields
@@ -165,7 +165,7 @@ struct ah_udp_in {
 };
 
 /**
- * An outgoing UDP datagram (message).
+ * UDP datagram output buffer.
  *
  * @note Some fields of this data structure are @e private in the sense that a
  *       user of this API should not access them directly. All private fields
@@ -216,7 +216,7 @@ struct ah_udp_sock_cbs {
     void (*on_open)(ah_udp_sock_t* sock, ah_err_t err);
 
     /**
-     * Data has been received via @a sock.
+     * @a sock has received data.
      *
      * Successful calls to this function (meaning that @a err is equal to
      * @ref AH_ENONE) always carry a pointer to an ah_udp_in instance. That
@@ -250,7 +250,7 @@ struct ah_udp_sock_cbs {
     void (*on_recv)(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
 
     /**
-     * Data has been sent via @a sock.
+     * @a sock has sent data.
      *
      * This callback is always invoked after a successful call to
      * ah_udp_sock_write(). If @a err is @ref AH_ENONE, all outgoing data
@@ -283,7 +283,7 @@ struct ah_udp_sock_cbs {
     void (*on_send)(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err);
 
     /**
-     * The socket has been closed.
+     * @a sock has been closed.
      *
      * @param sock Pointer to socket.
      * @param err  Should always be @ref AH_ENONE. Other codes may be provided

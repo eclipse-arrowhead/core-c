@@ -18,24 +18,24 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** The largest size, in bytes, that can be represented by an ah_buf. */
+/** Largest size, in bytes, that can be represented by an ah_buf instance. */
 #define AH_BUF_SIZE_MAX AH_I_BUF_SIZE_MAX
 
 /**
- * A sized reference to a contiguous chunk of memory.
+ * Sized reference to a contiguous chunk of memory.
  *
  * @warning The order of its fields, as well as the type of its @a size
  *          field, may vary across supported platforms.
  */
 struct ah_buf {
-#if AH_IS_WIN32
+#if defined(AH_DOXYGEN)
+    uint8_t* base; /**< Pointer to beginning of buffer memory region. */
+    uintX_t size;  /**< Size, in bytes, of memory region referred to by @a base. */
+#elif AH_IS_WIN32
     ULONG size; // Guaranteed to be of a size smaller than or equal to size_t.
     uint8_t* base;
 #else
-    /** Pointer to buffer memory. */
     uint8_t* base;
-
-    /** Size, in bytes, of memory referred to by @a base. */
     size_t size;
 #endif
 };
@@ -72,8 +72,8 @@ ah_extern ah_buf_t ah_buf_from(uint8_t* base, uint32_t size);
  * Checks if @a buf has a @c NULL @c base or a @c size being @c 0.
  *
  * @param buf Pointer to checked buffer.
- * @return @c true, only if @a buf has a @c NULL @c base or @c a @c size being
- *         @c 0.
+ * @return @c true, only if @a buf is @c NULL, has a @c NULL @c base or @c a
+ *         @c size being @c 0. @c false otherwise.
  */
 ah_extern bool ah_buf_is_empty(const ah_buf_t* buf);
 

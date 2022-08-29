@@ -35,13 +35,13 @@
 */
 #define AH_IPADDR_V6_STRLEN_MAX 46u
 
-/** An IPv4 address. */
+/** IPv4 address. */
 struct ah_ipaddr_v4 {
     /** The octets, or bytes, constituting the address. */
     uint8_t octets[4];
 };
 
-/** An IPv6 address. */
+/** IPv6 address. */
 struct ah_ipaddr_v6 {
     /** The octets, or bytes, constituting the address. */
     uint8_t octets[16];

@@ -53,15 +53,17 @@ ah_extern ah_err_t ah_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_tr
 
 ah_extern int ah_mbedtls_client_get_last_err(ah_mbedtls_client_t* client)
 {
-    ah_assert(client != NULL);
-
+    if (client == NULL) {
+        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
+    }
     return client->_errs._last_mbedtls_err;
 }
 
 ah_extern mbedtls_ssl_context* ah_mbedtls_client_get_ssl_context(ah_mbedtls_client_t* client)
 {
-    ah_assert(client != NULL);
-
+    if (client == NULL) {
+        return NULL;
+    }
     return &client->_ssl;
 }
 
@@ -75,7 +77,9 @@ ah_extern ah_tcp_trans_t ah_mbedtls_client_as_trans(ah_mbedtls_client_t* client)
 
 ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* client)
 {
-    ah_assert(client != NULL);
+    if (client == NULL) {
+        return;
+    }
 
     mbedtls_ssl_free(&client->_ssl);
     ah_i_ring_term(&client->_out_queue_ciphertext);

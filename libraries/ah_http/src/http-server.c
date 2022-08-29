@@ -124,35 +124,39 @@ ah_extern ah_err_t ah_http_server_term(ah_http_server_t* srv)
 
 ah_extern ah_tcp_listener_t* ah_http_server_get_listener(ah_http_server_t* srv)
 {
-    ah_assert(srv != NULL);
-
+    if (srv == NULL) {
+        return NULL;
+    }
     return &srv->_ln;
 }
 
 ah_extern ah_err_t ah_http_server_get_laddr(const ah_http_server_t* srv, ah_sockaddr_t* laddr)
 {
-    ah_assert(srv != NULL);
-
+    if (srv == NULL) {
+        return AH_EINVAL;
+    }
     return ah_tcp_listener_get_laddr(&srv->_ln, laddr);
 }
 
 ah_extern ah_loop_t* ah_http_server_get_loop(const ah_http_server_t* srv)
 {
-    ah_assert(srv != NULL);
-
+    if (srv == NULL) {
+        return NULL;
+    }
     return ah_tcp_listener_get_loop(&srv->_ln);
 }
 
 ah_extern void* ah_http_server_get_user_data(const ah_http_server_t* srv)
 {
-    ah_assert(srv != NULL);
-
+    if (srv == NULL) {
+        return NULL;
+    }
     return ah_tcp_listener_get_user_data(&srv->_ln);
 }
 
 ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data)
 {
-    ah_assert(srv != NULL);
-
-    ah_tcp_listener_set_user_data(&srv->_ln, user_data);
+    if (srv != NULL) {
+        ah_tcp_listener_set_user_data(&srv->_ln, user_data);
+    }
 }

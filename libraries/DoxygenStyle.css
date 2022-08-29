@@ -86,11 +86,13 @@ dl {
 
 dl.note {
     border-left: 0.25rem solid var(--ahf-yellow-highlight);
+    margin-left: 0;
     padding-left: 0.75rem;
 }
 
 dl.warning {
     border-left: 0.25rem solid var(--ahf-red-highlight);
+    margin-left: 0;
     padding-left: 0.75rem;
 }
 
@@ -454,6 +456,8 @@ body .contents table.directory > tbody > tr > .entry > .icona {
 body .contents .doxtable {
     border: 0.125rem solid var(--ahf-grey-background);
     border-spacing: 0;
+    margin-left: auto;
+    margin-right: auto;
     padding: 1rem;
 }
 
@@ -500,8 +504,10 @@ body .contents .fragment {
 }
 
 body .contents .fragment > .line {
+    margin-left: 10em;
     padding-right: 1rem;
-    white-space: pre;
+    text-indent: -10em;
+    white-space: pre-wrap;
 }
 
 body .contents .fragment > .line > .comment {
@@ -652,7 +658,8 @@ body .contents .memitem > .memdoc > .params .paramname {
 }
 
 body .contents .textblock > * {
-    margin: 1rem 0;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
 }
 
 body .contents .textblock > h3 {

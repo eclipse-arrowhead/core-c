@@ -45,7 +45,7 @@
 #include "internal/_loop.h"
 
 /**
- * An event loop.
+ * Event loop.
  *
  * @note All fields of this data structure are @e private in the sense that a
  *       user of this API should not access them directly.
@@ -94,7 +94,9 @@ ah_extern ah_err_t ah_loop_init(ah_loop_t* loop, size_t capacity);
  * was first invoked.
  *
  * @param loop Pointer to event loop.
- * @return @c true only if @a loop is currently running.
+ * @return @c true only if @a loop is currently running. @c false otherwise.
+ *
+ * @note The function returns @c false if @a loop is @c NULL.
  */
 ah_extern bool ah_loop_is_running(const ah_loop_t* loop);
 
@@ -106,6 +108,9 @@ ah_extern bool ah_loop_is_running(const ah_loop_t* loop);
  *
  * @param loop Pointer to event loop.
  * @return @c true only if @a loop is currently being or has been terminated.
+ *         @c false otherwise.
+ *
+ * @note The function returns @c true if @a loop is @c NULL.
  *
  * @warning This function is only safe to use if (1) the memory of @a loop is
  *         zeroed, (2) @a loop has been initialized using ah_loop_init() and is
@@ -123,6 +128,9 @@ ah_extern bool ah_loop_is_term(const ah_loop_t* loop);
  *
  * @param loop Pointer to event loop.
  * @return Time at which @a loop last updated its internal clock.
+ *
+ * @note The function returns <code>(ah_time_t) { 0u }</code> if @a loop is
+ *       @c NULL.
  */
 ah_extern ah_time_t ah_loop_now(const ah_loop_t* loop);
 
