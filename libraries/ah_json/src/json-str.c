@@ -5,6 +5,7 @@
 #include <ah/assert.h>
 #include <ah/err.h>
 #include <ah/utf8.h>
+#include <string.h>
 
 static uint32_t s_integer_from_hex_digit(char hex_digit);
 static char s_integer_into_hex_digit(char i);

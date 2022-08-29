@@ -3,12 +3,6 @@
 #ifndef AH_JSON_H_
 #define AH_JSON_H_
 
-#include <ah/buf.h>
-#include <ah/defs.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
-
 /**
  * @file
  * JavaScript Object Notation (JSON) utilities.
@@ -56,6 +50,8 @@
  *
  * @see https://www.ecma-international.org/publications-and-standards/standards/ecma-404/
  */
+
+#include <ah/buf.h>
 
 #ifdef AH_DOXYGEN
 

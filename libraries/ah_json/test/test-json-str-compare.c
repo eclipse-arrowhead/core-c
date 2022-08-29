@@ -3,6 +3,7 @@
 #include "ah/json.h"
 
 #include <ah/unit.h>
+#include <string.h>
 
 struct s_json_compare_test {
     ah_unit_ctx_t ctx;

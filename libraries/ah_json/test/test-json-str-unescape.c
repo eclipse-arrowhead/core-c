@@ -4,6 +4,7 @@
 
 #include <ah/err.h>
 #include <ah/unit.h>
+#include <string.h>
 
 struct s_json_unescape_test {
     ah_unit_ctx_t ctx;

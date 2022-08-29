@@ -5,6 +5,7 @@
 #include <ah/err.h>
 #include <ah/unit.h>
 #include <inttypes.h>
+#include <string.h>
 
 struct s_json_parse_test {
     ah_unit_ctx_t ctx;
