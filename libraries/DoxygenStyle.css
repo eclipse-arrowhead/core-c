@@ -1,3 +1,30 @@
+@font-face {
+    font-family: "Source Code Pro";
+    src: url("SourceCodePro-Regular.woff") format("woff");
+}
+
+@font-face {
+    font-family: "Open Sans";
+    font-weight: bold;
+    src: url("OpenSans-Bold.woff") format("woff");
+}
+
+@font-face {
+    font-family: "Open Sans";
+    font-weight: 300;
+    src: url("OpenSans-Light.woff") format("woff");
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("OpenSans-Regular.woff") format("woff");
+}
+
+@font-face {
+    font-family: "Oswald";
+    src: url("Oswald-Regular.woff") format("woff");
+}
+
 html {
     height: 100%;
 }
@@ -16,7 +43,7 @@ body {
     border: none;
     display: flex;
     flex-direction: column;
-    font-family: sans-serif;
+    font-family: "Open Sans", sans-serif;
     height: 100%;
     margin: 0;
     min-width: 40rem;
@@ -45,6 +72,7 @@ code {
     background-color: var(--ahf-grey-light);
     border-radius: 0.25em;
     display: inline-block;
+    font-family: "Source Code Pro", monospace;
     margin: -0.1em 0;
     padding: 0.1em 0.4em;
 }
@@ -85,6 +113,7 @@ em {
 
 h1, h2, h3, h4, h5, h6 {
     color: var(--ahf-blue-text);
+    font-family: "Oswald", sans-serif;
     font-weight: normal;
     margin: 0 0 1rem 0;
 }
@@ -162,6 +191,7 @@ body > .contents {
 
 #projectname {
     color: var(--ahf-blue-text);
+    font-family: "Oswald", sans-serif;
     font-size: 2rem;
 }
 
@@ -349,10 +379,11 @@ body .header > .summary {
 
 body .header > .headertitle > .title {
     color: var(--ahf-blue-text);
+    font-family: "Oswald", sans-serif;
     font-size: 1.5em;
 }
 
-body .header > *:last-child {
+body .header > :last-child {
     border-bottom: 0.125rem solid var(--ahf-blue-background);
     padding-bottom: 1rem;
 }
@@ -365,7 +396,11 @@ body .contents {
 }
 
 body .contents > * {
-    margin-bottom: 1rem;
+    margin-top: 2rem;
+}
+
+body .contents > a:not(:empty) {
+    display: inline-block;
 }
 
 body .contents .classindex > .alphachar > a {
@@ -461,7 +496,7 @@ body .contents .fragment {
     --ahf-color-code-stringliteral: #D51CC0;
 
     border: 0.125rem solid #eaeaea;
-    font-family: monospace;
+    font-family: "Source Code Pro", monospace;
     overflow: scroll;
     padding: 1rem 0;
 }
@@ -529,11 +564,12 @@ body .contents .memberdecls {
 
 body .contents .memberdecls .groupHeader {
     font-weight: bold;
+    margin-bottom: 0.5rem;
 }
 
 body .contents .memberdecls .groupText {
-    color: var(--ahf-grey-text);
-    font-weight: 300;
+    border-left: 0.25rem solid var(--ahf-grey-background);
+    padding-left: 1rem;
 }
 
 body .contents .memberdecls > tbody > :not(.heading) {
@@ -564,6 +600,7 @@ body .contents .memtitle {
     background-color: var(--ahf-grey-background);
     color: var(--ahf-grey-text);
     display: inline-block;
+    font-family: "Open Sans", sans-serif;
     font-size: 1em;
     margin: 0;
     padding: 0.75rem 1.125rem 0.625rem 1.125rem;
@@ -584,7 +621,7 @@ body .contents .memitem table {
 }
 
 body .contents .memitem > .memproto {
-    font-family: monospace;
+    font-family: "Source Code Pro", monospace;
     font-size: 1.125em;
     font-weight: bold;
     margin: 1rem;
@@ -639,6 +676,7 @@ body .contents > .qindex > a:last-child {
     margin-right: 0;
 }
 
+body .contents > #details,
 body .contents > #details + .groupheader {
     display: none;
 }
@@ -647,10 +685,6 @@ body .contents > #details + .groupheader + p,
 body .contents > #details + .groupheader + .textblock > p:first-child {
     font-size: 1.05em;
     font-weight: bold;
-}
-
-body .contents > * {
-    margin: 2rem 0;
 }
 
 body > hr.footer {

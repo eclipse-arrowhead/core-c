@@ -158,7 +158,12 @@ HTML_HEADER            =
 HTML_FOOTER            =
 HTML_STYLESHEET        = DoxygenStyle.css
 HTML_EXTRA_STYLESHEET  =
-HTML_EXTRA_FILES       =
+HTML_EXTRA_FILES       = ../assets/images/arrowhead-logo.svg \
+                         ../assets/fonts/Inconsolata-Regular.woff \
+                         ../assets/fonts/OpenSans-Bold.woff \
+                         ../assets/fonts/OpenSans-Light.woff \
+                         ../assets/fonts/OpenSans-Regular.woff \
+                         ../assets/fonts/SourceCodePro-Regular.woff
 HTML_COLORSTYLE_HUE    = 207
 HTML_COLORSTYLE_SAT    = 72
 HTML_COLORSTYLE_GAMMA  = 72
