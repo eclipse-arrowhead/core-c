@@ -371,59 +371,63 @@ body > .contents {
     padding: 0 0 0 0.125rem;
 }
 
-body .header {
+.header {
     background-color: white;
     padding: 1.25rem 1.5rem 0 1.5rem;
 }
 
-body .header > .summary {
+.header > .summary {
     margin: 0 0 1rem 0;
 }
 
-body .header > .headertitle > .title {
+.header > .headertitle > .title {
     color: var(--ahf-blue-text);
     font-family: "Oswald", sans-serif;
     font-size: 1.5em;
 }
 
-body .header > :last-child {
+.header > :last-child {
     border-bottom: 0.125rem solid var(--ahf-blue-background);
     padding-bottom: 1rem;
 }
 
-body .contents {
+.contents {
     background-color: white;
     font-weight: 300;
     line-height: 1.25em;
     padding: 0 1.5rem;
 }
 
-body .contents > * {
+.contents > * {
     margin-top: 2rem;
 }
 
-body .contents > a:not(:empty) {
+.contents > a:not(:empty) {
     display: inline-block;
 }
 
-body .contents .classindex > .alphachar > a {
+.contents > p + p {
+    margin-top: 1rem;
+}
+
+.contents .classindex > .alphachar > a {
     color: black;
     font-size: 1.25em;
 }
 
-body .contents .classindex {
+.contents .classindex {
     margin-left: 0;
     margin-right: 0;
 }
 
-body .contents .directory > .levels {
+.contents .directory > .levels {
     font-size: 0.9em;
     line-height: 2rem;
     margin: -2rem 0 0 0;
     text-align: right;
 }
 
-body .contents .directory > .levels > span {
+.contents .directory > .levels > span {
     color: var(--ahf-blue-link);
     cursor: pointer;
     display: inline-block;
@@ -431,29 +435,29 @@ body .contents .directory > .levels > span {
     padding: 0 0.25rem 0 0;
 }
 
-body .contents .directory > .levels > span:hover {
+.contents .directory > .levels > span:hover {
     text-decoration: underline;
 }
 
-body .contents table.directory {
+.contents table.directory {
     border-spacing: 0;
     font-size: 0.9em;
     width: 100%;
 }
 
-body .contents table.directory > tbody > tr.even {
+.contents table.directory > tbody > tr.even {
     background-color: var(--ahf-grey-light);
 }
 
-body .contents table.directory > tbody > tr > td {
+.contents table.directory > tbody > tr > td {
     padding: 0.5rem 0.75rem;
 }
 
-body .contents table.directory > tbody > tr > .entry > .icona {
+.contents table.directory > tbody > tr > .entry > .icona {
     display: none;
 }
 
-body .contents .doxtable {
+.contents .doxtable {
     border: 0.125rem solid var(--ahf-grey-background);
     border-spacing: 0;
     margin-left: auto;
@@ -461,36 +465,36 @@ body .contents .doxtable {
     padding: 1rem;
 }
 
-body .contents .doxtable > caption {
+.contents .doxtable > caption {
     font-style: italic;
     padding-bottom: 0.5rem;
 }
 
-body .contents .doxtable > tbody > tr > * {
+.contents .doxtable > tbody > tr > * {
     vertical-align: top;
 }
 
-body .contents .doxtable > tbody > tr:last-child > * {
+.contents .doxtable > tbody > tr:last-child > * {
     padding-bottom: 0;
 }
 
-body .contents .doxtable > tbody > tr > th {
+.contents .doxtable > tbody > tr > th {
     padding-right: 1.5rem;
     padding-bottom: 0.75rem;
     text-align: left;
 }
 
-body .contents .doxtable > tbody > tr > td {
+.contents .doxtable > tbody > tr > td {
     padding-right: 1.5rem;
     padding-bottom: 0.25rem;
     text-align: left;
 }
 
-body .contents .doxtable > tbody > tr > *:last-child {
+.contents .doxtable > tbody > tr > *:last-child {
     padding-right: 0;
 }
 
-body .contents .fragment {
+.contents .fragment {
     --ahf-color-code-comment: #777c80;
     --ahf-color-code-keyword: #27881e;
     --ahf-color-code-keywordflow: var(--ahf-blue-text);
@@ -503,38 +507,38 @@ body .contents .fragment {
     font-family: "Source Code Pro", monospace;
 }
 
-body .contents .fragment > .line {
+.contents .fragment > .line {
     margin-left: 10em;
     padding-right: 1rem;
     text-indent: -10em;
     white-space: pre-wrap;
 }
 
-body .contents .fragment > .line > .comment {
+.contents .fragment > .line > .comment {
     color: var(--ahf-color-code-comment);
 }
 
-body .contents .fragment > .line > .hl_define {
+.contents .fragment > .line > .hl_define {
     color: var(--ahf-color-code-preprocessor);
     font-style: italic;
     font-weight: normal;
 }
 
-body .contents .fragment > .line > .keyword {
+.contents .fragment > .line > .keyword {
     color: var(--ahf-color-code-keyword);
 }
 
-body .contents .fragment > .line > .keywordflow {
+.contents .fragment > .line > .keywordflow {
     color: var(--ahf-color-code-keywordflow);
     font-weight: bold;
 }
 
-body .contents .fragment > .line > .keywordtype {
+.contents .fragment > .line > .keywordtype {
     color: var(--ahf-color-code-keywordtype);
     font-weight: bold;
 }
 
-body .contents .fragment > .line > .lineno {
+.contents .fragment > .line > .lineno {
     border-right: 0.125rem solid var(--ahf-grey-background);
     color: var(--ahf-color-code-lineno);
     display: inline-block;
@@ -545,68 +549,75 @@ body .contents .fragment > .line > .lineno {
     width: 3em;
 }
 
-body .contents .fragment > .line > .lineno > a {
+.contents .fragment > .line > .lineno > a {
     color: var(--ahf-color-code-lineno-link);
 }
 
-body .contents .fragment > .line > .lineno > a:hover {
+.contents .fragment > .line > .lineno > a:hover {
     text-decoration: none;
 }
 
-body .contents .fragment > .line > .preprocessor {
+.contents .fragment > .line > .preprocessor {
     color: var(--ahf-color-code-preprocessor);
 }
 
-body .contents .fragment > .line > .stringliteral {
+.contents .fragment > .line > .stringliteral {
     color: var(--ahf-color-code-stringliteral);
     font-weight: bold;
 }
 
-body .contents .fragment > .ttc {
+.contents .fragment > .ttc {
     display: none;
     position: absolute;
 }
 
-body .contents .memberdecls {
-    margin-bottom: 2rem;
+.contents .memberdecls {
     margin-top: 2rem;
 }
 
-body .contents .memberdecls .groupHeader {
+.contents .memberdecls [class^=separator] + tr > td > .groupHeader  {
+    margin-top: 2rem;
+}
+
+.contents .memberdecls .groupHeader {
     font-weight: bold;
     margin-bottom: 0.5rem;
 }
 
-body .contents .memberdecls .groupText {
+.contents .memberdecls .groupText {
     border-left: 0.25rem solid var(--ahf-grey-background);
     padding-left: 1rem;
 }
 
-body .contents .memberdecls > tbody > :not(.heading) {
+.contents .memberdecls .groupText > :last-child {
+    margin-bottom: 0.5rem;
+}
+
+.contents .memberdecls > tbody > :not(.heading) {
     font-size: 0.9em;
 }
 
-body .contents .memberdecls > tbody > tr > td.memItemLeft,
-body .contents .memberdecls > tbody > tr > td.memItemRight {
+.contents .memberdecls > tbody > tr > td.memItemLeft,
+.contents .memberdecls > tbody > tr > td.memItemRight {
     font-weight: normal;
     white-space: nowrap;
 }
 
-body .contents .memberdecls > tbody > tr > td.memItemLeft {
+.contents .memberdecls > tbody > tr > td.memItemLeft {
     padding-right: 0.5em;
 }
 
-body .contents .memberdecls > tbody > tr > td.memSeparator {
+.contents .memberdecls > tbody > tr > td.memSeparator {
     font-size: 0;
     height: 0.25rem;
     line-height: 0;
 }
 
-body .contents .memberdecls > tbody > tr:last-child > td.memSeparator {
+.contents .memberdecls > tbody > tr:last-child > td.memSeparator {
     display: none;
 }
 
-body .contents .memtitle {
+.contents .memtitle {
     background-color: var(--ahf-grey-background);
     color: var(--ahf-grey-text);
     display: inline-block;
@@ -616,84 +627,84 @@ body .contents .memtitle {
     padding: 0.75rem 1.125rem 0.625rem 1.125rem;
 }
 
-body .contents .memtitle > span:first-child {
+.contents .memtitle > span:first-child {
     display: none;
 }
 
-body .contents .memitem {
+.contents .memitem {
     border: 0.125rem solid var(--ahf-grey-background);
     margin: 0 0 2rem 0;
     padding: 0;
 }
 
-body .contents .memitem table {
+.contents .memitem table {
     border-spacing: 0;
 }
 
-body .contents .memitem > .memproto {
+.contents .memitem > .memproto {
     font-family: "Source Code Pro", monospace;
     font-size: 1.125em;
     font-weight: bold;
     margin: 1rem;
 }
 
-body .contents .memitem > .memdoc {
+.contents .memitem > .memdoc {
     font-size: 0.9em;
     margin: 1rem;
 }
 
-body .contents .memitem > .memdoc > * {
+.contents .memitem > .memdoc > * {
     margin-bottom: 1rem;
 }
 
-body .contents .memitem > .memdoc > .fragment {
+.contents .memitem > .memdoc > .fragment {
     padding: 1rem;
 }
 
-body .contents .memitem > .memdoc > .params .paramname {
+.contents .memitem > .memdoc > .params .paramname {
     font-style: italic;
     font-weight: normal;
     padding-right: 1rem;
     vertical-align: top;
 }
 
-body .contents .textblock > * {
+.contents .textblock > * {
     margin-bottom: 1rem;
     margin-top: 1rem;
 }
 
-body .contents .textblock > h3 {
+.contents .textblock > h3 {
     margin-top: 2rem;
 }
 
-body .contents .textblock > h3:first-child {
+.contents .textblock > h3:first-child {
     margin-top: 0;
 }
 
-body .contents .textblock > .fragment {
+.contents .textblock > .fragment {
     padding: 1rem;
 }
 
-body .contents > .qindex > a {
+.contents > .qindex > a {
     font-size: 1.25em;
     margin: 0 1rem;
 }
 
-body .contents > .qindex > a:first-child {
+.contents > .qindex > a:first-child {
     margin-left: 0;
 }
 
-body .contents > .qindex > a:last-child {
+.contents > .qindex > a:last-child {
     margin-right: 0;
 }
 
-body .contents > #details,
-body .contents > #details + .groupheader {
+.contents > #details,
+.contents > #details + .groupheader {
     display: none;
 }
 
-body .contents > #details + .groupheader + p,
-body .contents > #details + .groupheader + .textblock > p:first-child {
+.contents > #details + .groupheader + p,
+.contents > #details + .groupheader + .textblock > p:first-child {
     font-size: 1.05em;
     font-weight: bold;
 }
@@ -722,8 +733,8 @@ body > address.footer img {
         white-space: nowrap;
     }
 
-    body .contents,
-    body .header {
+    .contents,
+    .header {
         margin: 0 auto;
         width: 64rem;
     }
