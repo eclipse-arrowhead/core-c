@@ -117,7 +117,7 @@ union ah_sockaddr {
 /**
  * The IPv4 loopback socket address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc5735#section-3
+ * @see https://rfc-editor.org/rfc/rfc5735#section-3
  */
 static const ah_sockaddr_ipv4_t ah_sockaddr_ipv4_loopback = {
     AH_I_SOCKADDR_PREAMBLE_IPV4 AH_SOCKFAMILY_IPV4, 0u, { { 127u, 0u, 0u, 1u } }, { 0u }
@@ -126,7 +126,7 @@ static const ah_sockaddr_ipv4_t ah_sockaddr_ipv4_loopback = {
 /**
  * The IPv4 wildcard (or @e "this") socket address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc5735#section-3
+ * @see https://rfc-editor.org/rfc/rfc5735#section-3
  */
 static const ah_sockaddr_ipv4_t ah_sockaddr_ipv4_wildcard = {
     AH_I_SOCKADDR_PREAMBLE_IPV4 AH_SOCKFAMILY_IPV4, 0u, { { 0u, 0u, 0u, 0u } }, { 0u }
@@ -135,7 +135,7 @@ static const ah_sockaddr_ipv4_t ah_sockaddr_ipv4_wildcard = {
 /**
  * The IPv6 loopback socket address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc4291#section-2.5.3
+ * @see https://rfc-editor.org/rfc/rfc4291#section-2.5.3
  */
 static const ah_sockaddr_ipv6_t ah_sockaddr_ipv6_loopback = {
     AH_I_SOCKADDR_PREAMBLE_IPV6 AH_SOCKFAMILY_IPV6, 0u, 0u,
@@ -145,7 +145,7 @@ static const ah_sockaddr_ipv6_t ah_sockaddr_ipv6_loopback = {
 /**
  * The IPv6 wildcard (or @e unspecified) socket address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc4291#section-2.5.2
+ * @see https://rfc-editor.org/rfc/rfc4291#section-2.5.2
  */
 static const ah_sockaddr_ipv6_t ah_sockaddr_ipv6_wildcard = {
     AH_I_SOCKADDR_PREAMBLE_IPV6 AH_SOCKFAMILY_IPV6, 0u, 0u,

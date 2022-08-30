@@ -127,7 +127,7 @@ ah_extern ah_err_t ah_utf8_from_codepoint(uint32_t codepoint, char* dst, size_t*
 
     if (codepoint <= 0xFFFF) {
         // These codepoints represent parts of surrogate pairs that may only be
-        // used in UTF-16. See https://www.rfc-editor.org/rfc/rfc3629#section-3.
+        // used in UTF-16. See https://rfc-editor.org/rfc/rfc3629#section-3.
         if (codepoint >= 0xD800 && codepoint <= 0xDFFF) {
             return AH_EINVAL;
         }

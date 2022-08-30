@@ -10,7 +10,7 @@
  * Here, data structures and functions are provided for representing, setting up
  * and communicating via HTTP/1 clients and servers. To learn more about the
  * HTTP/1 protocol itself, please refer to
- * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC9110</a>. Below, we
+ * <a href="https://rfc-editor.org/rfc/rfc9110.html">RFC9110</a>. Below, we
  * briefly describe how to use this C API.
  *
  * <h3>Clients</h3>
@@ -100,8 +100,8 @@
  *         handled automatically.
  * </table>
  *
- * @see https://www.rfc-editor.org/rfc/rfc9110.html
- * @see https://www.rfc-editor.org/rfc/rfc9112.html
+ * @see https://rfc-editor.org/rfc/rfc9110.html
+ * @see https://rfc-editor.org/rfc/rfc9112.html
  */
 
 #include "internal/_http.h"
@@ -282,7 +282,7 @@ struct ah_http_client_cbs {
      *          to you to determine that it both is valid and specifies
      *          something of relevance.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112.html
+     * @see https://rfc-editor.org/rfc/rfc9112.html
      */
     void (*on_recv_line)(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
 
@@ -327,7 +327,7 @@ struct ah_http_client_cbs {
      *          to you to determine that it both is valid and specifies
      *          something of relevance.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112.html
+     * @see https://rfc-editor.org/rfc/rfc9112.html
      */
     void (*on_recv_chunk_line)(ah_http_client_t* cln, size_t size, const char* ext);
 
@@ -527,7 +527,7 @@ struct ah_http_server_cbs {
  *
  * Its major and minor versions are only valid if they are in the range [0,9].
  *
- * @see https://www.rfc-editor.org/rfc/rfc9112#section-2.3
+ * @see https://rfc-editor.org/rfc/rfc9112#section-2.3
  */
 struct ah_http_ver {
     uint8_t major; /**< Major version indicator. Must be between 0 and 9. */
@@ -555,7 +555,7 @@ struct ah_http_header {
  *       user of this API should not access them directly. All private fields
  *       have names beginning with an underscore.
  *
- * @see https://www.rfc-editor.org/rfc/rfc9112#section-2
+ * @see https://rfc-editor.org/rfc/rfc9112#section-2
  */
 struct ah_http_head {
     /**
@@ -571,8 +571,8 @@ struct ah_http_head {
      * <code>"200 "</code>. The position of the HTTP version relative to this
      * field is handled automatically.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112#section-3
-     * @see https://www.rfc-editor.org/rfc/rfc9112#section-4
+     * @see https://rfc-editor.org/rfc/rfc9112#section-3
+     * @see https://rfc-editor.org/rfc/rfc9112#section-4
      */
     const char* line;
 
@@ -581,7 +581,7 @@ struct ah_http_head {
      *
      * @note Only HTTP versions 1.* are currently supported by this library.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112#section-2.3
+     * @see https://rfc-editor.org/rfc/rfc9112#section-2.3
      */
     ah_http_ver_t version;
 
@@ -589,7 +589,7 @@ struct ah_http_head {
      * Pointer to array of headers, terminated by a <code>{ NULL, NULL }</code>
      * header, or @c NULL.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112#section-5
+     * @see https://rfc-editor.org/rfc/rfc9112#section-5
      */
     ah_http_header_t* headers;
 
@@ -605,7 +605,7 @@ struct ah_http_head {
  *       user of this API should not access them directly. All private fields
  *       have names beginning with an underscore.
  *
- * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1
+ * @see https://rfc-editor.org/rfc/rfc9112#section-7.1
  */
 struct ah_http_chunk {
     /**
@@ -614,7 +614,7 @@ struct ah_http_chunk {
      * This field must be @c NULL, contain an empty NULL-terminated string, or
      * adhere to the @c chunk-ext syntax outlined in RFC9112.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1.1
+     * @see https://rfc-editor.org/rfc/rfc9112#section-7.1.1
      */
     const char* ext;
 
@@ -624,7 +624,7 @@ struct ah_http_chunk {
      * The size of the @c buf of this field will be used as @c chunk-size when
      * this chunk is sent.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1
+     * @see https://rfc-editor.org/rfc/rfc9112#section-7.1
      */
     ah_tcp_out_t data;
 
@@ -642,8 +642,8 @@ struct ah_http_chunk {
  *       user of this API should not access them directly. All private fields
  *       have names beginning with an underscore.
  *
- * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1
- * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1.2
+ * @see https://rfc-editor.org/rfc/rfc9112#section-7.1
+ * @see https://rfc-editor.org/rfc/rfc9112#section-7.1.2
  */
 struct ah_http_trailer {
     /**
@@ -652,7 +652,7 @@ struct ah_http_trailer {
      * This field must be @c NULL, contain an empty NULL-terminated string, or
      * adhere to the @c chunk-ext syntax outlined in RFC9112.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112#section-7.1.1
+     * @see https://rfc-editor.org/rfc/rfc9112#section-7.1.1
      */
     const char* ext;
 
@@ -660,7 +660,7 @@ struct ah_http_trailer {
      * Pointer to array of headers, terminated by a <code>{ NULL, NULL }</code>
      * header, or @c NULL.
      *
-     * @see https://www.rfc-editor.org/rfc/rfc9112#section-5
+     * @see https://rfc-editor.org/rfc/rfc9112#section-5
      */
     ah_http_header_t* headers;
 

@@ -213,7 +213,7 @@ static void s_on_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
                 switch (err) {
                 case AH_ENONE:
                     // The `chunked` transfer-encoding must be last if used.
-                    // See https://www.rfc-editor.org/rfc/rfc7230#section-3.3.3.
+                    // See https://rfc-editor.org/rfc/rfc7230#section-3.3.3.
                     if (rest[0u] != '\0') {
                         err = AH_EBADMSG;
                         goto report_err_and_close_conn;

@@ -14,8 +14,8 @@
  * This file provides structures, constants and functions useful for
  * representing and checking IP addresses.
  *
- * @see https://www.rfc-editor.org/rfc/rfc791
- * @see https://www.rfc-editor.org/rfc/rfc8200.html
+ * @see https://rfc-editor.org/rfc/rfc791
+ * @see https://rfc-editor.org/rfc/rfc8200.html
  */
 #include "defs.h"
 
@@ -50,7 +50,7 @@ struct ah_ipaddr_v6 {
 /**
  * The IPv4 loopback address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc5735#section-3
+ * @see https://rfc-editor.org/rfc/rfc5735#section-3
  */
 static const ah_ipaddr_v4_t ah_ipaddr_v4_loopback = {
     { 127u, 0u, 0u, 1u }
@@ -59,7 +59,7 @@ static const ah_ipaddr_v4_t ah_ipaddr_v4_loopback = {
 /**
  * The IPv4 wildcard (or @e "this") address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc5735#section-3
+ * @see https://rfc-editor.org/rfc/rfc5735#section-3
  */
 static const ah_ipaddr_v4_t ah_ipaddr_v4_wildcard = {
     { 0u, 0u, 0u, 0u },
@@ -68,7 +68,7 @@ static const ah_ipaddr_v4_t ah_ipaddr_v4_wildcard = {
 /**
  * The IPv6 loopback address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc4291#section-2.5.3
+ * @see https://rfc-editor.org/rfc/rfc4291#section-2.5.3
  */
 static const ah_ipaddr_v6_t ah_ipaddr_v6_loopback = {
     { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u },
@@ -77,7 +77,7 @@ static const ah_ipaddr_v6_t ah_ipaddr_v6_loopback = {
 /**
  * The IPv6 wildcard (or @e unspecified) address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc4291#section-2.5.2
+ * @see https://rfc-editor.org/rfc/rfc4291#section-2.5.2
  */
 static const ah_ipaddr_v6_t ah_ipaddr_v6_wildcard = {
     { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u },
@@ -89,7 +89,7 @@ static const ah_ipaddr_v6_t ah_ipaddr_v6_wildcard = {
  * @param addr Pointer to tested address.
  * @return @c true only if @a addr is the IPv4 loopback address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc5735#section-3
+ * @see https://rfc-editor.org/rfc/rfc5735#section-3
  */
 ah_extern bool ah_ipaddr_v4_is_loopback(const ah_ipaddr_v4_t* addr);
 
@@ -99,7 +99,7 @@ ah_extern bool ah_ipaddr_v4_is_loopback(const ah_ipaddr_v4_t* addr);
  * @param addr Pointer to tested address.
  * @return @c true only if @a addr is the IPv4 wildcard address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc5735#section-3
+ * @see https://rfc-editor.org/rfc/rfc5735#section-3
  */
 ah_extern bool ah_ipaddr_v4_is_wildcard(const ah_ipaddr_v4_t* addr);
 
@@ -109,7 +109,7 @@ ah_extern bool ah_ipaddr_v4_is_wildcard(const ah_ipaddr_v4_t* addr);
  * @param addr Pointer to tested address.
  * @return @c true only if @a addr is the IPv6 loopback address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc4291#section-2.5.3
+ * @see https://rfc-editor.org/rfc/rfc4291#section-2.5.3
  */
 ah_extern bool ah_ipaddr_v6_is_loopback(const ah_ipaddr_v6_t* addr);
 
@@ -120,7 +120,7 @@ ah_extern bool ah_ipaddr_v6_is_loopback(const ah_ipaddr_v6_t* addr);
  * @param addr Pointer to tested address.
  * @return @c true only if @a addr is the IPv6 wildcard address.
  *
- * @see https://www.rfc-editor.org/rfc/rfc4291#section-2.5.2
+ * @see https://rfc-editor.org/rfc/rfc4291#section-2.5.2
  */
 ah_extern bool ah_ipaddr_v6_is_wildcard(const ah_ipaddr_v6_t* addr);
 
@@ -157,7 +157,7 @@ ah_extern ah_err_t ah_ipaddr_v4_stringify(const struct ah_ipaddr_v4* addr, char*
  *   <li>@ref AH_EOVERFLOW - If the representation would not fit in @a dest.
  * </ul>
  *
- * @see https://www.rfc-editor.org/rfc/rfc4291#section-2.2
+ * @see https://rfc-editor.org/rfc/rfc4291#section-2.2
  */
 ah_extern ah_err_t ah_ipaddr_v6_stringify(const struct ah_ipaddr_v6* addr, char* dest, size_t* dest_size);
 

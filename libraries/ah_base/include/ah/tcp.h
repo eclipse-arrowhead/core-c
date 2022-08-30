@@ -127,8 +127,10 @@ struct ah_tcp_conn_cbs {
      * @a conn has been opened, or the attempt failed.
      *
      * @param conn Pointer to connection.
-     * @param err One of the following codes: <ul>
-     *   <li>@ref AH_ENONE                          - Connection opened successfully.
+     * @param err  @ref AH_ENONE if a connection was opened successfully. What
+     *             other error codes are possible depend on the used TCP
+     *             transport. The following codes may be provided if the default
+     *             transport is used, directly or indirectly: <ul>
      *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open connection.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
@@ -156,8 +158,10 @@ struct ah_tcp_conn_cbs {
      * to establish it has failed.
      *
      * @param conn Pointer to connection.
-     * @param err One of the following codes: <ul>
-     *   <li>@ref AH_ENONE                             - Connection established successfully.
+     * @param err  @ref AH_ENONE if a connection was established successfully.
+     *             What other error codes are possible depend on the used TCP
+     *             transport. The following codes may be provided if the default
+     *             transport is used, directly or indirectly: <ul>
      *   <li>@ref AH_EADDRINUSE [Darwin, Linux, Win32] - Failed to bind a concrete local address.
      *                                                   This error only occurs if the connection
      *                                                   was opened with the wildcard address,
@@ -217,8 +221,10 @@ struct ah_tcp_conn_cbs {
      * @param conn Pointer to connection.
      * @param in   Pointer to input data representation, or @c NULL if @a err
      *             is not @ref AH_ENONE.
-     * @param err  One of the following codes: <ul>
-     *   <li>@ref AH_ENONE                      - Data received successfully.
+     * @param err  @ref AH_ENONE if a data was received successfully. What other
+     *             error codes are possible depend on the used TCP transport.
+     *             The following codes may be provided if the default transport
+     *             is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                  - Connection event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Win32]       - Virtual circuit terminated due to time-out or
      *                                            other failure.
@@ -257,11 +263,13 @@ struct ah_tcp_conn_cbs {
      * @param conn Pointer to connection.
      * @param out  Pointer to output buffer provided to ah_tcp_conn_write(), or
      *             @c NULL if @a err is not @ref AH_ENONE.
-     * @param err  One of the following codes: <ul>
-     *   <li>@ref AH_ENONE                             - Data sent successfully.
+     * @param err  @ref AH_ENONE if the data was sent successfully. What other
+     *             error codes are possible depend on the used TCP transport.
+     *             The following codes may be provided if the default transport
+     *             is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                         - Connection event loop is shutting down.
-     *   <li>@ref AH_ECONNABORTED [Win32]              - Virtual circuit terminated due to
-     *                                                     time-out or other failure.
+     *   <li>@ref AH_ECONNABORTED [Win32]              - Virtual circuit terminated due to time-out
+     *                                                   or other failure.
      *   <li>@ref AH_ECONNRESET [Darwin, Linux, Win32] - Connection reset by remote host.
      *   <li>@ref AH_EEOF                              - Connection closed for writing.
      *   <li>@ref AH_ENETDOWN [Darwin]                 - Local network not online.
@@ -312,8 +320,10 @@ struct ah_tcp_listener_cbs {
      * @a ln has been opened, or the attempt failed.
      *
      * @param ln  Pointer to listener.
-     * @param err One of the following codes: <ul>
-     *   <li>@ref AH_ENONE                          - Listener opened successfully.
+     * @param err  @ref AH_ENONE if @a ln was opened successfully. What other
+     *             error codes are possible depend on the used TCP transport.
+     *             The following codes may be provided if the default transport
+     *             is used, directly or indirectly: <ul>
      *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open listener.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
@@ -334,8 +344,10 @@ struct ah_tcp_listener_cbs {
      * failed.
      *
      * @param ln  Pointer to listener.
-     * @param err One of the following codes: <ul>
-     *   <li>@ref AH_ENONE                     - Listener started to listen successfully.
+     * @param err  @ref AH_ENONE if @a ln started to listen successfully. What
+     *             other error codes are possible depend on the used TCP
+     *             transport. The following codes may be provided if the default
+     *             transport is used, directly or indirectly: <ul>
      *   <li>@ref AH_EACCES [Darwin]           - Not permitted to listen.
      *   <li>@ref AH_EADDRINUSE [Linux, Win32] - No ephemeral TCP port is available. This error
      *                                           can only occur if the listener was opened with
@@ -362,8 +374,10 @@ struct ah_tcp_listener_cbs {
      *              @ref AH_ENONE.
      * @param raddr Pointer to address of @a conn, or @c NULL if @a err is not
      *              @ref AH_ENONE.
-     * @param err  One of the following codes: <ul>
-     *   <li>@ref AH_ENONE                         - Connection accepted successfully.
+     * @param err  @ref AH_ENONE if @a ln accepted connection successfully. What
+     *             other error codes are possible depend on the used TCP
+     *             transport. The following codes may be provided if the default
+     *             transport is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                     - Listener event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Darwin, Linux]  - Connection aborted before finalization.
      *   <li>@ref AH_ECONNRESET [Win32]            - Connection aborted before finalization.
@@ -573,10 +587,10 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
  *   <li>@ref AH_EOVERFLOW        - @c AH_PSIZE is too small for it to be possible to store both
- *                                    required metadata @e and read data in a single page provided
- *                                    by the page allocator (see ah_palloc()).
+ *                                  required metadata @e and read data in a single page provided
+ *                                  by the page allocator (see ah_palloc()).
  *   <li>@ref AH_ESTATE           - @a conn is not connected or its read direction has been shut
- *                                    down.
+ *                                  down.
  * </ul>
  *
  * @warning This function must be called with a successfully connected

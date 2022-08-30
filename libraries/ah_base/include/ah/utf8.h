@@ -9,7 +9,7 @@
  *
  * This file provides functions for dealing with the UTF-8 character encoding.
  *
- * @see https://www.rfc-editor.org/rfc/rfc3629
+ * @see https://rfc-editor.org/rfc/rfc3629
  */
 
 #include "defs.h"
@@ -54,7 +54,7 @@ ah_extern bool ah_utf8_validate(const char* src, size_t size);
  * @note As per RFC3629, no UTF-8 sequence will ever be longer than 4 bytes,
  *       even though sequences of up to 6 bytes are theoretically possible.
  *
- * @see https://www.rfc-editor.org/rfc/rfc3629
+ * @see https://rfc-editor.org/rfc/rfc3629
  */
 ah_extern ah_err_t ah_utf8_from_codepoint(uint32_t codepoint, char* dst, size_t* dst_length);
 

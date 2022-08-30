@@ -39,7 +39,7 @@
 /**
  * UDP/IPv4 multicast group.
  *
- * @see @see https://www.rfc-editor.org/rfc/rfc1112.html
+ * @see https://rfc-editor.org/rfc/rfc1112.html
  */
 struct ah_udp_group_ipv4 {
     /**
