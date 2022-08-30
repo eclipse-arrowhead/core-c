@@ -14,7 +14,7 @@ ah_err_t ah_i_udp_sock_close(void* ctx, ah_udp_sock_t* sock);
 
 ah_extern ah_udp_trans_t ah_udp_trans_get_default(void)
 {
-    static const ah_udp_vtab_t s_vtab = {
+    static const ah_udp_trans_vtab_t s_vtab = {
         .sock_open = ah_i_udp_sock_open,
         .sock_recv_start = ah_i_udp_sock_recv_start,
         .sock_recv_stop = ah_i_udp_sock_recv_stop,
@@ -28,7 +28,7 @@ ah_extern ah_udp_trans_t ah_udp_trans_get_default(void)
     };
 }
 
-ah_extern bool ah_udp_vtab_is_valid(const ah_udp_vtab_t* vtab)
+ah_extern bool ah_udp_trans_vtab_is_valid(const ah_udp_trans_vtab_t* vtab)
 {
     if (vtab == NULL) {
         return false;
@@ -47,7 +47,7 @@ ah_extern bool ah_udp_vtab_is_valid(const ah_udp_vtab_t* vtab)
 
 ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, const ah_udp_sock_cbs_t* cbs)
 {
-    if (sock == NULL || loop == NULL || !ah_udp_vtab_is_valid(trans.vtab) || cbs == NULL) {
+    if (sock == NULL || loop == NULL || !ah_udp_trans_vtab_is_valid(trans.vtab) || cbs == NULL) {
         return AH_EINVAL;
     }
     if (cbs->on_open == NULL || cbs->on_recv == NULL || cbs->on_send == NULL || cbs->on_close == NULL) {

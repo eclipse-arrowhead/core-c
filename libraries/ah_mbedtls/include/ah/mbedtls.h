@@ -108,7 +108,7 @@ struct ah_mbedtls_server {
  *                        Core C error code. Use the ah_mbedtls_client_get_last_err() function with
  *                        @a client as argument to get a copy of the MbedTLS error.
  *   <li>@ref AH_EINVAL - @a client, @a ssl_conf or @a on_handshake_done_cb is @c NULL.
- *   <li>@ref AH_EINVAL - @a trans is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @a trans is invalid, as reported by ah_tcp_trans_vtab_is_valid().
  *   <li>@ref AH_ENOMEM - Failed to allocate heap memory.
  * </ul>
  */
@@ -166,7 +166,7 @@ ah_extern mbedtls_ssl_context* ah_mbedtls_conn_get_ssl_context(ah_tcp_conn_t* co
  *                           metadata @e and connected clients data in a single page provided by the
  *                           page allocator (see ah_palloc()).
  *   <li>@ref AH_EINVAL    - @a server, @a ssl_conf or @a on_handshake_done_cb is @c NULL.
- *   <li>@ref AH_EINVAL    - @a trans is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL    - @a trans is invalid, as reported by ah_tcp_trans_vtab_is_valid().
  *   <li>@ref AH_ENOMEM    - Failed to allocate heap memory.
  * </ul>
  */

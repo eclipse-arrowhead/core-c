@@ -5,7 +5,7 @@
 
 #include "ah/mbedtls.h"
 
-extern const ah_tcp_vtab_t ah_i_mbedtls_tcp_vtab;
+extern const ah_tcp_trans_vtab_t ah_i_mbedtls_tcp_vtab;
 
 ah_err_t ah_i_mbedtls_res_to_err(struct ah_i_mbedtls_errs* errs, int res);
 

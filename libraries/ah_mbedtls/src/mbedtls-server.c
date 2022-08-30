@@ -25,7 +25,7 @@ static const ah_tcp_listener_cbs_t s_listener_cbs = {
 
 ah_extern ah_err_t ah_mbedtls_server_init(ah_mbedtls_server_t* server, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf, ah_mbedtls_on_handshake_done_cb on_handshake_done_cb)
 {
-    if (server == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || ssl_conf == NULL || on_handshake_done_cb == NULL) {
+    if (server == NULL || !ah_tcp_trans_vtab_is_valid(trans.vtab) || ssl_conf == NULL || on_handshake_done_cb == NULL) {
         return AH_EINVAL;
     }
 

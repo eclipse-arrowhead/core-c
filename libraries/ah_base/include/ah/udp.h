@@ -104,14 +104,14 @@ union ah_udp_group {
  */
 struct ah_udp_trans {
     /** Virtual function table used to interact with transport medium. */
-    const ah_udp_vtab_t* vtab;
+    const ah_udp_trans_vtab_t* vtab;
 
     /** Pointer to whatever context is needed by the transport. */
     void* ctx;
 };
 
 /**
- * Virtual function table for UDP-based transports.
+ * UDP-based transport virtual function table.
  *
  * A set of function pointers representing the UDP functions that must be
  * implemented by every valid transport (see ah_udp_trans). The functions must
@@ -123,7 +123,7 @@ struct ah_udp_trans {
  * @note This structure is primarily useful to those wishing to implement their
  *       own UDP transports.
  */
-struct ah_udp_vtab {
+struct ah_udp_trans_vtab {
     ah_err_t (*sock_open)(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
     ah_err_t (*sock_recv_start)(void* ctx, ah_udp_sock_t* sock);
     ah_err_t (*sock_recv_stop)(void* ctx, ah_udp_sock_t* sock);
@@ -298,7 +298,7 @@ struct ah_udp_sock_cbs {
 /**
  * @name UDP Transport
  *
- * Operations on ah_udp_trans instances.
+ * Operations on ah_udp_trans and related type instances.
  *
  * @{
  */
@@ -310,26 +310,19 @@ struct ah_udp_sock_cbs {
  * current platform. This transport may be used directly with
  * ah_udp_sock_init() to send plain UDP datagrams, which is to say that they
  * are not encrypted or analyzed in any way.
+ *
+ * @return Copy of default UDP transport.
  */
 ah_extern ah_udp_trans_t ah_udp_trans_get_default(void);
-
-/** @} */
-
-/**
- * @name UDP Virtual Function Table
- *
- * Operations on ah_udp_vtab instances.
- *
- * @{
- */
 
 /**
  * Checks if all mandatory fields of @a vtab are set.
  *
  * @param vtab Pointer to virtual function table.
- * @return @c true only if @a vtab is valid. @c false otherwise.
+ * @return @c true only if @a vtab is not @c NULL and is valid. @c false
+ *         otherwise.
  */
-ah_extern bool ah_udp_vtab_is_valid(const ah_udp_vtab_t* vtab);
+ah_extern bool ah_udp_trans_vtab_is_valid(const ah_udp_trans_vtab_t* vtab);
 
 /** @} */
 
@@ -355,7 +348,7 @@ ah_extern bool ah_udp_vtab_is_valid(const ah_udp_vtab_t* vtab);
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - @a sock successfully initialized.
  *   <li>@ref AH_EINVAL - @a sock or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_udp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_udp_trans_vtab_is_valid().
  *   <li>@ref AH_EINVAL - @c on_open, @c on_recv, @c on_send or @c on_close of @a cbs is @c NULL.
  * </ul>
  */

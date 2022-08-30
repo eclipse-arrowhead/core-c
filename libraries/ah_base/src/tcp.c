@@ -21,7 +21,7 @@ ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln);
 
 ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void)
 {
-    static const ah_tcp_vtab_t s_vtab = {
+    static const ah_tcp_trans_vtab_t s_vtab = {
         .conn_open = ah_i_tcp_conn_open,
         .conn_connect = ah_i_tcp_conn_connect,
         .conn_read_start = ah_i_tcp_conn_read_start,
@@ -41,7 +41,7 @@ ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void)
     };
 }
 
-ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab)
+ah_extern bool ah_tcp_trans_vtab_is_valid(const ah_tcp_trans_vtab_t* vtab)
 {
     if (vtab == NULL) {
         return false;
@@ -63,7 +63,7 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab)
 
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs)
 {
-    if (conn == NULL || loop == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || cbs == NULL) {
+    if (conn == NULL || loop == NULL || !ah_tcp_trans_vtab_is_valid(trans.vtab) || cbs == NULL) {
         return AH_EINVAL;
     }
     if (cbs->on_open == NULL || cbs->on_connect == NULL || cbs->on_read == NULL || cbs->on_write == NULL || cbs->on_close == NULL) {
@@ -353,7 +353,7 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out)
 
 ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs)
 {
-    if (ln == NULL || loop == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || cbs == NULL) {
+    if (ln == NULL || loop == NULL || !ah_tcp_trans_vtab_is_valid(trans.vtab) || cbs == NULL) {
         return AH_EINVAL;
     }
     if (cbs->on_open == NULL || cbs->on_listen == NULL || cbs->on_accept == NULL || cbs->on_close == NULL) {

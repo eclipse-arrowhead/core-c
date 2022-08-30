@@ -9,7 +9,7 @@
 #include <ah/err.h>
 #include <mbedtls/error.h>
 
-const ah_tcp_vtab_t ah_i_mbedtls_tcp_vtab = {
+const ah_tcp_trans_vtab_t ah_i_mbedtls_tcp_vtab = {
     .conn_open = ah_i_mbedtls_client_open,
     .conn_connect = ah_i_mbedtls_client_connect,
     .conn_read_start = ah_i_mbedtls_client_read_start,

@@ -70,14 +70,14 @@
  */
 struct ah_tcp_trans {
     /** Virtual function table used to interact with transport medium. */
-    const ah_tcp_vtab_t* vtab;
+    const ah_tcp_trans_vtab_t* vtab;
 
     /** Pointer to whatever context is needed by the transport. */
     void* ctx;
 };
 
 /**
- * Virtual function table for TCP-based transports.
+ * TCP-based transport virtual function table.
  *
  * A set of function pointers representing the TCP functions that must be
  * implemented by every valid transport (see ah_tcp_trans). The functions must
@@ -89,7 +89,7 @@ struct ah_tcp_trans {
  * @note This structure is primarily useful to those wishing to implement their
  *       own TCP transports.
  */
-struct ah_tcp_vtab {
+struct ah_tcp_trans_vtab {
     ah_err_t (*conn_open)(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
     ah_err_t (*conn_connect)(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
     ah_err_t (*conn_read_start)(void* ctx, ah_tcp_conn_t* conn);
@@ -443,7 +443,7 @@ struct ah_tcp_out {
 /**
  * @name TCP Transport
  *
- * Operations on ah_tcp_trans instances.
+ * Operations on ah_tcp_trans and related type instances.
  *
  * @{
  */
@@ -456,26 +456,19 @@ struct ah_tcp_out {
  * ah_tcp_conn_init() and ah_tcp_listener_init() to establish plain TCP
  * connections, which is to say that they are not encrypted or analyzed in any
  * way.
+ *
+ * @return Copy of default TCP transport.
  */
 ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
-
-/** @} */
-
-/**
- * @name TCP Virtual Function Table
- *
- * Operations on ah_tcp_vtab instances.
- *
- * @{
- */
 
 /**
  * Checks if all mandatory fields of @a vtab are set.
  *
  * @param vtab Pointer to virtual function table.
- * @return @c true only if @a vtab is valid. @c false otherwise.
+ * @return @c true only if @a vtab is not @c NULL and is valid. @c false
+ *         otherwise.
  */
-ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
+ah_extern bool ah_tcp_trans_vtab_is_valid(const ah_tcp_trans_vtab_t* vtab);
 
 /** @} */
 
@@ -501,7 +494,7 @@ ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab);
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - @a conn successfully initialized.
  *   <li>@ref AH_EINVAL - @a conn or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
  *   <li>@ref AH_EINVAL - @c on_open, @c on_connect, @c on_read, @c on_write or @c on_close of
  *                        @a cbs is @c NULL.
  * </ul>
@@ -1068,7 +1061,7 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a ln successfully initialized.
  *   <li>@ref AH_EINVAL    - @a ln or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_vtab_is_valid().
+ *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
  *   <li>@ref AH_EINVAL    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
  *                           @c NULL.
  *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.

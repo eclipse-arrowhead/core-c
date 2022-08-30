@@ -158,7 +158,7 @@ typedef struct ah_tcp_listener ah_tcp_listener_t;
 typedef struct ah_tcp_listener_cbs ah_tcp_listener_cbs_t;
 typedef struct ah_tcp_out ah_tcp_out_t;
 typedef struct ah_tcp_trans ah_tcp_trans_t;
-typedef struct ah_tcp_vtab ah_tcp_vtab_t;
+typedef struct ah_tcp_trans_vtab ah_tcp_trans_vtab_t;
 typedef struct ah_time ah_time_t;
 typedef struct ah_udp_group_ipv4 ah_udp_group_ipv4_t;
 typedef struct ah_udp_group_ipv6 ah_udp_group_ipv6_t;
@@ -167,7 +167,7 @@ typedef struct ah_udp_out ah_udp_out_t;
 typedef struct ah_udp_sock ah_udp_sock_t;
 typedef struct ah_udp_sock_cbs ah_udp_sock_cbs_t;
 typedef struct ah_udp_trans ah_udp_trans_t;
-typedef struct ah_udp_vtab ah_udp_vtab_t;
+typedef struct ah_udp_trans_vtab ah_udp_trans_vtab_t;
 
 typedef union ah_sockaddr ah_sockaddr_t;
 typedef union ah_udp_group ah_udp_group_t;
