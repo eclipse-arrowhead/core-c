@@ -1,6 +1,6 @@
 /** @dir
 
-Arrowhead Core MbedTLS TLS integration.
+Arrowhead Core MbedTLS integration.
 
 Transport Layer Security (TLS) is an important suite of standards used to form
 secure connections over untrusted media. It makes up part of what could be

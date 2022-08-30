@@ -562,17 +562,17 @@ int ah_i_mbedtls_client_write_ciphertext(void* conn_, const unsigned char* buf, 
 
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
     if (client == NULL) {
-        err = AH_ESTATE;
+        err = AH_EINTERN;
         goto handle_err;
     }
 
     if (conn == NULL || (buf == NULL && len != 0u)) {
-        err = AH_ESTATE;
+        err = AH_EINTERN;
         goto handle_err;
     }
 
     if (len > INT_MAX) {
-        err = AH_EOVERFLOW;
+        err = AH_EINTERN;
         goto handle_err;
     }
 
@@ -607,7 +607,10 @@ int ah_i_mbedtls_client_write_ciphertext(void* conn_, const unsigned char* buf, 
     case S_SEND_QUEUE_ENTRY_STATE_SENT: {
         ah_i_ring_skip(&client->_out_queue_ciphertext);
         size_t size = entry->_out.buf.size;
-        ah_assert_if_debug(size == (size_t) len);
+        if (size != (size_t) len) {
+            err = AH_EINTERN;
+            goto handle_err;
+        }
         return (int) size;
     }
 
@@ -617,7 +620,7 @@ int ah_i_mbedtls_client_write_ciphertext(void* conn_, const unsigned char* buf, 
     }
 
     if (client->_trans.vtab == NULL || client->_trans.vtab->conn_write == NULL) {
-        err = AH_ESTATE;
+        err = AH_EINTERN;
         goto handle_err;
     }
     err = client->_trans.vtab->conn_write(client->_trans.ctx, conn, &entry->_out);
@@ -642,12 +645,12 @@ int ah_i_mbedtls_client_read_ciphertext(void* conn_, unsigned char* buf, size_t 
 
     ah_mbedtls_client_t* client = ah_mbedtls_conn_get_client(conn);
     if (client == NULL) {
-        err = AH_ESTATE;
+        err = AH_EINTERN;
         goto handle_err;
     }
 
     if (conn == NULL || (buf == NULL && len != 0u)) {
-        err = AH_ESTATE;
+        err = AH_EINTERN;
         goto handle_err;
     }
 
