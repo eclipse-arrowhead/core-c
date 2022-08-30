@@ -487,9 +487,9 @@ ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
  *
  * @param sock Pointer to socket.
  * @return One of the following identifiers: <ul>
- *   <li><b>AH_SOCKFAMILY_IPV4</b> - IPv4 family identifier.
- *   <li><b>AH_SOCKFAMILY_IPV6</b> - IPv6 family identifier.
- *   <li><b>-1</b>                 - @a sock is @c NULL.
+ *   <li>@ref AH_SOCKFAMILY_IPV4 - IPv4 family identifier.
+ *   <li>@ref AH_SOCKFAMILY_IPV6 - IPv6 family identifier.
+ *   <li>@c -1                   - @a sock is @c NULL.
  * </ul>
  */
 ah_extern int ah_udp_sock_get_family(const ah_udp_sock_t* sock);
