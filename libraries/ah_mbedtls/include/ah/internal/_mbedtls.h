@@ -11,8 +11,9 @@
 #include <mbedtls/ssl_cache.h>
 
 #define AH_I_TLS_CLIENT_FIELDS                          \
+ ah_tcp_conn_t* _conn;                                  \
+ ah_tcp_conn_obs_t _conn_obs;                           \
  ah_tcp_trans_t _trans;                                 \
- const ah_tcp_conn_cbs_t* _conn_cbs;                    \
                                                         \
  ah_tcp_in_t* _in_ciphertext;                           \
  ah_tcp_in_t* _in_plaintext;                            \
@@ -30,9 +31,9 @@
  struct ah_mbedtls_client* _next_free;
 
 #define AH_I_TLS_SERVER_FIELDS                          \
+ ah_tcp_conn_obs_t _conn_obs;                           \
+ ah_tcp_listener_obs_t _ln_obs;                         \
  ah_tcp_trans_t _trans;                                 \
- const ah_tcp_conn_cbs_t* _conn_cbs;                    \
- const ah_tcp_listener_cbs_t* _ln_cbs;                  \
                                                         \
  struct ah_i_mbedtls_errs _errs;                        \
  ah_mbedtls_on_handshake_done_cb _on_handshake_done_cb; \

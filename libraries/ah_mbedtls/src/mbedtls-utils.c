@@ -10,17 +10,19 @@
 #include <mbedtls/error.h>
 
 const ah_tcp_trans_vtab_t ah_i_mbedtls_tcp_vtab = {
-    .conn_open = ah_i_mbedtls_client_open,
-    .conn_connect = ah_i_mbedtls_client_connect,
-    .conn_read_start = ah_i_mbedtls_client_read_start,
-    .conn_read_stop = ah_i_mbedtls_client_read_stop,
-    .conn_write = ah_i_mbedtls_client_write,
-    .conn_shutdown = ah_i_mbedtls_client_shutdown,
-    .conn_close = ah_i_mbedtls_client_close,
+    .conn_init = ah_i_mbedtls_conn_init,
+    .conn_open = ah_i_mbedtls_conn_open,
+    .conn_connect = ah_i_mbedtls_conn_connect,
+    .conn_read_start = ah_i_mbedtls_conn_read_start,
+    .conn_read_stop = ah_i_mbedtls_conn_read_stop,
+    .conn_write = ah_i_mbedtls_conn_write,
+    .conn_shutdown = ah_i_mbedtls_conn_shutdown,
+    .conn_close = ah_i_mbedtls_conn_close,
 
-    .listener_open = ah_i_tls_server_open,
-    .listener_listen = ah_i_tls_server_listen,
-    .listener_close = ah_i_tls_server_close,
+    .listener_init = ah_i_mbedtls_listener_init,
+    .listener_open = ah_i_mbedtls_listener_open,
+    .listener_listen = ah_i_mbedtls_listener_listen,
+    .listener_close = ah_i_mbedtls_listener_close,
 };
 
 ah_err_t ah_i_mbedtls_res_to_err(struct ah_i_mbedtls_errs* errs, int res)

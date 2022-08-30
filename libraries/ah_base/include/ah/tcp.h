@@ -90,6 +90,7 @@ struct ah_tcp_trans {
  *       own TCP transports.
  */
 struct ah_tcp_trans_vtab {
+    ah_err_t (*conn_init)(void* ctx, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t obs);
     ah_err_t (*conn_open)(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
     ah_err_t (*conn_connect)(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
     ah_err_t (*conn_read_start)(void* ctx, ah_tcp_conn_t* conn);
@@ -98,9 +99,24 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*conn_shutdown)(void* ctx, ah_tcp_conn_t* conn, uint8_t flags);
     ah_err_t (*conn_close)(void* ctx, ah_tcp_conn_t* conn);
 
+    ah_err_t (*listener_init)(void* ctx, ah_tcp_listener_t* ln, ah_tcp_listener_obs_t obs);
     ah_err_t (*listener_open)(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
-    ah_err_t (*listener_listen)(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
+    ah_err_t (*listener_listen)(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, ah_tcp_conn_obs_t conn_obs);
     ah_err_t (*listener_close)(void* ctx, ah_tcp_listener_t* ln);
+};
+
+/**
+ * TCP connection observer.
+ *
+ * Specifies what functions are to receive events about some ah_tcp_conn
+ * instance and what user pointer to provide to those functions.
+ */
+struct ah_tcp_conn_obs {
+    /** Set of connection event callbacks. */
+    const ah_tcp_conn_cbs_t* cbs;
+
+    /** Arbitrary pointer provided every time an event callback is fired. */
+    void* ctx;
 };
 
 /**
@@ -151,7 +167,7 @@ struct ah_tcp_conn_cbs {
      * @note Every successfully opened @a conn must eventually be provided to
      *       ah_tcp_conn_close().
      */
-    void (*on_open)(ah_tcp_conn_t* conn, ah_err_t err);
+    void (*on_open)(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
 
     /**
      * @a conn has been established to a specified remote host, or the attempt
@@ -196,7 +212,7 @@ struct ah_tcp_conn_cbs {
      *       means it may be set to @c NULL when this data structure is used
      *       with ah_tcp_listener_listen().
      */
-    void (*on_connect)(ah_tcp_conn_t* conn, ah_err_t err);
+    void (*on_connect)(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
 
     /**
      * @a conn has received data from its associated remote host.
@@ -248,7 +264,7 @@ struct ah_tcp_conn_cbs {
      *   <li>@ref AH_ETIMEDOUT                  - Connection timed out.
      * </ul>
      */
-    void (*on_read)(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
+    void (*on_read)(void* ctx, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
 
     /**
      * @a conn has sent data to its associated remote host.
@@ -282,7 +298,7 @@ struct ah_tcp_conn_cbs {
      *   <li>@ref AH_ETIMEDOUT                         - Connection timed out.
      * </ul>
      */
-    void (*on_write)(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
+    void (*on_write)(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
 
     /**
      * @a conn has been closed.
@@ -295,7 +311,21 @@ struct ah_tcp_conn_cbs {
      *       ah_tcp_conn_close(), which makes it an excellent place to release
      *       any resources associated with @a conn.
      */
-    void (*on_close)(ah_tcp_conn_t* conn, ah_err_t err);
+    void (*on_close)(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
+};
+
+/**
+ * TCP listener observer.
+ *
+ * Specifies what functions are to receive events about some ah_tcp_listener
+ * instance and what user pointer to provide to those functions.
+ */
+struct ah_tcp_listener_obs {
+    /** Set of listener event callbacks. */
+    const ah_tcp_listener_cbs_t* cbs;
+
+    /** Arbitrary pointer provided every time an event callback is fired. */
+    void* ctx;
 };
 
 /**
@@ -337,7 +367,7 @@ struct ah_tcp_listener_cbs {
      *   <li>@ref AH_ENOMEM [Darwin, Linux]         - Not enough heap memory available.
      * </ul>
      */
-    void (*on_open)(ah_tcp_listener_t* ln, ah_err_t err);
+    void (*on_open)(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 
     /**
      * @a ln has started to listen for incoming connections, or the attempt
@@ -359,7 +389,7 @@ struct ah_tcp_listener_cbs {
      *   <li>@ref AH_ENOBUFS [Win32]           - Not enough buffer space available.
      * </ul>
      */
-    void (*on_listen)(ah_tcp_listener_t* ln, ah_err_t err);
+    void (*on_listen)(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 
     /**
      * @a ln has accepted the connection @a conn.
@@ -395,7 +425,7 @@ struct ah_tcp_listener_cbs {
      * @note Data receiving is disabled for accepted connections by default. It
      *       must be explicitly enabled via a call to ah_tcp_conn_read_start().
      */
-    void (*on_accept)(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
+    void (*on_accept)(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
     /**
      * @a ln has been closed.
@@ -409,7 +439,7 @@ struct ah_tcp_listener_cbs {
      *       release any resources associated with @a ln. You may, for example,
      *       elect to call ah_tcp_listener_term() in this callback.
      */
-    void (*on_close)(ah_tcp_listener_t* ln, ah_err_t err);
+    void (*on_close)(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 };
 
 /**
@@ -464,11 +494,11 @@ ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
 /**
  * Checks if all mandatory fields of @a vtab are set.
  *
- * @param vtab Pointer to virtual function table.
+ * @param trans Pointer to virtual function table.
  * @return @c true only if @a vtab is not @c NULL and is valid. @c false
  *         otherwise.
  */
-ah_extern bool ah_tcp_trans_vtab_is_valid(const ah_tcp_trans_vtab_t* vtab);
+ah_extern bool ah_tcp_trans_is_valid(const ah_tcp_trans_t* trans);
 
 /** @} */
 
@@ -490,16 +520,16 @@ ah_extern bool ah_tcp_trans_vtab_is_valid(const ah_tcp_trans_vtab_t* vtab);
  * @param conn  Pointer to connection.
  * @param loop  Pointer to event loop.
  * @param trans Desired transport.
- * @param cbs   Pointer to event callback set.
+ * @param obs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - @a conn successfully initialized.
  *   <li>@ref AH_EINVAL - @a conn or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_is_valid().
  *   <li>@ref AH_EINVAL - @c on_open, @c on_connect, @c on_read, @c on_write or @c on_close of
  *                        @a cbs is @c NULL.
  * </ul>
  */
-ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs);
+ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs);
 
 /**
  * Schedules opening of @a conn, which must be initialized, and its binding to
@@ -886,6 +916,18 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 /** @} */
 
 /**
+ * @name TCP Connection Observer
+ *
+ * Operations on ah_tcp_conn_obs instances.
+ *
+ * @{
+ */
+
+ah_extern bool ah_tcp_conn_obs_is_valid(const ah_tcp_conn_obs_t* obs);
+
+/** @} */
+
+/**
  * @name TCP Input Buffer
  *
  * Operations on ah_tcp_in instances.
@@ -1057,11 +1099,11 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
  * @param ln    Pointer to listener.
  * @param loop  Pointer to event loop.
  * @param trans Desired transport.
- * @param cbs   Pointer to event callback set.
+ * @param obs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a ln successfully initialized.
  *   <li>@ref AH_EINVAL    - @a ln or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
+ *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_is_valid().
  *   <li>@ref AH_EINVAL    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
  *                           @c NULL.
  *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.
@@ -1073,7 +1115,7 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
  * @note Every successfully initialized @a ln must eventually be provided to
  *       ah_tcp_listener_term().
  */
-ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs);
+ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_listener_obs_t obs);
 
 /**
  * Schedules opening of @a ln, which must be initialized, and its binding to the
@@ -1121,7 +1163,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  *                 connections wait to get accepted. If @c 0, a platform
  *                 default will be chosen. If larger than some arbitrary
  *                 platform maximum, it will be set to that maximum.
- * @param conn_cbs Pointer to event callback set to provide to all accepted
+ * @param conn_obs Pointer to event callback set to provide to all accepted
  *                 connections.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a ln listening successfully scheduled.
@@ -1138,7 +1180,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  *          an ah_tcp_listener_cbs::on_open callback after a check that opening
  *          was successful.
  */
-ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
+ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, ah_tcp_conn_obs_t conn_obs);
 
 /**
  * Schedules closing of @a ln.
@@ -1309,6 +1351,16 @@ ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_
  * @note If @a ln is @c NULL, this function does nothing.
  */
 ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data);
+
+/**
+ * @name TCP Listener Observer
+ *
+ * Operations on ah_tcp_listener_obs instances.
+ *
+ * @{
+ */
+
+ah_extern bool ah_tcp_listener_obs_is_valid(const ah_tcp_listener_obs_t* obs);
 
 /** @} */
 

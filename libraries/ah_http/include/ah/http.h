@@ -689,7 +689,7 @@ struct ah_http_trailer {
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - @a cln successfully initialized.
  *   <li>@ref AH_EINVAL - @a cln or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_is_valid().
  *   <li>@ref AH_EINVAL - @c on_open, @c on_connect, @c on_send, @c on_recv_line, @c on_recv_header,
  *                        @c on_recv_data, @c on_recv_end, or @c on_close of @a cbs is @c NULL.
  * </ul>
@@ -1060,7 +1060,7 @@ ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_da
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a srv successfully initialized.
  *   <li>@ref AH_EINVAL    - @a srv or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
+ *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_is_valid().
  *   <li>@ref AH_EINVAL    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
  *                           @c NULL.
  *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.

@@ -44,16 +44,16 @@ void test_tcp(ah_unit_res_t* res)
     s_should_read_and_write_data(res);
 }
 
-static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err);
-static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
-static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
-static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_conn_open(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_conn_connect(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
+static void s_on_conn_read(void* ctx, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
+static void s_on_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
+static void s_on_conn_close(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
 
-static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err);
-static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err);
-static void s_on_listener_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
-static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err);
+static void s_on_listener_open(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
+static void s_on_listener_listen(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
+static void s_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
+static void s_on_listener_close(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 
 static const ah_tcp_conn_cbs_t s_conn_cbs = {
     .on_open = s_on_conn_open,
@@ -70,8 +70,10 @@ static const ah_tcp_listener_cbs_t s_listener_cbs = {
     .on_close = s_on_listener_close,
 };
 
-static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err)
+static void s_on_conn_open(void* ctx, ah_tcp_conn_t* conn, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, user_data->res, err, AH_ENONE)) {
@@ -101,8 +103,10 @@ static void s_on_conn_open(ah_tcp_conn_t* conn, ah_err_t err)
     user_data->did_call_open_cb = true;
 }
 
-static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err)
+static void s_on_conn_connect(void* ctx, ah_tcp_conn_t* conn, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_res_t* res = user_data->res;
@@ -120,8 +124,10 @@ static void s_on_conn_connect(ah_tcp_conn_t* conn, ah_err_t err)
     user_data->did_call_connect_cb = true;
 }
 
-static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
+static void s_on_conn_close(void* ctx, ah_tcp_conn_t* conn, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_res_t* res = user_data->res;
@@ -151,8 +157,10 @@ static void s_on_conn_close(ah_tcp_conn_t* conn, ah_err_t err)
 # pragma warning(disable : 6011)
 #endif
 
-static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
+static void s_on_conn_read(void* ctx, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_res_t* res = user_data->res;
@@ -190,8 +198,10 @@ static void s_on_conn_read(ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 # pragma warning(default : 6011)
 #endif
 
-static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
+static void s_on_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
 
     ah_unit_res_t* res = user_data->res;
@@ -218,8 +228,10 @@ static void s_on_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err
     user_data->did_call_write_cb = true;
 }
 
-static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err)
+static void s_on_listener_open(void* ctx, ah_tcp_listener_t* ln, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, user_data->res, err, AH_ENONE)) {
@@ -232,7 +244,7 @@ static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err)
         return;
     }
 
-    err = ah_tcp_listener_listen(ln, 1, &s_conn_cbs);
+    err = ah_tcp_listener_listen(ln, 1, (ah_tcp_conn_obs_t) { &s_conn_cbs });
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, user_data->res, err, AH_ENONE)) {
         return;
     }
@@ -240,8 +252,10 @@ static void s_on_listener_open(ah_tcp_listener_t* ln, ah_err_t err)
     user_data->did_call_open_cb = true;
 }
 
-static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err)
+static void s_on_listener_listen(void* ctx, ah_tcp_listener_t* ln, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
     ah_unit_res_t* res = user_data->res;
 
@@ -265,8 +279,10 @@ static void s_on_listener_listen(ah_tcp_listener_t* ln, ah_err_t err)
     user_data->did_call_listen_cb = true;
 }
 
-static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err)
+static void s_on_listener_close(void* ctx, ah_tcp_listener_t* ln, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, user_data->res, err, AH_ENONE)) {
@@ -276,8 +292,10 @@ static void s_on_listener_close(ah_tcp_listener_t* ln, ah_err_t err)
     user_data->did_call_close_cb = true;
 }
 
-static void s_on_listener_accept(ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
 {
+    (void) ctx;
+
     struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
 
     ah_unit_res_t* res = user_data->res;
@@ -340,7 +358,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     // Setup listener.
 
     ah_tcp_listener_t ln;
-    err = ah_tcp_listener_init(&ln, &loop, ah_tcp_trans_get_default(), &s_listener_cbs);
+    err = ah_tcp_listener_init(&ln, &loop, ah_tcp_trans_get_default(), (ah_tcp_listener_obs_t) { &s_listener_cbs });
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }
@@ -351,7 +369,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     // Setup connection.
 
     ah_tcp_conn_t conn;
-    err = ah_tcp_conn_init(&conn, &loop, ah_tcp_trans_get_default(), &s_conn_cbs);
+    err = ah_tcp_conn_init(&conn, &loop, ah_tcp_trans_get_default(), (ah_tcp_conn_obs_t) { &s_conn_cbs });
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }

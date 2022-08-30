@@ -43,7 +43,7 @@ ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t*
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
     }
 
-    conn->_cbs->on_open(conn, err);
+    conn->_obs.cbs->on_open(conn->_obs.ctx, conn, err);
 
     return AH_ENONE;
 }
@@ -185,7 +185,7 @@ ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_socka
         ln->_state = AH_I_TCP_LISTENER_STATE_OPEN;
     }
 
-    ln->_cbs->on_open(ln, err);
+    ln->_obs.cbs->on_open(ln->_obs.ctx, ln, err);
 
     return AH_ENONE;
 }

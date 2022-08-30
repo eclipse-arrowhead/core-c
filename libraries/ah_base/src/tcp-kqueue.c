@@ -392,14 +392,14 @@ ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
+ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, ah_tcp_conn_obs_t conn_obs)
 {
     (void) ctx;
 
-    if (ln == NULL || conn_cbs == NULL) {
+    if (ln == NULL || conn_obs == NULL) {
         return AH_EINVAL;
     }
-    if (conn_cbs->on_read == NULL || conn_cbs->on_write == NULL || conn_cbs->on_close == NULL) {
+    if (conn_obs->on_read == NULL || conn_obs->on_write == NULL || conn_obs->on_close == NULL) {
         return AH_EINVAL;
     }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {
@@ -429,7 +429,7 @@ ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned bac
 
     EV_SET(kev, ln->_fd, EVFILT_READ, EV_ADD, 0u, 0, evt);
 
-    ln->_conn_cbs = conn_cbs;
+    ln->_conn_cbs = conn_obs;
     ln->_listen_evt = evt;
     ln->_state = AH_I_TCP_LISTENER_STATE_LISTENING;
     ln->_cbs->on_listen(ln, AH_ENONE);
