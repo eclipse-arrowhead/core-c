@@ -161,9 +161,7 @@ ah_err_t ah_i_mbedtls_client_open(void* client_, ah_tcp_conn_t* conn, const ah_s
 
     mbedtls_ssl_set_bio(&client->_ssl, conn, ah_i_mbedtls_client_write_ciphertext, ah_i_mbedtls_client_read_ciphertext, NULL);
 
-    if (client->_trans.vtab == NULL || client->_trans.vtab->conn_open == NULL) {
-        return AH_ESTATE;
-    }
+    ah_assert_if_debug(client->_trans.vtab != NULL && client->_trans.vtab->conn_open != NULL);
     return client->_trans.vtab->conn_open(client->_trans.ctx, conn, laddr);
 }
 
