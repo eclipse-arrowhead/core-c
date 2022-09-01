@@ -359,11 +359,11 @@ static void s_on_conn_close(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     s_conn_close(evt->_subject, -(cqe->res));
 }
 
-ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, ah_tcp_conn_obs_t conn_obs)
+ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
 {
     (void) ctx;
 
-    if (ln == NULL || !ah_tcp_conn_obs_is_valid(&conn_obs)) {
+    if (ln == NULL || !ah_tcp_conn_cbs_is_valid(conn_cbs)) {
         return AH_EINVAL;
     }
     if (ln->_state != AH_I_TCP_LISTENER_STATE_OPEN) {
@@ -395,7 +395,7 @@ ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned bac
     io_uring_prep_accept(sqe, ln->_fd, ah_i_sockaddr_into_bsd(&ln->_raddr), &ln->_raddr_len, 0);
     io_uring_sqe_set_data(sqe, evt);
 
-    ln->_conn_obs = conn_obs;
+    ln->_conn_cbs = conn_cbs;
     ln->_state = AH_I_TCP_LISTENER_STATE_LISTENING;
 
     ln->_obs.cbs->on_listen(ln->_obs.ctx, ln, AH_ENONE);
@@ -425,14 +425,16 @@ static void s_on_listener_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto handle_err;
     }
 
-    *conn = (ah_tcp_conn_t) {
-        ._loop = ln->_loop,
-        ._trans = ln->_trans,
-        ._obs = ln->_conn_obs,
-        ._owning_slab = &ln->_conn_slab,
-        ._state = AH_I_TCP_CONN_STATE_CONNECTED,
-        ._fd = cqe->res,
-    };
+    err = ln->_trans.vtab->conn_init(ln->_trans.ctx, conn, ln->_loop, (ah_tcp_trans_t) { 0u }, ln->_conn_cbs);
+    if (err != AH_ENONE) {
+        ah_i_slab_free(&ln->_conn_slab, conn);
+        goto handle_err;
+    }
+
+    conn->_owning_slab = &ln->_conn_slab;
+    conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
+    conn->_fd = cqe->res;
+    conn->_is_ipv6 = ln->_is_ipv6;
 
 handle_err:
     ln->_obs.cbs->on_accept(ln->_obs.ctx, ln, conn, &ln->_raddr, err);

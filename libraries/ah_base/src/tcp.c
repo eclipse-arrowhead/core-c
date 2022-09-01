@@ -7,7 +7,7 @@
 #include "ah/loop.h"
 #include "ah/sock.h"
 
-static ah_err_t ah_s_tcp_conn_init(void* ctx, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t obs);
+static ah_err_t ah_s_tcp_conn_init(void* ctx, ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs);
 
 ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
@@ -17,10 +17,10 @@ ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out);
 ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, uint8_t flags);
 ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn);
 
-static ah_err_t ah_s_tcp_listener_init(void* ctx, ah_tcp_listener_t* ln, ah_tcp_listener_obs_t obs);
+static ah_err_t ah_s_tcp_listener_init(void* ctx, ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_listener_obs_t obs);
 
 ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
-ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, ah_tcp_conn_obs_t conn_obs);
+ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
 ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln);
 
 ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void)
@@ -49,44 +49,68 @@ ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void)
 
 ah_extern bool ah_tcp_trans_is_valid(const ah_tcp_trans_t* trans)
 {
-    return trans != NULL
-        && trans->vtab != NULL
-        && trans->vtab->conn_open != NULL
-        && trans->vtab->conn_connect != NULL
-        && trans->vtab->conn_read_start != NULL
-        && trans->vtab->conn_read_stop != NULL
-        && trans->vtab->conn_write != NULL
-        && trans->vtab->conn_shutdown != NULL
-        && trans->vtab->conn_close != NULL
-        && trans->vtab->listener_open != NULL
-        && trans->vtab->listener_listen != NULL
-        && trans->vtab->listener_close != NULL;
+    if (trans == NULL) {
+        return false;
+    }
+
+    const ah_tcp_trans_vtab_t* vtab = trans->vtab;
+
+    return vtab != NULL
+        && vtab->conn_init != NULL
+        && vtab->conn_open != NULL
+        && vtab->conn_connect != NULL
+        && vtab->conn_read_start != NULL
+        && vtab->conn_read_stop != NULL
+        && vtab->conn_write != NULL
+        && vtab->conn_shutdown != NULL
+        && vtab->conn_close != NULL
+        && vtab->listener_init != NULL
+        && vtab->listener_open != NULL
+        && vtab->listener_listen != NULL
+        && vtab->listener_close != NULL;
 }
 
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs)
 {
-    if (conn == NULL || loop == NULL || !ah_tcp_trans_is_valid(&trans)) {
+    if (conn == NULL) {
         return AH_EINVAL;
     }
 
-    *conn = (ah_tcp_conn_t) {
-        ._loop = loop,
-        ._trans = trans,
-        ._state = AH_I_TCP_CONN_STATE_CLOSED,
-    };
+    (void) memset(conn, 0, sizeof(*conn));
 
-    return trans.vtab->conn_init(trans.ctx, conn, obs);
+    if (trans.vtab == NULL || trans.vtab->conn_init == NULL) {
+        return ah_s_tcp_conn_init(NULL, conn, loop, trans, obs);
+    }
+    else {
+        return trans.vtab->conn_init(trans.ctx, conn, loop, trans, obs);
+    }
 }
 
-static ah_err_t ah_s_tcp_conn_init(void* ctx, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t obs)
+static ah_err_t ah_s_tcp_conn_init(void* ctx, ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs)
 {
     (void) ctx;
 
-    if (conn == NULL || !ah_tcp_conn_obs_is_valid(&obs)) {
+    if (conn == NULL || loop == NULL) {
         return AH_EINVAL;
     }
 
+    if (trans.vtab != NULL) {
+        if (!ah_tcp_trans_is_valid(&trans)) {
+            return AH_EINVAL;
+        }
+    }
+    else {
+        trans = ah_tcp_trans_get_default();
+    }
+
+    if (!ah_tcp_conn_obs_is_valid(&obs)) {
+        return AH_EINVAL;
+    }
+
+    conn->_loop = loop;
+    conn->_trans = trans;
     conn->_obs = obs;
+    conn->_state = AH_I_TCP_CONN_STATE_CLOSED;
 
     return AH_ENONE;
 }
@@ -168,6 +192,20 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
     return conn->_trans.vtab->conn_close(conn->_trans.ctx, conn);
 }
 
+ah_extern ah_err_t ah_tcp_conn_term(ah_tcp_conn_t* conn)
+{
+    if (conn == NULL) {
+        return AH_EINVAL;
+    }
+    if (conn->_state != AH_I_TCP_CONN_STATE_CLOSED) {
+        return AH_ESTATE;
+    }
+
+    ah_assert_if_debug(conn->_trans.vtab != NULL && conn->_trans.vtab->conn_term != NULL);
+
+    return conn->_trans.vtab->conn_term(conn->_trans.ctx, conn);
+}
+
 ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn)
 {
     if (conn == NULL) {
@@ -235,15 +273,19 @@ ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
     }
 }
 
+ah_extern bool ah_tcp_conn_cbs_is_valid(const ah_tcp_conn_cbs_t* cbs)
+{
+    return cbs != NULL
+        && cbs->on_open != NULL
+        && cbs->on_connect != NULL
+        && cbs->on_read != NULL
+        && cbs->on_write != NULL
+        && cbs->on_close != NULL;
+}
+
 ah_extern bool ah_tcp_conn_obs_is_valid(const ah_tcp_conn_obs_t* obs)
 {
-    return obs != NULL
-        && obs->cbs != NULL
-        && obs->cbs->on_open != NULL
-        && obs->cbs->on_connect != NULL
-        && obs->cbs->on_read != NULL
-        && obs->cbs->on_write != NULL
-        && obs->cbs->on_close != NULL;
+    return obs != NULL && ah_tcp_conn_cbs_is_valid(obs->cbs);
 }
 
 ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
@@ -379,21 +421,12 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
         return AH_EINVAL;
     }
 
-    *ln = (ah_tcp_listener_t) {
-        ._loop = loop,
-        ._trans = trans,
-        ._state = AH_I_TCP_LISTENER_STATE_CLOSED,
-    };
+    (void) memset(ln, 0, sizeof(*ln));
 
-    ah_err_t err = ah_i_slab_init(&ln->_conn_slab, 1u, sizeof(ah_tcp_conn_t));
-    if (err != AH_ENONE) {
-        return err;
-    }
-
-    return trans.vtab->listener_init(trans.ctx, ln, obs);
+    return trans.vtab->listener_init(trans.ctx, ln, loop, trans, obs);
 }
 
-static ah_err_t ah_s_tcp_listener_init(void* ctx, ah_tcp_listener_t* ln, ah_tcp_listener_obs_t obs)
+static ah_err_t ah_s_tcp_listener_init(void* ctx, ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_listener_obs_t obs)
 {
     (void) ctx;
 
@@ -401,7 +434,16 @@ static ah_err_t ah_s_tcp_listener_init(void* ctx, ah_tcp_listener_t* ln, ah_tcp_
         return AH_EINVAL;
     }
 
+    ln->_loop = loop;
+    ln->_trans = trans;
     ln->_obs = obs;
+
+    ah_err_t err = ah_i_slab_init(&ln->_conn_slab, 1u, sizeof(ah_tcp_conn_t));
+    if (err != AH_ENONE) {
+        return err;
+    }
+
+    ln->_state = AH_I_TCP_LISTENER_STATE_CLOSED;
 
     return AH_ENONE;
 }
@@ -417,7 +459,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
     return ln->_trans.vtab->listener_open(ln->_trans.ctx, ln, laddr);
 }
 
-ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, ah_tcp_conn_obs_t conn_obs)
+ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
 {
     if (ln == NULL) {
         return AH_EINVAL;
@@ -425,7 +467,7 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
     if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_listen == NULL) {
         return AH_ESTATE;
     }
-    return ln->_trans.vtab->listener_listen(ln->_trans.ctx, ln, backlog, conn_obs);
+    return ln->_trans.vtab->listener_listen(ln->_trans.ctx, ln, backlog, conn_cbs);
 }
 
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln)
@@ -450,7 +492,7 @@ ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln)
 
     ah_i_slab_term(&ln->_conn_slab, NULL);
 
-    return AH_ENONE;
+    return ln->_trans.vtab->listener_term(ln->_trans.ctx, ln);
 }
 
 ah_extern int ah_tcp_listener_get_family(const ah_tcp_listener_t* ln)

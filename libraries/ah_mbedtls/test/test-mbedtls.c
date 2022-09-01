@@ -53,17 +53,18 @@ void test_mbedtls(ah_unit_res_t* res)
 
 static void ah_s_tcp_on_conn_open(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
 static void ah_s_tcp_on_conn_connect(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
-static void ah_s_tcp_on_conn_handshake_done(ah_tcp_conn_t* conn, const mbedtls_x509_crt* peer_chain, ah_err_t err);
-static void ah_s_tcp_on_conn_close(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
-static void ah_s_tcp_on_conn_read(void* ctx, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
+static void ah_s_tcp_on_conn_read(void* client, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err);
 static void ah_s_tcp_on_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err);
+static void ah_s_tcp_on_conn_close(void* ctx, ah_tcp_conn_t* conn, ah_err_t err);
+
+static void ah_s_mbedtls_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtls_x509_crt* peer_chain, ah_err_t err);
 
 static void ah_s_tcp_on_listener_open(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 static void ah_s_tcp_on_listener_listen(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 static void ah_s_tcp_on_listener_close(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 static void ah_s_tcp_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
 
-static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_tcp_conn_t* conn, ah_err_t err);
+static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_mbedtls_client_t* client, ah_err_t err);
 
 static const ah_tcp_conn_cbs_t s_conn_cbs = {
     .on_open = ah_s_tcp_on_conn_open,
@@ -135,62 +136,22 @@ static void ah_s_tcp_on_conn_connect(void* ctx, ah_tcp_conn_t* conn, ah_err_t er
     user_data->did_call_connect_cb = true;
 }
 
-static void ah_s_tcp_on_conn_handshake_done(ah_tcp_conn_t* conn, const mbedtls_x509_crt* peer_chain, ah_err_t err)
-{
-    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
-
-    ah_unit_res_t* res = user_data->res;
-
-    if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
-        s_print_mbedtls_err_if_any(AH_UNIT_CTX, conn, err);
-        return;
-    }
-
-#if defined(MBEDTLS_X509_CRT_PARSE_C)
-    if (ah_buf_is_empty(&user_data->send_msg.buf)) {
-        // Peer is connection/client.
-        if (ah_unit_assert_eq_uintmax(AH_UNIT_CTX, res, ah_i_mbedtls_test_srv_crt_size, peer_chain->raw.len)) {
-            (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, ah_i_mbedtls_test_srv_crt_data, peer_chain->raw.len);
-        }
-    }
-    else {
-        // Peer is listener/server.
-        if (ah_unit_assert_eq_uintmax(AH_UNIT_CTX, res, ah_i_mbedtls_test_cln_crt_size, peer_chain->raw.len)) {
-            (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, ah_i_mbedtls_test_cln_crt_data, peer_chain->raw.len);
-        }
-    }
-#else
-    (void) ah_unit_assert(AH_UNIT_CTX, res, peer_chain == NULL, "peer_chain != NULL");
-#endif
-
-    if (!ah_buf_is_empty(&user_data->send_msg.buf)) {
-        err = ah_tcp_conn_write(conn, &user_data->send_msg);
-        if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
-            s_print_mbedtls_err_if_any(AH_UNIT_CTX, conn, err);
-            return;
-        }
-    }
-
-    user_data->did_call_handshake_done_cb = true;
-}
-static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_tcp_conn_t* conn, ah_err_t err)
+static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_mbedtls_client_t* client, ah_err_t err)
 {
     if (err == AH_EDEP) {
-        int mbedtls_err = ah_mbedtls_conn_get_last_err(conn);
+        int mbedtls_err = ah_mbedtls_client_get_last_err(client);
 
         char errbuf[256u];
         mbedtls_strerror(mbedtls_err, errbuf, sizeof(errbuf));
-        ah_unit_print(ctx, "AH_EDEP caused by: %d; %s", mbedtls_err, errbuf);
+        ah_unit_print(ctx, "AH_EDEP caused by: -%#x; %s", -mbedtls_err, errbuf);
     }
 }
 
 #if AH_VIA_MSVC
 # pragma warning(disable : 6011)
 #endif
-static void ah_s_tcp_on_conn_read(void* ctx, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
+static void ah_s_tcp_on_conn_read(void* client, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
-    (void) ctx;
-
     struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
     ah_unit_res_t* res = user_data->res;
 
@@ -201,7 +162,7 @@ static void ah_s_tcp_on_conn_read(void* ctx, ah_tcp_conn_t* conn, ah_tcp_in_t* i
     }
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
-        s_print_mbedtls_err_if_any(AH_UNIT_CTX, conn, err);
+        s_print_mbedtls_err_if_any(AH_UNIT_CTX, client, err);
         return;
     }
 
@@ -282,6 +243,46 @@ static void ah_s_tcp_on_conn_close(void* ctx, ah_tcp_conn_t* conn, ah_err_t err)
     }
 
     user_data->did_call_close_cb = true;
+}
+
+static void ah_s_mbedtls_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtls_x509_crt* peer_chain, ah_err_t err)
+{
+    ah_tcp_conn_t* conn = ah_mbedtls_client_get_conn(client);
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+
+    ah_unit_res_t* res = user_data->res;
+
+    if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
+        s_print_mbedtls_err_if_any(AH_UNIT_CTX, client, err);
+        return;
+    }
+
+#if defined(MBEDTLS_X509_CRT_PARSE_C)
+    if (ah_buf_is_empty(&user_data->send_msg.buf)) {
+        // Peer is connection/client.
+        if (ah_unit_assert_eq_uintmax(AH_UNIT_CTX, res, ah_i_mbedtls_test_srv_crt_size, peer_chain->raw.len)) {
+            (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, ah_i_mbedtls_test_srv_crt_data, peer_chain->raw.len);
+        }
+    }
+    else {
+        // Peer is listener/server.
+        if (ah_unit_assert_eq_uintmax(AH_UNIT_CTX, res, ah_i_mbedtls_test_cln_crt_size, peer_chain->raw.len)) {
+            (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, ah_i_mbedtls_test_cln_crt_data, peer_chain->raw.len);
+        }
+    }
+#else
+    (void) ah_unit_assert(AH_UNIT_CTX, res, peer_chain == NULL, "peer_chain != NULL");
+#endif
+
+    if (!ah_buf_is_empty(&user_data->send_msg.buf)) {
+        err = ah_tcp_conn_write(conn, &user_data->send_msg);
+        if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
+            s_print_mbedtls_err_if_any(AH_UNIT_CTX, client, err);
+            return;
+        }
+    }
+
+    user_data->did_call_handshake_done_cb = true;
 }
 
 static void ah_s_tcp_on_listener_open(void* ctx, ah_tcp_listener_t* ln, ah_err_t err)
@@ -484,7 +485,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_ssl_conf_rng(&ln_ssl_conf, mbedtls_ctr_drbg_random, &ln_ctr_drbg);
 
     ah_mbedtls_server_t ln_server;
-    ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_default(), &ln_ssl_conf, ah_s_tcp_on_conn_handshake_done);
+    ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_default(), &ln_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
 
     ah_tcp_listener_t ln;
     err = ah_tcp_listener_init(&ln, &loop, ah_mbedtls_server_as_trans(&ln_server), (ah_tcp_listener_obs_t) { &s_listener_cbs });
@@ -557,7 +558,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_ssl_conf_rng(&conn_ssl_conf, mbedtls_ctr_drbg_random, &conn_ctr_drbg);
 
     ah_mbedtls_client_t conn_client;
-    ah_mbedtls_client_init(&conn_client, ah_tcp_trans_get_default(), &conn_ssl_conf, ah_s_tcp_on_conn_handshake_done);
+    ah_mbedtls_client_init(&conn_client, ah_tcp_trans_get_default(), &conn_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
 
     ah_tcp_conn_t conn;
     err = ah_tcp_conn_init(&conn, &loop, ah_mbedtls_client_as_trans(&conn_client), (ah_tcp_conn_obs_t) { &s_conn_cbs });
@@ -593,7 +594,6 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
 
     ah_mbedtls_client_term(&conn_client);
     ah_mbedtls_server_term(&ln_server);
-    ah_tcp_listener_term(&ln);
 
     mbedtls_ctr_drbg_free(&ln_ctr_drbg);
     mbedtls_entropy_free(&ln_entropy);
@@ -615,7 +615,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     struct s_tcp_conn_user_data* conn_data = &conn_user_data;
     (void) ah_unit_assert(AH_UNIT_CTX, res, conn_data->did_call_open_cb, "`conn` ah_s_tcp_on_conn_open() not called");
     (void) ah_unit_assert(AH_UNIT_CTX, res, conn_data->did_call_connect_cb, "`conn` ah_s_tcp_on_conn_connect() not called");
-    (void) ah_unit_assert(AH_UNIT_CTX, res, conn_data->did_call_handshake_done_cb, "`conn` ah_s_tcp_on_conn_handshake_done() not called");
+    (void) ah_unit_assert(AH_UNIT_CTX, res, conn_data->did_call_handshake_done_cb, "`conn` ah_s_mbedtls_client_on_handshake_done() not called");
     (void) ah_unit_assert(AH_UNIT_CTX, res, conn_data->did_call_close_cb, "`conn` ah_s_tcp_on_conn_close() not called");
     (void) ah_unit_assert(AH_UNIT_CTX, res, conn_data->did_call_read_cb, "`conn` ah_s_tcp_on_conn_read_data() not called");
     (void) ah_unit_assert(AH_UNIT_CTX, res, !conn_data->did_call_write_cb, "`conn` ah_s_tcp_on_conn_write_done() was called");
@@ -629,7 +629,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     struct s_tcp_conn_user_data* acc_data = &ln_data->accept_user_data;
     (void) ah_unit_assert(AH_UNIT_CTX, res, !acc_data->did_call_open_cb, "`acc` ah_s_tcp_on_conn_open() was called");
     (void) ah_unit_assert(AH_UNIT_CTX, res, !acc_data->did_call_connect_cb, "`acc` ah_s_tcp_on_conn_connect() was called");
-    (void) ah_unit_assert(AH_UNIT_CTX, res, acc_data->did_call_handshake_done_cb, "`acc` ah_s_tcp_on_conn_handshake_done() not called");
+    (void) ah_unit_assert(AH_UNIT_CTX, res, acc_data->did_call_handshake_done_cb, "`acc` ah_s_mbedtls_client_on_handshake_done() not called");
     (void) ah_unit_assert(AH_UNIT_CTX, res, acc_data->did_call_close_cb, "`acc` ah_s_tcp_on_conn_close() not called");
     (void) ah_unit_assert(AH_UNIT_CTX, res, !acc_data->did_call_read_cb, "`acc` ah_s_tcp_on_conn_read_data() was called");
     (void) ah_unit_assert(AH_UNIT_CTX, res, acc_data->did_call_write_cb, "`acc` ah_s_tcp_on_conn_write_done() not called");

@@ -398,13 +398,6 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
         return;
     }
 
-    // Perform final cleanups.
-
-    err = ah_tcp_listener_term(&ln);
-    if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
-        return;
-    }
-
     // Check results.
 
     struct s_tcp_conn_user_data* conn_data = &conn_user_data;

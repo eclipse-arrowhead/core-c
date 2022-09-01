@@ -90,7 +90,7 @@ struct ah_tcp_trans {
  *       own TCP transports.
  */
 struct ah_tcp_trans_vtab {
-    ah_err_t (*conn_init)(void* ctx, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t obs);
+    ah_err_t (*conn_init)(void* ctx, ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs);
     ah_err_t (*conn_open)(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
     ah_err_t (*conn_connect)(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
     ah_err_t (*conn_read_start)(void* ctx, ah_tcp_conn_t* conn);
@@ -98,11 +98,13 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*conn_write)(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out);
     ah_err_t (*conn_shutdown)(void* ctx, ah_tcp_conn_t* conn, uint8_t flags);
     ah_err_t (*conn_close)(void* ctx, ah_tcp_conn_t* conn);
+    ah_err_t (*conn_term)(void* ctx, ah_tcp_conn_t* conn);
 
-    ah_err_t (*listener_init)(void* ctx, ah_tcp_listener_t* ln, ah_tcp_listener_obs_t obs);
+    ah_err_t (*listener_init)(void* ctx, ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_listener_obs_t obs);
     ah_err_t (*listener_open)(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
-    ah_err_t (*listener_listen)(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, ah_tcp_conn_obs_t conn_obs);
+    ah_err_t (*listener_listen)(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
     ah_err_t (*listener_close)(void* ctx, ah_tcp_listener_t* ln);
+    ah_err_t (*listener_term)(void* ctx, ah_tcp_listener_t* ln);
 };
 
 /**
@@ -404,10 +406,10 @@ struct ah_tcp_listener_cbs {
      *              @ref AH_ENONE.
      * @param raddr Pointer to address of @a conn, or @c NULL if @a err is not
      *              @ref AH_ENONE.
-     * @param err  @ref AH_ENONE if @a ln accepted connection successfully. What
-     *             other error codes are possible depend on the used TCP
-     *             transport. The following codes may be provided if the default
-     *             transport is used, directly or indirectly: <ul>
+     * @param err   @ref AH_ENONE if @a ln accepted connection successfully.
+     *              What other error codes are possible depend on the used TCP
+     *              transport. The following codes may be provided if the
+     *              default transport is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                     - Listener event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Darwin, Linux]  - Connection aborted before finalization.
      *   <li>@ref AH_ECONNRESET [Win32]            - Connection aborted before finalization.
@@ -705,6 +707,8 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags);
  */
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 
+ah_extern ah_err_t ah_tcp_conn_term(ah_tcp_conn_t* conn);
+
 /**
  * Checks the socket family of @a conn.
  *
@@ -914,6 +918,8 @@ ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enable
 ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
 
 /** @} */
+
+ah_extern bool ah_tcp_conn_cbs_is_valid(const ah_tcp_conn_cbs_t* cbs);
 
 /**
  * @name TCP Connection Observer
@@ -1163,7 +1169,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  *                 connections wait to get accepted. If @c 0, a platform
  *                 default will be chosen. If larger than some arbitrary
  *                 platform maximum, it will be set to that maximum.
- * @param conn_obs Pointer to event callback set to provide to all accepted
+ * @param conn_cbs Pointer to event callback set to provide to all accepted
  *                 connections.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a ln listening successfully scheduled.
@@ -1180,7 +1186,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  *          an ah_tcp_listener_cbs::on_open callback after a check that opening
  *          was successful.
  */
-ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, ah_tcp_conn_obs_t conn_obs);
+ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
 
 /**
  * Schedules closing of @a ln.
@@ -1351,6 +1357,8 @@ ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_
  * @note If @a ln is @c NULL, this function does nothing.
  */
 ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data);
+
+/** @} */
 
 /**
  * @name TCP Listener Observer

@@ -11,7 +11,7 @@
 #include <stddef.h>
 
 #define AH_I_HTTP_CLIENT_FIELDS         \
- ah_tcp_conn_t _conn;                   \
+ ah_tcp_conn_t* _conn;                  \
  const ah_sockaddr_t* _raddr;           \
                                         \
  const struct ah_http_client_cbs* _cbs; \
@@ -25,10 +25,11 @@
  bool _is_keeping_connection_open;      \
  bool _is_local;
 
-#define AH_I_HTTP_SERVER_FIELDS    \
- ah_tcp_listener_t _ln;            \
- const ah_http_server_cbs_t* _cbs; \
- const ah_http_client_cbs_t* _client_cbs;
+#define AH_I_HTTP_SERVER_FIELDS           \
+ ah_tcp_listener_t _ln;                   \
+ const ah_http_server_cbs_t* _cbs;        \
+ const ah_http_client_cbs_t* _client_cbs; \
+ struct ah_i_slab _client_slab;
 
 #define AH_I_HTTP_CHUNK_FIELDS \
  ah_tcp_out_t* _out;

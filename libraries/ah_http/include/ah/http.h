@@ -939,6 +939,8 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
  */
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
 
+ah_extern ah_err_t ah_http_client_term(ah_http_client_t* cln);
+
 /**
  * Gets the TCP connection of @a cln.
  *
@@ -1037,6 +1039,8 @@ ah_extern void* ah_http_client_get_user_data(const ah_http_client_t* cln);
 ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data);
 
 /** @} */
+
+ah_extern bool ah_http_client_cbs_is_valid(const ah_http_client_cbs_t* cbs);
 
 /**
  * @name HTTP Server
@@ -1252,5 +1256,7 @@ ah_extern void* ah_http_server_get_user_data(const ah_http_server_t* srv);
 ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data);
 
 /** @} */
+
+ah_extern bool ah_http_server_cbs_is_valid(const ah_http_server_cbs_t* cbs);
 
 #endif

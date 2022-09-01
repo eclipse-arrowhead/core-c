@@ -45,20 +45,20 @@
 #define AH_I_TCP_IN_FIELDS \
  ah_tcp_in_t** _owner_ptr;
 
-#define AH_I_TCP_LISTENER_FIELDS   \
- ah_loop_t* _loop;                 \
-                                   \
- ah_tcp_trans_t _trans;            \
- ah_tcp_listener_obs_t _obs;       \
-                                   \
- ah_tcp_conn_obs_t _conn_obs;      \
- struct ah_i_slab _conn_slab;      \
-                                   \
- bool _is_ipv6;                    \
- uint8_t _state;                   \
-                                   \
- AH_I_TCP_LISTENER_PLATFORM_FIELDS \
-                                   \
+#define AH_I_TCP_LISTENER_FIELDS     \
+ ah_loop_t* _loop;                   \
+                                     \
+ ah_tcp_trans_t _trans;              \
+ ah_tcp_listener_obs_t _obs;         \
+                                     \
+ const ah_tcp_conn_cbs_t* _conn_cbs; \
+ struct ah_i_slab _conn_slab;        \
+                                     \
+ bool _is_ipv6;                      \
+ uint8_t _state;                     \
+                                     \
+ AH_I_TCP_LISTENER_PLATFORM_FIELDS   \
+                                     \
  void* _user_data;
 
 #define AH_I_TCP_OUT_FIELDS \
