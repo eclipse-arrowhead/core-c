@@ -404,7 +404,7 @@ ah_err_t ah_i_http_header_value_to_size(const char* value, size_t* size)
     size_t size0 = 0u;
     for (;;) {
         const char ch = value[0u];
-        if (ch <= '0' || ch >= '9') {
+        if (ch < '0' || ch > '9') {
             if (ch == '\0') {
                 break;
             }

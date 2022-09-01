@@ -98,6 +98,10 @@ void* ah_i_slab_alloc(struct ah_i_slab* slab)
 {
     ah_assert_if_debug(slab != NULL);
 
+    if (ah_unlikely(slab->_ref_count == 0u)) {
+        return NULL;
+    }
+
     if (slab->_free_list == NULL) {
         if (!s_slab_try_to_allocate_another_cache(slab)) {
             return NULL;
@@ -155,6 +159,7 @@ static struct ah_i_slab_slot* s_entry_get_slot(void* entry)
 static void s_slab_free_caches(struct ah_i_slab* slab)
 {
     ah_assert_if_debug(slab != NULL);
+    ah_assert_if_debug(slab->_ref_count == 0u);
 
     struct ah_i_slab_cache* current = slab->_cache_list;
     while (current != NULL) {

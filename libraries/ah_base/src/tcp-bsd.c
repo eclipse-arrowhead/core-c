@@ -22,7 +22,7 @@
 # define SHUT_RDWR SD_BOTH
 #endif
 
-ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_trans_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
     (void) ctx;
 
@@ -32,7 +32,7 @@ ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t*
     if (!ah_sockaddr_is_ip(laddr)) {
         return AH_EAFNOSUPPORT;
     }
-    if (conn->_state != AH_I_TCP_CONN_STATE_CLOSED) {
+    if (conn->_state != AH_I_TCP_CONN_STATE_INITIALIZED) {
         return AH_ESTATE;
     }
 
@@ -48,7 +48,7 @@ ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t*
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, uint8_t flags)
+ah_extern ah_err_t ah_i_tcp_trans_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, uint8_t flags)
 {
     (void) ctx;
 
@@ -160,7 +160,7 @@ ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enable
     return ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value));
 }
 
-ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_trans_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
     (void) ctx;
 
@@ -170,7 +170,7 @@ ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_socka
     if (!ah_sockaddr_is_ip(laddr)) {
         return AH_EAFNOSUPPORT;
     }
-    if (ln->_state != AH_I_TCP_LISTENER_STATE_CLOSED) {
+    if (ln->_state != AH_I_TCP_LISTENER_STATE_INITIALIZED) {
         return AH_ESTATE;
     }
 

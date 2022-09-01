@@ -8,34 +8,42 @@
 #include <ah/assert.h>
 #include <ah/err.h>
 
-static void ah_s_http_server_listener_on_open(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
-static void ah_s_http_server_listener_on_listen(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
-static void ah_s_http_server_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
-static void ah_s_http_server_listener_on_close(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
+static void s_listener_on_open(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
+static void s_listener_on_listen(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
+static void s_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err);
+static void s_listener_on_close(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
 
-ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_server_cbs_t* cbs)
+ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, ah_http_server_obs_t obs)
 {
-    if (srv == NULL || !ah_http_server_cbs_is_valid(cbs)) {
+    if (srv == NULL || !ah_http_server_cbs_is_valid(obs.cbs)) {
         return AH_EINVAL;
     }
 
     static const ah_tcp_listener_cbs_t s_cbs = {
-        .on_open = ah_s_http_server_listener_on_open,
-        .on_listen = ah_s_http_server_listener_on_listen,
-        .on_close = ah_s_http_server_listener_on_close,
-        .on_accept = ah_s_http_server_listener_on_accept,
+        .on_open = s_listener_on_open,
+        .on_listen = s_listener_on_listen,
+        .on_accept = s_listener_on_accept,
+        .on_close = s_listener_on_close,
     };
 
     *srv = (ah_http_server_t) {
-        ._cbs = cbs,
+        ._obs = obs,
     };
+    
+    ah_err_t err;
 
-    ah_err_t err = ah_i_slab_init(&srv->_client_slab, 1u, sizeof(ah_http_client_t));
+    err = ah_i_slab_init(&srv->_client_slab, 1u, sizeof(ah_http_client_t));
     if (err != AH_ENONE) {
         return err;
     }
 
-    return ah_tcp_listener_init(&srv->_ln, loop, trans, (ah_tcp_listener_obs_t) { &s_cbs, srv });
+    err = ah_tcp_listener_init(&srv->_ln, loop, trans, (ah_tcp_listener_obs_t) { &s_cbs, srv });
+    if (err != AH_ENONE) {
+        ah_i_slab_term(&srv->_client_slab, NULL);
+        return err;
+    }
+    
+    return AH_ENONE;
 }
 
 ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_t* laddr)
@@ -46,41 +54,29 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
     return ah_tcp_listener_open(&srv->_ln, laddr);
 }
 
-static void ah_s_http_server_listener_on_open(void* srv_, ah_tcp_listener_t* ln, ah_err_t err)
+static void s_listener_on_open(void* srv_, ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_ctx_to_server(srv_);
     (void) ln;
-    srv->_cbs->on_open(srv, err);
+    srv->_obs.cbs->on_open(srv->_obs.ctx, srv, err);
 }
 
-ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog, const ah_http_client_cbs_t* cbs)
+ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog)
 {
-    if (srv == NULL || cbs == NULL) {
+    if (srv == NULL) {
         return AH_EINVAL;
     }
-    if (cbs->on_send == NULL) {
-        return AH_EINVAL;
-    }
-    if (cbs->on_recv_line == NULL || cbs->on_recv_header == NULL || cbs->on_recv_data == NULL || cbs->on_recv_end == NULL) {
-        return AH_EINVAL;
-    }
-    if (cbs->on_close == NULL) {
-        return AH_EINVAL;
-    }
-
-    srv->_client_cbs = cbs;
-
-    return ah_tcp_listener_listen(&srv->_ln, backlog, (ah_tcp_conn_obs_t) { ah_i_http_client_get_conn_cbs(), srv });
+    return ah_tcp_listener_listen(&srv->_ln, backlog);
 }
 
-static void ah_s_http_server_listener_on_listen(void* srv_, ah_tcp_listener_t* ln, ah_err_t err)
+static void s_listener_on_listen(void* srv_, ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_ctx_to_server(srv_);
     (void) ln;
-    srv->_cbs->on_listen(srv, err);
+    srv->_obs.cbs->on_listen(srv->_obs.ctx, srv, err);
 }
 
-static void ah_s_http_server_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_ctx_to_server(srv_);
     (void) ln;
@@ -95,22 +91,31 @@ static void ah_s_http_server_listener_on_accept(void* srv_, ah_tcp_listener_t* l
         goto handle_err;
     }
 
-    ah_i_http_client_init_accepted(cln, conn, srv, raddr);
+    *cln = (ah_http_client_t) {
+        ._conn = conn,
+        ._raddr = raddr,
+        ._owning_slab = &srv->_client_slab,
+        ._in_state = AH_I_HTTP_CLIENT_IN_STATE_INIT,
+    };
 
-    srv->_cbs->on_accept(srv, cln, err);
+    srv->_obs.cbs->on_accept(srv->_obs.ctx, srv, cln, &cln->_obs, err);
+
+    obs->cbs = &ah_i_http_conn_cbs;
+    obs->ctx = cln;
+
     if (ah_tcp_conn_is_closed(conn)) {
         return;
     }
 
     err = ah_tcp_conn_read_start(conn);
     if (err != AH_ENONE) {
-        cln->_cbs->on_recv_end(cln, err);
+        cln->_obs.cbs->on_recv_end(cln->_obs.ctx, cln, err);
     }
 
     return;
 
 handle_err:
-    srv->_cbs->on_accept(srv, NULL, err);
+    srv->_obs.cbs->on_accept(srv->_obs.ctx, srv, NULL, NULL, err);
 }
 
 ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
@@ -121,11 +126,11 @@ ah_extern ah_err_t ah_http_server_close(ah_http_server_t* srv)
     return ah_tcp_listener_close(&srv->_ln);
 }
 
-static void ah_s_http_server_listener_on_close(void* srv_, ah_tcp_listener_t* ln, ah_err_t err)
+static void s_listener_on_close(void* srv_, ah_tcp_listener_t* ln, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_ctx_to_server(srv_);
     (void) ln;
-    srv->_cbs->on_close(srv, err);
+    srv->_obs.cbs->on_close(srv->_obs.ctx, srv, err);
 }
 
 ah_extern ah_err_t ah_http_server_term(ah_http_server_t* srv)
@@ -163,19 +168,12 @@ ah_extern ah_loop_t* ah_http_server_get_loop(const ah_http_server_t* srv)
     return ah_tcp_listener_get_loop(&srv->_ln);
 }
 
-ah_extern void* ah_http_server_get_user_data(const ah_http_server_t* srv)
+ah_extern void* ah_http_server_get_obs_ctx(const ah_http_server_t* srv)
 {
     if (srv == NULL) {
         return NULL;
     }
-    return ah_tcp_listener_get_user_data(&srv->_ln);
-}
-
-ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data)
-{
-    if (srv != NULL) {
-        ah_tcp_listener_set_user_data(&srv->_ln, user_data);
-    }
+    return srv->_obs.ctx;
 }
 
 ah_extern bool ah_http_server_cbs_is_valid(const ah_http_server_cbs_t* cbs)

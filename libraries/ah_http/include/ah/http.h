@@ -113,12 +113,19 @@
 typedef struct ah_http_chunk ah_http_chunk_t;
 typedef struct ah_http_client ah_http_client_t;
 typedef struct ah_http_client_cbs ah_http_client_cbs_t;
+typedef struct ah_http_client_obs ah_http_client_obs_t;
 typedef struct ah_http_header ah_http_header_t;
 typedef struct ah_http_head ah_http_head_t;
 typedef struct ah_http_server ah_http_server_t;
 typedef struct ah_http_server_cbs ah_http_server_cbs_t;
+typedef struct ah_http_server_obs ah_http_server_obs_t;
 typedef struct ah_http_trailer ah_http_trailer_t;
 typedef struct ah_http_ver ah_http_ver_t;
+
+struct ah_http_client_obs {
+    const ah_http_client_cbs_t* cbs;
+    void* ctx;
+};
 
 /**
  * HTTP client.
@@ -168,7 +175,7 @@ struct ah_http_client_cbs {
      * @note Every successfully opened @a cln must eventually be provided to
      *       ah_http_client_close().
      */
-    void (*on_open)(ah_http_client_t* cln, ah_err_t err);
+    void (*on_open)(void* ctx, ah_http_client_t* cln, ah_err_t err);
 
     /**
      * @a cln has been connected to a specified remote host, or the attempt to
@@ -211,7 +218,7 @@ struct ah_http_client_cbs {
      *       means it may be set to @c NULL when this data structure is used
      *       with ah_http_server_listen().
      */
-    void (*on_connect)(ah_http_client_t* cln, ah_err_t err);
+    void (*on_connect)(void* ctx, ah_http_client_t* cln, ah_err_t err);
 
     /**
      * @a cln finished sending an HTTP message or the attempt failed.
@@ -250,7 +257,7 @@ struct ah_http_client_cbs {
      *   <li>@ref AH_ETIMEDOUT                         - Client connection timed out.
      * </ul>
      */
-    void (*on_send)(ah_http_client_t* cln, ah_http_head_t* head, ah_err_t err);
+    void (*on_send)(void* ctx, ah_http_client_t* cln, ah_http_head_t* head, ah_err_t err);
 
     /**
      * @a cln has received a start line.
@@ -271,7 +278,7 @@ struct ah_http_client_cbs {
      *
      * @note If you need to maintain state about the received message, you may
      *       do so by referring to that state using the user data pointer of
-     *       @a cln (see ah_http_client_get_user_data() and
+     *       @a cln (see ah_http_client_get_obs_ctx() and
      *       ah_http_client_set_user_data()). Messages are always received in
      *       sequence over the same connection, which means that this callback
      *       will not be called again for the current @a cln until
@@ -284,7 +291,7 @@ struct ah_http_client_cbs {
      *
      * @see https://rfc-editor.org/rfc/rfc9112.html
      */
-    void (*on_recv_line)(ah_http_client_t* cln, const char* line, ah_http_ver_t version);
+    void (*on_recv_line)(void* ctx, ah_http_client_t* cln, const char* line, ah_http_ver_t version);
 
     /**
      * @a cln has received a header field.
@@ -298,7 +305,7 @@ struct ah_http_client_cbs {
      * @param cln    Pointer to client receiving header.
      * @param header HTTP header, consisting of a name and a value.
      */
-    void (*on_recv_header)(ah_http_client_t* cln, ah_http_header_t header);
+    void (*on_recv_header)(void* ctx, ah_http_client_t* cln, ah_http_header_t header);
 
     /**
      * @a cln has seen all headers in the currently received message.
@@ -307,7 +314,7 @@ struct ah_http_client_cbs {
      *
      * @note This callback is optional. Set if to @c NULL if not relevant.
      */
-    void (*on_recv_headers)(ah_http_client_t* cln);
+    void (*on_recv_headers)(void* ctx, ah_http_client_t* cln);
 
     /**
      * @a cln has received a chunk size and a chunk extension.
@@ -329,7 +336,7 @@ struct ah_http_client_cbs {
      *
      * @see https://rfc-editor.org/rfc/rfc9112.html
      */
-    void (*on_recv_chunk_line)(ah_http_client_t* cln, size_t size, const char* ext);
+    void (*on_recv_chunk_line)(void* ctx, ah_http_client_t* cln, size_t size, const char* ext);
 
     /**
      * @a cln has received data part of a message body.
@@ -353,7 +360,7 @@ struct ah_http_client_cbs {
      *       appearing here, remember that HTTP/1 is specified as an extension
      *       of the TCP protocol.
      */
-    void (*on_recv_data)(ah_http_client_t* cln, ah_tcp_in_t* in);
+    void (*on_recv_data)(void* ctx, ah_http_client_t* cln, ah_tcp_in_t* in);
 
     /**
      * @a cln has finished receiving a message.
@@ -395,7 +402,7 @@ struct ah_http_client_cbs {
      *   <li>@ref AH_ETIMEDOUT                  - Connection timed out.
      * </ul>
      */
-    void (*on_recv_end)(ah_http_client_t* cln, ah_err_t err);
+    void (*on_recv_end)(void* ctx, ah_http_client_t* cln, ah_err_t err);
 
     /**
      * @a cln has been closed.
@@ -408,7 +415,12 @@ struct ah_http_client_cbs {
      *       ah_http_client_close(), which makes it an excellent place to
      *       release any resources associated with @a cln.
      */
-    void (*on_close)(ah_http_client_t* cln, ah_err_t err);
+    void (*on_close)(void* ctx, ah_http_client_t* cln, ah_err_t err);
+};
+
+struct ah_http_server_obs {
+    const ah_http_server_cbs_t* cbs;
+    void* ctx;
 };
 
 /**
@@ -451,7 +463,7 @@ struct ah_http_server_cbs {
      *   <li>@ref AH_ENOMEM [Darwin, Linux]         - Not enough heap memory available.
      * </ul>
      */
-    void (*on_open)(ah_http_server_t* srv, ah_err_t err);
+    void (*on_open)(void* ctx, ah_http_server_t* srv, ah_err_t err);
 
     /**
      * @a srv has started to listen for connecting clients, or the attempt
@@ -471,7 +483,7 @@ struct ah_http_server_cbs {
      *   <li>@ref AH_ENOBUFS [Win32]           - Not enough buffer space available.
      * </ul>
      */
-    void (*on_listen)(ah_http_server_t* srv, ah_err_t err);
+    void (*on_listen)(void* ctx, ah_http_server_t* srv, ah_err_t err);
 
     /**
      * @a srv has accepted the client @a cln.
@@ -505,7 +517,7 @@ struct ah_http_server_cbs {
      * @note In contrast to plain TCP connections, data receiving is always
      *       enabled for new HTTP connections.
      */
-    void (*on_accept)(ah_http_server_t* srv, ah_http_client_t* client, ah_err_t err);
+    void (*on_accept)(void* ctx, ah_http_server_t* srv, ah_http_client_t* client, ah_http_client_obs_t* obs, ah_err_t err);
 
     /**
      * @a srv has been closed.
@@ -519,7 +531,7 @@ struct ah_http_server_cbs {
      *       release any resources associated with @a srv. You may, for example,
      *       elect to call ah_http_server_term() in this callback.
      */
-    void (*on_close)(ah_http_server_t* srv, ah_err_t err);
+    void (*on_close)(void* ctx, ah_http_server_t* srv, ah_err_t err);
 };
 
 /**
@@ -685,16 +697,16 @@ struct ah_http_trailer {
  * @param cln   Pointer to client.
  * @param loop  Pointer to event loop.
  * @param trans Desired transport.
- * @param cbs   Pointer to event callback set.
+ * @param obs   Pointer to client event observer.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - @a cln successfully initialized.
  *   <li>@ref AH_EINVAL - @a cln or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_is_valid().
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
  *   <li>@ref AH_EINVAL - @c on_open, @c on_connect, @c on_send, @c on_recv_line, @c on_recv_header,
  *                        @c on_recv_data, @c on_recv_end, or @c on_close of @a cbs is @c NULL.
  * </ul>
  */
-ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_client_cbs_t* cbs);
+ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, ah_tcp_trans_t trans, ah_http_client_obs_t obs);
 
 /**
  * Schedules opening of @a cln, which must be initialized, and its binding to
@@ -1009,34 +1021,7 @@ ah_extern ah_err_t ah_http_client_get_raddr(const ah_http_client_t* cln, ah_sock
  */
 ah_extern ah_loop_t* ah_http_client_get_loop(const ah_http_client_t* cln);
 
-/**
- * Gets the user data pointer associated with @a cln.
- *
- * @param cln Pointer to client.
- * @return Any user data pointer previously set via
- *         ah_http_client_set_user_data(), or @c NULL if no such has been set or
- *         if @a cln is @c NULL.
- *
- * @note This function gets the user data pointer of the ah_tcp_conn owned by
- *       @a cln. You can get a pointer to that TCP connection by calling
- *       ah_http_client_get_conn() with @a cln as argument.
- */
-ah_extern void* ah_http_client_get_user_data(const ah_http_client_t* cln);
-
-/**
- * Sets the user data pointer associated with @a cln.
- *
- * @param cln       Pointer to client.
- * @param user_data User data pointer, referring to whatever context you want
- *                  to associate with @a cln.
- *
- * @note If @a cln is @c NULL, this function does nothing.
- *
- * @note This function sets the user data pointer of the ah_tcp_conn owned by
- *       @a cln. You can get a pointer to that TCP connection by calling
- *       ah_http_client_get_conn() with @a cln as argument.
- */
-ah_extern void ah_http_client_set_user_data(ah_http_client_t* cln, void* user_data);
+ah_extern void* ah_http_client_get_obs_ctx(const ah_http_client_t* cln);
 
 /** @} */
 
@@ -1060,11 +1045,11 @@ ah_extern bool ah_http_client_cbs_is_valid(const ah_http_client_cbs_t* cbs);
  * @param srv   Pointer to server.
  * @param loop  Pointer to event loop.
  * @param trans Desired transport.
- * @param cbs   Pointer to event callback set.
+ * @param obs   Pointer to server event observer.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a srv successfully initialized.
  *   <li>@ref AH_EINVAL    - @a srv or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_is_valid().
+ *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
  *   <li>@ref AH_EINVAL    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
  *                           @c NULL.
  *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.
@@ -1076,7 +1061,7 @@ ah_extern bool ah_http_client_cbs_is_valid(const ah_http_client_cbs_t* cbs);
  * @note Every successfully initialized @a srv must eventually be provided to
  *       ah_http_server_term().
  */
-ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_http_server_cbs_t* cbs);
+ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, ah_http_server_obs_t obs);
 
 /**
  * Schedules opening of @a srv, which must be initialized, and its binding to
@@ -1123,8 +1108,6 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
  *                 clients wait to get accepted. If @c 0, a platform default
  *                 will be chosen. If larger than some arbitrary platform
  *                 maximum, it will be set to that maximum.
- * @param cbs      Pointer to event callback set to provide to all accepted
- *                 clients.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a srv listening successfully scheduled.
  *   <li>@ref AH_ECANCELED - The event loop of @a srv is shutting down.
@@ -1141,7 +1124,7 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
  *          ah_http_server_cbs::on_open callback after a check that opening
  *          was successful.
  */
-ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog, const ah_http_client_cbs_t* cbs);
+ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog);
 
 /**
  * Schedules closing of @a srv.
@@ -1226,34 +1209,7 @@ ah_extern ah_err_t ah_http_server_get_laddr(const ah_http_server_t* srv, ah_sock
  */
 ah_extern ah_loop_t* ah_http_server_get_loop(const ah_http_server_t* srv);
 
-/**
- * Gets the user data pointer associated with @a srv.
- *
- * @param srv Pointer to server.
- * @return Any user data pointer previously set via
- *         ah_http_server_set_user_data(), or @c NULL if no such has been set or
- *         if @a srv is @c NULL.
- *
- * @note This function gets the user data pointer of the ah_tcp_listener owned
- *       by @a srv. You can get a pointer to that TCP listener by calling
- *       ah_http_server_get_listener() with @a srv as argument.
- */
-ah_extern void* ah_http_server_get_user_data(const ah_http_server_t* srv);
-
-/**
- * Sets the user data pointer associated with @a srv.
- *
- * @param srv       Pointer to server.
- * @param user_data User data pointer, referring to whatever context you want
- *                  to associate with @a srv.
- *
- * @note If @a srv is @c NULL, this function does nothing.
- *
- * @note This function sets the user data pointer of the ah_tcp_listener owned
- *       by @a srv. You can get a pointer to that TCP listener by calling
- *       ah_http_server_get_listener() with @a srv as argument.
- */
-ah_extern void ah_http_server_set_user_data(ah_http_server_t* srv, void* user_data);
+ah_extern void* ah_http_server_get_obs_ctx(const ah_http_server_t* srv);
 
 /** @} */
 

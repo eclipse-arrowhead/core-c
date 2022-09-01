@@ -10,25 +10,26 @@
 #include <ah/tcp.h>
 #include <stddef.h>
 
-#define AH_I_HTTP_CLIENT_FIELDS         \
- ah_tcp_conn_t* _conn;                  \
- const ah_sockaddr_t* _raddr;           \
-                                        \
- const struct ah_http_client_cbs* _cbs; \
-                                        \
- struct ah_i_list _out_queue;           \
-                                        \
- size_t _in_n_expected_bytes;           \
- size_t _in_n_expected_responses;       \
- uint8_t _in_state;                     \
-                                        \
- bool _is_keeping_connection_open;      \
+#define AH_I_HTTP_CLIENT_FIELDS    \
+ ah_tcp_conn_t* _conn;             \
+ const ah_sockaddr_t* _raddr;      \
+                                   \
+ ah_http_client_obs_t _obs;        \
+                                   \
+ struct ah_i_slab* _owning_slab;   \
+                                   \
+ struct ah_i_list _out_queue;      \
+                                   \
+ size_t _in_n_expected_bytes;      \
+ size_t _in_n_expected_responses;  \
+ uint8_t _in_state;                \
+                                   \
+ bool _is_keeping_connection_open; \
  bool _is_local;
 
-#define AH_I_HTTP_SERVER_FIELDS           \
- ah_tcp_listener_t _ln;                   \
- const ah_http_server_cbs_t* _cbs;        \
- const ah_http_client_cbs_t* _client_cbs; \
+#define AH_I_HTTP_SERVER_FIELDS \
+ ah_tcp_listener_t _ln;         \
+ ah_http_server_obs_t _obs;     \
  struct ah_i_slab _client_slab;
 
 #define AH_I_HTTP_CHUNK_FIELDS \

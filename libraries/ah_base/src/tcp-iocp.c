@@ -10,11 +10,11 @@
 
 #include <stddef.h>
 
-static void s_on_conn_connect(ah_i_loop_evt_t* evt);
-static void s_on_conn_read(ah_i_loop_evt_t* evt);
-static void s_on_conn_write(ah_i_loop_evt_t* evt);
+static void s_conn_on_connect(ah_i_loop_evt_t* evt);
+static void s_conn_on_read(ah_i_loop_evt_t* evt);
+static void s_conn_on_write(ah_i_loop_evt_t* evt);
 
-static void s_on_listener_accept(ah_i_loop_evt_t* evt);
+static void s_listener_on_accept(ah_i_loop_evt_t* evt);
 
 static ah_err_t s_conn_read_prep(ah_tcp_conn_t* conn);
 static void s_conn_read_stop(ah_tcp_conn_t* conn);
@@ -22,7 +22,7 @@ static void s_conn_read_stop(ah_tcp_conn_t* conn);
 static ah_err_t s_listener_accept_prep(ah_tcp_listener_t* ln);
 
 #pragma warning(disable : 6011)
-ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
+ah_err_t ah_i_tcp_trans_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
     (void) ctx;
 
@@ -51,7 +51,7 @@ ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr
         return err;
     }
 
-    evt->_cb = s_on_conn_connect;
+    evt->_cb = s_conn_on_connect;
     evt->_subject = conn;
 
     const struct sockaddr* name = ah_i_sockaddr_const_into_bsd(raddr);
@@ -71,7 +71,7 @@ ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr
 }
 #pragma warning(default : 6011)
 
-static void s_on_conn_connect(ah_i_loop_evt_t* evt)
+static void s_conn_on_connect(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
@@ -99,7 +99,7 @@ handle_err:
     conn->_cbs->on_connect(conn, err);
 }
 
-ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_trans_conn_read_start(void* ctx, ah_tcp_conn_t* conn)
 {
     (void) ctx;
 
@@ -147,7 +147,7 @@ static ah_err_t s_conn_read_prep(ah_tcp_conn_t* conn)
         return err;
     }
 
-    evt->_cb = s_on_conn_read;
+    evt->_cb = s_conn_on_read;
     evt->_subject = conn;
 
     WSABUF* buffer = ah_i_buf_into_wsabuf(&conn->_recv_buf);
@@ -163,7 +163,7 @@ static ah_err_t s_conn_read_prep(ah_tcp_conn_t* conn)
     return AH_ENONE;
 }
 
-static void s_on_conn_read(ah_i_loop_evt_t* evt)
+static void s_conn_on_read(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
@@ -223,7 +223,7 @@ report_err:
     conn->_cbs->on_read(conn, NULL, err);
 }
 
-ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_trans_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
 {
     (void) ctx;
 
@@ -250,7 +250,7 @@ static void s_conn_read_stop(ah_tcp_conn_t* conn)
     }
 }
 
-ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
+ah_err_t ah_i_tcp_trans_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
 {
     (void) ctx;
 
@@ -268,7 +268,7 @@ ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
         return err;
     }
 
-    evt->_cb = s_on_conn_write;
+    evt->_cb = s_conn_on_write;
     evt->_subject = out;
 
     out->_conn = conn;
@@ -284,7 +284,7 @@ ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
     return err;
 }
 
-static void s_on_conn_write(ah_i_loop_evt_t* evt)
+static void s_conn_on_write(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
@@ -304,7 +304,7 @@ static void s_on_conn_write(ah_i_loop_evt_t* evt)
     conn->_cbs->on_write(conn, out, err);
 }
 
-ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn)
+ah_err_t ah_i_tcp_trans_conn_close(void* ctx, ah_tcp_conn_t* conn)
 {
     (void) ctx;
 
@@ -418,7 +418,7 @@ static ah_err_t s_listener_accept_prep(ah_tcp_listener_t* ln)
         return err;
     }
 
-    evt->_cb = s_on_listener_accept;
+    evt->_cb = s_listener_on_accept;
     evt->_subject = ln;
 
     ah_i_sockfd_t accept_fd;
@@ -451,7 +451,7 @@ handle_err0:
     return err;
 }
 
-static void s_on_listener_accept(ah_i_loop_evt_t* evt)
+static void s_listener_on_accept(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
@@ -528,7 +528,7 @@ handle_err:
     goto prep_another_accept;
 }
 
-ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln)
+ah_err_t ah_i_tcp_trans_listener_close(void* ctx, ah_tcp_listener_t* ln)
 {
     (void) ctx;
 

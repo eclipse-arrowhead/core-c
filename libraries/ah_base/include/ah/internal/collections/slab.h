@@ -9,17 +9,17 @@
 #include <stdbool.h>
 
 #if AH_PSIZE <= UINT8_MAX
-#define AH_I_SLAB_SIZE_MAX UINT8_MAX
-#define AH_I_SLAB_SIZE_T uint8_t
+# define AH_I_SLAB_SIZE_MAX UINT8_MAX
+# define AH_I_SLAB_SIZE_T   uint8_t
 #elif AH_PSIZE <= UINT16_MAX
-#define AH_I_SLAB_SIZE_MAX UINT16_MAX
-#define AH_I_SLAB_SIZE_T uint16_t
+# define AH_I_SLAB_SIZE_MAX UINT16_MAX
+# define AH_I_SLAB_SIZE_T   uint16_t
 #elif AH_PSIZE <= UINT32_MAX
-#define AH_I_SLAB_SIZE_MAX UINT32_MAX
-#define AH_I_SLAB_SIZE_T uint32_t
+# define AH_I_SLAB_SIZE_MAX UINT32_MAX
+# define AH_I_SLAB_SIZE_T   uint32_t
 #else
-#define AH_I_SLAB_SIZE_MAX SIZE_MAX
-#define AH_I_SLAB_SIZE_T size_t
+# define AH_I_SLAB_SIZE_MAX SIZE_MAX
+# define AH_I_SLAB_SIZE_T   size_t
 #endif
 
 // A slab allocator.

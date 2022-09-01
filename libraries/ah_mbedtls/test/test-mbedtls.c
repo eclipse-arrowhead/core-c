@@ -85,7 +85,7 @@ static void ah_s_tcp_on_conn_open(void* ctx, ah_tcp_conn_t* conn, ah_err_t err)
 {
     (void) ctx;
 
-    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_obs_ctx(conn);
 
     ah_unit_res_t* res = user_data->res;
 
@@ -120,7 +120,7 @@ static void ah_s_tcp_on_conn_connect(void* ctx, ah_tcp_conn_t* conn, ah_err_t er
 {
     (void) ctx;
 
-    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_obs_ctx(conn);
 
     ah_unit_res_t* res = user_data->res;
 
@@ -152,7 +152,7 @@ static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_mbedtls_client_t* c
 #endif
 static void ah_s_tcp_on_conn_read(void* client, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
-    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_obs_ctx(conn);
     ah_unit_res_t* res = user_data->res;
 
     if (err == AH_EEOF) {
@@ -196,7 +196,7 @@ static void ah_s_tcp_on_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t*
     (void) ctx;
     (void) out;
 
-    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_obs_ctx(conn);
     ah_unit_res_t* res = user_data->res;
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
@@ -220,7 +220,7 @@ static void ah_s_tcp_on_conn_close(void* ctx, ah_tcp_conn_t* conn, ah_err_t err)
 {
     (void) ctx;
 
-    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_obs_ctx(conn);
 
     ah_unit_res_t* res = user_data->res;
 
@@ -248,7 +248,7 @@ static void ah_s_tcp_on_conn_close(void* ctx, ah_tcp_conn_t* conn, ah_err_t err)
 static void ah_s_mbedtls_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtls_x509_crt* peer_chain, ah_err_t err)
 {
     ah_tcp_conn_t* conn = ah_mbedtls_client_get_conn(client);
-    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_user_data(conn);
+    struct s_tcp_conn_user_data* user_data = ah_tcp_conn_get_obs_ctx(conn);
 
     ah_unit_res_t* res = user_data->res;
 
@@ -289,7 +289,7 @@ static void ah_s_tcp_on_listener_open(void* ctx, ah_tcp_listener_t* ln, ah_err_t
 {
     (void) ctx;
 
-    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
+    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_obs_ctx(ln);
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, user_data->res, err, AH_ENONE)) {
         return;
@@ -300,7 +300,7 @@ static void ah_s_tcp_on_listener_open(void* ctx, ah_tcp_listener_t* ln, ah_err_t
         return;
     }
 
-    err = ah_tcp_listener_listen(ln, 1, (ah_tcp_conn_obs_t) { &s_conn_cbs });
+    err = ah_tcp_listener_listen(ln, 1);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, user_data->res, err, AH_ENONE)) {
         return;
     }
@@ -312,7 +312,7 @@ static void ah_s_tcp_on_listener_listen(void* ctx, ah_tcp_listener_t* ln, ah_err
 {
     (void) ctx;
 
-    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
+    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_obs_ctx(ln);
     ah_unit_res_t* res = user_data->res;
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
@@ -338,7 +338,7 @@ static void ah_s_tcp_on_listener_close(void* ctx, ah_tcp_listener_t* ln, ah_err_
 {
     (void) ctx;
 
-    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
+    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_obs_ctx(ln);
     ah_unit_res_t* res = user_data->res;
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
@@ -352,7 +352,7 @@ static void ah_s_tcp_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp
 {
     (void) ctx;
 
-    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_user_data(ln);
+    struct s_tcp_listener_user_data* user_data = ah_tcp_listener_get_obs_ctx(ln);
 
     ah_unit_res_t* res = user_data->res;
 
@@ -366,7 +366,7 @@ static void ah_s_tcp_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp
 
     (void) ah_unit_assert(AH_UNIT_CTX, res, raddr != NULL, "ln_addr == NULL");
 
-    ah_tcp_conn_set_user_data(conn, &user_data->accept_user_data);
+    ah_tcp_conn_set_obs(conn, &user_data->accept_user_data);
 
     err = ah_tcp_conn_read_start(conn);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, user_data->res, err, AH_ENONE)) {
@@ -485,7 +485,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_ssl_conf_rng(&ln_ssl_conf, mbedtls_ctr_drbg_random, &ln_ctr_drbg);
 
     ah_mbedtls_server_t ln_server;
-    ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_default(), &ln_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
+    ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_root(), &ln_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
 
     ah_tcp_listener_t ln;
     err = ah_tcp_listener_init(&ln, &loop, ah_mbedtls_server_as_trans(&ln_server), (ah_tcp_listener_obs_t) { &s_listener_cbs });
@@ -494,7 +494,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     }
 
     ln_user_data.accept_user_data.ln = &ln;
-    ah_tcp_listener_set_user_data(&ln, &ln_user_data);
+    ah_tcp_listener_set_obs(&ln, &ln_user_data);
 
     // Setup TLS client.
 
@@ -558,7 +558,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_ssl_conf_rng(&conn_ssl_conf, mbedtls_ctr_drbg_random, &conn_ctr_drbg);
 
     ah_mbedtls_client_t conn_client;
-    ah_mbedtls_client_init(&conn_client, ah_tcp_trans_get_default(), &conn_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
+    ah_mbedtls_client_init(&conn_client, ah_tcp_trans_get_root(), &conn_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
 
     ah_tcp_conn_t conn;
     err = ah_tcp_conn_init(&conn, &loop, ah_mbedtls_client_as_trans(&conn_client), (ah_tcp_conn_obs_t) { &s_conn_cbs });
@@ -567,7 +567,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     }
 
     conn_user_data.ln_addr = &ln_user_data.addr;
-    ah_tcp_conn_set_user_data(&conn, &conn_user_data);
+    ah_tcp_conn_set_obs(&conn, &conn_user_data);
 
     ln_user_data.conn = &conn;
 

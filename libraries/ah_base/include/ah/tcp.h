@@ -67,6 +67,7 @@
  * A @e transport represents a medium through which TCP connections can be
  * established. Such a medium could be a plain connection via an underlying
  * operating system, a TLS/SSL layer on top of a plain connection, etc.
+ * Transports may pass on their
  */
 struct ah_tcp_trans {
     /** Virtual function table used to interact with transport medium. */
@@ -80,11 +81,11 @@ struct ah_tcp_trans {
  * TCP-based transport virtual function table.
  *
  * A set of function pointers representing the TCP functions that must be
- * implemented by every valid transport (see ah_tcp_trans). The functions must
- * behave as documented by the regular functions they are named after. Each of
- * them takes a void pointer @c ctx argument, which corresponds to the
- * ah_tcp_trans::ctx field of the transport owning the function table in
- * question.
+ * implemented by every valid transport (see ah_tcp_trans). Every function
+ * pointer must set and the function it points to should behave as documented by
+ * the regular functions they are named after. Each of them takes a void pointer
+ * @c ctx argument, which corresponds to the ah_tcp_trans::ctx field of the
+ * transport owning the function table in question.
  *
  * @note This structure is primarily useful to those wishing to implement their
  *       own TCP transports.
@@ -99,19 +100,29 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*conn_shutdown)(void* ctx, ah_tcp_conn_t* conn, uint8_t flags);
     ah_err_t (*conn_close)(void* ctx, ah_tcp_conn_t* conn);
     ah_err_t (*conn_term)(void* ctx, ah_tcp_conn_t* conn);
+    ah_err_t (*conn_get_laddr)(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
+    ah_err_t (*conn_get_raddr)(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr);
+    ah_err_t (*conn_set_keepalive)(ah_tcp_conn_t* conn, bool is_enabled);
+    ah_err_t (*conn_set_nodelay)(ah_tcp_conn_t* conn, bool is_enabled);
+    ah_err_t (*conn_set_reuseaddr)(ah_tcp_conn_t* conn, bool is_enabled);
 
     ah_err_t (*listener_init)(void* ctx, ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_listener_obs_t obs);
     ah_err_t (*listener_open)(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
-    ah_err_t (*listener_listen)(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
+    ah_err_t (*listener_listen)(void* ctx, ah_tcp_listener_t* ln, unsigned backlog);
     ah_err_t (*listener_close)(void* ctx, ah_tcp_listener_t* ln);
     ah_err_t (*listener_term)(void* ctx, ah_tcp_listener_t* ln);
+    ah_err_t (*listener_get_laddr)(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr);
+    ah_err_t (*listener_set_keepalive)(ah_tcp_listener_t* ln, bool is_enabled);
+    ah_err_t (*listener_set_nodelay)(ah_tcp_listener_t* ln, bool is_enabled);
+    ah_err_t (*listener_set_reuseaddr)(ah_tcp_listener_t* ln, bool is_enabled);
 };
 
 /**
  * TCP connection observer.
  *
  * Specifies what functions are to receive events about some ah_tcp_conn
- * instance and what user pointer to provide to those functions.
+ * instance and what arbitrary context pointer to provide when those functions
+ * are invoked.
  */
 struct ah_tcp_conn_obs {
     /** Set of connection event callbacks. */
@@ -138,12 +149,20 @@ struct ah_tcp_conn {
 /**
  * TCP connection callback set.
  *
- * A set of function pointers used to handle events on TCP connections.
+ * A set of function pointers used to handle TCP connection events, such as
+ * data being received or a connection being opened.
+ *
+ * Every function takes a context pointer as its first argument. This context
+ * pointer comes from the ah_tcp_conn_obs owning this callback set. More
+ * specifically, it is a copy of the value of the ah_tcp_conn_obs::ctx field of
+ * an owning ah_tcp_conn_obs instance. The context pointer makes it possible for
+ * you to associate arbitrary state with individual TCP connections.
  */
 struct ah_tcp_conn_cbs {
     /**
      * @a conn has been opened, or the attempt failed.
      *
+     * @param ctx  Pointer to context.
      * @param conn Pointer to connection.
      * @param err  @ref AH_ENONE if a connection was opened successfully. What
      *             other error codes are possible depend on the used TCP
@@ -175,6 +194,7 @@ struct ah_tcp_conn_cbs {
      * @a conn has been established to a specified remote host, or the attempt
      * to establish it has failed.
      *
+     * @param ctx  Pointer to context.
      * @param conn Pointer to connection.
      * @param err  @ref AH_ENONE if a connection was established successfully.
      *             What other error codes are possible depend on the used TCP
@@ -236,12 +256,13 @@ struct ah_tcp_conn_cbs {
      * @ref AH_ENONE), @a conn should always be closed via a call to
      * ah_tcp_conn_close().
      *
+     * @param ctx  Pointer to context.
      * @param conn Pointer to connection.
      * @param in   Pointer to input data representation, or @c NULL if @a err
      *             is not @ref AH_ENONE.
      * @param err  @ref AH_ENONE if a data was received successfully. What other
      *             error codes are possible depend on the used TCP transport.
-     *             The following codes may be provided if the default transport
+     *             The following codes may be provided if the root transport
      *             is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                  - Connection event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Win32]       - Virtual circuit terminated due to time-out or
@@ -278,12 +299,13 @@ struct ah_tcp_conn_cbs {
      * be completed. If an error has occurred, @a conn should be closed using
      * ah_tcp_conn_close().
      *
+     * @param ctx  Pointer to context.
      * @param conn Pointer to connection.
      * @param out  Pointer to output buffer provided to ah_tcp_conn_write(), or
      *             @c NULL if @a err is not @ref AH_ENONE.
      * @param err  @ref AH_ENONE if the data was sent successfully. What other
      *             error codes are possible depend on the used TCP transport.
-     *             The following codes may be provided if the default transport
+     *             The following codes may be provided if the root transport
      *             is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                         - Connection event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Win32]              - Virtual circuit terminated due to time-out
@@ -305,6 +327,7 @@ struct ah_tcp_conn_cbs {
     /**
      * @a conn has been closed.
      *
+     * @param ctx  Pointer to context.
      * @param conn Pointer to connection.
      * @param err  Should always be @ref AH_ENONE. Other codes may be provided if
      *             an unexpected platform error occurs.
@@ -345,17 +368,25 @@ struct ah_tcp_listener {
 /**
  * TCP listener callback set.
  *
- * A set of function pointers used to handle events related to TCP listeners.
+ * A set of function pointers used to handle TCP listener events, such as a
+ * listener being opened or a connection being accepted.
+ *
+ * Every function takes a context pointer as its first argument. This context
+ * pointer comes from the ah_tcp_listener_obs owning this callback set. More
+ * specifically, it is a copy of the value of the ah_tcp_listener_obs::ctx field
+ * of an owning ah_tcp_listener_obs instance. The context pointer makes it
+ * possible for you to associate arbitrary state with individual TCP listeners.
  */
 struct ah_tcp_listener_cbs {
     /**
      * @a ln has been opened, or the attempt failed.
      *
+     * @param ctx Pointer to context.
      * @param ln  Pointer to listener.
-     * @param err  @ref AH_ENONE if @a ln was opened successfully. What other
-     *             error codes are possible depend on the used TCP transport.
-     *             The following codes may be provided if the default transport
-     *             is used, directly or indirectly: <ul>
+     * @param err @ref AH_ENONE if @a ln was opened successfully. What other
+     *            error codes are possible depend on the used TCP transport.
+     *            The following codes may be provided if the root transport
+     *            is used, directly or indirectly: <ul>
      *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open listener.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
@@ -375,7 +406,8 @@ struct ah_tcp_listener_cbs {
      * @a ln has started to listen for incoming connections, or the attempt
      * failed.
      *
-     * @param ln  Pointer to listener.
+     * @param ctx  Pointer to context.
+     * @param ln   Pointer to listener.
      * @param err  @ref AH_ENONE if @a ln started to listen successfully. What
      *             other error codes are possible depend on the used TCP
      *             transport. The following codes may be provided if the default
@@ -396,20 +428,29 @@ struct ah_tcp_listener_cbs {
     /**
      * @a ln has accepted the connection @a conn.
      *
-     * If @a err is @ref AH_ENONE, which indicates a successful acceptance, all
-     * further events related to @a conn will be dealt with via the connection
-     * callback set (see ah_tcp_conn_cbs) provided when listening was started
-     * via ah_tcp_listener_listen().
+     * If @a err is @ref AH_ENONE, which indicates a successful acceptance, you
+     * must set the connection event observer made available via @a obs. This
+     * event observer dictates what functions will receive events for @a conn
+     * and what context pointer will be provided when those events fire. In
+     * particular, you must set its ah_tcp_conn_obs::cbs field to a valid
+     * pointer, as dictated by ah_tcp_conn_cbs_is_valid_for_acceptance().
+     * Failing to do so will cause this callback will be invoked again with
+     * @a err set to @ref AH_ESTATE, unless some other error takes precedence or
+     * you closed @a conn before this function returned.
      *
+     * @param ctx   Pointer to context.
      * @param ln    Pointer to listener.
      * @param conn  Pointer to accepted connection, or @c NULL if @a err is not
      *              @ref AH_ENONE.
+     * @param obs   Pointer to event observer of @a conn, or @c NULL if @a err
+     *              is not @ref AH_ENONE. You must initialize the event observer
+     *              as explained above.
      * @param raddr Pointer to address of @a conn, or @c NULL if @a err is not
      *              @ref AH_ENONE.
      * @param err   @ref AH_ENONE if @a ln accepted connection successfully.
      *              What other error codes are possible depend on the used TCP
      *              transport. The following codes may be provided if the
-     *              default transport is used, directly or indirectly: <ul>
+     *              root transport is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                     - Listener event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Darwin, Linux]  - Connection aborted before finalization.
      *   <li>@ref AH_ECONNRESET [Win32]            - Connection aborted before finalization.
@@ -419,6 +460,8 @@ struct ah_tcp_listener_cbs {
      *   <li>@ref AH_ENOBUFS [Linux, Win32]        - Not enough buffer space available.
      *   <li>@ref AH_ENOMEM [Darwin, Linux]        - Not enough heap memory available.
      *   <li>@ref AH_EPROVIDERFAILEDINIT [Win32]   - Network service failed to initialize.
+     *   <li>@ref AH_ESTATE                        - @a obs not set in a previous call to this
+     *                                               function, as explained above.
      * </ul>
      *
      * @note Every successfully accepted @a conn must eventually be provided to
@@ -427,11 +470,12 @@ struct ah_tcp_listener_cbs {
      * @note Data receiving is disabled for accepted connections by default. It
      *       must be explicitly enabled via a call to ah_tcp_conn_read_start().
      */
-    void (*on_accept)(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
+    void (*on_accept)(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err);
 
     /**
      * @a ln has been closed.
      *
+     * @param ctx  Pointer to context.
      * @param conn Pointer to listener.
      * @param err  Should always be @ref AH_ENONE. Other codes may be provided if
      *             an unexpected platform error occurs.
@@ -473,38 +517,6 @@ struct ah_tcp_out {
 };
 
 /**
- * @name TCP Transport
- *
- * Operations on ah_tcp_trans and related type instances.
- *
- * @{
- */
-
-/**
- * Gets a copy of the default TCP transport.
- *
- * The default TCP transport directly utilizes the network subsystem of the
- * current platform. This transport may be used directly with
- * ah_tcp_conn_init() and ah_tcp_listener_init() to establish plain TCP
- * connections, which is to say that they are not encrypted or analyzed in any
- * way.
- *
- * @return Copy of default TCP transport.
- */
-ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
-
-/**
- * Checks if all mandatory fields of @a vtab are set.
- *
- * @param trans Pointer to virtual function table.
- * @return @c true only if @a vtab is not @c NULL and is valid. @c false
- *         otherwise.
- */
-ah_extern bool ah_tcp_trans_is_valid(const ah_tcp_trans_t* trans);
-
-/** @} */
-
-/**
  * @name TCP Connection
  *
  * Operations on ah_tcp_conn instances. All such instances must be initialized
@@ -524,12 +536,24 @@ ah_extern bool ah_tcp_trans_is_valid(const ah_tcp_trans_t* trans);
  * @param trans Desired transport.
  * @param obs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - @a conn successfully initialized.
- *   <li>@ref AH_EINVAL - @a conn or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_is_valid().
- *   <li>@ref AH_EINVAL - @c on_open, @c on_connect, @c on_read, @c on_write or @c on_close of
- *                        @a cbs is @c NULL.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a trans @c vtab is @c NULL or the @a trans
+ *                        @c vtab->conn_init field is @c NULL.
+ *   <li>Any additional code returned by the used TCP transport.
  * </ul>
+ *
+ * @note The root transport may also yield any of the following error codes: <ul>
+ *   <li>@ref AH_EINVAL - @a loop or @a cbs is @c NULL.
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @a obs @c cbs is invalid, as reported by
+ *                        ah_tcp_conn_cbs_is_valid_for_connection().
+ * </ul>
+ *
+ * @note Every successfully initialized @a conn must eventually be provided to
+ *       ah_tcp_conn_term(). Normally, this is done in two places: (1) in the
+ *       ah_tcp_conn_cbs::on_open callback if its @c err argument is not
+ *       @ref AH_ENONE, and (2) unconditionally in the ah_tcp_conn_cbs::on_close
+ *       callback.
  */
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs);
 
@@ -551,17 +575,25 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
  *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
  *              port number automatically, specify port @c 0.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE        - @a conn opening successfully scheduled.
+ *   <li>@ref AH_ENONE        - Operation successful.
+ *   <li>@ref AH_EINVAL       - @a conn is @c NULL.
+ *   <li>@ref AH_ESTATE       - @a conn can be determined not to have been properly initialized.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ *
+ * @note The root transport may also yield any of the following error codes: <ul>
  *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not an IP-based address.
  *   <li>@ref AH_ECANCELED    - The event loop of @a conn is shutting down.
- *   <li>@ref AH_EINVAL       - @a conn or @a laddr is @c NULL.
+ *   <li>@ref AH_EINVAL       - @a laddr is @c NULL.
  *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
- *   <li>@ref AH_ESTATE       - @a conn is not closed.
  * </ul>
  *
  * @note Every successfully opened @a conn must eventually be provided to
  *       ah_tcp_conn_close().
+ *
+ * @warning This function must be called with a successfully initialized
+ *           connection.
  */
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 
@@ -578,13 +610,18 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
  *              successful, the referenced address must remain valid until
  *              @a conn is closed.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE        - @a conn opening successfully scheduled.
+ *   <li>@ref AH_ENONE        - Operation successful.
+ *   <li>@ref AH_EINVAL       - @a conn is @c NULL.
+ *   <li>@ref AH_ESTATE       - @a conn is not open.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ *
+ * @note The root transport may also yield any of the following error codes: <ul>
  *   <li>@ref AH_EAFNOSUPPORT - @a raddr is not an IP-based address.
  *   <li>@ref AH_ECANCELED    - The event loop of @a conn is shutting down.
  *   <li>@ref AH_EINVAL       - @a conn or @a raddr is @c NULL.
  *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
- *   <li>@ref AH_ESTATE       - @a conn is not open.
  * </ul>
  *
  * @note Data receiving is disabled for new connections by default. Is must be
@@ -605,17 +642,21 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
  *
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE            - Start of receiving data via @a conn successfully scheduled.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL.
+ *   <li>@ref AH_ESTATE - @a conn is not currently connected.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ *
+ * @note The root transport may also yield any of the following error codes: <ul>
  *   <li>@ref AH_ECANCELED        - The event loop of @a conn is shutting down.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
  *   <li>@ref AH_EOVERFLOW        - @c AH_PSIZE is too small for it to be possible to store both
  *                                  required metadata @e and read data in a single page provided
  *                                  by the page allocator (see ah_palloc()).
- *   <li>@ref AH_ESTATE           - @a conn is not connected or its read direction has been shut
- *                                  down.
+ *   <li>@ref AH_ESTATE           - Read direction of @a conn been shut down.
  * </ul>
  *
  * @warning This function must be called with a successfully connected
@@ -630,20 +671,25 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
  *
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - Receiving of data via @a conn successfully stopped.
+ *   <li>@ref AH_ENONE  - Operation successful.
  *   <li>@ref AH_EINVAL - @a conn is @c NULL.
  *   <li>@ref AH_ESTATE - @a conn reading not started.
+ *   <li>Any additional code returned by the used TCP transport.
  * </ul>
+ *
+ * @note The root transport does not yield any additional error codes.
  *
  * @note It is acceptable to call this function immediately after a successful
  *       call to ah_tcp_conn_read_start() with the same @a conn, even if that
  *       means that @a conn never had a practical chance to start reading.
+ *
+ * @warning This function must be called with a connection that has successfully
+ *          started reading.
  */
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
 
 /**
- * Schedules the sending of the data in @a out to the remote host of
- *        @a conn.
+ * Schedules the sending of the data in @a out to the remote host of @a conn.
  *
  * An output buffer can be allocated on the heap using ah_tcp_out_alloc(). If
  * you want to store the buffer memory somewhere else, just zero an ah_tcp_out
@@ -658,30 +704,50 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
  * @param conn Pointer to connection.
  * @param out  Pointer to outgoing data.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE            - Data transmission scheduled successfully.
+ *   <li>@ref AH_ENONE            - Operation successful.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
+ *   <li>@ref AH_ESTATE           - @a conn is not connected.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ *
+ * @note The root transport may also yield any of the following error codes: <ul>
  *   <li>@ref AH_ECANCELED        - The event loop of @a conn is shutting down.
- *   <li>@ref AH_EINVAL           - @a conn or @a out is @c NULL.
+ *   <li>@ref AH_EINVAL           - out is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
- *   <li>@ref AH_ESTATE           - @a conn is not open or its write direction has been shut down.
+ *   <li>@ref AH_ESTATE           - Write direction of @a conn has been shut down.
  * </ul>
+ *
+ * @warning This function must be called with a successfully connected
+ *          connection.
  */
 ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
 
 /**
- * Shuts down the read and/or write direction of @a conn, as specified
- *        by @a flags.
+ * Shuts down the read and/or write direction of @a conn, as specified by
+ * @a flags.
+ *
+ * When and how the read and/or write directions of @a conn are shut down varies
+ * with the underlying platform. No guarantees are given about how fast the
+ * platform will release any resources associated with reading or writing. What
+ * is guaranteed, however, is that further reads and writes you issue via
+ * @a conn will be rejected and that the results of any on-going reads and/or
+ * writes will be silently discarded.
  *
  * @param conn  Pointer to connection.
  * @param flags Shutdown flags.
- * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE                - Receiving of data via @a conn successfully stopped.
+ * @return One of the following error codes:
+ *   <li>@ref AH_ENONE                - Operation successful.
+ *   <li>@ref AH_EINVAL               - @a conn is @c NULL.
+ *   <li>@ref AH_ESTATE               - @a conn is not connected.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ *
+ * @note The root transport may also yield any of the following error codes: <ul>
  *   <li>@ref AH_ECONNABORTED [Win32] - Connection has been aborted.
  *   <li>@ref AH_ECONNRESET [Win32]   - Connection has been reset by its remote host.
- *   <li>@ref AH_EINVAL               - @a conn is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32]     - The network subsystem has failed.
- *   <li>@ref AH_ESTATE               - @a conn is not connected.
  * </ul>
  *
  * @warning A connection with both of its read and write directions shut down
@@ -700,13 +766,31 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags);
  *
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - Close of @a conn successfully scheduled.
+ *   <li>@ref AH_ENONE  - Operation successful.
  *   <li>@ref AH_EINVAL - @a conn is @c NULL.
  *   <li>@ref AH_ESTATE - @a conn is already closed.
  * </ul>
+ *
+ * @note The root transport does not yield any additional error codes.
+ *
+ * @warning This function must be called with a successfully opened connection.
  */
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 
+/**
+ * Terminates @a conn, releasing any resources it may hold.
+ *
+ * @param conn Pointer to connection.
+ * @return One of the following error codes: <ul>
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL.
+ *   <li>@ref AH_ESTATE - @a conn is not closed.
+ * </ul>
+ *
+ * @note The root transport does not yield any additional error codes.
+ *
+ * @warning This function must be called with a successfully closed connection.
+ */
 ah_extern ah_err_t ah_tcp_conn_term(ah_tcp_conn_t* conn);
 
 /**
@@ -772,17 +856,16 @@ ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
 ah_extern uint8_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn);
 
 /**
- * Gets the user data pointer associated with @a conn.
+ * Gets the context pointer of the connection observer associated with @a conn.
  *
  * @param conn Pointer to connection.
- * @return Any user data pointer previously set via
- *         ah_tcp_conn_set_user_data(), or @c NULL if no such has been set or
- *         if @a conn is @c NULL.
+ * @return Context pointer, or @c NULL if @a conn is @c NULL or if the context
+ *         pointer itself is equal to @c NULL.
  */
-ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn);
+ah_extern void* ah_tcp_conn_get_obs_ctx(const ah_tcp_conn_t* conn);
 
 /**
- * Checks if @a conn is closed.
+ * Checks if @a conn is in any closing or closed state.
  *
  * @param conn Pointer to connection.
  * @return @c true only if @a conn is not @c NULL and is currently closed.
@@ -906,30 +989,38 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
  */
 ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled);
 
-/**
- * Sets the user data pointer associated with @a conn.
- *
- * @param conn      Pointer to connection.
- * @param user_data User data pointer, referring to whatever context you want
- *                  to associate with @a conn.
- *
- * @note If @a conn is @c NULL, this function does nothing.
- */
-ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data);
-
 /** @} */
-
-ah_extern bool ah_tcp_conn_cbs_is_valid(const ah_tcp_conn_cbs_t* cbs);
 
 /**
  * @name TCP Connection Observer
  *
- * Operations on ah_tcp_conn_obs instances.
+ * Operations on ah_tcp_conn_obs and related type instances.
  *
  * @{
  */
 
-ah_extern bool ah_tcp_conn_obs_is_valid(const ah_tcp_conn_obs_t* obs);
+/**
+ * Checks if @a cbs is valid for handling connections accepted by a TCP
+ * listener.
+ *
+ * Such a valid callback set has all of its function pointers set except for
+ * ah_tcp_conn_cbs::on_open and ah_tcp_conn_cbs::on_connect, which may or may
+ * not be set.
+ *
+ * @param cbs Pointer to TCP connection callback set.
+ * @return @c true only if @a cbs is @e valid. @c false otherwise.
+ */
+ah_extern bool ah_tcp_conn_cbs_is_valid_for_acceptance(const ah_tcp_conn_cbs_t* cbs);
+
+/**
+ * Checks if @a cbs is valid for handling connections initiated locally.
+ *
+ * Such a valid callback set has all of its function pointers set.
+ *
+ * @param cbs Pointer to TCP connection callback set.
+ * @return @c true only if @a cbs is @e valid. @c false otherwise.
+ */
+ah_extern bool ah_tcp_conn_cbs_is_valid_for_connection(const ah_tcp_conn_cbs_t* cbs);
 
 /** @} */
 
@@ -1052,42 +1143,6 @@ ah_extern void ah_tcp_in_reset(ah_tcp_in_t* in);
 /** @} */
 
 /**
- * @name TCP Output Buffer
- *
- * Operations on ah_tcp_out instances.
- *
- * @{
- */
-
-/**
- * Dynamically allocates and partially initializes a TCP output buffer.
- *
- * Every output buffer allocated with this function must eventually be provided
- * to ah_tcp_out_free().
- *
- * Concretely, the page allocator (see ah_palloc()) is used to allocate the
- * returned buffer. All parts of the returned buffer are initialized, except
- * for the actual payload memory.
- *
- * @return Pointer to new output buffer, or @c NULL if the allocation failed.
- *
- * @warning If @c AH_PSIZE is configured to a too small value (see conf.h),
- *          this function always fails.
- */
-ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void);
-
-/**
- * Frees output buffer previously allocated using ah_tcp_out_alloc().
- *
- * @param out Pointer to output buffer.
- *
- * @note If @a out is @c NULL, this function does nothing.
- */
-ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
-
-/** @} */
-
-/**
  * @name TCP Listener
  *
  * Operations on ah_tcp_listener instances. All such instances must be
@@ -1105,13 +1160,18 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
  * @param ln    Pointer to listener.
  * @param loop  Pointer to event loop.
  * @param trans Desired transport.
- * @param obs   Pointer to event callback set.
+ * @param obs   Pointer to connection event observer.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE     - @a ln successfully initialized.
- *   <li>@ref AH_EINVAL    - @a ln or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_is_valid().
- *   <li>@ref AH_EINVAL    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
- *                           @c NULL.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a ln is @c NULL, @a trans @c vtab is @c NULL or the @a trans
+ *                        @c vtab->listener_init field is @c NULL.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ *
+ * @note The root transport may also yield any of the following error codes: <ul>
+ *   <li>@ref AH_EINVAL    - @a loop is @c NULL.
+ *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
+ *   <li>@ref AH_EINVAL    - @a obs @c cbs is invalid, as reported by ah_tcp_listener_cbs_is_valid().
  *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.
  *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both metadata
  *                           @e and have room for at least one incoming connection in a single page
@@ -1140,7 +1200,10 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
  *              address (see ah_sockaddr_ipv4_wildcard and
  *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
  *              port number automatically, specify port @c 0.
- * @return One of the following error codes: <ul>
+ * @return @ref AH_ENONE if the opening of @a ln was scheduled successfully.
+ *        What other error codes are possible depend on the used TCP transport.
+ *        The following codes may be returned if the root transport is used,
+ *        directly or indirectly: <ul>
  *   <li>@ref AH_ENONE        - @a ln opening successfully scheduled.
  *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not an IP-based address.
  *   <li>@ref AH_ECANCELED    - The event loop of @a ln is shutting down.
@@ -1169,8 +1232,6 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  *                 connections wait to get accepted. If @c 0, a platform
  *                 default will be chosen. If larger than some arbitrary
  *                 platform maximum, it will be set to that maximum.
- * @param conn_cbs Pointer to event callback set to provide to all accepted
- *                 connections.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE     - @a ln listening successfully scheduled.
  *   <li>@ref AH_ECANCELED - The event loop of @a ln is shutting down.
@@ -1186,7 +1247,7 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  *          an ah_tcp_listener_cbs::on_open callback after a check that opening
  *          was successful.
  */
-ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
+ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog);
 
 /**
  * Schedules closing of @a ln.
@@ -1263,17 +1324,15 @@ ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_soc
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln);
 
 /**
- * Gets the user data pointer associated with @a ln.
+ * Gets copy of the listener observer context pointer associated with @a ln.
  *
  * @param ln Pointer to listener.
- * @return Any user data pointer previously set via
- *         ah_tcp_conn_set_user_data(), or @c NULL if no such has been set or
- *         if @a ln is @c NULL.
+ * @return Context pointer, or @c NULL if @a ln is @c NULL.
  */
-ah_extern void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln);
+ah_extern void* ah_tcp_listener_get_obs_ctx(const ah_tcp_listener_t* ln);
 
 /**
- * Checks if @a ln is closed.
+ * Checks if @a ln is in any closing or closed state.
  *
  * @param ln Pointer to listener.
  * @return @c true only if @a ln is not @c NULL and is currently closed.
@@ -1347,28 +1406,86 @@ ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_en
  */
 ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled);
 
-/**
- * Sets the user data pointer associated with @a ln.
- *
- * @param ln        Pointer to listener.
- * @param user_data User data pointer, referring to whatever context you want
- *                  to associate with @a ln.
- *
- * @note If @a ln is @c NULL, this function does nothing.
- */
-ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data);
-
 /** @} */
 
 /**
- * @name TCP Listener Observer
+ * @name TCP Listener Callback Set
  *
- * Operations on ah_tcp_listener_obs instances.
+ * Operations on ah_tcp_listener_cbs instances.
  *
  * @{
  */
 
-ah_extern bool ah_tcp_listener_obs_is_valid(const ah_tcp_listener_obs_t* obs);
+ah_extern bool ah_tcp_listener_cbs_is_valid(const ah_tcp_listener_cbs_t* cbs);
+
+/** @} */
+
+/**
+ * @name TCP Output Buffer
+ *
+ * Operations on ah_tcp_out instances.
+ *
+ * @{
+ */
+
+/**
+ * Dynamically allocates and partially initializes a TCP output buffer.
+ *
+ * Every output buffer allocated with this function must eventually be provided
+ * to ah_tcp_out_free().
+ *
+ * Concretely, the page allocator (see ah_palloc()) is used to allocate the
+ * returned buffer. All parts of the returned buffer are initialized, except
+ * for the actual payload memory.
+ *
+ * @return Pointer to new output buffer, or @c NULL if the allocation failed.
+ *
+ * @warning If @c AH_PSIZE is configured to a too small value (see conf.h),
+ *          this function always fails.
+ */
+ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void);
+
+/**
+ * Frees output buffer previously allocated using ah_tcp_out_alloc().
+ *
+ * @param out Pointer to output buffer.
+ *
+ * @note If @a out is @c NULL, this function does nothing.
+ */
+ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
+
+/** @} */
+
+/**
+ * @name TCP Transport
+ *
+ * Operations on ah_tcp_trans and related type instances.
+ *
+ * @{
+ */
+
+/**
+ * Gets a copy of the root TCP transport.
+ *
+ * The root TCP transport directly utilizes the network subsystem of the
+ * current platform. This transport may be used directly with
+ * ah_tcp_conn_init() and ah_tcp_listener_init() to establish plain TCP
+ * connections, which is to say that they are not encrypted or analyzed in any
+ * way.
+ *
+ * @return Copy of default TCP transport.
+ */
+ah_extern ah_tcp_trans_t ah_tcp_trans_get_root(void);
+
+/**
+ * Checks if every field of @a vtab is set, making it valid for use as part of a
+ * TCP transport.
+ *
+ * @param vtab Pointer to virtual function table.
+ * @return @c true only if @a vtab is not @c NULL and is valid. @c false
+ *         otherwise.
+ */
+ah_extern bool ah_tcp_trans_vtab_is_valid(const ah_tcp_trans_vtab_t* vtab);
 
 /** @} */
 

@@ -44,7 +44,7 @@ const ah_tcp_conn_cbs_t ah_i_mbedtls_tcp_conn_cbs = {
 
 ah_extern ah_err_t ah_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf, ah_mbedtls_on_handshake_done_cb on_handshake_done_cb)
 {
-    if (client == NULL || !ah_tcp_trans_is_valid(&trans) || ssl_conf == NULL || on_handshake_done_cb == NULL) {
+    if (client == NULL || !ah_tcp_trans_vtab_is_valid(&trans) || ssl_conf == NULL || on_handshake_done_cb == NULL) {
         return AH_EINVAL;
     }
 
@@ -100,7 +100,7 @@ ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* client)
 ah_err_t ah_i_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf, ah_mbedtls_on_handshake_done_cb on_handshake_done_cb)
 {
     ah_assert_if_debug(client != NULL);
-    ah_assert_if_debug(ah_tcp_trans_is_valid(&trans));
+    ah_assert_if_debug(ah_tcp_trans_vtab_is_valid(&trans));
     ah_assert_if_debug(ssl_conf != NULL);
     ah_assert_if_debug(on_handshake_done_cb != NULL);
 
@@ -130,7 +130,7 @@ handle_non_zero_res:
 
 ah_err_t ah_i_mbedtls_conn_init(void* ctx, ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs)
 {
-    if (ctx == NULL || conn == NULL || !ah_tcp_conn_obs_is_valid(&obs)) {
+    if (ctx == NULL || conn == NULL || !ah_tcp_conn_cbs_is_valid_for_connection(obs.cbs)) {
         return AH_EINVAL;
     }
 

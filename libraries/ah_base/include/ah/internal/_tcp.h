@@ -14,15 +14,21 @@
 # include "_tcp-uring.h"
 #endif
 
-#define AH_I_TCP_CONN_STATE_CLOSED     0u
-#define AH_I_TCP_CONN_STATE_OPEN       1u
-#define AH_I_TCP_CONN_STATE_CONNECTING 2u
-#define AH_I_TCP_CONN_STATE_CONNECTED  3u // Writes allowed.
-#define AH_I_TCP_CONN_STATE_READING    4u // Writes allowed.
+#define AH_I_TCP_CONN_STATE_TERMINATED  0u
+#define AH_I_TCP_CONN_STATE_INITIALIZED 1u
+#define AH_I_TCP_CONN_STATE_CLOSING     2u
+#define AH_I_TCP_CONN_STATE_CLOSED      3u
+#define AH_I_TCP_CONN_STATE_OPEN        4u
+#define AH_I_TCP_CONN_STATE_CONNECTING  5u
+#define AH_I_TCP_CONN_STATE_CONNECTED   6u // Writes allowed.
+#define AH_I_TCP_CONN_STATE_READING     7u // Writes allowed.
 
-#define AH_I_TCP_LISTENER_STATE_CLOSED    0u
-#define AH_I_TCP_LISTENER_STATE_OPEN      1u
-#define AH_I_TCP_LISTENER_STATE_LISTENING 2u
+#define AH_I_TCP_LISTENER_STATE_TERMINATED  0u
+#define AH_I_TCP_LISTENER_STATE_INITIALIZED 1u
+#define AH_I_TCP_LISTENER_STATE_CLOSING     2u
+#define AH_I_TCP_LISTENER_STATE_CLOSED      3u
+#define AH_I_TCP_LISTENER_STATE_OPEN        4u
+#define AH_I_TCP_LISTENER_STATE_LISTENING   5u
 
 #define AH_I_TCP_CONN_FIELDS     \
  ah_loop_t* _loop;               \
@@ -38,28 +44,23 @@
  uint8_t _shutdown_flags;        \
  uint8_t _state;                 \
                                  \
- AH_I_TCP_CONN_PLATFORM_FIELDS   \
-                                 \
- void* _user_data;
+ AH_I_TCP_CONN_PLATFORM_FIELDS
 
 #define AH_I_TCP_IN_FIELDS \
  ah_tcp_in_t** _owner_ptr;
 
-#define AH_I_TCP_LISTENER_FIELDS     \
- ah_loop_t* _loop;                   \
-                                     \
- ah_tcp_trans_t _trans;              \
- ah_tcp_listener_obs_t _obs;         \
-                                     \
- const ah_tcp_conn_cbs_t* _conn_cbs; \
- struct ah_i_slab _conn_slab;        \
-                                     \
- bool _is_ipv6;                      \
- uint8_t _state;                     \
-                                     \
- AH_I_TCP_LISTENER_PLATFORM_FIELDS   \
-                                     \
- void* _user_data;
+#define AH_I_TCP_LISTENER_FIELDS \
+ ah_loop_t* _loop;               \
+                                 \
+ ah_tcp_trans_t _trans;          \
+ ah_tcp_listener_obs_t _obs;     \
+                                 \
+ struct ah_i_slab _conn_slab;    \
+                                 \
+ bool _is_ipv6;                  \
+ uint8_t _state;                 \
+                                 \
+ AH_I_TCP_LISTENER_PLATFORM_FIELDS
 
 #define AH_I_TCP_OUT_FIELDS \
  void* _owner;              \
