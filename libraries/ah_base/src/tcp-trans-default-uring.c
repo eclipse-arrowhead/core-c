@@ -420,9 +420,16 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto handle_err;
     }
 
+    ah_tcp_trans_t trans;
+    err = ln->_trans.vtab->trans_for_conn_init(ln->_trans.ctx, &trans);
+    if (err != AH_ENONE) {
+        ah_i_slab_free(&ln->_conn_slab, conn);
+        goto handle_err;
+    }
+
     *conn = (ah_tcp_conn_t) {
         ._loop = ln->_loop,
-        ._trans = ln->_trans,
+        ._trans = trans,
         ._owning_slab = &ln->_conn_slab,
         ._sock_family = ln->_sock_family,
         ._state = AH_I_TCP_CONN_STATE_CONNECTED,

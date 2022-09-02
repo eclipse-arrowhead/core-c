@@ -62,7 +62,7 @@ static void ah_s_mbedtls_client_on_handshake_done(ah_mbedtls_client_t* client, c
 static void ah_s_tcp_on_listener_open(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 static void ah_s_tcp_on_listener_listen(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 static void ah_s_tcp_on_listener_close(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
-static void ah_s_tcp_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err);
+static void ah_s_tcp_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err);
 
 static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_mbedtls_client_t* client, ah_err_t err);
 
@@ -348,7 +348,7 @@ static void ah_s_tcp_on_listener_close(void* ctx, ah_tcp_listener_t* ln, ah_err_
     user_data->did_call_close_cb = true;
 }
 
-static void ah_s_tcp_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr, ah_err_t err)
+static void ah_s_tcp_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err)
 {
     (void) ctx;
 
@@ -366,7 +366,8 @@ static void ah_s_tcp_on_listener_accept(void* ctx, ah_tcp_listener_t* ln, ah_tcp
 
     (void) ah_unit_assert(AH_UNIT_CTX, res, raddr != NULL, "ln_addr == NULL");
 
-    ah_tcp_conn_set_obs(conn, &user_data->accept_user_data);
+    obs->cbs = &s_conn_cbs;
+    obs->ctx = &user_data->accept_user_data;
 
     err = ah_tcp_conn_read_start(conn);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, user_data->res, err, AH_ENONE)) {
@@ -488,13 +489,12 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_default(), &ln_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
 
     ah_tcp_listener_t ln;
-    err = ah_tcp_listener_init(&ln, &loop, ah_mbedtls_server_as_trans(&ln_server), (ah_tcp_listener_obs_t) { &s_listener_cbs });
+    err = ah_tcp_listener_init(&ln, &loop, ah_mbedtls_server_as_trans(&ln_server), (ah_tcp_listener_obs_t) { &s_listener_cbs, &ln_user_data });
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }
 
     ln_user_data.accept_user_data.ln = &ln;
-    ah_tcp_listener_set_obs(&ln, &ln_user_data);
 
     // Setup TLS client.
 
@@ -561,13 +561,12 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     ah_mbedtls_client_init(&conn_client, ah_tcp_trans_get_default(), &conn_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
 
     ah_tcp_conn_t conn;
-    err = ah_tcp_conn_init(&conn, &loop, ah_mbedtls_client_as_trans(&conn_client), (ah_tcp_conn_obs_t) { &s_conn_cbs });
+    err = ah_tcp_conn_init(&conn, &loop, ah_mbedtls_client_as_trans(&conn_client), (ah_tcp_conn_obs_t) { &s_conn_cbs, &conn_user_data });
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }
 
     conn_user_data.ln_addr = &ln_user_data.addr;
-    ah_tcp_conn_set_obs(&conn, &conn_user_data);
 
     ln_user_data.conn = &conn;
 

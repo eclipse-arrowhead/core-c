@@ -180,3 +180,24 @@ bool ah_i_tcp_trans_default_listener_is_closed(void* ctx, ah_tcp_listener_t* ln)
 
     return ln == NULL || ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSING;
 }
+
+ah_err_t ah_i_tcp_trans_default_trans_for_conn_init(void* ctx, ah_tcp_trans_t* trans)
+{
+    (void) ctx;
+
+    if (trans == NULL) {
+        return AH_EINVAL;
+    }
+
+    *trans = ah_tcp_trans_get_default();
+
+    return AH_ENONE;
+}
+
+ah_err_t ah_i_tcp_trans_default_trans_for_conn_term(void* ctx, ah_tcp_trans_t trans)
+{
+    (void) ctx;
+    (void) trans;
+
+    return AH_ENONE;
+}

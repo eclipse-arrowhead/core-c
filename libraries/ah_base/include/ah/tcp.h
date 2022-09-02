@@ -121,9 +121,9 @@ struct ah_tcp_trans {
  * A set of function pointers representing the TCP functions that must be
  * implemented by every valid transport (see ah_tcp_trans). Every function
  * pointer must set and the function it points to should behave as documented by
- * the function it is named after. Each function pointer has a void pointer
- * @c ctx parameter. This is meant to be provided with the value of the
- * ah_tcp_trans::ctx field of the transport owning this virtual function table.
+ * the function it is named after. Each function field takes a void pointer
+ * @c ctx as its first argument. This is argument is meant to come from the
+ * ah_tcp_trans::ctx field of the owning ah_tcp_trans instance.
  *
  * @note This structure is primarily useful to those working with TCP transport
  *       implementations.
@@ -164,6 +164,9 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*listener_set_keepalive)(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
     ah_err_t (*listener_set_nodelay)(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
     ah_err_t (*listener_set_reuseaddr)(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
+
+    ah_err_t (*trans_for_conn_init)(void* ctx, ah_tcp_trans_t* trans);
+    void (*trans_for_conn_term)(void* ctx, ah_tcp_trans_t trans);
 };
 
 /**

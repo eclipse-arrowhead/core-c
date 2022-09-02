@@ -31,7 +31,6 @@
  struct ah_mbedtls_client* _next_free;
 
 #define AH_I_TLS_SERVER_FIELDS                          \
- ah_tcp_conn_obs_t _conn_obs;                           \
  ah_tcp_listener_obs_t _ln_obs;                         \
  ah_tcp_trans_t _trans;                                 \
                                                         \
