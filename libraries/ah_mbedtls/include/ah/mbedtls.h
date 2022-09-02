@@ -28,8 +28,8 @@ typedef struct ah_mbedtls_server ah_mbedtls_server_t;
 /**
  * @a conn has been part of a completed TLS handshake.
  *
- * @param conn       Pointer to connection over which the TLS handshake was
- *                   performed.
+ * @param client     Pointer to client associated with the connection through
+ *                   which the TLS handshake was performed.
  * @param peer_chain Pointer to the certificate chain of the remote host, if
  *                   @a err is @ref AH_ENONE and MbedTLS is compiled with
  *                   @c MBEDTLS_X509_CRT_PARSE_C enabled. @c NULL is returned in

@@ -421,7 +421,7 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     }
 
     ah_tcp_trans_t trans;
-    err = ln->_trans.vtab->trans_for_conn_init(ln->_trans.ctx, &trans);
+    err = ln->_trans.vtab->trans_prepare(ln->_trans.ctx, &trans);
     if (err != AH_ENONE) {
         ah_i_slab_free(&ln->_conn_slab, conn);
         goto handle_err;

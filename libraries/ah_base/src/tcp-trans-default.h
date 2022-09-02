@@ -43,6 +43,6 @@ bool ah_i_tcp_trans_default_listener_is_closed(void* ctx, ah_tcp_listener_t* ln)
 ah_err_t ah_i_tcp_trans_default_listener_set_keepalive(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
 ah_err_t ah_i_tcp_trans_default_listener_set_nodelay(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
 ah_err_t ah_i_tcp_trans_default_listener_set_reuseaddr(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
-ah_err_t ah_i_tcp_trans_default_trans_for_conn_init(void* ctx, ah_tcp_trans_t* trans);
+ah_err_t ah_i_tcp_trans_default_trans_init(void* ctx, ah_tcp_trans_t* trans);
 
 #endif

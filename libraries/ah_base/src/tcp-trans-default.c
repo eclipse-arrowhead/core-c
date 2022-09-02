@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "tcp-trans-default.h"
@@ -181,7 +177,7 @@ bool ah_i_tcp_trans_default_listener_is_closed(void* ctx, ah_tcp_listener_t* ln)
     return ln == NULL || ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSING;
 }
 
-ah_err_t ah_i_tcp_trans_default_trans_for_conn_init(void* ctx, ah_tcp_trans_t* trans)
+ah_err_t ah_i_tcp_trans_default_trans_init(void* ctx, ah_tcp_trans_t* trans)
 {
     (void) ctx;
 
@@ -194,7 +190,7 @@ ah_err_t ah_i_tcp_trans_default_trans_for_conn_init(void* ctx, ah_tcp_trans_t* t
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_trans_default_trans_for_conn_term(void* ctx, ah_tcp_trans_t trans)
+ah_err_t ah_i_tcp_trans_default_trans_term(void* ctx, ah_tcp_trans_t trans)
 {
     (void) ctx;
     (void) trans;
