@@ -485,7 +485,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_ssl_conf_rng(&ln_ssl_conf, mbedtls_ctr_drbg_random, &ln_ctr_drbg);
 
     ah_mbedtls_server_t ln_server;
-    ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_root(), &ln_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
+    ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_default(), &ln_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
 
     ah_tcp_listener_t ln;
     err = ah_tcp_listener_init(&ln, &loop, ah_mbedtls_server_as_trans(&ln_server), (ah_tcp_listener_obs_t) { &s_listener_cbs });
@@ -558,7 +558,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_ssl_conf_rng(&conn_ssl_conf, mbedtls_ctr_drbg_random, &conn_ctr_drbg);
 
     ah_mbedtls_client_t conn_client;
-    ah_mbedtls_client_init(&conn_client, ah_tcp_trans_get_root(), &conn_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
+    ah_mbedtls_client_init(&conn_client, ah_tcp_trans_get_default(), &conn_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
 
     ah_tcp_conn_t conn;
     err = ah_tcp_conn_init(&conn, &loop, ah_mbedtls_client_as_trans(&conn_client), (ah_tcp_conn_obs_t) { &s_conn_cbs });

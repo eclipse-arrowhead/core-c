@@ -49,6 +49,11 @@ set(
     src/rw.c
     src/sock.c
     src/task.c
+    src/tcp-in.c
+    src/tcp-out.c
+    src/tcp-trans-default.c
+    src/tcp-trans-default.h
+    src/tcp-trans.c
     src/tcp.c
     src/time.c
     src/udp.c
@@ -59,20 +64,20 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/_sock-bsd.h
-        include/ah/internal/_time-darwin.h
+        include/ah/internal/_buf-posix.h
         include/ah/internal/_loop-kqueue.h
+        include/ah/internal/_sock-bsd.h
         include/ah/internal/_task-kqueue.h
         include/ah/internal/_tcp-kqueue.h
+        include/ah/internal/_time-darwin.h
         include/ah/internal/_udp-kqueue.h
-        include/ah/internal/_buf-posix.h
         src/abort-posix.c
         src/buf-posix.c
         src/loop-kqueue.c
         src/sock-bsd.c
         src/task-kqueue.c
-        src/tcp-bsd.c
-        src/tcp-kqueue.c
+        src/tcp-trans-default-bsd.c
+        src/tcp-trans-default-kqueue.c
         src/time-darwin.c
         src/udp-bsd.c
         src/udp-kqueue.c
@@ -83,9 +88,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/_sock-bsd.h
         include/ah/internal/_buf-posix.h
         include/ah/internal/_loop-uring.h
+        include/ah/internal/_sock-bsd.h
         include/ah/internal/_task-uring.h
         include/ah/internal/_tcp-uring.h
         include/ah/internal/_time-uring.h
@@ -95,8 +100,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         src/loop-uring.c
         src/sock-bsd.c
         src/task-uring.c
-        src/tcp-bsd.c
-        src/tcp-uring.c
+        src/tcp-trans-default-bsd.c
+        src/tcp-trans-default-uring.c
         src/time-uring.c
         src/udp-bsd.c
         src/udp-uring.c
@@ -107,20 +112,20 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/_sock-bsd.h
+        include/ah/internal/_buf-win32.h
         include/ah/internal/_loop-iocp.h
+        include/ah/internal/_sock-bsd.h
         include/ah/internal/_task-iocp.h
         include/ah/internal/_tcp-iocp.h
-        include/ah/internal/_udp-iocp.h
-        include/ah/internal/_buf-win32.h
         include/ah/internal/_time-win32.h
+        include/ah/internal/_udp-iocp.h
         src/abort-win32.c
         src/buf-win32.c
         src/loop-iocp.c
         src/sock-bsd.c
         src/task-iocp.c
-        src/tcp-bsd.c
-        src/tcp-iocp.c
+        src/tcp-trans-default-bsd.c
+        src/tcp-trans-default-iocp.c
         src/time-win32.c
         src/udp-bsd.c
         src/udp-iocp.c

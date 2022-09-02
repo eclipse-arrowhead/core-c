@@ -10,7 +10,9 @@
  * Here, the data structures and functions required to setup and send messages
  * through TCP connections are made available. Such connections are produced
  * either by @e connecting to a remote host or @e listening for incoming
- * connections.
+ * connections. To learn more about TCP, please refer to
+ * <a href="https://www.rfc-editor.org/rfc/rfc9293.html">RFC9293</a>. Below, we
+ * briefly describe how to use this C API.
  *
  * @note When we use the terms @e remote and @e local throughout this file, we
  *       do so from the perspective of individual connections rather than
@@ -21,6 +23,42 @@
  *       receives are remote. Whether the connections and listeners are
  *       physically located on different devices or processes is not of
  *       concern.
+ *
+ * <h3>Connections</h3>
+ *
+ * To set up a local connection to a remote listener, you call
+ * ah_tcp_conn_init(), ah_tcp_conn_open() and ah_tcp_conn_connect(), in that
+ * order. Successfully initialized connections are terminated with
+ * ah_tcp_conn_term() and successfully opened connections are closed with
+ * ah_tcp_conn_close(). If you wish to configure a connection by setting any of
+ * its options, it is typically most appropriate to do so after it has been
+ * opened and before it is connected. Every connection may receive data, and is
+ * notified of other events, via a callback set of type ah_tcp_conn_cbs.
+ *
+ * After being successfully connected to a remote host, a connection does not
+ * automatically enable receiving of data from its peer. The receiving of peer
+ * data must be enabled and disabled using ah_tcp_conn_read_start() and
+ * ah_tcp_conn_read_stop() functions. You may also chose to shut down reading
+ * and/or writing using ah_tcp_conn_shutdown() when you know nothing else of
+ * interest will be read and/or written.
+ *
+ * To write data to the remote peer of a connection, use the ah_tcp_conn_write()
+ * function.
+ *
+ * <h3>Listeners</h3>
+ *
+ * Setting up a local TCP listener requires you to call ah_tcp_listener_init(),
+ * ah_tcp_listener_open() and ah_tcp_listener_liten(), in that order.
+ * Successfully initialized listeners are terminated with ah_tcp_listener_term()
+ * and successfully opened listeners are closed with ah_tcp_listener_close(). If
+ * you wish to configure a listener by setting any of its options, such as by
+ * using ah_tcp_listener_set_reuseaddr(), it is typically most appropriate to do
+ * so after the listener has been opened and before it starts to listen for
+ * incoming connections. Listeners receive incoming connections and are notified
+ * of other events via their callback sets, which are of type
+ * ah_tcp_listener_cbs.
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9293.html
  */
 
 #include "buf.h"
@@ -83,12 +121,12 @@ struct ah_tcp_trans {
  * A set of function pointers representing the TCP functions that must be
  * implemented by every valid transport (see ah_tcp_trans). Every function
  * pointer must set and the function it points to should behave as documented by
- * the regular functions they are named after. Each of them takes a void pointer
- * @c ctx argument, which corresponds to the ah_tcp_trans::ctx field of the
- * transport owning the function table in question.
+ * the function it is named after. Each function pointer has a void pointer
+ * @c ctx parameter. This is meant to be provided with the value of the
+ * ah_tcp_trans::ctx field of the transport owning this virtual function table.
  *
- * @note This structure is primarily useful to those wishing to implement their
- *       own TCP transports.
+ * @note This structure is primarily useful to those working with TCP transport
+ *       implementations.
  */
 struct ah_tcp_trans_vtab {
     ah_err_t (*conn_init)(void* ctx, ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs);
@@ -100,21 +138,32 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*conn_shutdown)(void* ctx, ah_tcp_conn_t* conn, uint8_t flags);
     ah_err_t (*conn_close)(void* ctx, ah_tcp_conn_t* conn);
     ah_err_t (*conn_term)(void* ctx, ah_tcp_conn_t* conn);
-    ah_err_t (*conn_get_laddr)(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
-    ah_err_t (*conn_get_raddr)(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr);
-    ah_err_t (*conn_set_keepalive)(ah_tcp_conn_t* conn, bool is_enabled);
-    ah_err_t (*conn_set_nodelay)(ah_tcp_conn_t* conn, bool is_enabled);
-    ah_err_t (*conn_set_reuseaddr)(ah_tcp_conn_t* conn, bool is_enabled);
+    int (*conn_get_family)(void* ctx, const ah_tcp_conn_t* conn);
+    ah_err_t (*conn_get_laddr)(void* ctx, const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr);
+    ah_err_t (*conn_get_raddr)(void* ctx, const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr);
+    ah_loop_t* (*conn_get_loop)(void* ctx, const ah_tcp_conn_t* conn);
+    void* (*conn_get_obs_ctx)(void* ctx, const ah_tcp_conn_t* conn);
+    bool (*conn_is_closed)(void* ctx, const ah_tcp_conn_t* conn);
+    bool (*conn_is_readable)(void* ctx, const ah_tcp_conn_t* conn);
+    bool (*conn_is_reading)(void* ctx, const ah_tcp_conn_t* conn);
+    bool (*conn_is_writable)(void* ctx, const ah_tcp_conn_t* conn);
+    ah_err_t (*conn_set_keepalive)(void* ctx, ah_tcp_conn_t* conn, bool is_enabled);
+    ah_err_t (*conn_set_nodelay)(void* ctx, ah_tcp_conn_t* conn, bool is_enabled);
+    ah_err_t (*conn_set_reuseaddr)(void* ctx, ah_tcp_conn_t* conn, bool is_enabled);
 
     ah_err_t (*listener_init)(void* ctx, ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_listener_obs_t obs);
     ah_err_t (*listener_open)(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
     ah_err_t (*listener_listen)(void* ctx, ah_tcp_listener_t* ln, unsigned backlog);
     ah_err_t (*listener_close)(void* ctx, ah_tcp_listener_t* ln);
     ah_err_t (*listener_term)(void* ctx, ah_tcp_listener_t* ln);
-    ah_err_t (*listener_get_laddr)(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr);
-    ah_err_t (*listener_set_keepalive)(ah_tcp_listener_t* ln, bool is_enabled);
-    ah_err_t (*listener_set_nodelay)(ah_tcp_listener_t* ln, bool is_enabled);
-    ah_err_t (*listener_set_reuseaddr)(ah_tcp_listener_t* ln, bool is_enabled);
+    int (*listener_get_family)(void* ctx, const ah_tcp_listener_t* ln);
+    ah_err_t (*listener_get_laddr)(void* ctx, const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr);
+    ah_loop_t* (*listener_get_loop)(void* ctx, const ah_tcp_listener_t* ln);
+    void* (*listener_get_obs_ctx)(void* ctx, const ah_tcp_listener_t* ln);
+    bool (*listener_is_closed)(void* ctx, ah_tcp_listener_t* ln);
+    ah_err_t (*listener_set_keepalive)(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
+    ah_err_t (*listener_set_nodelay)(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
+    ah_err_t (*listener_set_reuseaddr)(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
 };
 
 /**
@@ -166,8 +215,9 @@ struct ah_tcp_conn_cbs {
      * @param conn Pointer to connection.
      * @param err  @ref AH_ENONE if a connection was opened successfully. What
      *             other error codes are possible depend on the used TCP
-     *             transport. The following codes may be provided if the default
-     *             transport is used, directly or indirectly: <ul>
+     *             transport. The following codes may be provided if the
+     *             <em>default transport</em> is used, directly or
+     *             indirectly: <ul>
      *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open connection.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
@@ -198,8 +248,9 @@ struct ah_tcp_conn_cbs {
      * @param conn Pointer to connection.
      * @param err  @ref AH_ENONE if a connection was established successfully.
      *             What other error codes are possible depend on the used TCP
-     *             transport. The following codes may be provided if the default
-     *             transport is used, directly or indirectly: <ul>
+     *             transport. The following codes may be provided if the
+     *             <em>default transport</em> is used, directly or
+     *             indirectly: <ul>
      *   <li>@ref AH_EADDRINUSE [Darwin, Linux, Win32] - Failed to bind a concrete local address.
      *                                                   This error only occurs if the connection
      *                                                   was opened with the wildcard address,
@@ -262,8 +313,8 @@ struct ah_tcp_conn_cbs {
      *             is not @ref AH_ENONE.
      * @param err  @ref AH_ENONE if a data was received successfully. What other
      *             error codes are possible depend on the used TCP transport.
-     *             The following codes may be provided if the root transport
-     *             is used, directly or indirectly: <ul>
+     *             The following codes may be provided if the <em>default
+     *             transport</em> is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                  - Connection event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Win32]       - Virtual circuit terminated due to time-out or
      *                                            other failure.
@@ -305,8 +356,8 @@ struct ah_tcp_conn_cbs {
      *             @c NULL if @a err is not @ref AH_ENONE.
      * @param err  @ref AH_ENONE if the data was sent successfully. What other
      *             error codes are possible depend on the used TCP transport.
-     *             The following codes may be provided if the root transport
-     *             is used, directly or indirectly: <ul>
+     *             The following codes may be provided if the <em>default
+     *             transport</em> is used, directly or indirectly: <ul>
      *   <li>@ref AH_ECANCELED                         - Connection event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Win32]              - Virtual circuit terminated due to time-out
      *                                                   or other failure.
@@ -385,8 +436,8 @@ struct ah_tcp_listener_cbs {
      * @param ln  Pointer to listener.
      * @param err @ref AH_ENONE if @a ln was opened successfully. What other
      *            error codes are possible depend on the used TCP transport.
-     *            The following codes may be provided if the root transport
-     *            is used, directly or indirectly: <ul>
+     *            The following codes may be provided if the <em>default
+     *            transport</em> is used, directly or indirectly: <ul>
      *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open listener.
      *   <li>@ref AH_EADDRINUSE                     - Specified local address already in use.
      *   <li>@ref AH_EADDRNOTAVAIL                  - No available local network interface is
@@ -410,8 +461,9 @@ struct ah_tcp_listener_cbs {
      * @param ln   Pointer to listener.
      * @param err  @ref AH_ENONE if @a ln started to listen successfully. What
      *             other error codes are possible depend on the used TCP
-     *             transport. The following codes may be provided if the default
-     *             transport is used, directly or indirectly: <ul>
+     *             transport. The following codes may be provided if the
+     *             <em>default transport</em> is used, directly or
+     *             indirectly: <ul>
      *   <li>@ref AH_EACCES [Darwin]           - Not permitted to listen.
      *   <li>@ref AH_EADDRINUSE [Linux, Win32] - No ephemeral TCP port is available. This error
      *                                           can only occur if the listener was opened with
@@ -450,7 +502,8 @@ struct ah_tcp_listener_cbs {
      * @param err   @ref AH_ENONE if @a ln accepted connection successfully.
      *              What other error codes are possible depend on the used TCP
      *              transport. The following codes may be provided if the
-     *              root transport is used, directly or indirectly: <ul>
+     *              <em>default transport</em> is used, directly or
+     *              indirectly: <ul>
      *   <li>@ref AH_ECANCELED                     - Listener event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Darwin, Linux]  - Connection aborted before finalization.
      *   <li>@ref AH_ECONNRESET [Win32]            - Connection aborted before finalization.
@@ -537,12 +590,12 @@ struct ah_tcp_out {
  * @param obs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a trans @c vtab is @c NULL or the @a trans
- *                        @c vtab->conn_init field is @c NULL.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a trans @c ->vtab is @c NULL or @a trans
+ *                        @c ->vtab->conn_init is @c NULL.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
- *
- * @note The root transport may also yield any of the following error codes: <ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_EINVAL - @a loop or @a cbs is @c NULL.
  *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
  *   <li>@ref AH_EINVAL - @a obs @c cbs is invalid, as reported by
@@ -550,10 +603,10 @@ struct ah_tcp_out {
  * </ul>
  *
  * @note Every successfully initialized @a conn must eventually be provided to
- *       ah_tcp_conn_term(). Normally, this is done in two places: (1) in the
- *       ah_tcp_conn_cbs::on_open callback if its @c err argument is not
- *       @ref AH_ENONE, and (2) unconditionally in the ah_tcp_conn_cbs::on_close
- *       callback.
+ *       ah_tcp_conn_term(). Normally, this is done in two places: <ol>
+ *         <li>in the ah_tcp_conn_cbs::on_open callback of @a conn after a check that its @c err
+ *             argument is not @ref AH_ENONE, and
+ *         <li>unconditionally in the ah_tcp_conn_cbs::on_close callback.
  */
 ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs);
 
@@ -576,17 +629,18 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
  *              port number automatically, specify port @c 0.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE        - Operation successful.
- *   <li>@ref AH_EINVAL       - @a conn is @c NULL.
- *   <li>@ref AH_ESTATE       - @a conn can be determined not to have been properly initialized.
+ *   <li>@ref AH_EINVAL       - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                              @c ->vtab->conn_open is @c NULL.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
- *
- * @note The root transport may also yield any of the following error codes: <ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not an IP-based address.
  *   <li>@ref AH_ECANCELED    - The event loop of @a conn is shutting down.
  *   <li>@ref AH_EINVAL       - @a laddr is @c NULL.
  *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a conn can be determined not to have been properly initialized.
  * </ul>
  *
  * @note Every successfully opened @a conn must eventually be provided to
@@ -611,17 +665,18 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
  *              @a conn is closed.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE        - Operation successful.
- *   <li>@ref AH_EINVAL       - @a conn is @c NULL.
- *   <li>@ref AH_ESTATE       - @a conn is not open.
+ *   <li>@ref AH_EINVAL       - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                              @c ->vtab->conn_connect is @c NULL.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
- *
- * @note The root transport may also yield any of the following error codes: <ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_EAFNOSUPPORT - @a raddr is not an IP-based address.
  *   <li>@ref AH_ECANCELED    - The event loop of @a conn is shutting down.
  *   <li>@ref AH_EINVAL       - @a conn or @a raddr is @c NULL.
  *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
+ *   <li>@ref AH_ESTATE       - @a conn is not open.
  * </ul>
  *
  * @note Data receiving is disabled for new connections by default. Is must be
@@ -642,13 +697,13 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
  *
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a conn is @c NULL.
- *   <li>@ref AH_ESTATE - @a conn is not currently connected.
+ *   <li>@ref AH_ENONE            - Operation successful.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                                  @c ->vtab->conn_read_start is @c NULL.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
- *
- * @note The root transport may also yield any of the following error codes: <ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ECANCELED        - The event loop of @a conn is shutting down.
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
@@ -656,7 +711,7 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
  *   <li>@ref AH_EOVERFLOW        - @c AH_PSIZE is too small for it to be possible to store both
  *                                  required metadata @e and read data in a single page provided
  *                                  by the page allocator (see ah_palloc()).
- *   <li>@ref AH_ESTATE           - Read direction of @a conn been shut down.
+ *   <li>@ref AH_ESTATE           - @a conn is not connected or its read direction is shut down.
  * </ul>
  *
  * @warning This function must be called with a successfully connected
@@ -672,12 +727,14 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a conn is @c NULL.
- *   <li>@ref AH_ESTATE - @a conn reading not started.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                        @c ->vtab->conn_read_stop is @c NULL.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
- *
- * @note The root transport does not yield any additional error codes.
+ * The <em>default transport</em> may also cause the following error code to be
+ * returned: <ul>
+ *   <li>@ref AH_ESTATE - @a conn reading not started.
+ * </ul>
  *
  * @note It is acceptable to call this function immediately after a successful
  *       call to ah_tcp_conn_read_start() with the same @a conn, even if that
@@ -705,18 +762,18 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
  * @param out  Pointer to outgoing data.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - Operation successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
- *   <li>@ref AH_ESTATE           - @a conn is not connected.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                                  @c ->vtab->conn_write is @c NULL.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
- *
- * @note The root transport may also yield any of the following error codes: <ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ECANCELED        - The event loop of @a conn is shutting down.
  *   <li>@ref AH_EINVAL           - out is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
- *   <li>@ref AH_ESTATE           - Write direction of @a conn has been shut down.
+ *   <li>@ref AH_ESTATE           - @a conn is not connected or its write direction is shut down.
  * </ul>
  *
  * @warning This function must be called with a successfully connected
@@ -739,15 +796,16 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
  * @param flags Shutdown flags.
  * @return One of the following error codes:
  *   <li>@ref AH_ENONE                - Operation successful.
- *   <li>@ref AH_EINVAL               - @a conn is @c NULL.
- *   <li>@ref AH_ESTATE               - @a conn is not connected.
+ *   <li>@ref AH_EINVAL               - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                                      @c ->vtab->conn_shutdown is @c NULL.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
- *
- * @note The root transport may also yield any of the following error codes: <ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ECONNABORTED [Win32] - Connection has been aborted.
  *   <li>@ref AH_ECONNRESET [Win32]   - Connection has been reset by its remote host.
  *   <li>@ref AH_ENETDOWN [Win32]     - The network subsystem has failed.
+ *   <li>@ref AH_ESTATE               - @a conn is not connected.
  * </ul>
  *
  * @warning A connection with both of its read and write directions shut down
@@ -767,11 +825,13 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags);
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a conn is @c NULL.
- *   <li>@ref AH_ESTATE - @a conn is already closed.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                        @c ->vtab->conn_close is @c NULL.
  * </ul>
- *
- * @note The root transport does not yield any additional error codes.
+ * The <em>default transport</em> may also cause the following error code to be
+ * returned: <ul>
+ *   <li>@ref AH_ESTATE - @a conn is not open.
+ * </ul>
  *
  * @warning This function must be called with a successfully opened connection.
  */
@@ -783,11 +843,13 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a conn is @c NULL.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                        @c ->vtab->conn_term is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause the following error code to be
+ * returned: <ul>
  *   <li>@ref AH_ESTATE - @a conn is not closed.
  * </ul>
- *
- * @note The root transport does not yield any additional error codes.
  *
  * @warning This function must be called with a successfully closed connection.
  */
@@ -796,11 +858,16 @@ ah_extern ah_err_t ah_tcp_conn_term(ah_tcp_conn_t* conn);
 /**
  * Checks the socket family of @a conn.
  *
+ * For most TCP transports you may expect this socket family to be the same as
+ * was specified in the call to ah_tcp_conn_open() through which @a conn was
+ * first opened.
+ *
  * @param conn Pointer to connection.
- * @return One of the following identifiers: <ul>
+ * @return Socket family identifier or @c -1 if @a conn is @c NULL or some other
+ *         error occurred. If the <em>default transport</em> is used, the
+ *         following identifiers may be produced: <ul>
  *   <li>@ref AH_SOCKFAMILY_IPV4 - IPv4 family identifier.
  *   <li>@ref AH_SOCKFAMILY_IPV6 - IPv6 family identifier.
- *   <li>@c -1                   - @a conn is @c NULL.
  * </ul>
  */
 ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn);
@@ -808,14 +875,21 @@ ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn);
 /**
  * Stores local address bound by @a conn into @a laddr.
  *
- * If @a conn was opened with a zero port, this function will report what
- * concrete port was assigned to @a conn.
+ * If @a conn was opened with a zero port, this function @e should report what
+ * concrete port was assigned to @a conn. If the <em>default transport</em>
+ * is used and this call is not intercepted by an intermediary transport, this
+ * function @e will report the assigned port.
  *
  * @param conn  Pointer to connection.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a conn or @a laddr is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or
+ *                                         @a conn @c ->vtab->conn_get_laddr is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
+ *   <li>@ref AH_EINVAL                  - @a laddr is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ESTATE                  - @a conn is closed.
@@ -830,7 +904,12 @@ ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_
  * @param raddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a conn or @a raddr is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or
+ *                                         @a conn @c ->vtab->conn_get_raddr is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
+ *   <li>@ref AH_EINVAL                  - @a raddr is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ESTATE                  - @a conn is not connected to a remote host.
@@ -841,35 +920,38 @@ ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_
 /**
  * Gets pointer to event loop of @a conn.
  *
- * @param conn Pointer to connection.
- * @return Pointer to event loop, or @c NULL if @a conn is @c NULL.
- */
-ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
-
-/**
- * Gets currently set shutdown flags of @a conn.
+ * This event loop @e should be the same one as was provided when @a conn was
+ * first initialized via a call to ah_tcp_conn_init(). If the <em>default
+ * transport</em> is used and this function is not intercepted by an
+ * intermediary transport, this function @e will return the mentioned original
+ * event loop pointer.
  *
  * @param conn Pointer to connection.
- * @return Shutdown flags associated with @a conn. If @a conn is @c NULL,
- *         @c AH_TCP_SHUTDOWN_RDWR is returned.
+ * @return Loop pointer, or @c NULL if @a conn is @c NULL, @a conn @c ->vtab
+ *         is @c NULL or @a conn @c ->vtab->conn_get_loop is @c NULL. Also
+ *         returns @c NULL if the loop pointer itself is equal to @c NULL.
  */
-ah_extern uint8_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn);
+ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
 
 /**
  * Gets the context pointer of the connection observer associated with @a conn.
  *
  * @param conn Pointer to connection.
- * @return Context pointer, or @c NULL if @a conn is @c NULL or if the context
- *         pointer itself is equal to @c NULL.
+ * @return Context pointer, or @c NULL if @a conn is @c NULL, @a conn @c ->vtab
+ *         is @c NULL or @a conn @c ->vtab->conn_get_obs_ctx is @c NULL. Also
+ *         returns @c NULL if the context pointer itself is equal to @c NULL.
  */
 ah_extern void* ah_tcp_conn_get_obs_ctx(const ah_tcp_conn_t* conn);
 
 /**
  * Checks if @a conn is in any closing or closed state.
  *
+ * Also newly initialized and terminated connections are considered closed.
+ *
  * @param conn Pointer to connection.
- * @return @c true only if @a conn is not @c NULL and is currently closed.
- *         @c false otherwise.
+ * @return @c true only if @a conn is currently closing or closed. @c false if
+ *         @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *         @c ->vtab->conn_is_closed is @c NULL.
  */
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn);
 
@@ -880,22 +962,11 @@ ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn);
  * direction shut down.
  *
  * @param conn Pointer to connection.
- * @return @c true only if @a conn is not @c NULL and is currently readable.
- *         @c false otherwise.
+ * @return @c true only if @a conn is currently readable. @c false if @a conn
+ *         is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *         @c ->vtab->conn_is_readable is @c NULL.
  */
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn);
-
-/**
- * Checks if @a conn can be read from and written to.
- *
- * A readable and writable connection is currently connected and has not had
- * either of its read or write directions shut down.
- *
- * @param conn Pointer to connection.
- * @return @c true only if @a conn is not @c NULL and is currently readable and
- *         writable. @c false otherwise.
- */
-ah_extern bool ah_tcp_conn_is_readable_and_writable(const ah_tcp_conn_t* conn);
 
 /**
  * Checks if @a conn is currently reading incoming data.
@@ -903,12 +974,13 @@ ah_extern bool ah_tcp_conn_is_readable_and_writable(const ah_tcp_conn_t* conn);
  * A connection is reading if its currently connected and
  * ah_tcp_conn_read_start() has been called with the same connection as
  * argument. In addition, neither of ah_tcp_conn_read_stop() or
- * ah_tcp_conn_shutdown() has since been used to stop or shutdown the read
- * direction of the same connection.
+ * ah_tcp_conn_shutdown() has since been used to stop or shutdown its read
+ * direction.
  *
  * @param conn Pointer to connection.
- * @return @c true only if @a conn is not @c NULL and is currently reading.
- *         @c false otherwise.
+ * @return @c true only if @a conn is currently reading, as defined above.
+ *         @c false if @a conn is @c NULL, @a conn @c ->vtab is @c NULL or
+ *         @a conn @c ->vtab->conn_is_reading is @c NULL.
  */
 ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn);
 
@@ -919,8 +991,9 @@ ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn);
  * direction shut down.
  *
  * @param conn Pointer to connection.
- * @return @c true only if @a conn is not @c NULL and is currently readable.
- *         @c false otherwise.
+ * @return @c true only if @a conn is currently writable. @c false if @a conn
+ *         is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *         @c ->vtab->conn_is_writable is @c NULL.
  */
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
 
@@ -928,15 +1001,19 @@ ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
  * Sets the @e keep-alive option of @a conn to @a is_enabled.
  *
  * This option enables or disables keep-alive messaging. Generally, using such
- * messaging means that @a conn automatically sends messages sensible times to
- * check if the connection is in a usable condition. The exact implications
+ * messaging means that @a conn automatically sends messages at sensible times
+ * to check if the connection is in a usable condition. The exact implications
  * of this option depends on the platform.
  *
  * @param conn       Pointer to connection.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                                  @c ->vtab->conn_set_keepalive is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
@@ -958,7 +1035,11 @@ ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enable
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                                  @c ->vtab->conn_set_nodelay is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
@@ -980,7 +1061,11 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
+ *                                  @c ->vtab->conn_set_reuseaddr is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
@@ -1167,11 +1252,13 @@ ah_extern void ah_tcp_in_reset(ah_tcp_in_t* in);
  *                        @c vtab->listener_init field is @c NULL.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
- *
- * @note The root transport may also yield any of the following error codes: <ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_EINVAL    - @a loop is @c NULL.
- *   <li>@ref AH_EINVAL    - @a trans @c vtab is invalid, as reported by ah_tcp_trans_vtab_is_valid().
- *   <li>@ref AH_EINVAL    - @a obs @c cbs is invalid, as reported by ah_tcp_listener_cbs_is_valid().
+ *   <li>@ref AH_EINVAL    - @a trans @c ->vtab is invalid, as reported by
+ *                           ah_tcp_trans_vtab_is_valid().
+ *   <li>@ref AH_EINVAL    - @a obs @c ->cbs is invalid, as reported by
+ *                           ah_tcp_listener_cbs_is_valid().
  *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.
  *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both metadata
  *                           @e and have room for at least one incoming connection in a single page
@@ -1200,11 +1287,14 @@ ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, 
  *              address (see ah_sockaddr_ipv4_wildcard and
  *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
  *              port number automatically, specify port @c 0.
- * @return @ref AH_ENONE if the opening of @a ln was scheduled successfully.
- *        What other error codes are possible depend on the used TCP transport.
- *        The following codes may be returned if the root transport is used,
- *        directly or indirectly: <ul>
- *   <li>@ref AH_ENONE        - @a ln opening successfully scheduled.
+* @return One of the following error codes: <ul>
+*   <li>@ref AH_ENONE         - Operation successful.
+*   <li>@ref AH_EINVAL        - @a ln is @c NULL, @a trans @c vtab is @c NULL or the @a trans
+*                               @c vtab->listener_open field is @c NULL.
+*   <li>Any additional code returned by the used TCP transport.
+* </ul>
+* The <em>default transport</em> may also cause any of the following error
+* codes to be returned: <ul>
  *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not an IP-based address.
  *   <li>@ref AH_ECANCELED    - The event loop of @a ln is shutting down.
  *   <li>@ref AH_EINVAL       - @a ln or @a laddr is @c NULL.
@@ -1233,7 +1323,13 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  *                 default will be chosen. If larger than some arbitrary
  *                 platform maximum, it will be set to that maximum.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE     - @a ln listening successfully scheduled.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a ln is @c NULL, @a trans @c vtab is @c NULL or the @a trans
+ *                        @c vtab->listener_listen field is @c NULL.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ECANCELED - The event loop of @a ln is shutting down.
  *   <li>@ref AH_EINVAL    - @a ln or @a conn_cbs is @c NULL.
  *   <li>@ref AH_EINVAL    - @c on_read, @c on_write or @c on_close of @a conn_cbs is @c NULL.
@@ -1258,9 +1354,14 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
  *
  * @param ln Pointer to listener.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - Close of @a ln successfully scheduled.
- *   <li>@ref AH_EINVAL - @a ln is @c NULL.
- *   <li>@ref AH_ESTATE - @a ln is already closed.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a ln is @c NULL, @a trans @c vtab is @c NULL or the @a trans
+ *                        @c vtab->listener_close field is @c NULL.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ * The <em>default transport</em> may also cause the following error code to be
+ * returned: <ul>
+ *   <li>@ref AH_ESTATE - @a ln is already in a closing or closed state.
  * </ul>
  *
  * @note Any already accepted connections that are still open are unaffected by
@@ -1273,9 +1374,14 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
  *
  * @param ln Pointer to listener.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - @a ln successfully terminated.
- *   <li>@ref AH_EINVAL - @a ln is @c NULL.
- *   <li>@ref AH_ESTATE - @a ln is not currently closed.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a ln is @c NULL, @a trans @c vtab is @c NULL or the @a trans
+ *                        @c vtab->listener_term field is @c NULL.
+ *   <li>Any additional code returned by the used TCP transport.
+ * </ul>
+ * The <em>default transport</em> may also cause the following error code to be
+ * returned: <ul>
+ *   <li>@ref AH_ESTATE - @a ln is not in a closed state.
  * </ul>
  *
  * @note Any already accepted connections that are still open are unaffected by
@@ -1288,11 +1394,16 @@ ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln);
 /**
  * Checks the socket family of @a ln.
  *
- * @param ln Pointer to connection.
- * @return One of the following identifiers: <ul>
- *   <li><b>AH_SOCKFAMILY_IPV4</b> - IPv4 family identifier.
- *   <li><b>AH_SOCKFAMILY_IPV6</b> - IPv6 family identifier.
- *   <li><b>-1</b>                 - @a ln is @c NULL.
+ * For most TCP transports you may expect this socket family to be the same as
+ * was specified in the call to ah_tcp_listener_open() through which @a ln was
+ * first opened.
+ *
+ * @param ln Pointer to listener.
+ * @return Socket family identifier or @c -1 if @a ln is @c NULL or some other
+ *         error occurred. If the <em>default transport</em> is used, the
+ *         following identifiers may be produced: <ul>
+ *   <li>@ref AH_SOCKFAMILY_IPV4 - IPv4 family identifier.
+ *   <li>@ref AH_SOCKFAMILY_IPV6 - IPv6 family identifier.
  * </ul>
  */
 ah_extern int ah_tcp_listener_get_family(const ah_tcp_listener_t* ln);
@@ -1300,14 +1411,21 @@ ah_extern int ah_tcp_listener_get_family(const ah_tcp_listener_t* ln);
 /**
  * Stores local address bound by @a ln into @a laddr.
  *
- * If @a ln was opened with a zero port, this function will report what
- * concrete port was assigned to @a ln.
+ * If @a ln was opened with a zero port, this function @e should report what
+ * concrete port was assigned to @a ln. If the <em>default transport</em>
+ * is used and this call is not intercepted by an intermediary transport, this
+ * function @e will report the assigned port.
  *
  * @param ln    Pointer to listener.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a ln or @a laddr is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a ln is @c NULL, @a ln @c ->vtab is @c NULL or @a ln
+ *                                         @c ->vtab->listener_get_laddr is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
+ *   <li>@ref AH_EINVAL                  - @a laddr is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ESTATE                  - @a ln is closed.
@@ -1318,42 +1436,58 @@ ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_soc
 /**
  * Gets pointer to event loop of @a ln.
  *
+ * This event loop @e should be the same one as was provided when @a ln was
+ * first initialized via a call to ah_tcp_listener_init(). If the <em>default
+ * transport</em> is used and this function is not intercepted by an
+ * intermediary transport, this function @e will return the mentioned original
+ * event loop pointer.
+ *
  * @param ln Pointer to listener.
- * @return Pointer to event loop, or @c NULL if @a ln is @c NULL.
+ * @return Loop pointer, or @c NULL if @a ln is @c NULL, @a ln @c ->vtab
+ *         is @c NULL or @a ln @c ->vtab->listener_get_loop is @c NULL. Also
+ *         returns @c NULL if the loop pointer itself is equal to @c NULL.
  */
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln);
 
 /**
- * Gets copy of the listener observer context pointer associated with @a ln.
+ * Gets the context pointer of the listener observer associated with @a conn.
  *
  * @param ln Pointer to listener.
- * @return Context pointer, or @c NULL if @a ln is @c NULL.
+ * @return Context pointer, or @c NULL if @a ln is @c NULL, @a ln @c ->vtab
+ *         is @c NULL or @a ln @c ->vtab->listener_get_obs_ctx is @c NULL. Also
+ *         returns @c NULL if the context pointer itself is equal to @c NULL.
  */
 ah_extern void* ah_tcp_listener_get_obs_ctx(const ah_tcp_listener_t* ln);
 
 /**
  * Checks if @a ln is in any closing or closed state.
  *
+ * Also newly initialized and terminated listener are considered closed.
+ *
  * @param ln Pointer to listener.
- * @return @c true only if @a ln is not @c NULL and is currently closed.
- *         @c false otherwise.
+ * @return @c true only if @a ln is currently closing or closed. @c false if
+ *         @a ln is @c NULL, @a ln @c ->vtab is @c NULL or @a ln
+ *         @c ->vtab->listener_is_closed is @c NULL.
  */
 ah_extern bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln);
 
 /**
  * Sets the @e keep-alive option of @a ln to @a is_enabled.
  *
- * This option enables or disables keep-alive messaging for accepted
- * connections. Generally, using such messaging means that messages are
- * automatically sent at sensible times to check if connections are in
- * usable conditions. The exact implications of this option depends on the
- * platform.
+ * This option enables or disables keep-alive messaging for connections accepted
+ * by @a ln. Generally, using such messaging means that @a ln automatically
+ * sends messages at sensible times to check if the connection is in a usable
+ * condition. The exact implications of this option depends on the platform.
  *
  * @param ln         Pointer to listener.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a ln is @c NULL.
+ *   <li>@ref AH_ENONE             - The operation was successful.
+ *   <li>@ref AH_EINVAL            - @a ln is @c NULL, @a ln @c ->vtab is @c NULL or
+ *                                   @a ln @c ->vtab->listener_set_keepalive is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
@@ -1365,17 +1499,21 @@ ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_
 /**
  * Sets the @e no-delay option of @a ln to @a is_enabled.
  *
- * This option being enabled means that use of Nagle's algorithm is disabled
- * for accepted connections. The mentioned algorithm queues up messages for a
- * short time before sending them over the network. The purpose of this is to
- * reduce the number of TCP segments submitted over the used network. Its
- * disadvantage is that it may increase messaging latency.
+ * This option being enabled means that use of Nagle's algorithm is disabled for
+ * accepted connections. The mentioned algorithm queues up messages for a short
+ * time before sending them over the network. The purpose of this is to reduce
+ * the number of TCP segments submitted over the used network. Its disadvantage
+ * is that it may increase messaging latency.
  *
  * @param ln         Pointer to listener.
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a ln is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a ln is @c NULL, @a ln @c ->vtab is @c NULL or @a ln
+ *                                  @c ->vtab->listener_set_nodelay is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
@@ -1397,7 +1535,11 @@ ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_en
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a ln is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a ln is @c NULL, @a ln @c ->vtab is @c NULL or @a ln
+ *                                  @c ->vtab->listener_set_reuseaddr is @c NULL.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin]  - Not enough heap memory available.
@@ -1416,6 +1558,14 @@ ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_
  * @{
  */
 
+/**
+ * Checks if @a cbs is valid for handling TCP listener events.
+ *
+ * Such a valid callback set has all of its function pointers set.
+ *
+ * @param cbs Pointer to TCP listener callback set.
+ * @return @c true only if @a cbs is @e valid. @c false otherwise.
+ */
 ah_extern bool ah_tcp_listener_cbs_is_valid(const ah_tcp_listener_cbs_t* cbs);
 
 /** @} */
@@ -1475,7 +1625,7 @@ ah_extern void ah_tcp_out_free(ah_tcp_out_t* out);
  *
  * @return Copy of default TCP transport.
  */
-ah_extern ah_tcp_trans_t ah_tcp_trans_get_root(void);
+ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void);
 
 /**
  * Checks if every field of @a vtab is set, making it valid for use as part of a

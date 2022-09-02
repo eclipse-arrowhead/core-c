@@ -16,8 +16,8 @@
 
 #define AH_I_TCP_CONN_STATE_TERMINATED  0u
 #define AH_I_TCP_CONN_STATE_INITIALIZED 1u
-#define AH_I_TCP_CONN_STATE_CLOSING     2u
-#define AH_I_TCP_CONN_STATE_CLOSED      3u
+#define AH_I_TCP_CONN_STATE_CLOSED      2u
+#define AH_I_TCP_CONN_STATE_CLOSING     3u
 #define AH_I_TCP_CONN_STATE_OPEN        4u
 #define AH_I_TCP_CONN_STATE_CONNECTING  5u
 #define AH_I_TCP_CONN_STATE_CONNECTED   6u // Writes allowed.
@@ -25,25 +25,22 @@
 
 #define AH_I_TCP_LISTENER_STATE_TERMINATED  0u
 #define AH_I_TCP_LISTENER_STATE_INITIALIZED 1u
-#define AH_I_TCP_LISTENER_STATE_CLOSING     2u
-#define AH_I_TCP_LISTENER_STATE_CLOSED      3u
+#define AH_I_TCP_LISTENER_STATE_CLOSED      2u
+#define AH_I_TCP_LISTENER_STATE_CLOSING     3u
 #define AH_I_TCP_LISTENER_STATE_OPEN        4u
 #define AH_I_TCP_LISTENER_STATE_LISTENING   5u
 
 #define AH_I_TCP_CONN_FIELDS     \
  ah_loop_t* _loop;               \
-                                 \
  ah_tcp_trans_t _trans;          \
  ah_tcp_conn_obs_t _obs;         \
                                  \
  struct ah_i_slab* _owning_slab; \
-                                 \
  ah_tcp_in_t* _in;               \
                                  \
- bool _is_ipv6;                  \
+ uint16_t _sock_family;          \
  uint8_t _shutdown_flags;        \
  uint8_t _state;                 \
-                                 \
  AH_I_TCP_CONN_PLATFORM_FIELDS
 
 #define AH_I_TCP_IN_FIELDS \
@@ -51,15 +48,13 @@
 
 #define AH_I_TCP_LISTENER_FIELDS \
  ah_loop_t* _loop;               \
-                                 \
  ah_tcp_trans_t _trans;          \
  ah_tcp_listener_obs_t _obs;     \
                                  \
  struct ah_i_slab _conn_slab;    \
                                  \
- bool _is_ipv6;                  \
+ uint16_t _sock_family;          \
  uint8_t _state;                 \
-                                 \
  AH_I_TCP_LISTENER_PLATFORM_FIELDS
 
 #define AH_I_TCP_OUT_FIELDS \

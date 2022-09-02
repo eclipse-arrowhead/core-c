@@ -152,6 +152,7 @@ hr {
 }
 
 ol, ul {
+    margin-bottom: 0.25rem;
     margin-top: 0.25rem;
     padding-left: 1.5em;
 }

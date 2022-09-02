@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/tcp.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
 #include "ah/sock.h"
+#include "ah/tcp.h"
 
 #include <stddef.h>
 
@@ -22,7 +21,7 @@
 # define SHUT_RDWR SD_BOTH
 #endif
 
-ah_err_t ah_i_tcp_trans_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_trans_default_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
     (void) ctx;
 
@@ -39,7 +38,7 @@ ah_err_t ah_i_tcp_trans_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_socka
     ah_err_t err = ah_i_sock_open_bind(conn->_loop, laddr, SOCK_STREAM, &conn->_fd);
 
     if (err == AH_ENONE) {
-        conn->_is_ipv6 = laddr->as_any.family == AH_SOCKFAMILY_IPV6;
+        conn->_sock_family = laddr->as_any.family;
         conn->_state = AH_I_TCP_CONN_STATE_OPEN;
     }
 
@@ -48,18 +47,19 @@ ah_err_t ah_i_tcp_trans_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_socka
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, uint8_t flags)
+ah_extern ah_err_t ah_i_tcp_trans_default_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, uint8_t flags)
 {
     (void) ctx;
 
     if (conn == NULL || (flags & ~AH_TCP_SHUTDOWN_RDWR) != 0u) {
         return AH_EINVAL;
     }
-    if (((flags & ~conn->_shutdown_flags) & AH_TCP_SHUTDOWN_RDWR) == 0u) {
-        return AH_ENONE;
-    }
     if (conn->_state < AH_I_TCP_CONN_STATE_CONNECTED) {
         return AH_ESTATE;
+    }
+
+    if (((flags & ~conn->_shutdown_flags) & AH_TCP_SHUTDOWN_RDWR) == 0u) {
+        return AH_ENONE;
     }
 
 #if SHUT_RD == (AH_TCP_SHUTDOWN_RD - 1) && SHUT_WR == (AH_TCP_SHUTDOWN_WR - 1) && SHUT_RDWR == (AH_TCP_SHUTDOWN_RDWR - 1)
@@ -102,19 +102,23 @@ ah_extern ah_err_t ah_i_tcp_trans_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, 
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
+ah_extern ah_err_t ah_i_tcp_trans_default_conn_get_laddr(void* ctx, const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
 {
+    (void) ctx;
+
     if (conn == NULL || laddr == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
+    if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
     return ah_i_sock_getsockname(conn->_fd, laddr);
 }
 
-ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
+ah_extern ah_err_t ah_i_tcp_trans_default_conn_get_raddr(void* ctx, const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
 {
+    (void) ctx;
+
     if (conn == NULL || raddr == NULL) {
         return AH_EINVAL;
     }
@@ -124,43 +128,49 @@ ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_
     return ah_i_sock_getpeername(conn->_fd, raddr);
 }
 
-ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled)
+ah_extern ah_err_t ah_i_tcp_trans_default_conn_set_keepalive(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
 {
+    (void) ctx;
+
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
+    if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSING) {
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
     return ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_KEEPALIVE, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
+ah_extern ah_err_t ah_i_tcp_trans_default_conn_set_nodelay(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
 {
+    (void) ctx;
+
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
+    if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSING) {
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
     return ah_i_sock_setsockopt(conn->_fd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled)
+ah_extern ah_err_t ah_i_tcp_trans_default_conn_set_reuseaddr(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
 {
+    (void) ctx;
+
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
+    if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSING) {
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
     return ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value));
 }
 
-ah_err_t ah_i_tcp_trans_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_trans_default_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
     (void) ctx;
 
@@ -181,7 +191,7 @@ ah_err_t ah_i_tcp_trans_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah
 #endif
 
     if (err == AH_ENONE) {
-        ln->_is_ipv6 = laddr->as_any.family == AH_SOCKFAMILY_IPV6;
+        ln->_sock_family = laddr->as_any.family;
         ln->_state = AH_I_TCP_LISTENER_STATE_OPEN;
     }
 
@@ -190,47 +200,55 @@ ah_err_t ah_i_tcp_trans_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr)
+ah_extern ah_err_t ah_i_tcp_trans_default_listener_get_laddr(void* ctx, const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr)
 {
+    (void) ctx;
+
     if (ln == NULL || laddr == NULL) {
         return AH_EINVAL;
     }
-    if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
+    if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSED) {
         return AH_ESTATE;
     }
     return ah_i_sock_getsockname(ln->_fd, laddr);
 }
 
-ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled)
+ah_extern ah_err_t ah_i_tcp_trans_default_listener_set_keepalive(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
 {
+    (void) ctx;
+
     if (ln == NULL) {
         return AH_EINVAL;
     }
-    if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
+    if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSING) {
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
     return ah_i_sock_setsockopt(ln->_fd, SOL_SOCKET, SO_KEEPALIVE, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled)
+ah_extern ah_err_t ah_i_tcp_trans_default_listener_set_nodelay(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
 {
+    (void) ctx;
+
     if (ln == NULL) {
         return AH_EINVAL;
     }
-    if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
+    if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSING) {
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;
     return ah_i_sock_setsockopt(ln->_fd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled)
+ah_extern ah_err_t ah_i_tcp_trans_default_listener_set_reuseaddr(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
 {
+    (void) ctx;
+
     if (ln == NULL) {
         return AH_EINVAL;
     }
-    if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
+    if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSING) {
         return AH_ESTATE;
     }
     int value = is_enabled ? 1 : 0;

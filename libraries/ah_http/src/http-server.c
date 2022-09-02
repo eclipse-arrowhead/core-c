@@ -103,7 +103,7 @@ static void s_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_conn_
     obs->cbs = &ah_i_http_conn_cbs;
     obs->ctx = cln;
 
-    if (ah_tcp_conn_is_closed(conn)) {
+    if (!ah_tcp_conn_is_readable(conn)) {
         return;
     }
 

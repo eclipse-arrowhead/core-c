@@ -524,7 +524,7 @@ static void s_should_send_and_receive_short_message(ah_unit_res_t* res)
     size_t client_count = 0u;
 
     // Get plain TCP transport.
-    ah_tcp_trans_t transport = ah_tcp_trans_get_root();
+    ah_tcp_trans_t transport = ah_tcp_trans_get_default();
 
     // Setup HTTP server.
     struct s_server_obs_ctx server_obs_ctx = {

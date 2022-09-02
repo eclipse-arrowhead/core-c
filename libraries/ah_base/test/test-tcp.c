@@ -412,7 +412,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
         .res = res,
     };
     ah_tcp_listener_t ln;
-    err = ah_tcp_listener_init(&ln, &loop, ah_tcp_trans_get_root(), (ah_tcp_listener_obs_t) { &s_listener_cbs, &ln_obs_ctx });
+    err = ah_tcp_listener_init(&ln, &loop, ah_tcp_trans_get_default(), (ah_tcp_listener_obs_t) { &s_listener_cbs, &ln_obs_ctx });
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }
@@ -423,7 +423,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
         .res = res,
     };
     ah_tcp_conn_t lconn;
-    err = ah_tcp_conn_init(&lconn, &loop, ah_tcp_trans_get_root(), (ah_tcp_conn_obs_t) { &s_conn_cbs, &lconn_obs_ctx });
+    err = ah_tcp_conn_init(&lconn, &loop, ah_tcp_trans_get_default(), (ah_tcp_conn_obs_t) { &s_conn_cbs, &lconn_obs_ctx });
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }

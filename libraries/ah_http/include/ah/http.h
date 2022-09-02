@@ -8,15 +8,15 @@
  * HTTP/1 client and server.
  *
  * Here, data structures and functions are provided for representing, setting up
- * and communicating via HTTP/1 clients and servers. To learn more about the
- * HTTP/1 protocol itself, please refer to
- * <a href="https://rfc-editor.org/rfc/rfc9110.html">RFC9110</a>. Below, we
- * briefly describe how to use this C API.
+ * and communicating via HTTP/1 clients and servers. To learn more about HTTP/1,
+ * itself please refer to <a href="https://rfc-editor.org/rfc/rfc9110.html">RFC9110</a>.
+ * Below, we briefly describe how to use this C API.
  *
  * <h3>Clients</h3>
  *
  * HTTP clients are set up using ah_http_client_init(), ah_http_client_open()
- * and ah_http_client_connect(), in that order. Successfully opened clients are
+ * and ah_http_client_connect(), in that order. Successfully initialized clients
+ * are terminated with ah_http_client_term() and successfully opened clients are
  * closed with ah_http_client_close(). Every client receives data, and is
  * notified of other events, via a callback set of type ah_http_client_cbs. To
  * send a message, you must provide a certain client with a @e head, a number of
