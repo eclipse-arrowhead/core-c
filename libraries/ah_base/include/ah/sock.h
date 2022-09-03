@@ -54,8 +54,8 @@
  */
 struct ah_sockaddr_any {
 #ifdef AH_DOXYGEN
-    uintX_t size;   /**< [Darwin] Byte size of this socket address. */
-    uintX_t family; /**< The @e family of this socket address. */
+    uintX_t size;   ///< [Darwin] Byte size of this socket address.
+    uintX_t family; ///< The @e family of this socket address.
 #else
     AH_I_SOCKADDR_COMMON
 #endif
@@ -67,51 +67,51 @@ struct ah_sockaddr_any {
  */
 struct ah_sockaddr_ip {
 #ifdef AH_DOXYGEN
-    uintX_t size;   /**< [Darwin] Byte size of this socket address. */
-    uintX_t family; /**< The @e family of this socket address. */
+    uintX_t size;   ///< [Darwin] Byte size of this socket address.
+    uintX_t family; ///< The @e family of this socket address.
 #else
     AH_I_SOCKADDR_COMMON
 #endif
-    uint16_t port; /**< UDP or TCP port number. */
+    uint16_t port; ///< UDP or TCP port number.
 };
 
 /** Socket address variant representing an IPv4-based address. */
 struct ah_sockaddr_ipv4 {
 #ifdef AH_DOXYGEN
-    uintX_t size;   /**< [Darwin] Byte size of this socket address. */
-    uintX_t family; /**< The @e family of this socket address. */
+    uintX_t size;   ///< [Darwin] Byte size of this socket address.
+    uintX_t family; ///< The @e family of this socket address.
 #else
     AH_I_SOCKADDR_COMMON
 #endif
-    uint16_t port;              /**< UDP or TCP port number. */
-    struct ah_ipaddr_v4 ipaddr; /**< IPv4 address. */
+    uint16_t port;              ///< UDP or TCP port number.
+    struct ah_ipaddr_v4 ipaddr; ///< IPv4 address.
 #if AH_HAS_BSD_SOCKETS || defined(AH_DOXYGEN)
-    uint8_t zero[8u]; /**< [BSD Sockets] Zero padding. */
+    uint8_t zero[8u]; ///< [BSD Sockets] Zero padding.
 #endif
 };
 
 /** Socket address variant representing an IPv6-based address. */
 struct ah_sockaddr_ipv6 {
 #ifdef AH_DOXYGEN
-    uintX_t size;   /**< [Darwin] Byte size of this socket address. */
-    uintX_t family; /**< The @e family of this socket address. */
+    uintX_t size;   ///< [Darwin] Byte size of this socket address.
+    uintX_t family; ///< The @e family of this socket address.
 #else
     AH_I_SOCKADDR_COMMON
 #endif
-    uint16_t port; /**< UDP or TCP port number. */
+    uint16_t port; ///< UDP or TCP port number.
 #if AH_HAS_BSD_SOCKETS || defined(AH_DOXYGEN)
-    uint32_t flowinfo; /**< [BSD Sockets] Flow information (unused). */
+    uint32_t flowinfo; ///< [BSD Sockets] Flow information (unused).
 #endif
-    struct ah_ipaddr_v6 ipaddr; /**< IPv6 address. */
-    uint32_t zone_id;           /**< IPv6 zone identifier. */
+    struct ah_ipaddr_v6 ipaddr; ///< IPv6 address.
+    uint32_t zone_id;           ///< IPv6 zone identifier.
 };
 
 /** Socket address union type. */
 union ah_sockaddr {
-    ah_sockaddr_any_t as_any;   /**< Holds fields valid for all variants. */
-    ah_sockaddr_ip_t as_ip;     /**< Holds fields valid for all IP-based variants. */
-    ah_sockaddr_ipv4_t as_ipv4; /**< IPv4-based address variant. */
-    ah_sockaddr_ipv6_t as_ipv6; /**< IPv6-based address variant. */
+    ah_sockaddr_any_t as_any;   ///< Holds fields valid for all variants.
+    ah_sockaddr_ip_t as_ip;     ///< Holds fields valid for all IP-based variants.
+    ah_sockaddr_ipv4_t as_ipv4; ///< IPv4-based address variant.
+    ah_sockaddr_ipv6_t as_ipv6; ///< IPv6-based address variant.
 };
 
 /**

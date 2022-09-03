@@ -51,9 +51,9 @@
  * @see rw.h
  */
 struct ah_rw {
-    uint8_t* r; /**< Read pointer. */
-    uint8_t* w; /**< Write pointer. */
-    uint8_t* e; /**< End pointer. */
+    uint8_t* r; ///< Read pointer.
+    uint8_t* w; ///< Write pointer.
+    uint8_t* e; ///< End pointer.
 };
 
 /**

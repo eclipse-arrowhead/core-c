@@ -80,7 +80,7 @@
  *
  * @{
  */
-#define AH_JSON_TYPE_ERROR  0u /**< Unexpected input character. */
+#define AH_JSON_TYPE_ERROR  0u ///< Unexpected input character.
 #define AH_JSON_TYPE_OBJECT 1u
 #define AH_JSON_TYPE_ARRAY  2u
 #define AH_JSON_TYPE_STRING 3u

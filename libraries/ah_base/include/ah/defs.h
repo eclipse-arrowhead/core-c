@@ -25,15 +25,21 @@
 #endif
 
 #ifndef AH_IS_DARWIN
-/** Indicates whether the targeted platform is Darwin. */
+/**
+ * Indicates whether the targeted platform is Darwin.
+ */
 # define AH_IS_DARWIN 0
 #endif
 #ifndef AH_IS_LINUX
-/** Indicates whether the targeted platform is Linux. */
+/**
+ * Indicates whether the targeted platform is Linux.
+ */
 # define AH_IS_LINUX 0
 #endif
 #ifndef AH_IS_WIN32
-/** Indicates whether the targeted platform is WIN32. */
+/**
+ * Indicates whether the targeted platform is WIN32.
+ */
 # define AH_IS_WIN32 0
 #endif
 
@@ -135,11 +141,34 @@
 #endif
 
 /**
- * Signed integer type used to hold an error code.
+ * @name Error Type
+ *
+ * This type is used to indicate that an error code is being returned or
+ * provided.
  *
  * @see err.h
+ *
+ * @{
+ */
+
+/**
+ * Signed integer type used to hold an error code.
  */
 typedef int ah_err_t;
+
+/** @} */
+
+/**
+ * @name Forward Declarations
+ *
+ * The following are the typedefs for all structures and unions specified in
+ * this library. Maintaining this list here means that it is enough to include
+ * this header if wanting to point to any type specified in this library, rather
+ * than having to incur the compile-time cost of including the header file where
+ * it is specified in full.
+ *
+ * @{
+ */
 
 typedef struct ah_buf ah_buf_t;
 typedef struct ah_ipaddr_v4 ah_ipaddr_v4_t;
@@ -173,5 +202,7 @@ typedef struct ah_udp_trans_vtab ah_udp_trans_vtab_t;
 
 typedef union ah_sockaddr ah_sockaddr_t;
 typedef union ah_udp_group ah_udp_group_t;
+
+/** @} */
 
 #endif

@@ -542,8 +542,8 @@ struct ah_http_server_cbs {
  * @see https://rfc-editor.org/rfc/rfc9112#section-2.3
  */
 struct ah_http_ver {
-    uint8_t major; /**< Major version indicator. Must be between 0 and 9. */
-    uint8_t minor; /**< Minor version indicator. Must be between 0 and 9. */
+    uint8_t major; ///< Major version indicator. Must be between 0 and 9.
+    uint8_t minor; ///< Minor version indicator. Must be between 0 and 9.
 };
 
 /**
@@ -553,8 +553,8 @@ struct ah_http_ver {
  * used to represent headers in both sent and received HTTP messages.
  */
 struct ah_http_header {
-    const char* name;  /**< Header name. Case insensitive. */
-    const char* value; /**< Header values. Case sensitive. */
+    const char* name;  ///< Header name. Case insensitive.
+    const char* value; ///< Header values. Case sensitive.
 };
 
 /**

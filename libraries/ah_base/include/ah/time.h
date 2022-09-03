@@ -23,13 +23,13 @@
  */
 #define AH_TIMEDIFF_C(V) INT64_C(V)
 
-#define AH_TIMEDIFF_NS AH_TIMEDIFF_C(1)              /**< Nanosecond ah_timediff multiplier. */
-#define AH_TIMEDIFF_US AH_TIMEDIFF_C(1000)           /**< Microsecond ah_timediff multiplier. */
-#define AH_TIMEDIFF_MS AH_TIMEDIFF_C(1000000)        /**< Millisecond ah_timediff multiplier. */
-#define AH_TIMEDIFF_S  AH_TIMEDIFF_C(1000000000)     /**< Second ah_timediff multiplier. */
-#define AH_TIMEDIFF_M  AH_TIMEDIFF_C(60000000000)    /**< Minute ah_timediff multiplier. */
-#define AH_TIMEDIFF_H  AH_TIMEDIFF_C(3600000000000)  /**< Hour ah_timediff multiplier. */
-#define AH_TIMEDIFF_D  AH_TIMEDIFF_C(86400000000000) /**< 24-hour day ah_timediff multiplier. */
+#define AH_TIMEDIFF_NS AH_TIMEDIFF_C(1)              ///< Nanosecond ah_timediff multiplier.
+#define AH_TIMEDIFF_US AH_TIMEDIFF_C(1000)           ///< Microsecond ah_timediff multiplier.
+#define AH_TIMEDIFF_MS AH_TIMEDIFF_C(1000000)        ///< Millisecond ah_timediff multiplier.
+#define AH_TIMEDIFF_S  AH_TIMEDIFF_C(1000000000)     ///< Second ah_timediff multiplier.
+#define AH_TIMEDIFF_M  AH_TIMEDIFF_C(60000000000)    ///< Minute ah_timediff multiplier.
+#define AH_TIMEDIFF_H  AH_TIMEDIFF_C(3600000000000)  ///< Hour ah_timediff multiplier.
+#define AH_TIMEDIFF_D  AH_TIMEDIFF_C(86400000000000) ///< 24-hour day ah_timediff multiplier.
 
 /** Smallest representable ah_timediff value. */
 #define AH_TIMEDIFF_MIN INT64_MIN

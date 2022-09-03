@@ -29,8 +29,8 @@
  */
 struct ah_buf {
 #if defined(AH_DOXYGEN)
-    uint8_t* base; /**< Pointer to beginning of buffer memory region. */
-    uintX_t size;  /**< Size, in bytes, of memory region referred to by @a base. */
+    uint8_t* base; ///< Pointer to beginning of buffer memory region.
+    uintX_t size;  ///< Size, in bytes, of memory region referred to by @a base.
 #elif AH_IS_WIN32
     ULONG size; // Guaranteed to be of a size smaller than or equal to size_t.
     uint8_t* base;

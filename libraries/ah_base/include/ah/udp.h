@@ -91,8 +91,8 @@ struct ah_udp_group_ipv6 {
  *          is used with.
  */
 union ah_udp_group {
-    ah_udp_group_ipv4_t as_ipv4; /**< Access as IPv4 group. */
-    ah_udp_group_ipv6_t as_ipv6; /**< Access as IPv6 group. */
+    ah_udp_group_ipv4_t as_ipv4; ///< Access as IPv4 group.
+    ah_udp_group_ipv6_t as_ipv6; ///< Access as IPv6 group.
 };
 
 /**
