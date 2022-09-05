@@ -144,11 +144,11 @@ struct ah_tcp_trans {
  * the function it is named after, unless its documentation dictates otherwise.
  * Each function field takes a void pointer @c ctx as its first argument. This
  * argument is meant to come from the ah_tcp_trans::ctx field of the owning
- * ah_tcp_trans instance. The function pointers are divided into three groups.
- * A given transport will typically only operate on some of these groups. See
- * the group documentations for the fields of this structure for more details.
+ * ah_tcp_trans instance. The function pointers are divided into two groups.
+ * A given transport will typically only operate on one of these groups. See
+ * the field group documentations for more details.
  *
- * @note This structure is primarily useful to those working with TCP transport
+ * @note This structure is primarily useful to those working on TCP transport
  *       implementations.
  */
 struct ah_tcp_trans_vtab {
@@ -156,7 +156,7 @@ struct ah_tcp_trans_vtab {
      * @name TCP Connections
      *
      * Transport operations on ah_tcp_conn instances. If a given transport
-     * instance is only ever associated with one TCP connection via a call to
+     * instance is exclusively associated with one TCP connection via a call to
      * ah_tcp_conn_init(), then you should be able to assume that that instance
      * will only ever be provided to the functions in this group.
      *
@@ -191,10 +191,9 @@ struct ah_tcp_trans_vtab {
      * @name TCP Listeners
      *
      * Transport operations on ah_tcp_listener instances. If a given transport
-     * instance is only ever associated with one TCP listener via a call to
+     * instance is exclusively associated with one TCP listener via a call to
      * ah_tcp_listener_init(), then you should be able to assume that that
-     * instance will only ever be provided to the functions in this group @e and
-     * to the functions in the TCP Transports group.
+     * instance will only ever be provided to the functions in this group.
      *
      * @{
      */
@@ -213,22 +212,6 @@ struct ah_tcp_trans_vtab {
     ah_err_t (*listener_set_nodelay)(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
     ah_err_t (*listener_set_reuseaddr)(void* ctx, ah_tcp_listener_t* ln, bool is_enabled);
 
-    /** @} */
-
-    /**
-     * @name TCP Transports
-     *
-     * Transport operations on ah_tcp_trans_t instances. This group is different
-     * from the other two by listing function fields without a counterpart among
-     * the regular tcp.h functions. These fields are invoked by listeners in
-     * order to prepare transports for accepted connections.
-     *
-     * If your transport depends on the <em>default transport</em>, then that
-     * will invoke these function fields automatically.
-     *
-     * @{
-     */
-
     /**
      * Prepares @a trans for use by a new accepted connection.
      *
@@ -238,31 +221,21 @@ struct ah_tcp_trans_vtab {
      * context, then this function is where that should be done.
      *
      * @param ctx   Pointer to context.
+     * @param ln    Pointer to listener.
      * @param trans Pointer to prepared TCP transport.
-     * @return @ref AH_ENONE if successful. Any other error codes depends on the
-     *         transport associated with @a ctx.
+     * @return @ref AH_ENONE if successful. If you return any other error code,
+     *         the connection being prepared for will be rejected with the same
+     *         error.
      *
-     * @warning If you need to deallocate memory of release other resources when
-     *          @a trans is no longer used, then that should be performed both
-     *          in ah_tcp_trans_vtab::trans_retract and in
-     *          ah_tcp_trans_vtab::conn_term to avoid those resource being
-     *          leaked.
+     * @note This function has no counterpart among the regular functions in
+     *       this header file. It exists solely to make it possible for TCP
+     *       transports to prepare new transports for connections they accept.
+     *
+     * @warning If you need to deallocate memory or release other resources when
+     *          @a trans is no longer used, do that in
+     *          ah_tcp_trans_vtab::conn_term.
      */
-    ah_err_t (*trans_prepare)(void* ctx, ah_tcp_trans_t* trans);
-
-    /**
-     * Retracts @a trans, undoing the effects of preparing it.
-     *
-     * If this function is called at all, it must be called @e after
-     * ah_tcp_trans_vtab::trans_prepare has been called and @e before a TCP
-     * connection is associated with it. The function exists to be able to undo
-     * a successful call to ah_tcp_trans_vtab::trans_prepare when another
-     * failure prevents the prepared transport from being used.
-     *
-     * @param ctx   Pointer to context.
-     * @param trans Copy of retracted TCP transport.
-     */
-    void (*trans_retract)(void* ctx, ah_tcp_trans_t trans);
+    ah_err_t (*listener_prepare)(void* ctx, ah_tcp_listener_t* ln, ah_tcp_trans_t* trans);
 
     /** @} */
 };
@@ -305,8 +278,8 @@ struct ah_tcp_conn {
  * Every function takes a context pointer as its first argument. This context
  * pointer comes from the ah_tcp_conn_obs owning this callback set. More
  * specifically, it is a copy of the value of the ah_tcp_conn_obs::ctx field of
- * an owning ah_tcp_conn_obs instance. The context pointer makes it possible for
- * you to associate arbitrary state with individual TCP connections.
+ * the owning ah_tcp_conn_obs instance. The context pointer makes it possible
+ * for you to associate arbitrary state with individual TCP connections.
  */
 struct ah_tcp_conn_cbs {
     /**
@@ -526,7 +499,7 @@ struct ah_tcp_listener {
  * Every function takes a context pointer as its first argument. This context
  * pointer comes from the ah_tcp_listener_obs owning this callback set. More
  * specifically, it is a copy of the value of the ah_tcp_listener_obs::ctx field
- * of an owning ah_tcp_listener_obs instance. The context pointer makes it
+ * of the owning ah_tcp_listener_obs instance. The context pointer makes it
  * possible for you to associate arbitrary state with individual TCP listeners.
  */
 struct ah_tcp_listener_cbs {
@@ -579,32 +552,35 @@ struct ah_tcp_listener_cbs {
     void (*on_listen)(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
 
     /**
-     * @a ln has accepted the connection @a conn.
+     * @a ln has accepted the connection in @a accept.
      *
      * If @a err is @ref AH_ENONE, which indicates a successful acceptance, you
-     * must set the connection event observer made available via @a obs. This
-     * event observer dictates what functions will receive events for @a conn
-     * and what context pointer will be provided when those events fire. In
-     * particular, you must set its ah_tcp_conn_obs::cbs field to a valid
-     * pointer, as dictated by ah_tcp_conn_cbs_is_valid_for_acceptance().
-     * Failing to do so will cause this callback will be invoked again with
-     * @a err set to @ref AH_ESTATE, unless some other error takes precedence or
-     * you closed @a conn before this function returned.
+     * must <ol>
+     *   <li>set the connection observer (ah_tcp_accept::obs) in @a accept, and
+     *   <li>call ah_tcp_conn_close() with the connection (ah_tcp_accept::conn)
+     *       in @a accept once it is no longer in use.
+     * </ol>
+     * If you close the connection already in this callback, setting the
+     * connection observer in @a accept becomes unnecessary. If you do not close
+     * the connection and also do not set the connection observer in @a accept,
+     * this callback will be invoked again with @a err set to @ref AH_ESTATE.
      *
-     * @param ctx   Pointer to context.
-     * @param ln    Pointer to listener.
-     * @param conn  Pointer to accepted connection, or @c NULL if @a err is not
-     *              @ref AH_ENONE.
-     * @param obs   Pointer to event observer of @a conn, or @c NULL if @a err
-     *              is not @ref AH_ENONE. You must initialize the event observer
-     *              as explained above.
-     * @param raddr Pointer to address of @a conn, or @c NULL if @a err is not
-     *              @ref AH_ENONE.
-     * @param err   @ref AH_ENONE if @a ln accepted connection successfully.
-     *              What other error codes are possible depend on the used TCP
-     *              transport. The following codes may be provided if the
-     *              <em>default transport</em> is used, directly or
-     *              indirectly: <ul>
+     * The remote address pointer (ah_tcp_accept::raddr) in @a accept, as well
+     * as the @a accept instance itself, are only guaranteed to exist until this
+     * callback returns. You may copy the remote address somewhere else to store
+     * it, or you may call ah_tcp_conn_get_raddr() at some later point to
+     * retrieve it again.
+     *
+     * @param ctx    Pointer to context.
+     * @param ln     Pointer to listener.
+     * @param accept Pointer to structure containing pointer to the accepted
+     *               connection and other associated data, or @c NULL if @a err
+     *               is not @ref AH_ENONE.
+     * @param err    @ref AH_ENONE if @a ln accepted connection successfully.
+     *               What other error codes are possible depend on the used TCP
+     *               transport. The following codes may be provided if the
+     *               <em>default transport</em> is used, directly or
+     *               indirectly: <ul>
      *   <li>@ref AH_ECANCELED                     - Listener event loop is shutting down.
      *   <li>@ref AH_ECONNABORTED [Darwin, Linux]  - Connection aborted before finalization.
      *   <li>@ref AH_ECONNRESET [Win32]            - Connection aborted before finalization.
@@ -618,13 +594,13 @@ struct ah_tcp_listener_cbs {
      *                                               function, as explained above.
      * </ul>
      *
-     * @note Every successfully accepted @a conn must eventually be provided to
-     *       ah_tcp_conn_close().
+     * @note Every successfully accepted TCP connection must eventually be
+     *       provided to ah_tcp_conn_close().
      *
      * @note Data receiving is disabled for accepted connections by default. It
      *       must be explicitly enabled via a call to ah_tcp_conn_read_start().
      */
-    void (*on_accept)(void* ctx, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err);
+    void (*on_accept)(void* ctx, ah_tcp_listener_t* ln, ah_tcp_accept_t* accept, ah_err_t err);
 
     /**
      * @a ln has been closed.
@@ -640,6 +616,19 @@ struct ah_tcp_listener_cbs {
      *       elect to call ah_tcp_listener_term() in this callback.
      */
     void (*on_close)(void* ctx, ah_tcp_listener_t* ln, ah_err_t err);
+};
+
+/**
+ * TCP listener acceptance.
+ *
+ * Represents an incoming TCP connection, and other associated data, accepted
+ * by a TCL listener.
+ */
+struct ah_tcp_accept {
+    void* ctx;                  ///< TCP transport context associated with @a conn, or @c NULL if none.
+    ah_tcp_conn_t* conn;        ///< Pointer to accepted TCP connection.
+    ah_tcp_conn_obs_t* obs;     ///< Pointer to event observer of @a conn.
+    const ah_sockaddr_t* raddr; ///< Pointer to remote address of @a conn.
 };
 
 /**

@@ -42,5 +42,5 @@ int main(void)
 
     ah_unit_print_results(&res);
 
-    return res.fail_count == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    exit(res.fail_count == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }

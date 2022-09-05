@@ -420,23 +420,33 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
         goto handle_err;
     }
 
-    ah_tcp_trans_t trans;
-    err = ln->_trans.vtab->trans_prepare(ln->_trans.ctx, &trans);
+    (void) memset(conn, 0, sizeof(*conn));
+
+    err = ln->_trans.vtab->listener_prepare(ln->_trans.ctx, ln, &conn->_trans);
     if (err != AH_ENONE) {
         ah_i_slab_free(&ln->_conn_slab, conn);
         goto handle_err;
     }
 
-    *conn = (ah_tcp_conn_t) {
-        ._loop = ln->_loop,
-        ._trans = trans,
-        ._owning_slab = &ln->_conn_slab,
-        ._sock_family = ln->_sock_family,
-        ._state = AH_I_TCP_CONN_STATE_CONNECTED,
-        ._fd = cqe->res,
+    if (!ah_tcp_trans_vtab_is_valid(conn->_trans.vtab)) {
+        err = AH_ESTATE;
+        goto handle_err;
+    }
+
+    conn->_loop = ln->_loop;
+    conn->_owning_slab = &ln->_conn_slab;
+    conn->_sock_family = ln->_sock_family;
+    conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
+    conn->_fd = cqe->res;
+
+    ah_tcp_accept_t accept = {
+        .ctx = conn->_trans.ctx,
+        .conn = conn,
+        .obs = &conn->_obs,
+        .raddr = &ln->_raddr,
     };
 
-    ln->_obs.cbs->on_accept(ln->_obs.ctx, ln, conn, &conn->_obs, &ln->_raddr, AH_ENONE);
+    ln->_obs.cbs->on_accept(ln->_obs.ctx, ln, &accept, AH_ENONE);
 
     if (ah_tcp_listener_is_closed(ln)) {
         return;
@@ -465,7 +475,7 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     return;
 
 handle_err:
-    ln->_obs.cbs->on_accept(ln->_obs.ctx, ln, NULL, NULL, NULL, err);
+    ln->_obs.cbs->on_accept(ln->_obs.ctx, ln, NULL, err);
 }
 
 ah_err_t ah_i_tcp_trans_default_listener_close(void* ctx, ah_tcp_listener_t* ln)

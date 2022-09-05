@@ -52,7 +52,7 @@ static void s_conn_on_close(void* ctx_, ah_tcp_conn_t* conn, ah_err_t err);
 
 static void s_listener_on_open(void* ctx_, ah_tcp_listener_t* ln, ah_err_t err);
 static void s_listener_on_listen(void* ctx_, ah_tcp_listener_t* ln, ah_err_t err);
-static void s_listener_on_accept(void* ctx_, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err);
+static void s_listener_on_accept(void* ctx_, ah_tcp_listener_t* ln, ah_tcp_accept_t* accept, ah_err_t err);
 static void s_listener_on_close(void* ctx_, ah_tcp_listener_t* ln, ah_err_t err);
 
 static const ah_tcp_conn_cbs_t s_conn_cbs = {
@@ -315,7 +315,7 @@ handle_failure:
     }
 }
 
-static void s_listener_on_accept(void* ctx_, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_listener_on_accept(void* ctx_, ah_tcp_listener_t* ln, ah_tcp_accept_t* accept, ah_err_t err)
 {
     struct s_listener_obs_ctx* ctx = ctx_;
     ah_assert_always(ctx != NULL);
@@ -329,27 +329,30 @@ static void s_listener_on_accept(void* ctx_, ah_tcp_listener_t* ln, ah_tcp_conn_
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         goto handle_failure;
     }
-    if (!ah_unit_assert(AH_UNIT_CTX, res, raddr != NULL, "raddr != NULL")) {
+    if (!ah_unit_assert(AH_UNIT_CTX, res, accept != NULL, "accept != NULL")) {
         goto handle_failure;
     }
-    if (!ah_unit_assert(AH_UNIT_CTX, res, obs != NULL, "obs != NULL")) {
+    if (!ah_unit_assert(AH_UNIT_CTX, res, accept->raddr != NULL, "accept->raddr != NULL")) {
         goto handle_failure;
     }
-    if (!ah_unit_assert(AH_UNIT_CTX, res, conn != NULL, "conn != NULL")) {
+    if (!ah_unit_assert(AH_UNIT_CTX, res, accept->obs != NULL, "accept->obs != NULL")) {
+        goto handle_failure;
+    }
+    if (!ah_unit_assert(AH_UNIT_CTX, res, accept->conn != NULL, "accept->conn != NULL")) {
         goto handle_failure;
     }
     if (!ah_unit_assert(AH_UNIT_CTX, res, ln != NULL, "ln != NULL")) {
         goto handle_failure;
     }
 
-    obs->cbs = &s_conn_cbs;
-    obs->ctx = &ctx->rconn_obs_ctx;
+    accept->obs->cbs = &s_conn_cbs;
+    accept->obs->ctx = &ctx->rconn_obs_ctx;
 
     err = ah_buf_init(&ctx->rconn_out.buf, (uint8_t*) "Hello, Arrowhead!", 18u);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         goto handle_failure;
     }
-    err = ah_tcp_conn_write(conn, &ctx->rconn_out);
+    err = ah_tcp_conn_write(accept->conn, &ctx->rconn_out);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         goto handle_failure;
     }
@@ -361,8 +364,8 @@ static void s_listener_on_accept(void* ctx_, ah_tcp_listener_t* ln, ah_tcp_conn_
     return;
 
 handle_failure:
-    if (conn != NULL) {
-        err = ah_tcp_conn_close(conn);
+    if (accept != NULL) {
+        err = ah_tcp_conn_close(accept->conn);
         (void) ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE);
     }
     if (ln != NULL) {

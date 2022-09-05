@@ -180,6 +180,7 @@ typedef struct ah_sockaddr_ip ah_sockaddr_ip_t;
 typedef struct ah_sockaddr_ipv4 ah_sockaddr_ipv4_t;
 typedef struct ah_sockaddr_ipv6 ah_sockaddr_ipv6_t;
 typedef struct ah_task ah_task_t;
+typedef struct ah_tcp_accept ah_tcp_accept_t;
 typedef struct ah_tcp_conn ah_tcp_conn_t;
 typedef struct ah_tcp_conn_cbs ah_tcp_conn_cbs_t;
 typedef struct ah_tcp_conn_obs ah_tcp_conn_obs_t;

@@ -10,7 +10,7 @@
 
 static void s_listener_on_open(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
 static void s_listener_on_listen(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
-static void s_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err);
+static void s_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_accept_t* accept, ah_err_t err);
 static void s_listener_on_close(void* srv_, ah_tcp_listener_t* ln, ah_err_t err);
 
 ah_extern ah_err_t ah_http_server_init(ah_http_server_t* srv, ah_loop_t* loop, ah_tcp_trans_t trans, ah_http_server_obs_t obs)
@@ -76,7 +76,7 @@ static void s_listener_on_listen(void* srv_, ah_tcp_listener_t* ln, ah_err_t err
     srv->_obs.cbs->on_listen(srv->_obs.ctx, srv, err);
 }
 
-static void s_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_conn_t* conn, ah_tcp_conn_obs_t* obs, const ah_sockaddr_t* raddr, ah_err_t err)
+static void s_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_accept_t* accept, ah_err_t err)
 {
     ah_http_server_t* srv = ah_i_http_ctx_to_server(srv_);
     (void) ln;
@@ -92,22 +92,21 @@ static void s_listener_on_accept(void* srv_, ah_tcp_listener_t* ln, ah_tcp_conn_
     }
 
     *cln = (ah_http_client_t) {
-        ._conn = conn,
-        ._raddr = raddr,
+        ._conn = accept->conn,
         ._owning_slab = &srv->_client_slab,
         ._in_state = AH_I_HTTP_CLIENT_IN_STATE_INIT,
     };
 
     srv->_obs.cbs->on_accept(srv->_obs.ctx, srv, cln, &cln->_obs, err);
 
-    obs->cbs = &ah_i_http_conn_cbs;
-    obs->ctx = cln;
+    accept->obs->cbs = &ah_i_http_conn_cbs;
+    accept->obs->ctx = cln;
 
-    if (!ah_tcp_conn_is_readable(conn)) {
+    if (!ah_tcp_conn_is_readable(accept->conn)) {
         return;
     }
 
-    err = ah_tcp_conn_read_start(conn);
+    err = ah_tcp_conn_read_start(accept->conn);
     if (err != AH_ENONE) {
         cln->_obs.cbs->on_recv_end(cln->_obs.ctx, cln, err);
     }

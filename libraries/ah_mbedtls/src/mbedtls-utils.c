@@ -18,6 +18,7 @@ const ah_tcp_trans_vtab_t ah_i_mbedtls_tcp_vtab = {
     .conn_write = ah_i_mbedtls_conn_write,
     .conn_shutdown = ah_i_mbedtls_conn_shutdown,
     .conn_close = ah_i_mbedtls_conn_close,
+    .conn_term = ah_i_mbedtls_conn_term,
     .conn_get_family = ah_i_mbedtls_conn_get_family,
     .conn_get_laddr = ah_i_mbedtls_conn_get_laddr,
     .conn_get_raddr = ah_i_mbedtls_conn_get_raddr,
@@ -35,6 +36,7 @@ const ah_tcp_trans_vtab_t ah_i_mbedtls_tcp_vtab = {
     .listener_open = ah_i_mbedtls_listener_open,
     .listener_listen = ah_i_mbedtls_listener_listen,
     .listener_close = ah_i_mbedtls_listener_close,
+    .listener_term = ah_i_mbedtls_listener_term,
     .listener_get_family = ah_i_mbedtls_listener_get_family,
     .listener_get_laddr = ah_i_mbedtls_listener_get_laddr,
     .listener_get_loop = ah_i_mbedtls_listener_get_loop,
@@ -43,9 +45,7 @@ const ah_tcp_trans_vtab_t ah_i_mbedtls_tcp_vtab = {
     .listener_set_keepalive = ah_i_mbedtls_listener_set_keepalive,
     .listener_set_nodelay = ah_i_mbedtls_listener_set_nodelay,
     .listener_set_reuseaddr = ah_i_mbedtls_listener_set_reuseaddr,
-
-    .trans_prepare = ah_s_tcp_trans_prepare,
-    .trans_retract = ah_i_tcp_trans_retract,
+    .listener_prepare = ah_i_mbedtls_listener_prepare,
 };
 
 ah_err_t ah_i_mbedtls_res_to_err(struct ah_i_mbedtls_errs* errs, int res)
@@ -57,23 +57,9 @@ ah_err_t ah_i_mbedtls_res_to_err(struct ah_i_mbedtls_errs* errs, int res)
     case 0:
         return AH_ENONE;
 
-    case MBEDTLS_ERR_ASN1_ALLOC_FAILED:
-    case MBEDTLS_ERR_CIPHER_ALLOC_FAILED:
-    case MBEDTLS_ERR_DHM_ALLOC_FAILED:
-    case MBEDTLS_ERR_ECP_ALLOC_FAILED:
-    case MBEDTLS_ERR_MD_ALLOC_FAILED:
-    case MBEDTLS_ERR_MPI_ALLOC_FAILED:
-    case MBEDTLS_ERR_PK_ALLOC_FAILED:
-    case MBEDTLS_ERR_SSL_ALLOC_FAILED:
-    case MBEDTLS_ERR_X509_ALLOC_FAILED:
-        return AH_ENOMEM;
-
     case MBEDTLS_ERR_SSL_WANT_READ:
     case MBEDTLS_ERR_SSL_WANT_WRITE:
         return AH_ENOLINK;
-
-    case MBEDTLS_ERR_SSL_CONN_EOF:
-        return AH_EEOF;
 
     case MBEDTLS_ERR_ERROR_GENERIC_ERROR:
         if (errs->_pending_ah_err != AH_ENONE) {

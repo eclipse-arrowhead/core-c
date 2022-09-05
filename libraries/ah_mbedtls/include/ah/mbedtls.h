@@ -114,8 +114,8 @@ struct ah_mbedtls_server {
  */
 ah_extern ah_err_t ah_mbedtls_client_init(ah_mbedtls_client_t* client, ah_tcp_trans_t trans, mbedtls_ssl_config* ssl_conf, ah_mbedtls_on_handshake_done_cb on_handshake_done_cb);
 
-ah_extern ah_tcp_trans_t ah_mbedtls_client_as_trans(ah_mbedtls_client_t* client);
-ah_extern ah_tcp_conn_t* ah_mbedtls_client_get_conn(ah_mbedtls_client_t* client);
+ah_extern ah_tcp_trans_t ah_mbedtls_client_as_tcp_trans(ah_mbedtls_client_t* cln);
+ah_extern ah_tcp_conn_t* ah_mbedtls_client_get_tcp_conn(ah_mbedtls_client_t* client);
 ah_extern int ah_mbedtls_client_get_last_err(ah_mbedtls_client_t* client);
 ah_extern mbedtls_ssl_context* ah_mbedtls_client_get_ssl_context(ah_mbedtls_client_t* client);
 ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* client);
@@ -160,7 +160,7 @@ ah_extern ah_err_t ah_mbedtls_server_init(ah_mbedtls_server_t* server, ah_tcp_tr
 
 ah_extern int ah_mbedtls_server_get_last_err(ah_mbedtls_server_t* server);
 ah_extern mbedtls_ssl_config* ah_mbedtls_server_get_ssl_config(ah_mbedtls_server_t* server);
-ah_extern ah_tcp_trans_t ah_mbedtls_server_as_trans(ah_mbedtls_server_t* server);
+ah_extern ah_tcp_trans_t ah_mbedtls_server_as_tcp_trans(ah_mbedtls_server_t* server);
 ah_extern void ah_mbedtls_server_term(ah_mbedtls_server_t* server);
 
 /** @} */

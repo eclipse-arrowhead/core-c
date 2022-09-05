@@ -44,6 +44,7 @@ ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void)
         .listener_set_keepalive = ah_i_tcp_trans_default_listener_set_keepalive,
         .listener_set_nodelay = ah_i_tcp_trans_default_listener_set_nodelay,
         .listener_set_reuseaddr = ah_i_tcp_trans_default_listener_set_reuseaddr,
+        .listener_prepare = ah_i_tcp_trans_default_listener_prepare,
     };
 
     return (ah_tcp_trans_t) {
@@ -88,5 +89,6 @@ ah_extern bool ah_tcp_trans_vtab_is_valid(const ah_tcp_trans_vtab_t* vtab)
         && vtab->listener_is_closed != NULL
         && vtab->listener_set_keepalive != NULL
         && vtab->listener_set_nodelay != NULL
-        && vtab->listener_set_reuseaddr != NULL;
+        && vtab->listener_set_reuseaddr != NULL
+        && vtab->listener_prepare != NULL;
 }
