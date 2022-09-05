@@ -610,7 +610,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_pk_context lconn_own_pk;
     mbedtls_pk_init(&lconn_own_pk);
 #if MBEDTLS_VERSION_MAJOR >= 3
-    mbedtls_err = mbedtls_pk_parse_key(&conn_own_pk, ah_i_mbedtls_test_cln_key_data, ah_i_mbedtls_test_cln_key_size, NULL, 0, mbedtls_ctr_drbg_random, &conn_ctr_drbg);
+    mbedtls_err = mbedtls_pk_parse_key(&lconn_own_pk, ah_i_mbedtls_test_cln_key_data, ah_i_mbedtls_test_cln_key_size, NULL, 0, mbedtls_ctr_drbg_random, &lconn_ctr_drbg);
 #else
     mbedtls_err = mbedtls_pk_parse_key(&lconn_own_pk, ah_i_mbedtls_test_cln_key_data, ah_i_mbedtls_test_cln_key_size, NULL, 0);
 #endif
