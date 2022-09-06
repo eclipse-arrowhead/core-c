@@ -231,9 +231,6 @@ int s_client_write_ciphertext(void* conn_, const unsigned char* buf, size_t len)
     }
 
     case AH_S_MBEDTLS_SEND_QUEUE_ENTRY_STATE_SENT: {
-
-        // TODO: Close/Notify seems to be sent, but s_conn_on_write is never called after this function returns.
-
         ah_i_ring_skip(&cln->_out_queue_ciphertext);
         size_t size = entry->_out.buf.size;
         if (size != (size_t) len) {
@@ -580,6 +577,22 @@ static void s_conn_on_write(void* cln_, ah_tcp_conn_t* conn, ah_tcp_out_t* out, 
         return;
     }
 
+    // Make MbedTLS aware that we have finished sending out->buf.
+    int res = mbedtls_ssl_write(&cln->_ssl, out->buf.base, out->buf.size);
+    if (res < 0) {
+        if (res == MBEDTLS_ERR_SSL_WANT_READ || res == MBEDTLS_ERR_SSL_WANT_WRITE) {
+            cln->_is_handshake_done = false;
+        }
+        else {
+            err = ah_i_mbedtls_res_to_err(&cln->_errs, res);
+        }
+    }
+    else {
+        if (((size_t) res) != out->buf.size) {
+            err = AH_EINTERN;
+        }
+    }
+
 handle_err:
     cln->_conn_obs.cbs->on_write(cln->_conn_obs.ctx, conn, out, err);
 }
@@ -622,11 +635,7 @@ static ah_err_t s_client_close_notify(ah_mbedtls_client_t* cln, uint8_t kind)
     entry->_state = AH_S_MBEDTLS_SEND_QUEUE_ENTRY_STATE_PENDING;
 
     int res = mbedtls_ssl_close_notify(&cln->_ssl);
-    if (res == 0) {
-        return cln->_trans.vtab->conn_close(cln->_trans.ctx, ah_mbedtls_client_get_tcp_conn(cln));
-    }
-
-    if (res == MBEDTLS_ERR_SSL_WANT_WRITE) {
+    if (res == 0 || res == MBEDTLS_ERR_SSL_WANT_WRITE) {
         return AH_ENONE;
     }
     return ah_i_mbedtls_res_to_err(&cln->_errs, res);

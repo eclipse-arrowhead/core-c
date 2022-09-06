@@ -63,7 +63,7 @@ static void s_listener_on_listen(void* ctx_, ah_tcp_listener_t* ln, ah_err_t err
 static void s_listener_on_accept(void* ctx_, ah_tcp_listener_t* ln, ah_tcp_accept_t* accept, ah_err_t err);
 static void s_listener_on_close(void* ctx_, ah_tcp_listener_t* ln, ah_err_t err);
 
-static void ah_s_mbedtls_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtls_x509_crt* peer_chain, ah_err_t err);
+static void s_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtls_x509_crt* peer_chain, ah_err_t err);
 static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_mbedtls_client_t* client, ah_err_t err);
 
 static const ah_tcp_conn_cbs_t s_conn_cbs = {
@@ -408,7 +408,7 @@ static void s_listener_on_close(void* ctx_, ah_tcp_listener_t* ln, ah_err_t err)
     (void) ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE);
 }
 
-static void ah_s_mbedtls_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtls_x509_crt* peer_chain, ah_err_t err)
+static void s_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtls_x509_crt* peer_chain, ah_err_t err)
 {
     ah_tcp_conn_t* conn = ah_mbedtls_client_get_tcp_conn(client);
     ah_assert_always(conn != NULL);
@@ -561,7 +561,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_ssl_conf_rng(&ln_ssl_conf, mbedtls_ctr_drbg_random, &ln_ctr_drbg);
 
     ah_mbedtls_server_t ln_server;
-    ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_default(), &ln_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
+    ah_mbedtls_server_init(&ln_server, ah_tcp_trans_get_default(), &ln_ssl_conf, s_client_on_handshake_done);
 
     struct s_listener_obs_ctx ln_obs_ctx = {
         .rconn_obs_ctx = (struct s_conn_obs_ctx) {
@@ -640,7 +640,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     mbedtls_ssl_conf_rng(&lconn_ssl_conf, mbedtls_ctr_drbg_random, &lconn_ctr_drbg);
 
     ah_mbedtls_client_t lconn_client;
-    ah_mbedtls_client_init(&lconn_client, ah_tcp_trans_get_default(), &lconn_ssl_conf, ah_s_mbedtls_client_on_handshake_done);
+    ah_mbedtls_client_init(&lconn_client, ah_tcp_trans_get_default(), &lconn_ssl_conf, s_client_on_handshake_done);
 
     struct s_conn_obs_ctx lconn_obs_ctx = {
         .is_accepted = false,
