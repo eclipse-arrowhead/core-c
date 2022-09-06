@@ -54,7 +54,7 @@ static void s_should_stringify_ipv4_addresses(struct ah_unit_res* res)
             { AH_UNIT_CTX, { { 127, 0, 0, 1 } }, "127.0.0.1" },
             { AH_UNIT_CTX, { { 10, 1, 25, 47 } }, "10.1.25.47" },
             { AH_UNIT_CTX, { { 255, 255, 255, 255 } }, "255.255.255.255" },
-            { { 0u }, { 0u }, NULL },
+            { { 0u }, { { 0u } }, NULL },
         });
 }
 
@@ -85,7 +85,7 @@ static void s_should_stringify_ipv6_addresses(struct ah_unit_res* res)
             { AH_UNIT_CTX, { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 13, 1, 68, 3 } }, "::13.1.68.3" },
             { AH_UNIT_CTX, { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 129, 144, 52, 38 } }, "::FFFF:129.144.52.38" },
             { AH_UNIT_CTX, { { 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xF7, 0x30, 0x40, 0x50, 0x60 } }, "0:1::FFF7:3040:5060" },
-            { { 0u }, { 0u }, NULL },
+            { { 0u }, { { 0u } }, NULL },
         });
 }
 
