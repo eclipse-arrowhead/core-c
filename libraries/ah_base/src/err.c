@@ -53,15 +53,26 @@ ah_extern void ah_strerror_r(ah_err_t err, char* buf, size_t size)
 
 #elif AH_IS_WIN32
 
-    default:
+    default: {
+        if (size > MAXDWORD) {
+            size = MAXDWORD;
+        }
         const WORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
-        (void) FormatMessageA(flags, NULL, err, 0u, (LPTSTR) buf, size, NULL);
+        (void) FormatMessageA(flags, NULL, err, 0u, (LPTSTR) buf, (DWORD) size, NULL);
         return;
+    }
 
 #endif
 
 #undef AH_I_ERR_E
     }
 
+#if AH_IS_WIN32
+    errno_t win32_err = strncpy_s(buf, size, string, _TRUNCATE);
+    if (win32_err != 0 && win32_err != STRUNCATE && size > 0u) {
+        buf[0u] = '\0';
+    }
+#else
     (void) strncpy(buf, string, size);
+#endif
 }

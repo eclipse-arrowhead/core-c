@@ -28,7 +28,7 @@ static void s_should_use_same_data_layout_as_platform_variant(ah_unit_res_t* res
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(AH_UNIT_CTX, res, ah_buf_t, size, WSABUF, len);
     S_ASSERT_FIELD_OFFSET_SIZE_EQ(AH_UNIT_CTX, res, ah_buf_t, base, WSABUF, buf);
 
-    ah_unit_assert(res, sizeof(ah_buf_t) >= sizeof(WSABUF), "ah_buf_t seems to be missing fields");
+    ah_unit_assert(AH_UNIT_CTX, res, sizeof(ah_buf_t) >= sizeof(WSABUF), "ah_buf_t seems to be missing fields");
 
 #elif AH_HAS_POSIX
 

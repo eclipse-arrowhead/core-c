@@ -23,7 +23,7 @@
 # define S_ADD_UINT64(a, b, result)  ah_p_add_overflow((a), (b), (result))
 # define S_ADD_UINTPTR(a, b, result) ah_p_add_overflow((a), (b), (result))
 #elif AH_IS_WIN32
-# define S_ADD_INT16(a, b, result)   FAILED(Int8Add((a), (b), (result)))
+# define S_ADD_INT8(a, b, result)    FAILED(Int8Add((a), (b), (result)))
 # define S_ADD_INT16(a, b, result)   FAILED(Int16Add((a), (b), (result)))
 # define S_ADD_INT32(a, b, result)   FAILED(Int32Add((a), (b), (result)))
 # define S_ADD_INT64(a, b, result)   FAILED(Int64Add((a), (b), (result)))
@@ -49,13 +49,13 @@
 # define S_MUL_UINT64(a, b, result)  ah_p_mul_overflow((a), (b), (result))
 # define S_MUL_UINTPTR(a, b, result) ah_p_mul_overflow((a), (b), (result))
 #elif AH_IS_WIN32
-# define S_MUL_INT8(a, b, result)    FAILED(Int16Mult((a), (b), (result)))
+# define S_MUL_INT8(a, b, result)    FAILED(Int8Mult((a), (b), (result)))
 # define S_MUL_INT16(a, b, result)   FAILED(Int16Mult((a), (b), (result)))
 # define S_MUL_INT32(a, b, result)   FAILED(Int32Mult((a), (b), (result)))
 # define S_MUL_INT64(a, b, result)   FAILED(Int64Mult((a), (b), (result)))
 # define S_MUL_INTPTR(a, b, result)  FAILED(IntPtrMult((a), (b), (result)))
 # define S_MUL_SIZE(a, b, result)    FAILED(SizeTMult((a), (b), (result)))
-# define S_MUL_UINT8(a, b, result)   FAILED(UInt16Mult((a), (b), (result)))
+# define S_MUL_UINT8(a, b, result)   FAILED(UInt8Mult((a), (b), (result)))
 # define S_MUL_UINT16(a, b, result)  FAILED(UInt16Mult((a), (b), (result)))
 # define S_MUL_UINT32(a, b, result)  FAILED(UInt32Mult((a), (b), (result)))
 # define S_MUL_UINT64(a, b, result)  FAILED(UInt64Mult((a), (b), (result)))
@@ -95,7 +95,7 @@
    return AH_EINVAL;                                               \
   }                                                                \
                                                                    \
-  TYPE tmp;                                                        \
+  TYPE tmp = 0;                                                    \
   if (FN(a, b, &tmp)) {                                            \
    return AH_ERANGE;                                               \
   }                                                                \

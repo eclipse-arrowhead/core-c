@@ -728,7 +728,7 @@ bool ah_i_mbedtls_conn_is_closed(void* cln_, const ah_tcp_conn_t* conn)
 {
     ah_mbedtls_client_t* cln = cln_;
     if (cln == NULL || cln->_trans.vtab == NULL || cln->_trans.vtab->conn_is_closed == NULL) {
-        return NULL;
+        return true;
     }
     return cln->_trans.vtab->conn_is_closed(cln->_trans.ctx, conn);
 }

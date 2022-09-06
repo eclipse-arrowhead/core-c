@@ -54,7 +54,7 @@ void s_should_produce_ut8_from_codepoints(ah_unit_res_t* res)
             { AH_UNIT_CTX, 0x00D800, AH_EINVAL, "" },
             { AH_UNIT_CTX, 0x00DC43, AH_EINVAL, "" },
             { AH_UNIT_CTX, 0x00DFFF, AH_EINVAL, "" },
-            { AH_UNIT_CTX, 0x00EFD7, AH_ENONE, "\uEFD7" },
+            { AH_UNIT_CTX, 0x00EFD7, AH_ENONE, "\xEE\xBF\x97" },
             { AH_UNIT_CTX, 0x010900, AH_ENONE, "\xF0\x90\xA4\x80" },
             { AH_UNIT_CTX, 0x10FFFF, AH_ENONE, "\xF4\x8F\xBF\xBF" },
             { AH_UNIT_CTX, 0x110000, AH_EINVAL, "" },

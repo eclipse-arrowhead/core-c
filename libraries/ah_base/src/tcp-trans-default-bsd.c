@@ -186,10 +186,6 @@ ah_err_t ah_i_tcp_trans_default_listener_open(void* ctx, ah_tcp_listener_t* ln, 
 
     ah_err_t err = ah_i_sock_open_bind(ln->_loop, laddr, SOCK_STREAM, &ln->_fd);
 
-#if AH_USE_IOCP
-    ln->_sockfamily = laddr != NULL ? laddr->as_ip.family : AH_SOCKFAMILY_DEFAULT;
-#endif
-
     if (err == AH_ENONE) {
         ln->_sock_family = laddr->as_any.family;
         ln->_state = AH_I_TCP_LISTENER_STATE_OPEN;

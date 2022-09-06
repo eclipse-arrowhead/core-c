@@ -449,7 +449,7 @@ void s_server_on_accept(void* ctx_, ah_http_server_t* srv, ah_http_client_t* cln
 
     ctx->on_accept_count += 1u;
 
-    struct s_client_obs_ctx* cln_obs_ctx;
+    struct s_client_obs_ctx* cln_obs_ctx = NULL;
 
     // Also `cln` is guaranteed to be non-NULL, but we test it anyway just as
     // above.

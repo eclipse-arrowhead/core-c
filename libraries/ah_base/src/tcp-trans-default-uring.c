@@ -62,6 +62,10 @@ static void s_conn_on_connect(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_tcp_conn_t* conn = evt->_subject;
     ah_assert_if_debug(conn != NULL);
 
+     if (conn->_state != AH_I_TCP_CONN_STATE_CONNECTING) {
+        return;
+    }
+
     ah_err_t err;
 
     if (ah_likely(cqe->res == 0)) {
@@ -172,6 +176,8 @@ static void s_conn_on_read(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_assert_if_debug(conn->_in->rw.w <= conn->_in->rw.e);
 
     conn->_obs.cbs->on_read(conn->_obs.ctx, conn, conn->_in, AH_ENONE);
+
+    // TODO: conn may be freed here.
 
     if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
         return;
@@ -408,6 +414,10 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     ah_tcp_listener_t* ln = evt->_subject;
     ah_assert_if_debug(ln != NULL);
 
+    if (ln->_state != AH_I_TCP_LISTENER_STATE_LISTENING) {
+        return;
+    }
+
     ah_err_t err;
 
     if (ah_unlikely(cqe->res < 0)) {
@@ -448,6 +458,8 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     };
 
     ln->_obs.cbs->on_accept(ln->_obs.ctx, ln, &accept, AH_ENONE);
+
+    // TODO: ln may be freed here.
 
     if (ah_tcp_listener_is_closed(ln)) {
         return;

@@ -36,7 +36,7 @@ static void s_assert_json_parse_tests(ah_unit_res_t* res, struct s_json_parse_te
     for (struct s_json_parse_test* test = &tests[0u]; test->source != NULL; test = &test[1u]) {
         ah_json_buf_t buf = { .capacity = 16u, .length = 0u, .values = (ah_json_val_t[16u]) { { 0u } } };
 
-        ah_err_t err = ah_json_parse(ah_buf_from((uint8_t*) test->source, strlen(test->source)), &buf);
+        ah_err_t err = ah_json_parse(ah_buf_from((uint8_t*) test->source, (uint32_t) strlen(test->source)), &buf);
         if (!ah_unit_assert_eq_err(test->ctx, res, err, test->expected_err)) {
             continue;
         }

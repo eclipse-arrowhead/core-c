@@ -19,7 +19,6 @@
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS                   \
  bool _is_listening;                                        \
- int _sockfamily;                                           \
  SOCKET _fd;                                                \
  SOCKET _accept_fd;                                         \
  char _accept_buffer[AH_I_TCP_LISTENER_ACCEPT_BUFFER_SIZE]; \

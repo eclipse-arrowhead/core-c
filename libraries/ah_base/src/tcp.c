@@ -126,7 +126,7 @@ ah_extern void* ah_tcp_conn_get_obs_ctx(const ah_tcp_conn_t* conn)
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn)
 {
     if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_is_closed == NULL)) {
-        return NULL;
+        return true;
     }
     return conn->_trans.vtab->conn_is_closed(conn->_trans.ctx, conn);
 }
@@ -134,7 +134,7 @@ ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn)
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
 {
     if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_is_readable == NULL)) {
-        return NULL;
+        return false;
     }
     return conn->_trans.vtab->conn_is_readable(conn->_trans.ctx, conn);
 }
@@ -142,7 +142,7 @@ ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
 ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn)
 {
     if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_is_reading == NULL)) {
-        return NULL;
+        return false;
     }
     return conn->_trans.vtab->conn_is_reading(conn->_trans.ctx, conn);
 }
@@ -150,7 +150,7 @@ ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn)
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
 {
     if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_is_writable == NULL)) {
-        return NULL;
+        return false;
     }
     return conn->_trans.vtab->conn_is_writable(conn->_trans.ctx, conn);
 }
