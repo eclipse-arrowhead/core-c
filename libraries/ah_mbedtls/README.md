@@ -1,4 +1,5 @@
 @dir ah_mbedtls
+@brief MbetTLS integration library.
 
 ## Arrowhead Core MbedTLS Integration Library
 

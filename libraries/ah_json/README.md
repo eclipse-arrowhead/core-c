@@ -1,4 +1,5 @@
 @dir ah_json
+@brief JSON library.
 
 ## Arrowhead Core JSON Library
 

@@ -1,4 +1,5 @@
 @dir ah_http
+@brief HTTP library.
 
 ## Arrowhead Core HTTP Library
 
