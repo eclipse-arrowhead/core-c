@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(ah_base C)
 set(CMAKE_C_STANDARD 99)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 set(
@@ -142,8 +143,13 @@ target_include_directories(
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    include(cmake/FindLiburing.cmake)
-    target_link_libraries(ah_base PRIVATE liburing::liburing)
+    # Try to find a local installation of liburing.
+    include(FindLiburing)
+    if (NOT Liburing_FOUND)
+        # If no such is available, download, install and then find the downloaded liburing version.
+        include(DownloadLiburing)
+    endif ()
+    target_link_libraries(ah_base PUBLIC Liburing::liburing)
 endif ()
 
 add_custom_target(mkdir_generated

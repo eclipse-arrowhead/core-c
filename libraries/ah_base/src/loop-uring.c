@@ -75,15 +75,9 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_
         timeout.tv_nsec = diff % 1000000000;
     }
 
-    // TODO: Replace these two calls with io_uring_submit_and_wait_timeout() when liburing-2.2 comes out.
-    res = io_uring_submit(&loop->_uring);
+    res = io_uring_submit_and_wait_timeout(&loop->_uring, &cqe, 1, time != NULL ? &timeout : NULL, NULL);
     if (res < 0) {
-        return -res;
-    }
-
-    res = io_uring_wait_cqes(&loop->_uring, &cqe, 1, time != NULL ? &timeout : NULL, NULL);
-    if (res == -ETIME) {
-        return AH_ENONE;
+        return res == -ETIME ? AH_ENONE : -res;
     }
 
     loop->_now = ah_time_now();
