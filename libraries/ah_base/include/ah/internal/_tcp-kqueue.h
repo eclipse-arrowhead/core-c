@@ -7,11 +7,14 @@
 
 #define AH_I_TCP_CONN_PLATFORM_FIELDS \
  int _fd;                             \
+ uint32_t _ref_count;                 \
  struct ah_i_list _out_queue;         \
- struct ah_i_loop_evt* _read_evt;
+ struct ah_i_loop_evt* _read_evt;     \
+ struct ah_i_loop_evt* _write_evt;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS \
  int _fd;                                 \
+ uint32_t _ref_count;                     \
  struct ah_i_loop_evt* _listen_evt;
 
 #define AH_I_TCP_OUT_PLATFORM_FIELDS \

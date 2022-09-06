@@ -56,7 +56,7 @@ void s_should_consider_certain_strings_equal(ah_unit_res_t* res)
             { AH_UNIT_CTX, "Ä", "\\u00C4", 0 },
             { AH_UNIT_CTX, "猫", "\\u732B", 0 },
             { AH_UNIT_CTX, "Åk!", "\\u00C5k!", 0 },
-            { { 0u } },
+            { { 0u }, NULL, NULL, 0 },
         });
 }
 
@@ -74,6 +74,6 @@ void s_should_consider_certain_strings_not_equal(ah_unit_res_t* res)
             { AH_UNIT_CTX, "ä", "\\u00C4", 1 },
             { AH_UNIT_CTX, "猫", "\\u732C", -1 },
             { AH_UNIT_CTX, "Åk?", "\\u00C5k!", 1 },
-            { { 0u } },
+            { { 0u }, NULL, NULL, 0 },
         });
 }

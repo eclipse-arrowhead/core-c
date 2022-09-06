@@ -52,7 +52,7 @@ void s_should_fail_to_unescape_invalid_strings(ah_unit_res_t* res)
             { AH_UNIT_CTX, "\\u", AH_ESYNTAX, "" },
             { AH_UNIT_CTX, "\\t\\x", AH_ESYNTAX, "\t" },
             { AH_UNIT_CTX, "\\x\\t", AH_ESYNTAX, "" },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }
 
@@ -67,6 +67,6 @@ void s_should_unescape_valid_strings(ah_unit_res_t* res)
             { AH_UNIT_CTX, "\\u732B", AH_ENONE, "猫" },
             { AH_UNIT_CTX, "\\u00C5k!", AH_ENONE, "Åk!" },
             { AH_UNIT_CTX, "\\\" \\\\ \\/ \\b \\f \\n \\r \\t", AH_ENONE, "\" \\ / \b \f \n \r \t" },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }

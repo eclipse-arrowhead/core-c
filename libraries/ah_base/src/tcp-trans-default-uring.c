@@ -216,6 +216,7 @@ static void s_conn_read_stop(ah_tcp_conn_t* conn)
 
     if (conn->_in != NULL) {
         ah_tcp_in_free(conn->_in);
+        conn->_in = NULL;
     }
 
     if (conn->_read_evt != NULL) {

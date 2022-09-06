@@ -43,7 +43,7 @@ void* ah_i_list_pop(struct ah_i_list* list, ptrdiff_t list_entry_offset)
 
 #endif
 
-    return &((uint8_t*) entry)[-list_entry_offset];;
+    return &((uint8_t*) entry)[-list_entry_offset];
 }
 
 void ah_i_list_push(struct ah_i_list* list, void* entry, ptrdiff_t list_entry_offset)

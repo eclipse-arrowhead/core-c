@@ -46,6 +46,6 @@ void s_should_escape_strings(ah_unit_res_t* res)
             { AH_UNIT_CTX, "\b\f", AH_ENONE, "\\b\\f" },
             { AH_UNIT_CTX, "\x1F", AH_ENONE, "\\u001F" },
             { AH_UNIT_CTX, "111100001111\x01", AH_EOVERFLOW, "111100001111" },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }

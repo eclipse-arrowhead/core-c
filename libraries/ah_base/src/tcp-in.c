@@ -5,6 +5,8 @@
 #include "ah/err.h"
 #include "ah/intrin.h"
 
+#include <string.h>
+
 ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
 {
     if (owner_ptr == NULL) {

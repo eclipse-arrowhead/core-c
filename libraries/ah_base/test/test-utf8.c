@@ -60,7 +60,7 @@ void s_should_produce_ut8_from_codepoints(ah_unit_res_t* res)
             { AH_UNIT_CTX, 0x110000, AH_EINVAL, "" },
             { AH_UNIT_CTX, 0xFFFFFF, AH_EINVAL, "" },
             { AH_UNIT_CTX, 0xFFFFFFFF, AH_EINVAL, "" },
-            { { 0u } },
+            { { 0u }, 0u, 0u, NULL },
         });
 }
 
@@ -98,6 +98,6 @@ void s_should_validate_utf8_strings(ah_unit_res_t* res)
             { AH_UNIT_CTX, "\xF0\x80\x8D\x88", false },
             { AH_UNIT_CTX, "\xF0\x80\x80\x80", false },
             { AH_UNIT_CTX, "This is a longer string with an invalid sequence here: '\xE0\x80\x80'.", false },
-            { { 0u } },
+            { { 0u }, 0u, false },
         });
 }

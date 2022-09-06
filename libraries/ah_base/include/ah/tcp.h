@@ -426,8 +426,9 @@ struct ah_tcp_conn_cbs {
      *
      * @param ctx  Pointer to context.
      * @param conn Pointer to connection.
-     * @param out  Pointer to output buffer provided to ah_tcp_conn_write(), or
-     *             @c NULL if @a err is not @ref AH_ENONE.
+     * @param out  Pointer to output buffer provided to ah_tcp_conn_write(). If
+     *             @a err is not @ref AH_ENONE, it @e may, but should never, be
+     *             @c NULL.
      * @param err  @ref AH_ENONE if the data was sent successfully. What other
      *             error codes are possible depend on the used TCP transport.
      *             The following codes may be provided if the <em>default

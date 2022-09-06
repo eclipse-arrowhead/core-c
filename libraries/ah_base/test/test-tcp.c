@@ -443,7 +443,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
 
     // Execute event loop.
     ah_time_t deadline;
-    err = ah_time_add(ah_time_now(), 1 * AH_TIMEDIFF_S, &deadline);
+    err = ah_time_add(ah_time_now(), 100000 * AH_TIMEDIFF_S, &deadline);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }

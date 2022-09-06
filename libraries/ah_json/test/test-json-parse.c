@@ -297,7 +297,7 @@ static void s_should_fail_to_parse_invalid_sources(ah_unit_res_t* res)
                     { 0u },
                 },
             },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }
 
@@ -362,7 +362,7 @@ static void s_should_parse_arrays(ah_unit_res_t* res)
                     { 0u },
                 },
             },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }
 
@@ -388,7 +388,7 @@ static void s_should_parse_keywords(ah_unit_res_t* res)
                 AH_ENONE,
                 (ah_json_val_t[]) { { "true", AH_JSON_TYPE_TRUE, 0u, 4u }, { 0u } },
             },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }
 
@@ -438,7 +438,7 @@ static void s_should_parse_numbers(ah_unit_res_t* res)
                 AH_ENONE,
                 (ah_json_val_t[]) { { "1.0e-24", AH_JSON_TYPE_NUMBER, 0u, 7u }, { 0u } },
             },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }
 
@@ -507,7 +507,7 @@ static void s_should_parse_objects(ah_unit_res_t* res)
                     { 0u },
                 },
             },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }
 
@@ -533,6 +533,6 @@ static void s_should_parse_strings(ah_unit_res_t* res)
                 AH_ENONE,
                 (ah_json_val_t[]) { { "Space \\\"\\u0020\\\"", AH_JSON_TYPE_STRING, 0u, 16u }, { 0u } },
             },
-            { { 0u } },
+            { { 0u }, NULL, 0u, NULL },
         });
 }

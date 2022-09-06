@@ -90,7 +90,7 @@ static void s_should_stringify_sockaddrs(struct ah_unit_res* res)
             { AH_UNIT_CTX, AH_SOCKFAMILY_IPV6, { 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xF7, 0x30, 0x40, 0x50, 0x60 }, 3u, 80u,
                 "[0:1::FFF7:3040:5060%253]:80" },
 
-            { { 0u } },
+            { { 0u }, 0u, { 0u }, 0u, 0u, NULL },
         });
 }
 
