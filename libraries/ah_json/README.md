@@ -1,6 +1,6 @@
-/** @dir
+@dir ah_json
 
-Arrowhead Core JSON library.
+## Arrowhead Core JSON Library
 
 JSON, or JavaScript Object Notation, is a human-readable and open data
 interchange format. It was popularized partly because of its simplicity and
@@ -25,5 +25,3 @@ array actually describes. More specifically, parsing produces a list of tokens,
 each of which indicates its type, how many child values it has or how long it
 is, as well as its tree depth. You must write your own routines for converting
 JSON representations into instances of C data structures.
-
-*/

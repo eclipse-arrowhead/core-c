@@ -1,6 +1,6 @@
-/** @dir
+@dir ah_http
 
-Arrowhead Core HTTP library.
+## Arrowhead Core HTTP Library
 
 The HyperText Transfer Protocol (HTTP) is a file-transfer protocol made famous
 due to its key role in facilitating the World Wide Web (WWW). It is designed to
@@ -34,5 +34,3 @@ well as help handle a minimal set of headers (described further in
 include/ah/http.h). Any functionality a particular application needs beyond this
 minimal set can be implemented on top of this library, which means that complete
 HTTP conformance remains a theoretical possibility despite its humble scope.
-
-*/

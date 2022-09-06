@@ -1,6 +1,6 @@
-/** @dir
+@dir ah_mbedtls
 
-Arrowhead Core MbedTLS integration.
+## Arrowhead Core MbedTLS Integration Library
 
 Transport Layer Security (TLS) is an important suite of standards used to form
 secure connections over untrusted media. It makes up part of what could be
@@ -21,6 +21,4 @@ ah_tcp_conn or ah_tcp_listener, either of which can be used as normal after such
 an association is successful. This library does not hide MbedTLS in any way,
 which means that it is up to you to configure the library as you like.
 
-@see https://tls.mbed.org/
-
-*/
+https://tls.mbed.org/
