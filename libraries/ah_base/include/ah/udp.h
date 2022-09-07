@@ -23,11 +23,36 @@
  *
  * <h3>Sockets</h3>
  *
- * TODO
+ * To set up a local socket, you call ah_udp_sock_init() and ah_udp_sock_open(),
+ * in that order. Successfully initialized sockets are terminated with
+ * ah_udp_sock_term() and successfully opened sockets are closed with
+ * ah_udp_sock_close(). If you wish to configure a socket by setting any of its
+ * options, such as by using ah_udp_sock_set_reuseaddr(), it is typically most
+ * appropriate to do so after it has been opened and before it is used to send
+ * or receive data. Every socket may receive datagrams, and is notified of other
+ * events, via a <em>socket observer</em> of type ah_udp_sock_obs.
+ *
+ * As UDP is a connection-less communication protocol, opening a socket is
+ * enough for both sending and receiving datagrams. To receive datagrams from
+ * any other UDP socket, you must first enable it via a call to
+ * ah_udp_sock_recv_start(). You may disable receiving again with a call to
+ * ah_udp_sock_recv_stop(). To send datagrams, use ah_udp_sock_send().
  *
  * <h3>Transports</h3>
  *
- * TODO
+ * Most functions you can invoke in this header immediately delegate to a
+ * @a transport, represented by the ah_udp_trans type, rather than dealing with
+ * the invocation itself. When you first initialize a socket with
+ * ah_udp_sock_init(), you specify what transport to use with that particular
+ * socket. This arrangement means that functionality can be injected into code
+ * relying on the API of this header.
+ *
+ * Most uses of this API will likely involve the <em>default transport</em>,
+ * which you can get instances of via ah_udp_trans_get_default(). This transport
+ * engages the actual UDP networking capabilities of the underlying platform.
+ * You could, however, use a custom transport for testing purposes. Or you may
+ * use a transport that logs sent and received messages and then passes on any
+ * calls it receives to another transport.
  *
  * @see https://www.rfc-editor.org/rfc/rfc8085.html
  * @see https://www.rfc-editor.org/rfc/rfc768.html
@@ -367,22 +392,36 @@ struct ah_udp_sock_cbs {
 /**
  * Initializes @a sock for subsequent use.
  *
- * @param sock  Pointer to socket.
+ * @param sock  Pointer to connection.
  * @param loop  Pointer to event loop.
  * @param trans Desired transport.
  * @param obs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - @a sock successfully initialized.
- *   <li>@ref AH_EINVAL - @a sock or @a loop or @a cbs is @c NULL.
- *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_udp_trans_vtab_is_valid().
- *   <li>@ref AH_EINVAL - @c on_open, @c on_recv, @c on_send or @c on_close of @a cbs is @c NULL.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a sock is @c NULL or the transport of @a sock is missing a required
+ *                        function in its virtual function table.
+ *   <li>Any additional code returned by the used UDP transport.
  * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
+ *   <li>@ref AH_EINVAL - @a loop or @a cbs is @c NULL.
+ *   <li>@ref AH_EINVAL - @a trans @c vtab is invalid, as reported by ah_udp_trans_vtab_is_valid().
+ *   <li>@ref AH_EINVAL - @a obs @c cbs is invalid, as reported by
+ *                        ah_udp_sock_cbs_is_valid().
+ * </ul>
+ *
+ * @note Every successfully initialized @a sock must eventually be provided to
+ *       ah_udp_sock_term(). Normally, this is done in two places: <ol>
+ *         <li>in the ah_udp_sock_cbs::on_open callback of @a sock after a check that its @c err
+ *             argument is not @ref AH_ENONE, and
+ *         <li>unconditionally in the ah_udp_sock_cbs::on_close callback.
+ * </ol>
  */
 ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, ah_udp_sock_obs_t obs);
 
 /**
- * Schedules opening of @a sock, which must be initialized, and its
- *        binding to the local network interface represented by @a laddr.
+ * Schedules opening of @a sock, which must be initialized, and its binding to
+ * the local network interface represented by @a laddr.
  *
  * If the return value of this function is @ref AH_ENONE, meaning that the open
  * attempt could indeed be scheduled, its result will eventually be presented
@@ -397,19 +436,26 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp
  *              provide the wildcard address (see ah_sockaddr_ipv4_wildcard and
  *              ah_sockaddr_ipv6_wildcard). If you want the platform to chose
  *              port number automatically, specify port @c 0.
-
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE        - @a sock opening successfully scheduled.
- *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not @c NULL and is not an IP-based address.
+ *   <li>@ref AH_ENONE        - Operation successful.
+ *   <li>@ref AH_EINVAL       - @a sock is @c NULL or the transport of @a sock is missing a required
+ *                              function in its virtual function table.
+ *   <li>Any additional code returned by the used UDP transport.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
+ *   <li>@ref AH_EAFNOSUPPORT - @a laddr is not an IP-based address.
  *   <li>@ref AH_ECANCELED    - The event loop of @a sock is shutting down.
- *   <li>@ref AH_EINVAL       - @a sock is @c NULL.
+ *   <li>@ref AH_EINVAL       - @a laddr is @c NULL.
  *   <li>@ref AH_ENOBUFS      - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM       - Not enough heap memory available.
- *   <li>@ref AH_ESTATE       - @a sock is not closed.
+ *   <li>@ref AH_ESTATE       - @a sock can be determined not to have been properly initialized.
  * </ul>
  *
  * @note Every successfully opened @a sock must eventually be provided to
  *       ah_udp_sock_close().
+ *
+ * @warning This function must be called with a successfully initialized socket.
  */
 ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
 
@@ -421,15 +467,20 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* la
  *
  * @param sock Pointer to socket.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE            - Start of receiving data via @a sock successfully scheduled.
+ *   <li>@ref AH_ENONE            - Operation successful.
+ *   <li>@ref AH_EINVAL           - @a sock is @c NULL or the transport of @a sock is missing a
+ *                                  required function in its virtual function table.
+ *   <li>Any additional code returned by the used UDP transport.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ECANCELED        - The event loop of @a sock is shutting down.
- *   <li>@ref AH_EINVAL           - @a sock is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
  *   <li>@ref AH_EOVERFLOW        - @c AH_PSIZE is too small for it to be possible to store both
- *                                  required metadata @e and read data in a single page provided by
- *                                  the page allocator (see ah_palloc()).
+ *                                  required metadata @e and read data in a single page provided
+ *                                  by the page allocator (see ah_palloc()).
  *   <li>@ref AH_ESTATE           - @a sock is not open.
  * </ul>
  *
@@ -445,15 +496,22 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
  *
  * @param sock Pointer to socket.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - Receiving of data via @a sock successfully stopped.
- *   <li>@ref AH_EINVAL - @a sock is @c NULL.
- *   <li>@ref AH_ESTATE - @a sock reading not started.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a sock is @c NULL or the transport of @a sock is missing a required
+ *                        function in its virtual function table.
+ *   <li>Any additional code returned by the used UDP transport.
+ * </ul>
+ * The <em>default transport</em> may also cause the following error code to be
+ * returned: <ul>
+ *   <li>@ref AH_ESTATE - @a sock receiving not started.
  * </ul>
  *
  * @note It is acceptable to call this function immediately after a successful
- *       call to ah_udp_sock_recv_start() with the same @a sock, even if that
- *       means that @a sock never had a practical chance to start receiving
- *       data.
+ *       call to ah_udp_sock_read_start() with the same @a sock, even if that
+ *       means that @a sock never had a practical chance to start reading.
+ *
+ * @warning This function must be called with a socket that has successfully
+ *          started receiving.
  */
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
 
@@ -467,21 +525,29 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
  *
  * If the return value of this function is @ref AH_ENONE, meaning that the
  * sending could indeed be scheduled, the result of the sending will eventually
- * be presented via the ah_udp_sock_cbs::on_send callback of @a conn. More
+ * be presented via the ah_udp_sock_cbs::on_send callback of @a sock. More
  * specifically, the callback is invoked either if an error occurs or after all
  * data in @a out has been successfully transmitted.
  *
  * @param sock Pointer to socket.
  * @param out  Pointer to outgoing data.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE            - Data transmission scheduled successfully.
+ *   <li>@ref AH_ENONE            - Operation successful.
+ *   <li>@ref AH_EINVAL           - @a sock is @c NULL or the transport of @a sock is missing a
+ *                                  required function in its virtual function table.
+ *   <li>Any additional code returned by the used UDP transport.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ECANCELED        - The event loop of @a sock is shutting down.
- *   <li>@ref AH_EINVAL           - @a sock or @a out is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a out is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
  *   <li>@ref AH_ESTATE           - @a sock is not open.
  * </ul>
+ *
+ * @warning This function must be called with a successfully opened socket.
  */
 ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
 
@@ -495,8 +561,8 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
  * @param sock Pointer to socket.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a sock is @c NULL, @a trans @c vtab is @c NULL or the @a trans
- *                        @c vtab->sock_close field is @c NULL.
+ *   <li>@ref AH_EINVAL - @a sock is @c NULL or the transport of @a sock is missing a required
+ *                        function in its virtual function table.
  *   <li>Any additional code returned by the used UDP transport.
  * </ul>
  * The <em>default transport</em> may also cause the following error code to be
@@ -513,28 +579,33 @@ ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
  *
  * @param sock Pointer to socket.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a sock is @c NULL, @a trans @c vtab is @c NULL or the @a trans
- *                        @c vtab->sock_term field is @c NULL.
- *   <li>Any additional code returned by the used UDP transport.
- * </ul>
- * The <em>default transport</em> may also cause the following error code to be
- * returned: <ul>
- *   <li>@ref AH_ESTATE - @a sock is not in a closed state.
- * </ul>
- *
- * @warning This function must be called with a successfully closed socket.
- */
+*   <li>@ref AH_ENONE  - Operation successful.
+*   <li>@ref AH_EINVAL - @a sock is @c NULL or the transport of @a sock is missing a required
+*                        function in its virtual function table.
+*   <li>Any additional code returned by the used UDP transport.
+* </ul>
+* The <em>default transport</em> may also cause the following error code to be
+* returned: <ul>
+*   <li>@ref AH_ESTATE - @a sock is not in a closed state.
+* </ul>
+*
+* @warning This function must be called with a successfully closed socket.
+*/
 ah_extern ah_err_t ah_udp_sock_term(ah_udp_sock_t* sock);
 
 /**
  * Checks the socket family of @a sock.
  *
+ * For most UDP transports you may expect this socket family to be the same as
+ * was specified in the call to ah_udp_sock_open() through which @a sock was
+ * first opened.
+ *
  * @param sock Pointer to socket.
- * @return One of the following identifiers: <ul>
+ * @return Socket family identifier or @c -1 if @a sock is @c NULL or some other
+ *         error occurred. If the <em>default transport</em> is used, the
+ *         following identifiers may be produced: <ul>
  *   <li>@ref AH_SOCKFAMILY_IPV4 - IPv4 family identifier.
  *   <li>@ref AH_SOCKFAMILY_IPV6 - IPv6 family identifier.
- *   <li>@c -1                   - @a sock is @c NULL.
  * </ul>
  */
 ah_extern int ah_udp_sock_get_family(const ah_udp_sock_t* sock);
@@ -542,14 +613,21 @@ ah_extern int ah_udp_sock_get_family(const ah_udp_sock_t* sock);
 /**
  * Stores local address bound by @a sock into @a laddr.
  *
- * If @a sock was opened with a zero port, this function will report what
- * concrete port was assigned to @a sock.
+ * If @a sock was opened with a zero port, this function @e should report what
+ * concrete port was assigned to @a sock. If the <em>default transport</em>
+ * is used and this call is not intercepted by an intermediary transport, this
+ * function @e will report the assigned port.
  *
  * @param sock  Pointer to socket.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a sock or @a laddr is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL or the transport of @a sock is missing
+ *                                         a required function in its virtual function table.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
+ *   <li>@ref AH_EINVAL                  - @a laddr is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ESTATE                  - @a sock is closed.
@@ -560,23 +638,32 @@ ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_
 /**
  * Gets pointer to event loop of @a sock.
  *
+ * This event loop @e should be the same one as was provided when @a sock was
+ * first initialized via a call to ah_udp_sock_init(). If the <em>default
+ * transport</em> is used and this function is not intercepted by an
+ * intermediary transport, this function @e will return the mentioned original
+ * event loop pointer.
+ *
  * @param sock Pointer to socket.
- * @return Pointer to event loop, or @c NULL if @a sock is @c NULL.
+ * @return Loop pointer, or @c NULL if @a sock is @c NULL or the transport of
+ *         @a sock is missing a required function in its virtual function table.
+ *         Also returns @c NULL if the loop pointer itself is @c NULL.
  */
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock);
 
 /**
- * Checks if @a sock is closed.
+ * Checks if @a sock is in any closing or closed state.
  *
  * Also newly initialized and terminated sockets are considered closed.
  *
- * @param sock Pointer to socket.
- * @return @c true only if @a sock is not @c NULL and is currently closed.
- *         @c false otherwise.
+ * @param sock Pointer to sock.
+ * @return @c true only if @a sock is currently closing or closed. @c false if
+ *         @a sock is @c NULL or the transport of @a sock is missing a required
+ *         function in its virtual function table.
  *
- * @warning Calling this function on terminated sockets is inherently unsafe,
- *          unless they are known not have their memory invalidated when they
- *          are terminated.
+ * @warning Calling this function on terminated connections is inherently
+ *          unsafe, unless they are known not have their memory invalidated when
+ *          they are terminated.
  */
 ah_extern bool ah_udp_sock_is_closed(const ah_udp_sock_t* sock);
 
@@ -589,8 +676,9 @@ ah_extern bool ah_udp_sock_is_closed(const ah_udp_sock_t* sock);
  * socket.
  *
  * @param sock Pointer to socket.
- * @return @c true only if @a sock is not @c NULL and is currently receiving
- *         data. @c false otherwise.
+ * @return @c true only if @a sock is currently reading, as defined above.
+ *         @c false if @a sock is @c NULL or the transport of @a sock is missing
+ *         a required function in its virtual function table.
  */
 ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock);
 
@@ -607,7 +695,11 @@ ah_extern bool ah_udp_sock_is_receiving(const ah_udp_sock_t* sock);
  * @param hop_limit Desired hop limit.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL or the transport of @a sock is missing
+ *                                         a required function in its virtual function table.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
@@ -632,7 +724,11 @@ ah_extern ah_err_t ah_udp_sock_set_multicast_hop_limit(ah_udp_sock_t* sock, uint
  * @param is_enabled Whether multicast loopback is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL or the transport of @a sock is missing
+ *                                         a required function in its virtual function table.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
@@ -653,7 +749,11 @@ ah_extern ah_err_t ah_udp_sock_set_multicast_loopback(ah_udp_sock_t* sock, bool 
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL or the transport of @a sock is missing
+ *                                         a required function in its virtual function table.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
@@ -674,7 +774,11 @@ ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enable
  * @param hop_limit Desired hop limit.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL or the transport of @a sock is missing
+ *                                         a required function in its virtual function table.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
@@ -690,7 +794,11 @@ ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_
  * @param group Pointer to multicast group specification.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL or the transport of @a sock is missing
+ *                                         a required function in its virtual function table.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
@@ -716,7 +824,11 @@ ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* g
  * @param group Pointer to multicast group specification.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a sock is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a sock is @c NULL or the transport of @a sock is missing
+ *                                         a required function in its virtual function table.
+ * </ul>
+ * The <em>default transport</em> may also cause any of the following error
+ * codes to be returned: <ul>
  *   <li>@ref AH_ENETDOWN [Win32]        - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS [Darwin, Linux] - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
@@ -735,7 +847,36 @@ ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* g
  */
 ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
 
+/** @} */
+
+/**
+ * @name UDP Socket Callback Sets
+ *
+ * Operations on ah_udp_sock_cbs instances.
+ *
+ * @{
+ */
+
+/**
+ * Checks if @a cbs is valid for being used as part of an UDP observer.
+ *
+ * Such a valid callback set has all of its function pointers set.
+ *
+ * @param cbs Pointer to UDP socket callback set.
+ * @return @c true only if @a cbs is @e valid. @c false otherwise.
+ */
 ah_extern bool ah_udp_sock_cbs_is_valid(const ah_udp_sock_cbs_t* cbs);
+
+/** @} */
+
+/**
+ * @name UDP Input Buffers
+ *
+ * Operations on ah_udp_in instances.
+ *
+ * @{
+ */
+
 
 /**
  * Allocates new input buffer, storing a pointer to it in @a owner_ptr.
@@ -794,7 +935,7 @@ ah_extern ah_err_t ah_udp_in_detach(ah_udp_in_t* in);
  *
  * @param in Pointer to input buffer.
  *
- * @warning Only free ah_tcp_in instances you own. Unless you explicitly call
+ * @warning Only free ah_udp_in instances you own. Unless you explicitly call
  *          ah_udp_in_alloc_for(), ah_udp_in_detach() or in some other way is
  *          able to take ownership of your own instance, you are not going to
  *          need to call this function.
@@ -853,7 +994,7 @@ ah_extern void ah_udp_out_free(ah_udp_out_t* out);
 /** @} */
 
 /**
- * @name UDP Transport
+ * @name UDP Transports
  *
  * Operations on ah_udp_trans and related type instances.
  *

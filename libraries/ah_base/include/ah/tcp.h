@@ -32,10 +32,10 @@
  * order. Successfully initialized connections are terminated with
  * ah_tcp_conn_term() and successfully opened connections are closed with
  * ah_tcp_conn_close(). If you wish to configure a connection by setting any of
- * its options, it is typically most appropriate to do so after it has been
- * opened and before it is connected. Every connection may receive data, and is
- * notified of other events, via a <em>connection observer</em> of type
- * ah_tcp_conn_obs.
+ * its options, such as by using ah_tcp_conn_set_nodelay(), it is typically most
+ * appropriate to do so after it has been opened and before it is connected.
+ * Every connection may receive data, and is notified of other events, via a
+ * <em>connection observer</em> of type ah_tcp_conn_obs.
  *
  * After being successfully connected to a remote host, a connection does not
  * automatically enable receiving of data from its peer. The receiving of peer
@@ -720,8 +720,8 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
  *              port number automatically, specify port @c 0.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE        - Operation successful.
- *   <li>@ref AH_EINVAL       - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                              @c ->vtab->conn_open is @c NULL.
+ *   <li>@ref AH_EINVAL       - @a conn is @c NULL or the transport of @a conn is missing a required
+ *                              function in its virtual function table.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
@@ -756,8 +756,8 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
  *              @a conn is closed.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE        - Operation successful.
- *   <li>@ref AH_EINVAL       - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                              @c ->vtab->conn_connect is @c NULL.
+ *   <li>@ref AH_EINVAL       - @a conn is @c NULL or the transport of @a conn is missing a required
+ *                              function in its virtual function table.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
@@ -789,8 +789,8 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - Operation successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                                  @c ->vtab->conn_read_start is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL or the transport of @a conn is missing a
+ *                                  required function in its virtual function table.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
@@ -818,8 +818,8 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                        @c ->vtab->conn_read_stop is @c NULL.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL or the transport of @a conn is missing a required
+ *                        function in its virtual function table.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
  * The <em>default transport</em> may also cause the following error code to be
@@ -853,14 +853,14 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
  * @param out  Pointer to outgoing data.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - Operation successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                                  @c ->vtab->conn_write is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL or the transport of @a conn is missing a
+ *                                  required function in its virtual function table.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
  * codes to be returned: <ul>
  *   <li>@ref AH_ECANCELED        - The event loop of @a conn is shutting down.
- *   <li>@ref AH_EINVAL           - out is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a out is @c NULL.
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
@@ -887,8 +887,8 @@ ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
  * @param flags Shutdown flags.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                - Operation successful.
- *   <li>@ref AH_EINVAL               - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                                      @c ->vtab->conn_shutdown is @c NULL.
+ *   <li>@ref AH_EINVAL               - @a conn is @c NULL or the transport of @a conn is missing a
+ *                                      required function in its virtual function table.
  *   <li>Any additional code returned by the used TCP transport.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
@@ -916,8 +916,9 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags);
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                        @c ->vtab->conn_close is @c NULL.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL or the transport of @a conn is missing a required
+ *                        function in its virtual function table.
+ *   <li>Any additional code returned by the used TCP transport.
  * </ul>
  * The <em>default transport</em> may also cause the following error code to be
  * returned: <ul>
@@ -934,8 +935,9 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
  * @param conn Pointer to connection.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Operation successful.
- *   <li>@ref AH_EINVAL - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                        @c ->vtab->conn_term is @c NULL.
+ *   <li>@ref AH_EINVAL - @a conn is @c NULL or the transport of @a conn is missing a required
+ *                        function in its virtual function table.
+ *   <li>Any additional code returned by the used TCP transport.
  * </ul>
  * The <em>default transport</em> may also cause the following error code to be
  * returned: <ul>
@@ -975,8 +977,8 @@ ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn);
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or
- *                                         @a conn @c ->vtab->conn_get_laddr is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a conn is @c NULL or the transport of @a conn is missing
+ *                                         a required function in its virtual function table.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
  * codes to be returned: <ul>
@@ -995,8 +997,8 @@ ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_
  * @param raddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
- *   <li>@ref AH_EINVAL                  - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or
- *                                         @a conn @c ->vtab->conn_get_raddr is @c NULL.
+ *   <li>@ref AH_EINVAL                  - @a conn is @c NULL or the transport of @a conn is missing
+ *                                         a required function in its virtual function table.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
  * codes to be returned: <ul>
@@ -1018,9 +1020,9 @@ ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_
  * event loop pointer.
  *
  * @param conn Pointer to connection.
- * @return Loop pointer, or @c NULL if @a conn is @c NULL, @a conn @c ->vtab
- *         is @c NULL or @a conn @c ->vtab->conn_get_loop is @c NULL. Also
- *         returns @c NULL if the loop pointer itself is equal to @c NULL.
+ * @return Loop pointer, or @c NULL if @a conn is @c NULL or the transport of
+ *         @a conn is missing a required function in its virtual function table.
+ *         Also returns @c NULL if the loop pointer itself is @c NULL.
  */
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
 
@@ -1028,9 +1030,9 @@ ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn);
  * Gets the context pointer of the connection observer associated with @a conn.
  *
  * @param conn Pointer to connection.
- * @return Context pointer, or @c NULL if @a conn is @c NULL, @a conn @c ->vtab
- *         is @c NULL or @a conn @c ->vtab->conn_get_obs_ctx is @c NULL. Also
- *         returns @c NULL if the context pointer itself is equal to @c NULL.
+ * @return Context pointer, or @c NULL if @a conn is @c NULL or the transport of
+ *         @a conn is missing a required function in its virtual function table.
+ *         Also returns @c NULL if the context pointer itself is @c NULL.
  */
 ah_extern void* ah_tcp_conn_get_obs_ctx(const ah_tcp_conn_t* conn);
 
@@ -1041,8 +1043,8 @@ ah_extern void* ah_tcp_conn_get_obs_ctx(const ah_tcp_conn_t* conn);
  *
  * @param conn Pointer to connection.
  * @return @c true only if @a conn is currently closing or closed. @c false if
- *         @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *         @c ->vtab->conn_is_closed is @c NULL.
+ *         @a conn is @c NULL or the transport of @a conn is missing a required
+ *         function in its virtual function table.
  *
  * @warning Calling this function on terminated connections is inherently
  *          unsafe, unless they are known not have their memory invalidated when
@@ -1058,8 +1060,8 @@ ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn);
  *
  * @param conn Pointer to connection.
  * @return @c true only if @a conn is currently readable. @c false if @a conn
- *         is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *         @c ->vtab->conn_is_readable is @c NULL.
+ *         is @c NULL or the transport of @a conn is missing a required function
+ *         in its virtual function table.
  */
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn);
 
@@ -1074,8 +1076,8 @@ ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn);
  *
  * @param conn Pointer to connection.
  * @return @c true only if @a conn is currently reading, as defined above.
- *         @c false if @a conn is @c NULL, @a conn @c ->vtab is @c NULL or
- *         @a conn @c ->vtab->conn_is_reading is @c NULL.
+ *         @c false if @a conn is @c NULL or the transport of @a conn is missing
+ *         a required function in its virtual function table.
  */
 ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn);
 
@@ -1087,8 +1089,8 @@ ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn);
  *
  * @param conn Pointer to connection.
  * @return @c true only if @a conn is currently writable. @c false if @a conn
- *         is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *         @c ->vtab->conn_is_writable is @c NULL.
+ *         is @c NULL or the transport of @a conn is missing a required function
+ *         in its virtual function table.
  */
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
 
@@ -1104,8 +1106,8 @@ ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn);
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                                  @c ->vtab->conn_set_keepalive is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL or the transport of @a conn is missing a
+ *                                  required function in its virtual function table.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
  * codes to be returned: <ul>
@@ -1130,8 +1132,8 @@ ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enable
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                                  @c ->vtab->conn_set_nodelay is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL or the transport of @a conn is missing a
+ *                                  required function in its virtual function table.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
  * codes to be returned: <ul>
@@ -1156,8 +1158,8 @@ ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
  * @param is_enabled Whether keep-alive is to be enabled or not.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - The operation was successful.
- *   <li>@ref AH_EINVAL           - @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
- *                                  @c ->vtab->conn_set_reuseaddr is @c NULL.
+ *   <li>@ref AH_EINVAL           - @a conn is @c NULL or the transport of @a conn is missing a
+ *                                  required function in its virtual function table.
  * </ul>
  * The <em>default transport</em> may also cause any of the following error
  * codes to be returned: <ul>
