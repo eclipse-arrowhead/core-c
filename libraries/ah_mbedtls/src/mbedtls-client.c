@@ -34,8 +34,8 @@ static void s_conn_on_close(void* cln_, ah_tcp_conn_t* conn, ah_err_t err);
 
 static ah_err_t s_client_close_notify(ah_mbedtls_client_t* cln, uint8_t kind);
 void s_client_handshake(ah_mbedtls_client_t* cln);
-int s_client_read_ciphertext(void* conn_, unsigned char* buf, size_t len);
-int s_client_write_ciphertext(void* conn_, const unsigned char* buf, size_t len);
+int s_client_read_ciphertext(void* cln_, unsigned char* buf, size_t len);
+int s_client_write_ciphertext(void* cln_, const unsigned char* buf, size_t len);
 
 const ah_tcp_conn_cbs_t ah_i_mbedtls_tcp_conn_cbs = {
     .on_open = s_conn_on_open,
@@ -669,9 +669,11 @@ ah_err_t ah_i_mbedtls_conn_term(void* cln_, ah_tcp_conn_t* conn)
 
     ah_err_t err = cln->_trans.vtab->conn_term(cln->_trans.ctx, conn);
 
-    ah_tcp_in_free(cln->_in_plaintext);
-    if (cln->_server != NULL) {
-        ah_mbedtls_client_term(cln);
+    if (err != AH_EINVAL && err != AH_ESTATE) {
+        ah_tcp_in_free(cln->_in_plaintext);
+        if (cln->_server != NULL) {
+            ah_mbedtls_client_term(cln);
+        }
     }
 
     return err;

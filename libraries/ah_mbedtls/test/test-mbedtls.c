@@ -19,7 +19,7 @@ struct s_conn_obs_ctx {
     ah_tcp_out_t rconn_out;
     bool is_accepted;
 
-    size_t* conn_close_countdown;
+    size_t* open_connection_count;
 
     size_t on_open_count;
     size_t on_connect_count;
@@ -253,9 +253,9 @@ static void s_conn_on_close(void* ctx_, ah_tcp_conn_t* conn, ah_err_t err)
     err = ah_tcp_conn_term(conn);
     (void) ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE);
 
-    (*ctx->conn_close_countdown) -= 1u;
+    (*ctx->open_connection_count) -= 1u;
 
-    if (*ctx->conn_close_countdown == 0u) {
+    if (*ctx->open_connection_count == 0u) {
         err = ah_loop_term(loop);
         (void) ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE);
     }
@@ -567,7 +567,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
     struct s_listener_obs_ctx ln_obs_ctx = {
         .rconn_obs_ctx = (struct s_conn_obs_ctx) {
             .is_accepted = true,
-            .conn_close_countdown = &conn_close_countdown,
+            .open_connection_count = &conn_close_countdown,
             .res = res,
         },
         .res = res,
@@ -645,7 +645,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
 
     struct s_conn_obs_ctx lconn_obs_ctx = {
         .is_accepted = false,
-        .conn_close_countdown = &conn_close_countdown,
+        .open_connection_count = &conn_close_countdown,
         .res = res,
     };
 
@@ -667,7 +667,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
 
     // Execute event loop.
     ah_time_t deadline;
-    err = ah_time_add(ah_time_now(), 500000 * AH_TIMEDIFF_S, &deadline);
+    err = ah_time_add(ah_time_now(), 5 * AH_TIMEDIFF_S, &deadline);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }
