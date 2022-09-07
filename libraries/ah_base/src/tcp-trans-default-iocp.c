@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/tcp.h"
-
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
 #include "ah/sock.h"
+#include "ah/tcp.h"
 #include "winapi.h"
 
 #include <stddef.h>
@@ -18,8 +17,12 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt);
 
 static ah_err_t s_conn_read_prep(ah_tcp_conn_t* conn);
 static void s_conn_read_stop(ah_tcp_conn_t* conn);
+static ah_err_t s_conn_ref(ah_tcp_conn_t* conn);
+static void s_conn_unref(ah_tcp_conn_t* conn);
 
 static ah_err_t s_listener_accept_prep(ah_tcp_listener_t* ln);
+static ah_err_t s_listener_ref(ah_tcp_listener_t* ln);
+static void s_listener_unref(ah_tcp_listener_t* ln);
 
 #pragma warning(disable : 6011)
 ah_err_t ah_i_tcp_trans_default_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
@@ -197,15 +200,19 @@ static void s_conn_on_read(ah_i_loop_evt_t* evt)
     conn->_in->rw.w = &conn->_in->rw.w[(size_t) nread];
     ah_assert_if_debug(conn->_in->rw.w <= conn->_in->rw.e);
 
+    err = s_conn_ref(conn);
+    if (err != AH_ENONE) {
+        goto report_err;
+    }
+
     conn->_obs.cbs->on_read(conn->_obs.ctx, conn, conn->_in, AH_ENONE);
-
-    // TODO: conn may be freed here!
-
-#ifndef NDEBUG
     conn->_recv_buf = (ah_buf_t) { 0u };
-#endif
 
-    if (conn->_state != AH_I_TCP_CONN_STATE_READING) {
+    uint8_t state = conn->_state;
+
+    s_conn_unref(conn);
+
+    if (state != AH_I_TCP_CONN_STATE_READING) {
         return;
     }
 
@@ -225,6 +232,49 @@ report_err:
     conn->_obs.cbs->on_read(conn->_obs.ctx, conn, NULL, err);
 }
 
+static ah_err_t s_conn_ref(ah_tcp_conn_t* conn)
+{
+    if (conn == NULL) {
+        return AH_EINTERN;
+    }
+    return ah_add_uint32(conn->_ref_count, 1u, &conn->_ref_count);
+}
+
+static void s_conn_unref(ah_tcp_conn_t* conn)
+{
+    if (conn->_ref_count != 0u) {
+        conn->_ref_count -= 1u;
+        return;
+    }
+
+    ah_assert_if_debug(conn->_state == AH_I_TCP_CONN_STATE_CLOSING);
+
+    ah_err_t err = ah_i_sock_close(conn->_fd);
+    if (err == AH_EINTR) {
+        if (ah_i_loop_try_set_pending_err(conn->_loop, AH_EINTR)) {
+            err = AH_ENONE;
+        }
+    }
+
+    conn->_shutdown_flags = AH_TCP_SHUTDOWN_RDWR;
+    conn->_state = AH_I_TCP_CONN_STATE_CLOSED;
+    conn->_fd = INVALID_SOCKET;
+
+    s_conn_read_stop(conn);
+
+    conn->_obs.cbs->on_close(conn->_obs.ctx, conn, err);
+}
+
+static void s_conn_read_stop(ah_tcp_conn_t* conn)
+{
+    ah_assert_if_debug(conn != NULL);
+
+    if (conn->_in != NULL) {
+        ah_tcp_in_free(conn->_in);
+        conn->_in = NULL;
+    }
+}
+
 ah_err_t ah_i_tcp_trans_default_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
 {
     (void) ctx;
@@ -240,16 +290,6 @@ ah_err_t ah_i_tcp_trans_default_conn_read_stop(void* ctx, ah_tcp_conn_t* conn)
     s_conn_read_stop(conn);
 
     return AH_ENONE;
-}
-
-static void s_conn_read_stop(ah_tcp_conn_t* conn)
-{
-    ah_assert_if_debug(conn != NULL);
-
-    if (conn->_in != NULL) {
-        ah_tcp_in_free(conn->_in);
-        conn->_in = NULL;
-    }
 }
 
 ah_err_t ah_i_tcp_trans_default_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out)
@@ -316,29 +356,12 @@ ah_err_t ah_i_tcp_trans_default_conn_close(void* ctx, ah_tcp_conn_t* conn)
     if (conn->_state == AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-#ifndef NDEBUG
-    if (conn->_fd == 0) {
-        return AH_ESTATE;
+    if (conn->_fd == INVALID_SOCKET) {
+        return AH_EINTERN;
     }
-#endif
     conn->_state = AH_I_TCP_CONN_STATE_CLOSING;
 
-    ah_err_t err = ah_i_sock_close(conn->_fd);
-    if (err == AH_EINTR) {
-        if (ah_i_loop_try_set_pending_err(conn->_loop, AH_EINTR)) {
-            err = AH_ENONE;
-        }
-    }
-
-    conn->_shutdown_flags = AH_TCP_SHUTDOWN_RDWR;
-    conn->_state = AH_I_TCP_CONN_STATE_CLOSED;
-#ifndef NDEBUG
-    conn->_fd = 0;
-#endif
-
-    s_conn_read_stop(conn);
-
-    conn->_obs.cbs->on_close(conn->_obs.ctx, conn, err);
+    s_conn_unref(conn);
 
     return AH_ENONE;
 }
@@ -456,6 +479,7 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt)
     }
 
     ah_err_t err;
+    ah_err_t err_major = AH_ENONE;
 
     ah_tcp_conn_t* conn = NULL;
     ah_sockaddr_t* raddr = NULL;
@@ -514,28 +538,71 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt)
     ah_tcp_accept_t* accept_ptr = &accept;
 
 report_err_and_prep_new_accept:
+    err_major = s_listener_ref(ln);
+    if (err_major != AH_ENONE) {
+        goto handle_err;
+    }
+
     ln->_obs.cbs->on_accept(ln->_obs.ctx, ln, accept_ptr, err);
 
-    // TODO: ln may be freed here.
+    uint8_t state = ln->_state;
 
-    if (ah_tcp_listener_is_closed(ln)) {
+    s_listener_unref(ln);
+
+    if (state != AH_I_TCP_LISTENER_STATE_LISTENING) {
         return;
     }
 
     err = s_listener_accept_prep(ln);
     if (err != AH_ENONE && err != AH_ECANCELED) {
-        ln->_obs.cbs->on_listen(ln->_obs.ctx, ln, err);
+        err_major = err;
+        goto handle_err;
     }
 
     return;
 
 handle_err:
     (void) closesocket(ln->_accept_fd);
-
     ln->_accept_fd = INVALID_SOCKET;
 
+    if (err_major != AH_ENONE) {
+        ln->_obs.cbs->on_accept(ln->_obs.ctx, ln, NULL, err_major);
+        return;
+    }
+
     accept_ptr = NULL;
+
     goto report_err_and_prep_new_accept;
+}
+
+static ah_err_t s_listener_ref(ah_tcp_listener_t* ln)
+{
+    if (ln == NULL) {
+        return AH_EINTERN;
+    }
+    return ah_add_uint32(ln->_ref_count, 1u, &ln->_ref_count);
+}
+
+static void s_listener_unref(ah_tcp_listener_t* ln)
+{
+    if (ln->_ref_count != 0u) {
+        ln->_ref_count -= 1u;
+        return;
+    }
+
+    ah_assert_if_debug(ln->_state == AH_I_TCP_LISTENER_STATE_CLOSING);
+
+    ah_err_t err = ah_i_sock_close(ln->_fd);
+    if (err == AH_EINTR) {
+        if (ah_i_loop_try_set_pending_err(ln->_loop, AH_EINTR)) {
+            err = AH_ENONE;
+        }
+    }
+
+    ln->_state = AH_I_TCP_LISTENER_STATE_CLOSED;
+    ln->_fd = INVALID_SOCKET;
+
+    ln->_obs.cbs->on_close(ln->_obs.ctx, ln, err);
 }
 
 ah_err_t ah_i_tcp_trans_default_listener_close(void* ctx, ah_tcp_listener_t* ln)
@@ -548,22 +615,12 @@ ah_err_t ah_i_tcp_trans_default_listener_close(void* ctx, ah_tcp_listener_t* ln)
     if (ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED) {
         return AH_ESTATE;
     }
-#ifndef NDEBUG
-    if (ln->_fd == 0) {
-        return AH_ESTATE;
+    if (ln->_fd == INVALID_SOCKET) {
+        return AH_EINTERN;
     }
-#endif
-    ln->_state = AH_I_TCP_LISTENER_STATE_CLOSED;
+    ln->_state = AH_I_TCP_LISTENER_STATE_CLOSING;
 
-    ah_err_t err = ah_i_sock_close(ln->_fd);
-    if (err == AH_EINTR) {
-        if (ah_i_loop_try_set_pending_err(ln->_loop, AH_EINTR)) {
-            err = AH_ENONE;
-        }
-    }
-
-    ln->_fd = INVALID_SOCKET;
-    ln->_obs.cbs->on_close(ln->_obs.ctx, ln, err);
+    s_listener_unref(ln);
 
     return AH_ENONE;
 }

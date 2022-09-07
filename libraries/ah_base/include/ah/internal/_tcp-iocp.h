@@ -14,6 +14,7 @@
 #define AH_I_TCP_CONN_PLATFORM_FIELDS \
  DWORD _recv_flags;                   \
  SOCKET _fd;                          \
+ uint32_t _ref_count;                 \
  ah_buf_t _recv_buf;                  \
  LPFN_CONNECTEX _ConnectEx;
 
@@ -21,6 +22,7 @@
  bool _is_listening;                                        \
  SOCKET _fd;                                                \
  SOCKET _accept_fd;                                         \
+ uint32_t _ref_count;                                       \
  char _accept_buffer[AH_I_TCP_LISTENER_ACCEPT_BUFFER_SIZE]; \
  LPFN_ACCEPTEX _AcceptEx;                                   \
  LPFN_GETACCEPTEXSOCKADDRS _GetAcceptExSockaddrs;

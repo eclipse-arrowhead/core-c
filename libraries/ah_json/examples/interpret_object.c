@@ -23,7 +23,7 @@ int main(void)
 
     // The JSON text we are interpreting.
     const char* json = "{\"sensor-id\":\"aa-xx-142b\",\"kelvin\":296.549988}";
-    ah_buf_t src = ah_buf_from((uint8_t*) json, strlen(json));
+    ah_buf_t src = ah_buf_from((uint8_t*) json, (uint32_t) strlen(json));
 
     // Parsing the JSON text populates `buf`.
     ah_json_buf_t buf = { 0u };

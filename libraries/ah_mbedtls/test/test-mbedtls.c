@@ -81,6 +81,10 @@ static const ah_tcp_listener_cbs_t s_listener_cbs = {
     .on_close = s_listener_on_close,
 };
 
+#if AH_IS_WIN32
+# pragma warning(disable : 6011)
+#endif
+
 // This function is not called for our accepted connection.
 static void s_conn_on_open(void* ctx_, ah_tcp_conn_t* conn, ah_err_t err)
 {
@@ -157,10 +161,6 @@ handle_failure:
     }
 }
 
-#if AH_IS_WIN32
-# pragma warning(disable : 6011)
-#endif
-
 static void s_conn_on_read(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_err_t err)
 {
     struct s_conn_obs_ctx* ctx = ctx_;
@@ -168,6 +168,10 @@ static void s_conn_on_read(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_
     ctx->on_read_count += 1u;
 
     ah_unit_res_t* res = ctx->res;
+
+    if (err == AH_EEOF) {
+        goto close_and_return;
+    }
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         goto handle_failure;
@@ -194,16 +198,13 @@ static void s_conn_on_read(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_
     ah_rw_skipn(&in->rw, 18u);
     ctx->received_message_count += 1u;
 
+close_and_return:
 handle_failure:
     if (conn != NULL) {
         err = ah_tcp_conn_close(conn);
         (void) ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE);
     }
 }
-
-#if AH_IS_WIN32
-# pragma warning(default : 6011)
-#endif
 
 static void s_conn_on_write(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_out_t* out, ah_err_t err)
 {
@@ -439,7 +440,7 @@ static void s_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtl
         }
     }
 #else
-    (void) ah_unit_assert(AH_UNIT_CTX, res, peer_chain == NULL, "peer_chain != NULL");
+    (void) ah_unit_assert(AH_UNIT_CTX, res, peer_chain == NULL, "peer_chain == NULL");
 #endif
 
     err = ah_buf_init(&ctx->rconn_out.buf, (uint8_t*) "Hello, Arrowhead!", 18u);
@@ -721,3 +722,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
 
     ah_unit_assert(AH_UNIT_CTX, res, ah_loop_is_term(&loop), "`loop` never terminated");
 }
+
+#if AH_IS_WIN32
+# pragma warning(default : 6011)
+#endif

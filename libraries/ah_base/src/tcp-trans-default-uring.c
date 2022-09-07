@@ -538,6 +538,8 @@ static void s_listener_unref(ah_tcp_listener_t* ln)
         return;
     }
 
+    ah_assert_if_debug(ln->_state == AH_I_TCP_LISTENER_STATE_CLOSING);
+
     ah_err_t err;
 
     ah_i_loop_evt_t* evt;

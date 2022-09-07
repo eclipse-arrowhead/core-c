@@ -132,14 +132,13 @@ ah_err_t ah_i_mbedtls_client_prepare(ah_mbedtls_client_t* cln, mbedtls_ssl_confi
 }
 
 // Called to get handshake data or encrypted payload data, if available.
-int s_client_read_ciphertext(void* conn_, unsigned char* buf, size_t len)
+int s_client_read_ciphertext(void* cln_, unsigned char* buf, size_t len)
 {
     ah_err_t err;
 
-    ah_mbedtls_client_t* cln = conn_;
+    ah_mbedtls_client_t* cln = cln_;
     if (cln == NULL) {
-        err = AH_EINTERN;
-        goto handle_err;
+        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
     }
 
     if (buf == NULL && len != 0u) {
@@ -176,14 +175,13 @@ handle_err:
 }
 
 // Called to send handshake data or encrypted payload data.
-int s_client_write_ciphertext(void* conn_, const unsigned char* buf, size_t len)
+int s_client_write_ciphertext(void* cln_, const unsigned char* buf, size_t len)
 {
     ah_err_t err;
 
-    ah_mbedtls_client_t* cln = conn_;
+    ah_mbedtls_client_t* cln = cln_;
     if (cln == NULL) {
-        err = AH_EINTERN;
-        goto handle_err;
+        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
     }
 
     ah_tcp_conn_t* conn = cln->_conn;

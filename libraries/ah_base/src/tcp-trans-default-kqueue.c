@@ -228,6 +228,8 @@ static void s_conn_unref(ah_tcp_conn_t* conn)
         return;
     }
 
+    ah_assert_if_debug(conn->_state == AH_I_TCP_CONN_STATE_CLOSING);
+
     ah_err_t err = ah_i_sock_close(conn->_fd);
     if (err == AH_EINTR) {
         if (ah_i_loop_try_set_pending_err(conn->_loop, AH_EINTR)) {
@@ -450,11 +452,9 @@ ah_err_t ah_i_tcp_trans_default_conn_close(void* ctx, ah_tcp_conn_t* conn)
     if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSED) {
         return AH_ESTATE;
     }
-#ifndef NDEBUG
     if (conn->_fd == 0) {
-        return AH_ESTATE;
+        return AH_EINTERN;
     }
-#endif
     conn->_state = AH_I_TCP_CONN_STATE_CLOSING;
 
     s_conn_unref(conn);
@@ -614,6 +614,8 @@ static void s_listener_unref(ah_tcp_listener_t* ln)
         return;
     }
 
+    ah_assert_if_debug(ln->_state == AH_I_TCP_LISTENER_STATE_CLOSING);
+
     ah_err_t err = ah_i_sock_close(ln->_fd);
     if (err == AH_EINTR) {
         if (ah_i_loop_try_set_pending_err(ln->_loop, AH_EINTR)) {
@@ -622,15 +624,11 @@ static void s_listener_unref(ah_tcp_listener_t* ln)
     }
 
     ln->_state = AH_I_TCP_LISTENER_STATE_CLOSED;
-#ifndef NDEBUG
     ln->_fd = 0;
-#endif
 
     if (ln->_listen_evt != NULL) {
         ah_i_loop_evt_dealloc(ln->_loop, ln->_listen_evt);
-#ifndef NDEBUG
         ln->_listen_evt = NULL;
-#endif
     }
 
     ln->_obs.cbs->on_close(ln->_obs.ctx, ln, err);
@@ -646,11 +644,9 @@ ah_err_t ah_i_tcp_trans_default_listener_close(void* ctx, ah_tcp_listener_t* ln)
     if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSED) {
         return AH_ESTATE;
     }
-#ifndef NDEBUG
     if (ln->_fd == 0) {
-        return AH_ESTATE;
+        return AH_EINTERN;
     }
-#endif
     ln->_state = AH_I_TCP_LISTENER_STATE_CLOSING;
 
     s_listener_unref(ln);
