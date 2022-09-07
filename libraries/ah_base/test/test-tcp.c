@@ -11,7 +11,7 @@
 struct s_conn_obs_ctx {
     ah_sockaddr_t connect_to_this_addr_on_open;
 
-    size_t* conn_close_countdown;
+    size_t* open_connection_count;
 
     size_t on_open_count;
     size_t on_connect_count;
@@ -84,7 +84,10 @@ static void s_conn_on_open(void* ctx_, ah_tcp_conn_t* conn, ah_err_t err)
     ah_unit_res_t* res = ctx->res;
 
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
-        ah_tcp_conn_term(conn);
+        if (conn != NULL) {
+            err = ah_tcp_conn_term(conn);
+            (void) ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE);
+        }
         return;
     }
     if (!ah_unit_assert(AH_UNIT_CTX, res, conn != NULL, "conn != NULL")) {
@@ -136,6 +139,8 @@ static void s_conn_on_connect(void* ctx_, ah_tcp_conn_t* conn, ah_err_t err)
         return;
     }
 
+    (*ctx->open_connection_count) += 1u;
+
     err = ah_tcp_conn_read_start(conn);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         goto handle_failure;
@@ -165,7 +170,7 @@ static void s_conn_on_read(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_
         goto handle_failure;
     }
     if (!ah_unit_assert(AH_UNIT_CTX, res, conn != NULL, "conn != NULL")) {
-        return;
+        goto handle_failure;
     }
 
     if (ah_rw_get_readable_size(&in->rw) < 18u) {
@@ -175,7 +180,6 @@ static void s_conn_on_read(void* ctx_, ah_tcp_conn_t* conn, ah_tcp_in_t* in, ah_
     if (!ah_unit_assert_eq_uintmax(AH_UNIT_CTX, res, ah_rw_get_readable_size(&in->rw), 18u)) {
         goto handle_failure;
     }
-
     if (!ah_unit_assert_eq_cstr(AH_UNIT_CTX, res, (char*) in->rw.r, "Hello, Arrowhead!")) {
         goto handle_failure;
     }
@@ -228,9 +232,9 @@ static void s_conn_on_close(void* ctx_, ah_tcp_conn_t* conn, ah_err_t err)
     err = ah_tcp_conn_term(conn);
     (void) ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE);
 
-    (*ctx->conn_close_countdown) -= 1u;
+    (*ctx->open_connection_count) -= 1u;
 
-    if (*ctx->conn_close_countdown == 0u) {
+    if (*ctx->open_connection_count == 0u) {
         err = ah_loop_term(loop);
         (void) ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE);
     }
@@ -341,6 +345,8 @@ static void s_listener_on_accept(void* ctx_, ah_tcp_listener_t* ln, ah_tcp_accep
         goto handle_failure;
     }
 
+    (*ctx->rconn_obs_ctx.open_connection_count) += 1u;
+
     accept->obs->cbs = &s_conn_cbs;
     accept->obs->ctx = &ctx->rconn_obs_ctx;
 
@@ -399,13 +405,13 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
         return;
     }
 
-    // When this number of connections have been closed, we terminate the event loop.
-    size_t conn_close_countdown = 2u;
+    // When this number reaches zero, we terminate the event loop.
+    size_t open_connection_count = 0u;
 
     // Setup listener.
     struct s_listener_obs_ctx ln_obs_ctx = {
         .rconn_obs_ctx = (struct s_conn_obs_ctx) {
-            .conn_close_countdown = &conn_close_countdown,
+            .open_connection_count = &open_connection_count,
             .res = res,
         },
         .res = res,
@@ -418,7 +424,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
 
     // Setup local connection.
     struct s_conn_obs_ctx lconn_obs_ctx = {
-        .conn_close_countdown = &conn_close_countdown,
+        .open_connection_count = &open_connection_count,
         .res = res,
     };
     ah_tcp_conn_t lconn;
@@ -439,7 +445,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
 
     // Execute event loop.
     ah_time_t deadline;
-    err = ah_time_add(ah_time_now(), 100000 * AH_TIMEDIFF_S, &deadline);
+    err = ah_time_add(ah_time_now(), 1 * AH_TIMEDIFF_S, &deadline);
     if (!ah_unit_assert_eq_err(AH_UNIT_CTX, res, err, AH_ENONE)) {
         return;
     }

@@ -86,7 +86,7 @@ ah_extern ah_err_t ah_tcp_conn_term(ah_tcp_conn_t* conn)
 ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn)
 {
     if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_get_family == NULL)) {
-        return AH_EINVAL;
+        return -1;
     }
     return conn->_trans.vtab->conn_get_family(conn->_trans.ctx, conn);
 }

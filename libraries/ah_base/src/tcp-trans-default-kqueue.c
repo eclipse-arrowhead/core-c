@@ -238,7 +238,6 @@ static void s_conn_unref(ah_tcp_conn_t* conn)
     }
 
     conn->_shutdown_flags = AH_TCP_SHUTDOWN_RDWR;
-    conn->_state = AH_I_TCP_CONN_STATE_CLOSING;
     conn->_fd = 0;
 
     s_conn_read_stop(conn);
@@ -252,7 +251,7 @@ static void s_conn_unref(ah_tcp_conn_t* conn)
 static void s_conn_read_stop(ah_tcp_conn_t* conn)
 {
     ah_assert_if_debug(conn != NULL);
-    ah_assert_if_debug(conn->_state != AH_I_TCP_CONN_STATE_READING);
+    ah_assert_if_debug(conn->_state < AH_I_TCP_CONN_STATE_READING);
 
     if (conn->_in != NULL) {
         ah_tcp_in_free(conn->_in);
@@ -262,11 +261,11 @@ static void s_conn_read_stop(ah_tcp_conn_t* conn)
     if (conn->_read_evt != NULL) {
         ah_i_loop_evt_dealloc(conn->_loop, conn->_read_evt);
         conn->_read_evt = NULL;
-    }
 
-    struct kevent* kev;
-    if (ah_i_loop_alloc_kev(conn->_loop, &kev) == AH_ENONE) {
-        EV_SET(kev, conn->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
+        struct kevent* kev;
+        if (ah_i_loop_alloc_kev(conn->_loop, &kev) == AH_ENONE) {
+            EV_SET(kev, conn->_fd, EVFILT_READ, EV_DELETE, 0, 0u, NULL);
+        }
     }
 }
 
@@ -449,7 +448,7 @@ ah_err_t ah_i_tcp_trans_default_conn_close(void* ctx, ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSED) {
+    if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSING) {
         return AH_ESTATE;
     }
     if (conn->_fd == 0) {
@@ -641,7 +640,7 @@ ah_err_t ah_i_tcp_trans_default_listener_close(void* ctx, ah_tcp_listener_t* ln)
     if (ln == NULL) {
         return AH_EINVAL;
     }
-    if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSED) {
+    if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSING) {
         return AH_ESTATE;
     }
     if (ln->_fd == 0) {

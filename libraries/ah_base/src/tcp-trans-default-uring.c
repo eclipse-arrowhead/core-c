@@ -375,11 +375,11 @@ ah_err_t ah_i_tcp_trans_default_conn_close(void* ctx, ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return AH_EINVAL;
     }
-    if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSED) {
+    if (conn->_state <= AH_I_TCP_CONN_STATE_CLOSING) {
         return AH_ESTATE;
     }
     if (conn->_fd == 0) {
-        return AH_ESTATE;
+        return AH_EINTERN;
     }
     conn->_state = AH_I_TCP_CONN_STATE_CLOSING;
 
@@ -579,11 +579,11 @@ ah_err_t ah_i_tcp_trans_default_listener_close(void* ctx, ah_tcp_listener_t* ln)
     if (ln == NULL) {
         return AH_EINVAL;
     }
-    if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSED) {
+    if (ln->_state <= AH_I_TCP_LISTENER_STATE_CLOSING) {
         return AH_ESTATE;
     }
     if (ln->_fd == 0) {
-        return AH_ESTATE;
+        return AH_EINTERN;
     }
     ln->_state = AH_I_TCP_LISTENER_STATE_CLOSING;
 
