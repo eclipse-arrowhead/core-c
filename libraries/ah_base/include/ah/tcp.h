@@ -7,14 +7,13 @@
  * @file
  * Transmission Control Protocol (TCP) utilities.
  *
- * Here, the data structures and functions required to setup and send messages
- * through TCP connections are made available. Such connections are produced
- * either by @e connecting to a remote host or @e listening for incoming
- * connections. To give you more control over the medium through which the
- * connections are made, we also provide a mechanism we refer to as
- * @e transports. Please refer to <a href="https://www.rfc-editor.org/rfc/rfc9293.html">RFC9293</a>
- * to learn more about TCP itself. Below, we briefly describe how to use this C
- * API.
+ * TCP deals with the reliable transmissions of data streams via IP network
+ * connections. These connections are produced either by @e connecting to a
+ * remote host or @e listening for incoming connections. To give you more
+ * control over the medium through which the connections are made, we also
+ * provide a mechanism we refer to as @e transports. Please refer to
+ * <a href="https://www.rfc-editor.org/rfc/rfc9293.html">RFC9293</a> to learn
+ * more about TCP itself. Below, we briefly describe how to use this C API.
  *
  * @note When we use the terms @e remote and @e local throughout this file, we
  *       do so from the perspective of individual connections rather than
@@ -258,8 +257,8 @@ struct ah_tcp_conn_obs {
 /**
  * TCP connection handle.
  *
- * Such a handle can be established either by connecting to a remote listener
- * via ah_tcp_conn_connect() or by accepting connections via
+ * Such a connection can be established either by connecting to a remote
+ * listener via ah_tcp_conn_connect() or by accepting connections via
  * ah_tcp_listener_listen().
  *
  * @note All fields of this data structure are @e private in the sense that a
@@ -1044,6 +1043,10 @@ ah_extern void* ah_tcp_conn_get_obs_ctx(const ah_tcp_conn_t* conn);
  * @return @c true only if @a conn is currently closing or closed. @c false if
  *         @a conn is @c NULL, @a conn @c ->vtab is @c NULL or @a conn
  *         @c ->vtab->conn_is_closed is @c NULL.
+ *
+ * @warning Calling this function on terminated connections is inherently
+ *          unsafe, unless they are known not have their memory invalidated when
+ *          they are terminated.
  */
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn);
 
@@ -1458,6 +1461,8 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
  *
  * @note Any already accepted connections that are still open are unaffected by
  *       the listener being closed.
+ *
+ * @warning This function must be called with a successfully opened listener.
  */
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
 
@@ -1480,6 +1485,8 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
  *       the listener being terminated. It may, however, be the case that some
  *       resources @a ln shares with those connections are not freed until they
  *       are all closed.
+ *
+ * @warning This function must be called with a successfully closed listener.
  */
 ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln);
 
@@ -1554,12 +1561,16 @@ ah_extern void* ah_tcp_listener_get_obs_ctx(const ah_tcp_listener_t* ln);
 /**
  * Checks if @a ln is in any closing or closed state.
  *
- * Also newly initialized and terminated listener are considered closed.
+ * Also newly initialized and terminated listeners are considered closed.
  *
  * @param ln Pointer to listener.
  * @return @c true only if @a ln is currently closing or closed. @c false if
  *         @a ln is @c NULL, @a ln @c ->vtab is @c NULL or @a ln
  *         @c ->vtab->listener_is_closed is @c NULL.
+ *
+ * @warning Calling this function on terminated listeners is inherently unsafe,
+ *          unless they are known not have their memory invalidated when they
+ *          are terminated.
  */
 ah_extern bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln);
 
