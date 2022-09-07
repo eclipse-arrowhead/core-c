@@ -1,5 +1,4 @@
-@dir ah_base
-@brief Base library.
+    @dir ah_base @brief Base library.
 
 ##  Arrowhead Core C Base Library
 
