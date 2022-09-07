@@ -34,7 +34,7 @@
                              \
  ah_udp_in_t* _in;           \
                              \
- uint16_t _sock_family;      \
+ uint16_t  _sockfamily;      \
  uint8_t _state;             \
  AH_I_UDP_SOCK_PLATFORM_FIELDS
 

@@ -48,7 +48,7 @@ int ah_i_tcp_trans_default_conn_get_family(void* ctx, const ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return -1;
     }
-    return conn->_sock_family;
+    return conn-> _sockfamily;
 }
 
 ah_loop_t* ah_i_tcp_trans_default_conn_get_loop(void* ctx, const ah_tcp_conn_t* conn)
@@ -147,7 +147,7 @@ int ah_i_tcp_trans_default_listener_get_family(void* ctx, const ah_tcp_listener_
     if (ln == NULL) {
         return -1;
     }
-    return ln->_sock_family;
+    return ln-> _sockfamily;
 }
 
 ah_loop_t* ah_i_tcp_trans_default_listener_get_loop(void* ctx, const ah_tcp_listener_t* ln)

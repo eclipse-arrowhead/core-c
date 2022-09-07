@@ -24,7 +24,7 @@ ah_err_t ah_i_udp_trans_default_sock_open(void* ctx, ah_udp_sock_t* sock, const 
     ah_err_t err = ah_i_sock_open_bind(sock->_loop, laddr, SOCK_DGRAM, &sock->_fd);
 
     if (err == AH_ENONE) {
-        sock->_sock_family = laddr->as_any.family;
+        sock-> _sockfamily = laddr->as_any.family;
         sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
     }
 
@@ -60,7 +60,7 @@ ah_err_t ah_i_udp_trans_default_sock_set_multicast_hop_limit(void* ctx, ah_udp_s
     int level;
     int name;
 
-    switch (sock->_sock_family) {
+    switch (sock-> _sockfamily) {
     case AH_SOCKFAMILY_IPV6:
         level = IPPROTO_IPV6;
         name = IPV6_MULTICAST_HOPS;
@@ -93,7 +93,7 @@ ah_err_t ah_i_udp_trans_default_sock_set_multicast_loopback(void* ctx, ah_udp_so
     int level;
     int name;
 
-    switch (sock->_sock_family) {
+    switch (sock-> _sockfamily) {
     case AH_SOCKFAMILY_IPV6:
         level = IPPROTO_IPV6;
         name = IPV6_MULTICAST_LOOP;
@@ -140,7 +140,7 @@ ah_err_t ah_i_udp_trans_default_sock_set_unicast_hop_limit(void* ctx, ah_udp_soc
     int level;
     int name;
 
-    switch (sock->_sock_family) {
+    switch (sock-> _sockfamily) {
     case AH_SOCKFAMILY_IPV6:
         level = IPPROTO_IPV6;
         name = IPV6_UNICAST_HOPS;
@@ -174,7 +174,7 @@ ah_err_t ah_i_udp_trans_default_sock_join(void* ctx, ah_udp_sock_t* sock, const 
     int name;
     ah_i_socklen_t size;
 
-    switch (sock->_sock_family) {
+    switch (sock-> _sockfamily) {
     case AH_SOCKFAMILY_IPV6:
         level = IPPROTO_IPV6;
         name = IPV6_JOIN_GROUP;
@@ -209,7 +209,7 @@ ah_err_t ah_i_udp_trans_default_sock_leave(void* ctx, ah_udp_sock_t* sock, const
     int name;
     ah_i_socklen_t size;
 
-    switch (sock->_sock_family) {
+    switch (sock-> _sockfamily) {
     case AH_SOCKFAMILY_IPV6:
         level = IPPROTO_IPV6;
         name = IPV6_LEAVE_GROUP;

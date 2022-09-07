@@ -44,7 +44,7 @@ int ah_i_udp_trans_default_sock_get_family(void* ctx, const ah_udp_sock_t* sock)
     if (sock == NULL) {
         return -1;
     }
-    return sock->_sock_family;
+    return sock-> _sockfamily;
 }
 
 ah_loop_t* ah_i_udp_trans_default_sock_get_loop(void* ctx, const ah_udp_sock_t* sock)

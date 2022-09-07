@@ -437,7 +437,7 @@ static ah_err_t s_listener_accept_prep(ah_tcp_listener_t* ln)
     evt->_subject = ln;
 
     ah_i_sockfd_t accept_fd;
-    err = ah_i_sock_open(ln->_loop, ln->_sock_family, SOCK_STREAM, &accept_fd);
+    err = ah_i_sock_open(ln->_loop, ln-> _sockfamily, SOCK_STREAM, &accept_fd);
     if (err != AH_ENONE) {
         goto dealloc_evt_and_return_err;
     }
@@ -522,7 +522,7 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt)
 
     conn->_loop = ln->_loop;
     conn->_owning_slab = &ln->_conn_slab;
-    conn->_sock_family = ln->_sock_family;
+    conn-> _sockfamily = ln-> _sockfamily;
     conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
     conn->_fd = ln->_accept_fd;
 

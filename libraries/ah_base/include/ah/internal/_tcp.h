@@ -38,7 +38,7 @@
  struct ah_i_slab* _owning_slab; \
  ah_tcp_in_t* _in;               \
                                  \
- uint16_t _sock_family;          \
+ uint16_t  _sockfamily;          \
  uint8_t _shutdown_flags;        \
  uint8_t _state;                 \
  AH_I_TCP_CONN_PLATFORM_FIELDS
@@ -53,7 +53,7 @@
                                  \
  struct ah_i_slab _conn_slab;    \
                                  \
- uint16_t _sock_family;          \
+ uint16_t  _sockfamily;          \
  uint8_t _state;                 \
  AH_I_TCP_LISTENER_PLATFORM_FIELDS
 

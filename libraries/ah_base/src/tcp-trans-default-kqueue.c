@@ -556,7 +556,7 @@ static void s_listener_on_accept(ah_i_loop_evt_t* evt, struct kevent* kev)
 
         conn->_loop = ln->_loop;
         conn->_owning_slab = &ln->_conn_slab;
-        conn->_sock_family = ln->_sock_family;
+        conn-> _sockfamily = ln-> _sockfamily;
         conn->_state = AH_I_TCP_CONN_STATE_CONNECTED;
         conn->_fd = fd;
 
