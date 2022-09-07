@@ -57,6 +57,11 @@ set(
     src/tcp-trans.c
     src/tcp.c
     src/time.c
+    src/udp-in.c
+    src/udp-out.c
+    src/udp-trans-default.c
+    src/udp-trans-default.h
+    src/udp-trans.c
     src/udp.c
     src/utf8.c
 )
@@ -80,8 +85,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         src/tcp-trans-default-bsd.c
         src/tcp-trans-default-kqueue.c
         src/time-darwin.c
-        src/udp-bsd.c
-        src/udp-kqueue.c
+        src/udp-trans-default-bsd.c
+        src/udp-trans-default-kqueue.c
     )
 endif ()
 
@@ -104,8 +109,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         src/tcp-trans-default-bsd.c
         src/tcp-trans-default-uring.c
         src/time-uring.c
-        src/udp-bsd.c
-        src/udp-uring.c
+        src/udp-trans-default-bsd.c
+        src/udp-trans-default-uring.c
     )
 endif ()
 
@@ -128,8 +133,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         src/tcp-trans-default-bsd.c
         src/tcp-trans-default-iocp.c
         src/time-win32.c
-        src/udp-bsd.c
-        src/udp-iocp.c
+        src/udp-trans-default-bsd.c
+        src/udp-trans-default-iocp.c
         src/winapi.c
         src/winapi.h
     )

@@ -14,7 +14,7 @@ static void s_sock_close(ah_udp_sock_t* sock, ah_err_t err);
 static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock);
 static void s_sock_recv_stop(ah_udp_sock_t* sock);
 
-ah_err_t ah_i_udp_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_trans_default_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 {
     (void) ctx;
 
@@ -123,7 +123,7 @@ report_err:
     (void) sock->_cbs->on_recv(sock, NULL, err);
 }
 
-ah_err_t ah_i_udp_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_trans_default_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
 {
     (void) ctx;
 
@@ -157,7 +157,7 @@ static void s_sock_recv_stop(ah_udp_sock_t* sock)
     }
 }
 
-ah_err_t ah_i_udp_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
+ah_err_t ah_i_udp_trans_default_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
 {
     (void) ctx;
 
@@ -216,7 +216,7 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe)
     sock->_cbs->on_send(sock, out, err);
 }
 
-ah_err_t ah_i_udp_sock_close(void* ctx, ah_udp_sock_t* sock)
+ah_err_t ah_i_udp_trans_default_sock_close(void* ctx, ah_udp_sock_t* sock)
 {
     (void) ctx;
 

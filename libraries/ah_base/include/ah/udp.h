@@ -7,17 +7,33 @@
  * @file
  * User Datagram Protocol (UDP) utilities.
  *
- * Here, the data structures and functions required to setup and send messages
- * using the UDP/IP protocol are made available. Such messages are both sent
- * and received using @e sockets.
+ * The UDP protocol facilitates unreliable transmission of messages, or
+ * @e datagrams, over IP networks. These datagrams are both sent and received
+ * using @e sockets. To give you more control over the medium through which
+ * these sockets communicate, we also provide a mechanism we refer to as
+ * @e transports. Please refer to <a href="https://www.rfc-editor.org/rfc/rfc8085.html">RFC8085</a>
+ * to learn more about UDP itself. Below, we briefly describe how to use this C
+ * API.
  *
  * @note When we use the terms @e remote and @e local throughout this file, we
  *       do so from the perspective of individual sockets rather than complete
  *       devices. In other words, when we consider a certain socket, that
  *       socket is local and whatever other socket it may communicate with is
  *       remote.
+ *
+ * <h3>Sockets</h3>
+ *
+ * TODO
+ *
+ * <h3>Transports</h3>
+ *
+ * TODO
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc8085.html
+ * @see https://www.rfc-editor.org/rfc/rfc768.html
  */
 
+#include "alloc.h"
 #include "buf.h"
 #include "internal/_udp.h"
 #include "sock.h"
@@ -124,18 +140,47 @@ struct ah_udp_trans {
  *       own UDP transports.
  */
 struct ah_udp_trans_vtab {
+    ah_err_t (*sock_init)(void* ctx, ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, ah_udp_sock_obs_t obs);
     ah_err_t (*sock_open)(void* ctx, ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
     ah_err_t (*sock_recv_start)(void* ctx, ah_udp_sock_t* sock);
     ah_err_t (*sock_recv_stop)(void* ctx, ah_udp_sock_t* sock);
     ah_err_t (*sock_send)(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out);
     ah_err_t (*sock_close)(void* ctx, ah_udp_sock_t* sock);
+    ah_err_t (*sock_term)(void* ctx, ah_udp_sock_t* sock);
+    int (*sock_get_family)(void* ctx, const ah_udp_sock_t* sock);
+    ah_err_t (*sock_get_laddr)(void* ctx, const ah_udp_sock_t* sock, ah_sockaddr_t* laddr);
+    ah_loop_t* (*sock_get_loop)(void* ctx, const ah_udp_sock_t* sock);
+    bool (*sock_is_closed)(void* ctx, const ah_udp_sock_t* sock);
+    bool (*sock_is_receiving)(void* ctx, const ah_udp_sock_t* sock);
+    ah_err_t (*sock_set_multicast_hop_limit)(void* ctx, ah_udp_sock_t* sock, uint8_t hop_limit);
+    ah_err_t (*sock_set_multicast_loopback)(void* ctx, ah_udp_sock_t* sock, bool is_enabled);
+    ah_err_t (*sock_set_reuseaddr)(void* ctx, ah_udp_sock_t* sock, bool is_enabled);
+    ah_err_t (*sock_set_unicast_hop_limit)(void* ctx, ah_udp_sock_t* sock, uint8_t hop_limit);
+    ah_err_t (*sock_join)(void* ctx, ah_udp_sock_t* sock, const ah_udp_group_t* group);
+    ah_err_t (*sock_leave)(void* ctx, ah_udp_sock_t* sock, const ah_udp_group_t* group);
+};
+
+/**
+ * UDP socket observer.
+ *
+ * Specifies what functions are to receive events about some ah_udp_sock
+ * instance and what arbitrary context pointer to provide when those functions
+ * are invoked.
+ */
+struct ah_udp_sock_obs {
+    /** Set of socket event callbacks. */
+    const ah_udp_sock_cbs_t* cbs;
+
+    /** Arbitrary pointer provided every time an event callback is fired. */
+    void* ctx;
 };
 
 /**
  * UDP socket handle.
  *
- * Such a handle can be used to both send and/or receive UDP datagrams
- * (messages).
+ * Such a handle can be used to both send and/or receive UDP datagrams to and
+ * from arbitrary remote sockets using ah_udp_sock_send() and
+ * ah_udp_sock_recv_start().
  *
  * @note All fields of this data structure are @e private in the sense that a
  *       user of this API should not access them directly.
@@ -187,12 +232,20 @@ struct ah_udp_out {
 /**
  * UDP socket callback set.
  *
- * A set of function pointers used to handle events on UDP sockets.
+ * A set of function pointers used to handle events on UDP sockets, such as
+ * a socket being opened or a datagram being received.
+ *
+ * Every function takes a context pointer as its first argument. This context
+ * pointer comes from the ah_udp_sock_obs owning this callback set. More
+ * specifically, it is a copy of the value of the ah_udp_sock_obs::ctx field of
+ * the owning ah_udp_sock_obs instance. The context pointer makes it possible
+ * for you to associate arbitrary state with individual UDP sockets.
  */
 struct ah_udp_sock_cbs {
     /**
      * @a sock has been opened, or the attempt failed.
      *
+     * @param ctx  Pointer to context.
      * @param sock Pointer to socket.
      * @param err  One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Socket opened successfully.
@@ -213,7 +266,7 @@ struct ah_udp_sock_cbs {
      * @note Every successfully opened @a sock must eventually be provided to
      *       ah_udp_sock_close().
      */
-    void (*on_open)(ah_udp_sock_t* sock, ah_err_t err);
+    void (*on_open)(void* ctx, ah_udp_sock_t* sock, ah_err_t err);
 
     /**
      * @a sock has received data.
@@ -230,6 +283,7 @@ struct ah_udp_sock_cbs {
      * @ref AH_ENONE), @a sock should always be closed via a call to
      * ah_udp_sock_close().
      *
+     * @param ctx  Pointer to context.
      * @param sock Pointer to socket.
      * @param in   Pointer to input data representation, or @c NULL if @a err
      *             is not @ref AH_ENONE.
@@ -247,7 +301,7 @@ struct ah_udp_sock_cbs {
      *   <li>@ref AH_ENOMEM [Darwin, Linux]  - Not enough heap memory available.
      * </ul>
      */
-    void (*on_recv)(ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
+    void (*on_recv)(void* ctx, ah_udp_sock_t* sock, ah_udp_in_t* in, ah_err_t err);
 
     /**
      * @a sock has sent data.
@@ -259,6 +313,7 @@ struct ah_udp_sock_cbs {
      * be completed. If an error has occurred, @a sock should be closed using
      * ah_udp_sock_close().
      *
+     * @param ctx  Pointer to context.
      * @param sock Pointer to socket.
      * @param out  Pointer to output buffer provided to ah_udp_sock_write(),
      *             or @c NULL if @a err is not @ref AH_ENONE.
@@ -280,11 +335,12 @@ struct ah_udp_sock_cbs {
      *   <li>@ref AH_ENOMEM [Darwin, Linux]       - Not enough heap memory available.
      * </ul>
      */
-    void (*on_send)(ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err);
+    void (*on_send)(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out, ah_err_t err);
 
     /**
      * @a sock has been closed.
      *
+     * @param ctx  Pointer to context.
      * @param sock Pointer to socket.
      * @param err  Should always be @ref AH_ENONE. Other codes may be provided
      *             if an unexpected platform error occurs.
@@ -293,38 +349,8 @@ struct ah_udp_sock_cbs {
      *       ah_udp_sock_close(), which makes it an excellent place to release
      *       any resources associated with @a sock.
      */
-    void (*on_close)(ah_udp_sock_t* sock, ah_err_t err);
+    void (*on_close)(void* ctx, ah_udp_sock_t* sock, ah_err_t err);
 };
-/**
- * @name UDP Transport
- *
- * Operations on ah_udp_trans and related type instances.
- *
- * @{
- */
-
-/**
- * Gets a copy of the default UDP transport.
- *
- * The default UCP transport directly utilizes the network subsystem of the
- * current platform. This transport may be used directly with
- * ah_udp_sock_init() to send plain UDP datagrams, which is to say that they
- * are not encrypted or analyzed in any way.
- *
- * @return Copy of default UDP transport.
- */
-ah_extern ah_udp_trans_t ah_udp_trans_get_default(void);
-
-/**
- * Checks if all mandatory fields of @a vtab are set.
- *
- * @param vtab Pointer to virtual function table.
- * @return @c true only if @a vtab is not @c NULL and is valid. @c false
- *         otherwise.
- */
-ah_extern bool ah_udp_trans_vtab_is_valid(const ah_udp_trans_vtab_t* vtab);
-
-/** @} */
 
 /**
  * @name UDP Socket
@@ -344,7 +370,7 @@ ah_extern bool ah_udp_trans_vtab_is_valid(const ah_udp_trans_vtab_t* vtab);
  * @param sock  Pointer to socket.
  * @param loop  Pointer to event loop.
  * @param trans Desired transport.
- * @param cbs   Pointer to event callback set.
+ * @param obs   Pointer to event callback set.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - @a sock successfully initialized.
  *   <li>@ref AH_EINVAL - @a sock or @a loop or @a cbs is @c NULL.
@@ -352,7 +378,7 @@ ah_extern bool ah_udp_trans_vtab_is_valid(const ah_udp_trans_vtab_t* vtab);
  *   <li>@ref AH_EINVAL - @c on_open, @c on_recv, @c on_send or @c on_close of @a cbs is @c NULL.
  * </ul>
  */
-ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, const ah_udp_sock_cbs_t* cbs);
+ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp_trans_t trans, ah_udp_sock_obs_t obs);
 
 /**
  * Schedules opening of @a sock, which must be initialized, and its
@@ -432,8 +458,8 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
 
 /**
- * Schedules the sending of the data in @a out, which both specifies
- *        where and what to send.
+ * Schedules the sending of the data in @a out, which both specifies where and
+ * what to send.
  *
  * An output buffer can be allocated on the heap using ah_udp_out_alloc(). If
  * you want to store the buffer memory somewhere else, just zero an ah_udp_out
@@ -468,12 +494,38 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
  *
  * @param sock Pointer to socket.
  * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE  - Close of @a sock successfully scheduled.
- *   <li>@ref AH_EINVAL - @a sock is @c NULL.
- *   <li>@ref AH_ESTATE - @a sock is already closed.
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a sock is @c NULL, @a trans @c vtab is @c NULL or the @a trans
+ *                        @c vtab->sock_close field is @c NULL.
+ *   <li>Any additional code returned by the used UDP transport.
  * </ul>
+ * The <em>default transport</em> may also cause the following error code to be
+ * returned: <ul>
+ *   <li>@ref AH_ESTATE - @a sock is already in a closing or closed state.
+ * </ul>
+ *
+ * @warning This function must be called with a successfully opened socket.
  */
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
+
+/**
+ * Terminates @a sock, freeing any resources it holds.
+ *
+ * @param sock Pointer to socket.
+ * @return One of the following error codes: <ul>
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a sock is @c NULL, @a trans @c vtab is @c NULL or the @a trans
+ *                        @c vtab->sock_term field is @c NULL.
+ *   <li>Any additional code returned by the used UDP transport.
+ * </ul>
+ * The <em>default transport</em> may also cause the following error code to be
+ * returned: <ul>
+ *   <li>@ref AH_ESTATE - @a sock is not in a closed state.
+ * </ul>
+ *
+ * @warning This function must be called with a successfully closed socket.
+ */
+ah_extern ah_err_t ah_udp_sock_term(ah_udp_sock_t* sock);
 
 /**
  * Checks the socket family of @a sock.
@@ -514,21 +566,17 @@ ah_extern ah_err_t ah_udp_sock_get_laddr(const ah_udp_sock_t* sock, ah_sockaddr_
 ah_extern ah_loop_t* ah_udp_sock_get_loop(const ah_udp_sock_t* sock);
 
 /**
- * Gets the user data pointer associated with @a sock.
- *
- * @param sock Pointer to socket.
- * @return Any user data pointer previously set via
- *         ah_tcp_conn_set_user_data(), or @c NULL if no such has been set or
- *         if @a sock is @c NULL.
- */
-ah_extern void* ah_udp_sock_get_user_data(const ah_udp_sock_t* sock);
-
-/**
  * Checks if @a sock is closed.
+ *
+ * Also newly initialized and terminated sockets are considered closed.
  *
  * @param sock Pointer to socket.
  * @return @c true only if @a sock is not @c NULL and is currently closed.
  *         @c false otherwise.
+ *
+ * @warning Calling this function on terminated sockets is inherently unsafe,
+ *          unless they are known not have their memory invalidated when they
+ *          are terminated.
  */
 ah_extern bool ah_udp_sock_is_closed(const ah_udp_sock_t* sock);
 
@@ -636,17 +684,6 @@ ah_extern ah_err_t ah_udp_sock_set_reuseaddr(ah_udp_sock_t* sock, bool is_enable
 ah_extern ah_err_t ah_udp_sock_set_unicast_hop_limit(ah_udp_sock_t* sock, uint8_t hop_limit);
 
 /**
- * Sets the user data pointer associated with @a sock.
- *
- * @param sock      Pointer to socket.
- * @param user_data User data pointer, referring to whatever context you want
- *                  to associate with @a sock.
- *
- * @note If @a sock is @c NULL, this function does nothing.
- */
-ah_extern void ah_udp_sock_set_user_data(ah_udp_sock_t* sock, void* user_data);
-
-/**
  * Makes @a sock join the multicast group specified by @a group.
  *
  * @param sock  Pointer to socket.
@@ -697,6 +734,8 @@ ah_extern ah_err_t ah_udp_sock_join(ah_udp_sock_t* sock, const ah_udp_group_t* g
  *          using ah_udp_sock_get_family().
  */
 ah_extern ah_err_t ah_udp_sock_leave(ah_udp_sock_t* sock, const ah_udp_group_t* group);
+
+ah_extern bool ah_udp_sock_cbs_is_valid(const ah_udp_sock_cbs_t* cbs);
 
 /**
  * Allocates new input buffer, storing a pointer to it in @a owner_ptr.
@@ -810,6 +849,38 @@ ah_extern ah_udp_out_t* ah_udp_out_alloc(void);
  * @note If @a out is @c NULL, this function does nothing.
  */
 ah_extern void ah_udp_out_free(ah_udp_out_t* out);
+
+/** @} */
+
+/**
+ * @name UDP Transport
+ *
+ * Operations on ah_udp_trans and related type instances.
+ *
+ * @{
+ */
+
+/**
+ * Gets a copy of the default UDP transport.
+ *
+ * The default UCP transport directly utilizes the network subsystem of the
+ * current platform. This transport may be used directly with
+ * ah_udp_sock_init() to send plain UDP datagrams, which is to say that they
+ * are not encrypted or analyzed in any way.
+ *
+ * @return Copy of default UDP transport.
+ */
+ah_extern ah_udp_trans_t ah_udp_trans_get_default(void);
+
+/**
+ * Checks if every field of @a vtab is set, making it valid for use as part of a
+ * UDP transport.
+ *
+ * @param vtab Pointer to virtual function table.
+ * @return @c true only if @a vtab is not @c NULL and is valid. @c false
+ *         otherwise.
+ */
+ah_extern bool ah_udp_trans_vtab_is_valid(const ah_udp_trans_vtab_t* vtab);
 
 /** @} */
 
