@@ -40,6 +40,8 @@ body {
     --ahf-red-highlight: #e02746;
     --ahf-yellow-highlight: #f1d01d;
 
+    --ahf-full-width-column-count: 2;
+
     border: none;
     display: flex;
     flex-direction: column;
@@ -413,12 +415,29 @@ body > .contents {
 
 .contents .classindex > .alphachar > a {
     color: black;
+    font-family: "Oswald";
     font-size: 1.25em;
+    font-weight: normal;
+    text-decoration: none;
+    text-transform: lowercase;
+}
+
+.contents .classindex > .alphachar > a::after {
+    content: " -";
+}
+
+.contents .classindex > .alphachar > a::before {
+    content: "- ";
 }
 
 .contents .classindex {
     margin-left: 0;
     margin-right: 0;
+}
+
+.contents .classindex > dl {
+    break-inside: avoid-column;
+    margin: 0 0 2rem 0;
 }
 
 .contents .directory > .levels {
@@ -686,17 +705,31 @@ body > .contents {
     padding: 1rem;
 }
 
+.contents > .qindex {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 1rem;
+    visibility: collapse;
+    width: calc(100% + 1rem);
+}
+
 .contents > .qindex > a {
-    font-size: 1.25em;
-    margin: 0 1rem;
+    background-color: var(--ahf-grey-light);
+    border: 0.125rem solid var(--ahf-grey-light);
+    border-radius: 0.25rem;
+    display: block;
+    font-size: 1.125rem;
+    margin-right: 1rem;
+    padding: 0.375rem 0.625rem;
+    text-align: center;
+    text-transform: lowercase;
+    visibility: visible;
+    width: 3.4rem;
 }
 
-.contents > .qindex > a:first-child {
-    margin-left: 0;
-}
-
-.contents > .qindex > a:last-child {
-    margin-right: 0;
+.contents > .qindex + .classindex {
+    column-count: var(--ahf-full-width-column-count);
+    column-gap: 2rem;
 }
 
 .contents > #details,
@@ -730,6 +763,32 @@ body > address.footer img {
 }
 
 @media (min-width: 67rem) {
+    body {
+        --ahf-full-width-column-count: 4;
+    }
+
+    code {
+        white-space: nowrap;
+    }
+
+    .contents,
+    .header {
+        margin: 0 auto;
+        width: 64rem;
+    }
+}
+
+@media (min-width: 55rem) {
+    body {
+        --ahf-full-width-column-count: 3;
+    }
+}
+
+@media (min-width: 67rem) {
+    body {
+        --ahf-full-width-column-count: 4;
+    }
+
     code {
         white-space: nowrap;
     }
