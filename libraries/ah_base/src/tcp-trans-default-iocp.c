@@ -182,7 +182,6 @@ static void s_conn_on_read(ah_i_loop_evt_t* evt)
     DWORD nread;
     err = ah_i_loop_evt_get_wsa_result(evt, conn->_fd, &nread);
     if (err != AH_ENONE) {
-        nread = 0u;
         goto report_err;
     }
 

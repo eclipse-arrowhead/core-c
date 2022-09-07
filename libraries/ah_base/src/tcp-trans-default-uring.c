@@ -306,8 +306,8 @@ static void s_conn_read_stop(ah_tcp_conn_t* conn)
         struct io_uring_sqe* sqe;
         if (ah_i_loop_alloc_sqe(conn->_loop, &sqe) == AH_ENONE) {
             io_uring_prep_cancel(sqe, conn->_read_evt, 0);
-            conn->_read_evt = NULL;
         }
+        conn->_read_evt = NULL;
     }
 }
 
