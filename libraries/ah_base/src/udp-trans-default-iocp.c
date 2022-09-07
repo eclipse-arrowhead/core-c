@@ -9,11 +9,13 @@
 
 #include <ws2ipdef.h>
 
-static void s_on_sock_recv(ah_i_loop_evt_t* evt);
-static void s_on_sock_send(ah_i_loop_evt_t* evt);
+static void s_sock_on_recv(ah_i_loop_evt_t* evt);
+static void s_sock_on_send(ah_i_loop_evt_t* evt);
 
 static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock);
 static void s_sock_recv_stop(ah_udp_sock_t* sock);
+static ah_err_t s_sock_ref(ah_udp_sock_t* sock);
+static void s_sock_unref(ah_udp_sock_t* sock);
 
 ah_err_t ah_i_udp_trans_default_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 {
@@ -22,7 +24,7 @@ ah_err_t ah_i_udp_trans_default_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state != AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_recv == NULL) {
+    if (sock->_state != AH_I_UDP_SOCK_STATE_OPEN) {
         return AH_ESTATE;
     }
 
@@ -33,13 +35,13 @@ ah_err_t ah_i_udp_trans_default_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
         return err;
     }
 
+    sock->_state = AH_I_UDP_SOCK_STATE_RECEIVING;
+
     err = s_sock_recv_prep(sock);
     if (err != AH_ENONE) {
         ah_udp_in_free(sock->_in);
         return err;
     }
-
-    sock->_state = AH_I_UDP_SOCK_STATE_RECEIVING;
 
     return AH_ENONE;
 }
@@ -47,6 +49,7 @@ ah_err_t ah_i_udp_trans_default_sock_recv_start(void* ctx, ah_udp_sock_t* sock)
 static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
 {
     ah_assert_if_debug(sock != NULL);
+    ah_assert_if_debug(sock->_state == AH_I_UDP_SOCK_STATE_RECEIVING);
 
     ah_i_loop_evt_t* evt;
 
@@ -55,7 +58,7 @@ static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
         return err;
     }
 
-    evt->_cb = s_on_sock_recv;
+    evt->_cb = s_sock_on_recv;
     evt->_subject = sock;
 
     sock->_in->_recv_from_len = sizeof(sock->_in->_recv_from);
@@ -81,7 +84,7 @@ static ah_err_t s_sock_recv_prep(ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-static void s_on_sock_recv(ah_i_loop_evt_t* evt)
+static void s_sock_on_recv(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
@@ -100,16 +103,25 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt)
         goto report_err;
     }
 
-    if (ah_unlikely(AH_PSIZE < nrecv)) {
+    if (ah_unlikely(nrecv > AH_PSIZE)) {
         err = AH_EDOM;
         goto report_err;
     }
 
     sock->_in->nrecv = nrecv;
 
-    sock->_cbs->on_recv(sock, sock->_in, AH_ENONE);
+    err = s_sock_ref(sock);
+    if (err != AH_ENONE) {
+        goto report_err;
+    }
 
-    if (sock->_state != AH_I_UDP_SOCK_STATE_RECEIVING) {
+    sock->_obs.cbs->on_recv(sock->_obs.ctx, sock, sock->_in, AH_ENONE);
+
+    uint8_t state = sock->_state;
+
+    s_sock_unref(sock);
+
+    if (state != AH_I_UDP_SOCK_STATE_RECEIVING) {
         return;
     }
 
@@ -117,13 +129,55 @@ static void s_on_sock_recv(ah_i_loop_evt_t* evt)
 
     err = s_sock_recv_prep(sock);
     if (err != AH_ENONE) {
+        sock->_state = AH_I_UDP_SOCK_STATE_OPEN;
         goto report_err;
     }
 
     return;
 
 report_err:
-    sock->_cbs->on_recv(sock, NULL, err);
+    sock->_obs.cbs->on_recv(sock->_obs.ctx, sock, NULL, err);
+}
+
+static ah_err_t s_sock_ref(ah_udp_sock_t* sock)
+{
+    if (sock == NULL) {
+        return AH_EINTERN;
+    }
+    return ah_add_uint32(sock->_ref_count, 1u, &sock->_ref_count);
+}
+
+static void s_sock_unref(ah_udp_sock_t* sock)
+{
+    if (sock->_ref_count != 0u) {
+        sock->_ref_count -= 1u;
+        return;
+    }
+
+    ah_assert_if_debug(sock->_state == AH_I_UDP_SOCK_STATE_CLOSING);
+
+    ah_err_t err = ah_i_sock_close(sock->_fd);
+    if (err == AH_EINTR) {
+        if (ah_i_loop_try_set_pending_err(sock->_loop, AH_EINTR)) {
+            err = AH_ENONE;
+        }
+    }
+
+    sock->_fd = INVALID_SOCKET;
+
+    s_sock_recv_stop(sock);
+
+    sock->_obs.cbs->on_close(sock->_obs.ctx, sock, err);
+}
+
+static void s_sock_recv_stop(ah_udp_sock_t* sock)
+{
+    ah_assert_if_debug(sock != NULL);
+
+    if (sock->_in != NULL) {
+        ah_udp_in_free(sock->_in);
+        sock->_in = NULL;
+    }
 }
 
 ah_err_t ah_i_udp_trans_default_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
@@ -143,15 +197,6 @@ ah_err_t ah_i_udp_trans_default_sock_recv_stop(void* ctx, ah_udp_sock_t* sock)
     return AH_ENONE;
 }
 
-static void s_sock_recv_stop(ah_udp_sock_t* sock)
-{
-    ah_assert_if_debug(sock != NULL);
-
-    if (sock->_in != NULL) {
-        ah_udp_in_free(sock->_in);
-    }
-}
-
 ah_err_t ah_i_udp_trans_default_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp_out_t* out)
 {
     (void) ctx;
@@ -159,7 +204,7 @@ ah_err_t ah_i_udp_trans_default_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp
     if (sock == NULL || out == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN || sock->_cbs->on_send == NULL) {
+    if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN) {
         return AH_ESTATE;
     }
 
@@ -170,7 +215,7 @@ ah_err_t ah_i_udp_trans_default_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp
         return err;
     }
 
-    evt->_cb = s_on_sock_send;
+    evt->_cb = s_sock_on_send;
     evt->_subject = out;
 
     out->_wsamsg.name = (void*) ah_i_sockaddr_const_into_bsd(out->raddr);
@@ -193,7 +238,7 @@ ah_err_t ah_i_udp_trans_default_sock_send(void* ctx, ah_udp_sock_t* sock, ah_udp
     return err;
 }
 
-static void s_on_sock_send(ah_i_loop_evt_t* evt)
+static void s_sock_on_send(ah_i_loop_evt_t* evt)
 {
     ah_assert_if_debug(evt != NULL);
 
@@ -202,6 +247,10 @@ static void s_on_sock_send(ah_i_loop_evt_t* evt)
 
     ah_udp_sock_t* sock = out->_sock;
     ah_assert_if_debug(sock != NULL);
+
+    if (sock->_state < AH_I_UDP_SOCK_STATE_OPEN) {
+        return;
+    }
 
     ah_err_t err;
 
@@ -223,30 +272,15 @@ ah_err_t ah_i_udp_trans_default_sock_close(void* ctx, ah_udp_sock_t* sock)
     if (sock == NULL) {
         return AH_EINVAL;
     }
-    if (sock->_state == AH_I_UDP_SOCK_STATE_CLOSED) {
+    if (sock->_state <= AH_I_UDP_SOCK_STATE_CLOSING) {
         return AH_ESTATE;
     }
-#ifndef NDEBUG
-    if (sock->_fd == 0) {
-        return AH_ESTATE;
+    if (sock->_fd == INVALID_SOCKET) {
+        return AH_EINTERN;
     }
-#endif
-    sock->_state = AH_I_UDP_SOCK_STATE_CLOSED;
+    sock->_state = AH_I_UDP_SOCK_STATE_CLOSING;
 
-    ah_err_t err = ah_i_sock_close(sock->_fd);
-    if (err == AH_EINTR) {
-        if (ah_i_loop_try_set_pending_err(sock->_loop, AH_EINTR)) {
-            err = AH_ENONE;
-        }
-    }
+    s_sock_unref(sock);
 
-#ifndef NDEBUG
-    sock->_fd = 0;
-#endif
-
-    s_sock_recv_stop(sock);
-
-    sock->_cbs->on_close(sock, err);
-
-    return err;
+    return AH_ENONE;
 }
