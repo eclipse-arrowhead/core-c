@@ -182,7 +182,7 @@ ul > li:last-child {
 }
 
 p {
-    line-height: 1.25em;
+    line-height: 1.5em;
     font-weight: 300;
     margin: 0 0 1rem 0;
 }
@@ -271,6 +271,10 @@ p {
 
 #top > .tabs > .tablist > li:hover:not(:last-child) > a {
     background-color: var(--ahf-blue-highlight);
+}
+
+#top > .tabs > .tablist > li:last-child {
+    flex-grow: 1;
 }
 
 #top > .tabs > .tablist > li.current {
@@ -398,7 +402,7 @@ p {
 
 .contents {
     font-weight: 300;
-    line-height: 1.25em;
+    line-height: 1.5em;
     padding: 0 1.5rem 2rem 1.5rem;
 }
 
@@ -836,7 +840,7 @@ body > footer > a {
     padding: 0.25rem 0.25rem 0.25rem 0;
 }
 
-#MSearchBox > .right > a {
+#MSearchBox > .right > a[style*="inline-block"] {
     display: flex !important;
 }
 

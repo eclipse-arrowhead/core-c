@@ -98,7 +98,7 @@ SHOW_USED_FILES        = YES
 SHOW_FILES             = YES
 SHOW_NAMESPACES        = YES
 FILE_VERSION_FILTER    =
-LAYOUT_FILE            = DoxygenLayout.xml
+LAYOUT_FILE            = ../assets/doxygen/DoxygenLayout.xml
 CITE_BIB_FILES         =
 
 # Configuration options related to warning and progress messages.
@@ -154,9 +154,9 @@ IGNORE_PREFIX          = AH_ ah_
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
-HTML_HEADER            = DoxygenHeader.html
-HTML_FOOTER            = DoxygenFooter.html
-HTML_STYLESHEET        = DoxygenStyle.css
+HTML_HEADER            = ../assets/doxygen/DoxygenHeader.html
+HTML_FOOTER            = ../assets/doxygen/DoxygenFooter.html
+HTML_STYLESHEET        = ../assets/doxygen/DoxygenStyle.css
 HTML_EXTRA_STYLESHEET  =
 HTML_EXTRA_FILES       = ../assets/fonts/OpenSans-Bold.woff \
                          ../assets/fonts/OpenSans-Light.woff \
