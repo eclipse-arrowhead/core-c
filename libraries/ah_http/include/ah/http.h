@@ -5,7 +5,7 @@
 
 /**
  * @file
- * HTTP/1 cln and server.
+ * HTTP/1 client and server.
  *
  * Here, data structures and functions are provided for representing, setting up
  * and communicating via HTTP/1 clients and servers. To learn more about HTTP/1,
@@ -17,11 +17,11 @@
  * HTTP clients are set up using ah_http_client_init(), ah_http_client_open()
  * and ah_http_client_connect(), in that order. Successfully initialized clients
  * are terminated with ah_http_client_term() and successfully opened clients are
- * closed with ah_http_client_close(). Every cln receives data, and is
+ * closed with ah_http_client_close(). Every client receives data, and is
  * notified of other events, via a callback set of type ah_http_client_cbs. To
- * send a message, you must provide a certain cln with a @e head, a number of
+ * send a message, you must provide a certain client with a @e head, a number of
  * <em>body parts</em> and indicate the end of the message. The head and body
- * parts are added to the <em>send queue</em> of the cln, which is processed
+ * parts are added to the <em>send queue</em> of the client, which is processed
  * and emptied asynchronously when possible. The message head, which consists of
  * a <em>start line</em> and zero or more headers, is added by a call to
  * ah_http_client_send_head(). After a head has been successfully submitted, you
@@ -41,13 +41,13 @@
  *
  * When sending and receiving @e metadata, such as start lines, headers and
  * chunks, that metadata is gathered automatically into dynamically allocated
- * buffers. Each cln owns one such buffer it reuses for all data it receives.
+ * buffers. Each client owns one such buffer it reuses for all data it receives.
  * Another is allocated for the duration of each on-going message send
  * procedure. If a certain metadata item, such as a header or chunk extension,
  * exceeds the size of its receive buffer, or a send buffer is too small to
  * contain @e all relevant metadata items, the message transmission is failed
  * with error code @ref AH_EOVERFLOW. Limiting sizes in this way helps reduce
- * the complexity the cln implementation and works as a form of protection
+ * the complexity the client implementation and works as a form of protection
  * from exploits that use large metadata items. Generally, the size of each of
  * these buffers will be limited by the page allocator page size, @c AH_PSIZE,
  * more of which you can read in the documentation for ah_palloc().
@@ -122,13 +122,23 @@ typedef struct ah_http_server_obs ah_http_server_obs_t;
 typedef struct ah_http_trailer ah_http_trailer_t;
 typedef struct ah_http_ver ah_http_ver_t;
 
+/**
+ * HTTP client observer.
+ *
+ * Specifies what functions are to receive events about some ah_http_client
+ * instance and what arbitrary context pointer to provide when those functions
+ * are invoked.
+ */
 struct ah_http_client_obs {
+    /** Set of client event callbacks. */
     const ah_http_client_cbs_t* cbs;
+
+    /** Arbitrary pointer provided every time an event callback is fired. */
     void* ctx;
 };
 
 /**
- * HTTP cln.
+ * HTTP client.
  *
  * Clients are either (1) initiated, opened and connected explicitly, or (2)
  * listened for using an ah_http_server instance.
@@ -143,15 +153,22 @@ struct ah_http_client {
 };
 
 /**
- * HTTP cln callback set.
+ * HTTP client callback set.
  *
  * A set of function pointers used to handle events on HTTP clients.
+ *
+ * Every function takes a context pointer as its first argument. This context
+ * pointer comes from the ah_http_client_obs owning this callback set. More
+ * specifically, it is a copy of the value of the ah_http_client_obs::ctx field
+ * of the owning ah_http_client_obs instance. The context pointer makes it
+ * possible for you to associate arbitrary state with individual HTTP clients.
  */
 struct ah_http_client_cbs {
     /**
      * @a cln has been opened, or the attempt failed.
      *
-     * @param cln Pointer to cln.
+     * @param ctx Pointer to context.
+     * @param cln Pointer to client.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Client opened successfully.
      *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open TCP connection.
@@ -181,11 +198,12 @@ struct ah_http_client_cbs {
      * @a cln has been connected to a specified remote host, or the attempt to
      * connect it has failed.
      *
-     * @param cln Pointer to cln.
+     * @param ctx Pointer to context.
+     * @param cln Pointer to client.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                             - Connection established successfully.
      *   <li>@ref AH_EADDRINUSE [Darwin, Linux, Win32] - Failed to bind a concrete local address.
-     *                                                   This error only occurs if the cln was
+     *                                                   This error only occurs if the client was
      *                                                   opened with the wildcard address, which
      *                                                   means that network interface binding is
      *                                                   delayed until connection.
@@ -227,7 +245,8 @@ struct ah_http_client_cbs {
      * which case @a err is @ref AH_ENONE, or if sending it failed, which should
      * prompt you to close @a cln using ah_http_client_close().
      *
-     * @param cln  Pointer to cln.
+     * @param ctx  Pointer to context.
+     * @param cln  Pointer to client.
      * @param head Pointer to ah_http_head instance provided earlier to
      *             ah_http_client_send_head().
      * @param err  One of the following codes: <ul>
@@ -264,7 +283,7 @@ struct ah_http_client_cbs {
      *
      * A start line begins an HTTP message. Whether the start line is a request
      * line or a status line depends on whether the entity receiving the message
-     * is a cln or a server. Clients you connect using
+     * is a client or a server. Clients you connect using
      * ah_http_client_connect() receive status lines while clients accepted via
      * servers via ah_http_server_listen() receive request lines.
      *
@@ -272,7 +291,8 @@ struct ah_http_client_cbs {
      * ah_http_client_cbs::on_recv_end is called before this callback is ever
      * invoked.
      *
-     * @param cln     Pointer to cln receiving start line.
+     * @param ctx     Pointer to context.
+     * @param cln     Pointer to client receiving start line.
      * @param line    Message start line.
      * @param version HTTP version indicator. The major version is always @c 1.
      *
@@ -302,7 +322,8 @@ struct ah_http_client_cbs {
      * ah_http_client_cbs::on_recv_headers, which is called after all regular
      * headers have been received.
      *
-     * @param cln    Pointer to cln receiving header.
+     * @param ctx    Pointer to context.
+     * @param cln    Pointer to client receiving header.
      * @param header HTTP header, consisting of a name and a value.
      */
     void (*on_recv_header)(void* ctx, ah_http_client_t* cln, ah_http_header_t header);
@@ -310,7 +331,8 @@ struct ah_http_client_cbs {
     /**
      * @a cln has seen all headers in the currently received message.
      *
-     * @param cln Pointer to cln.
+     * @param ctx Pointer to context.
+     * @param cln Pointer to client.
      *
      * @note This callback is optional. Set if to @c NULL if not relevant.
      */
@@ -319,7 +341,8 @@ struct ah_http_client_cbs {
     /**
      * @a cln has received a chunk size and a chunk extension.
      *
-     * @param cln  Pointer to cln.
+     * @param ctx  Pointer to context.
+     * @param cln  Pointer to client.
      * @param size Size, in bytes, of the incoming chunk.
      * @param ext  Chunk extension, provided as a NULL-terminated string if
      *             present in received chunk. Otherwise @c NULL.
@@ -353,7 +376,8 @@ struct ah_http_client_cbs {
      * @a cln using ah_tcp_in_detach(), which allocates a new input buffer for
      * @a cln.
      *
-     * @param cln Pointer to cln.
+     * @param ctx Pointer to context.
+     * @param cln Pointer to client.
      * @param in  Input buffer containing message body data.
      *
      * @note If you feel surprised by TCP data structures and functions
@@ -369,6 +393,7 @@ struct ah_http_client_cbs {
      * @ref AH_ENONE), or if connection keep-alive is disabled, the cln will be
      * closed automatically at some point after this function returns.
      *
+     * @param ctx Pointer to context.
      * @param cln Pointer to cln.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                      - Message received successfully.
@@ -407,6 +432,7 @@ struct ah_http_client_cbs {
     /**
      * @a cln has been closed.
      *
+     * @param ctx Pointer to context.
      * @param cln Pointer to connection.
      * @param err Should always be @ref AH_ENONE. Other codes may be provided if
      *            an unexpected platform error occurs.
@@ -418,8 +444,18 @@ struct ah_http_client_cbs {
     void (*on_close)(void* ctx, ah_http_client_t* cln, ah_err_t err);
 };
 
+/**
+ * HTTP server observer.
+ *
+ * Specifies what functions are to receive events about some ah_http_server
+ * instance and what arbitrary context pointer to provide when those functions
+ * are invoked.
+ */
 struct ah_http_server_obs {
+    /** Set of client event callbacks. */
     const ah_http_server_cbs_t* cbs;
+
+    /** Arbitrary pointer provided every time an event callback is fired. */
     void* ctx;
 };
 
@@ -442,11 +478,18 @@ struct ah_http_server {
  * HTTP server callback set.
  *
  * A set of function pointers used to handle events on HTTP servers.
+ *
+ * Every function takes a context pointer as its first argument. This context
+ * pointer comes from the ah_http_server_obs owning this callback set. More
+ * specifically, it is a copy of the value of the ah_http_server_obs::ctx field
+ * of the owning ah_http_server_obs instance. The context pointer makes it
+ * possible for you to associate arbitrary state with individual HTTP servers.
  */
 struct ah_http_server_cbs {
     /**
      * @a srv has been opened, or the attempt failed.
      *
+     * @param ctx Pointer to context.
      * @param srv Pointer to server.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Server opened successfully.
@@ -469,6 +512,7 @@ struct ah_http_server_cbs {
      * @a srv has started to listen for connecting clients, or the attempt
      * failed.
      *
+     * @param ctx Pointer to context.
      * @param srv Pointer to server.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                     - Server started to listen successfully.
@@ -493,6 +537,7 @@ struct ah_http_server_cbs {
      * callback set (see ah_http_client_cbs) provided when listening was started
      * via ah_http_server_listen().
      *
+     * @param ctx   Pointer to context.
      * @param srv   Pointer to listener.
      * @param cln   Pointer to accepted cln, or @c NULL if @a err is not
      *              @ref AH_ENONE.
@@ -522,6 +567,7 @@ struct ah_http_server_cbs {
     /**
      * @a srv has been closed.
      *
+     * @param ctx Pointer to context.
      * @param srv Pointer to server.
      * @param err Should always be @ref AH_ENONE. Other codes may be provided if
      *            an unexpected platform error occurs.
@@ -762,10 +808,10 @@ ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_
  *   <li>@ref AH_ESTATE       - @a cln is not open.
  * </ul>
  *
- * @warning This function must be called with a successfully opened cln. An
- *          appropriate place to call this function is often going to be in an
- *          ah_http_client_cbs::on_open callback after a check that opening was
- *          successful.
+ * @pre This function must be called with a successfully opened cln. An
+ *      appropriate place to call this function is often going to be in an
+ *      ah_http_client_cbs::on_open callback after a check that opening was
+ *      successful.
  */
 ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockaddr_t* raddr);
 
@@ -951,6 +997,20 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
  */
 ah_extern ah_err_t ah_http_client_close(ah_http_client_t* cln);
 
+/**
+ * Terminates @a cln, releasing any resources it may hold.
+ *
+ * @param cln Pointer to client.
+ * @return One of the following error codes: <ul>
+ *   <li>@ref AH_ENONE  - Operation successful.
+ *   <li>@ref AH_EINVAL - @a cln is @c NULL or the transport of @a cln is missing a required
+ *                        function in its virtual function table.
+ *   <li>Any additional code returned by the used TCP transport. See ah_tcp_conn_term() for a list
+ *       of codes returned by the <em>default transport</em>.
+ * </ul>
+ *
+ * @pre This function must be called with a successfully closed client.
+ */
 ah_extern ah_err_t ah_http_client_term(ah_http_client_t* cln);
 
 /**
@@ -1021,11 +1081,37 @@ ah_extern ah_err_t ah_http_client_get_raddr(const ah_http_client_t* cln, ah_sock
  */
 ah_extern ah_loop_t* ah_http_client_get_loop(const ah_http_client_t* cln);
 
+/**
+ * Gets the context pointer of the client observer associated with @a srv.
+ *
+ * @param srv Pointer to client.
+ * @return Context pointer, or @c NULL if @a srv is @c NULL or the transport of
+ *         @a srv is missing a required function in its virtual function table.
+ *         Also returns @c NULL if the context pointer itself is @c NULL.
+ */
 ah_extern void* ah_http_client_get_obs_ctx(const ah_http_client_t* cln);
 
 /** @} */
 
+/**
+ * @name HTTP Client Callback Sets
+ *
+ * Operations on ah_http_client_cbs instances.
+ *
+ * @{
+ */
+
+/**
+ * Checks if @a cbs is valid for handling clients initiated locally.
+ *
+ * Such a valid callback set has all of its function pointers set.
+ *
+ * @param cbs Pointer to HTTP client callback set.
+ * @return @c true only if @a cbs is @e valid. @c false otherwise.
+ */
 ah_extern bool ah_http_client_cbs_is_valid(const ah_http_client_cbs_t* cbs);
+
+/** @} */
 
 /**
  * @name HTTP Server
@@ -1105,7 +1191,7 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
  *
  * @param srv      Pointer to server.
  * @param backlog  Capacity, in connections, of the queue in which incoming
- *                 clients wait to get accepted. If @c 0, a platform default
+ *                clients wait to get accepted. If @c 0, a platform default
  *                 will be chosen. If larger than some arbitrary platform
  *                 maximum, it will be set to that maximum.
  * @return One of the following error codes: <ul>
@@ -1119,10 +1205,10 @@ ah_extern ah_err_t ah_http_server_open(ah_http_server_t* srv, const ah_sockaddr_
  *   <li>@ref AH_ESTATE    - @a srv is not open.
  * </ul>
  *
- * @warning This function must be called with a successfully opened server. An
- *          appropriate place to call this function is often going to be in an
- *          ah_http_server_cbs::on_open callback after a check that opening
- *          was successful.
+ * @pre This function must be called with a successfully opened server. An
+ *      appropriate place to call this function is often going to be in an
+ *      ah_http_server_cbs::on_open callback after a check that opening was
+ *      successful.
  */
 ah_extern ah_err_t ah_http_server_listen(ah_http_server_t* srv, unsigned backlog);
 
@@ -1209,10 +1295,36 @@ ah_extern ah_err_t ah_http_server_get_laddr(const ah_http_server_t* srv, ah_sock
  */
 ah_extern ah_loop_t* ah_http_server_get_loop(const ah_http_server_t* srv);
 
+/**
+ * Gets the context pointer of the server observer associated with @a srv.
+ *
+ * @param srv Pointer to server.
+ * @return Context pointer, or @c NULL if @a srv is @c NULL or the transport of
+ *         @a srv is missing a required function in its virtual function table.
+ *         Also returns @c NULL if the context pointer itself is @c NULL.
+ */
 ah_extern void* ah_http_server_get_obs_ctx(const ah_http_server_t* srv);
 
 /** @} */
 
+/**
+ * @name HTTP Server Callback Sets
+ *
+ * Operations on ah_http_server_cbs instances.
+ *
+ * @{
+ */
+
+/**
+ * Checks if @a cbs is valid for handling servers initiated locally.
+ *
+ * Such a valid callback set has all of its function pointers set.
+ *
+ * @param cbs Pointer to HTTP server callback set.
+ * @return @c true only if @a cbs is @e valid. @c false otherwise.
+ */
 ah_extern bool ah_http_server_cbs_is_valid(const ah_http_server_cbs_t* cbs);
+
+/** @} */
 
 #endif

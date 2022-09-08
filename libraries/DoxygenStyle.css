@@ -98,6 +98,12 @@ dl.note {
     padding-left: 0.75rem;
 }
 
+dl.pre {
+    border-left: 0.25rem solid var(--ahf-blue-highlight);
+    margin-left: 0;
+    padding-left: 0.75rem;
+}
+
 dl.warning {
     border-left: 0.25rem solid var(--ahf-red-highlight);
     margin-left: 0;

@@ -737,8 +737,7 @@ ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp
  * @note Every successfully opened @a conn must eventually be provided to
  *       ah_tcp_conn_close().
  *
- * @warning This function must be called with a successfully initialized
- *           connection.
+ * @pre This function must be called with a successfully initialized connection.
  */
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
 
@@ -773,10 +772,10 @@ ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* la
  * @note Data receiving is disabled for new connections by default. Is must be
  *       explicitly enabled via a call to ah_tcp_conn_read_start().
  *
- * @warning This function must be called with a successfully opened connection.
- *          An appropriate place to call this function is often going to be in
- *          an ah_tcp_conn_cbs::on_open callback after a check that opening was
- *          successful.
+ * @pre This function must be called with a successfully opened connection. An
+ *      appropriate place to call this function is often going to be in an
+ *      ah_tcp_conn_cbs::on_open callback after a check that opening was
+ *      successful.
  */
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
 
@@ -805,10 +804,10 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
  *   <li>@ref AH_ESTATE           - @a conn is not connected or its read direction is shut down.
  * </ul>
  *
- * @warning This function must be called with a successfully connected
- *          connection. An appropriate place to call this function is often
- *          going to be in an ah_tcp_conn_cbs::on_connect callback after a
- *          check that the connection attempt was successful.
+ * @pre This function must be called with a successfully connected connection.
+ *      An appropriate place to call this function is often going to be in an
+ *      ah_tcp_conn_cbs::on_connect callback after a check that the connection
+ *      attempt was successful.
  */
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
 
@@ -831,8 +830,8 @@ ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn);
  *       call to ah_tcp_conn_read_start() with the same @a conn, even if that
  *       means that @a conn never had a practical chance to start reading.
  *
- * @warning This function must be called with a connection that has successfully
- *          started reading.
+ * @pre This function must be called with a connection that has successfully
+ *      started reading.
  */
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
 
@@ -867,8 +866,7 @@ ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn);
  *   <li>@ref AH_ESTATE           - @a conn is not connected or its write direction is shut down.
  * </ul>
  *
- * @warning This function must be called with a successfully connected
- *          connection.
+ * @pre This function must be called with a successfully connected connection.
  */
 ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out);
 
@@ -925,7 +923,7 @@ ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags);
  *   <li>@ref AH_ESTATE - @a conn is not open.
  * </ul>
  *
- * @warning This function must be called with a successfully opened connection.
+ * @pre This function must be called with a successfully opened connection.
  */
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
 
@@ -944,7 +942,7 @@ ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn);
  *   <li>@ref AH_ESTATE - @a conn is not closed.
  * </ul>
  *
- * @warning This function must be called with a successfully closed connection.
+ * @pre This function must be called with a successfully closed connection.
  */
 ah_extern ah_err_t ah_tcp_conn_term(ah_tcp_conn_t* conn);
 
@@ -1435,10 +1433,10 @@ ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr
  *   <li>@ref AH_ESTATE    - @a ln is not open.
  * </ul>
  *
- * @warning This function must be called with a successfully opened listener.
- *          An appropriate place to call this function is often going to be in
- *          an ah_tcp_listener_cbs::on_open callback after a check that opening
- *          was successful.
+ * @pre This function must be called with a successfully opened listener. An
+ *      appropriate place to call this function is often going to be in an
+ *      ah_tcp_listener_cbs::on_open callback after a check that opening was
+ *      successful.
  */
 ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog);
 
@@ -1464,7 +1462,7 @@ ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlo
  * @note Any already accepted connections that are still open are unaffected by
  *       the listener being closed.
  *
- * @warning This function must be called with a successfully opened listener.
+ * @pre This function must be called with a successfully opened listener.
  */
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
 
@@ -1488,7 +1486,7 @@ ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln);
  *       resources @a ln shares with those connections are not freed until they
  *       are all closed.
  *
- * @warning This function must be called with a successfully closed listener.
+ * @pre This function must be called with a successfully closed listener.
  */
 ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln);
 

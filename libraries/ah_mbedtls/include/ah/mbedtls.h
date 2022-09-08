@@ -19,7 +19,7 @@
  *
  * TLS clients are initialized using ah_mbedtls_client_init(). That function
  * takes an mbedtls_ssl_config instance as argument, which you must prepare by
- * setting its @e endpoint to <em>cln mode</em> and by providing other
+ * setting its @e endpoint to <em>client mode</em> and by providing other
  * relevant configuration details. Setting the endpoint of the MbedTLS
  * configuration can be performed using the mbedtls_ssl_config_defaults()
  * function. For more details about how to set up an MbedTLS configuration
@@ -42,7 +42,7 @@
  * that that function will not terminate the MbedTLS configuration. An
  * appropriate place to terminate both clients and configurations is likely
  * often going to be the ah_tcp_conn_cbs::on_close callback of the TCP
- * connection you provide the MbedTLS cln transport to.
+ * connection you provide the MbedTLS client transport to.
  *
  * <h3>Servers</h3>
  *
@@ -69,7 +69,7 @@ typedef struct ah_mbedtls_server ah_mbedtls_server_t;
 /**
  * @a cln has been part of a completed TLS handshake.
  *
- * @param client     Pointer to cln associated with the connection through
+ * @param cln        Pointer to client associated with the connection through
  *                   which the TLS handshake was performed.
  * @param peer_chain Pointer to the certificate chain of the remote host, if
  *                   @a err is @ref AH_ENONE and MbedTLS is compiled with
@@ -94,7 +94,7 @@ typedef struct ah_mbedtls_server ah_mbedtls_server_t;
 typedef void (*ah_mbedtls_on_handshake_done_cb)(ah_mbedtls_client_t* cln, const mbedtls_x509_crt* peer_chain, ah_err_t err);
 
 /**
- * MbedTLS cln context.
+ * MbedTLS client context.
  *
  * Holds TLS data, such as certificates and sessions, associated with the
  * ah_tcp_trans of an ah_tcp_conn instance.

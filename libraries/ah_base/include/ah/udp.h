@@ -455,7 +455,7 @@ ah_extern ah_err_t ah_udp_sock_init(ah_udp_sock_t* sock, ah_loop_t* loop, ah_udp
  * @note Every successfully opened @a sock must eventually be provided to
  *       ah_udp_sock_close().
  *
- * @warning This function must be called with a successfully initialized socket.
+ * @pre This function must be called with a successfully initialized socket.
  */
 ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* laddr);
 
@@ -484,10 +484,10 @@ ah_extern ah_err_t ah_udp_sock_open(ah_udp_sock_t* sock, const ah_sockaddr_t* la
  *   <li>@ref AH_ESTATE           - @a sock is not open.
  * </ul>
  *
- * @warning This function must be called with a successfully opened socket. An
- *          appropriate place to call this function is often going to be in an
- *          ah_udp_sock_cbs::on_open callback after a check that the open
- *          attempt was successful.
+ * @pre This function must be called with a successfully opened socket. An
+ *      appropriate place to call this function is often going to be in an
+ *      ah_udp_sock_cbs::on_open callback after a check that the open attempt
+ *      was successful.
  */
 ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
 
@@ -510,8 +510,8 @@ ah_extern ah_err_t ah_udp_sock_recv_start(ah_udp_sock_t* sock);
  *       call to ah_udp_sock_read_start() with the same @a sock, even if that
  *       means that @a sock never had a practical chance to start reading.
  *
- * @warning This function must be called with a socket that has successfully
- *          started receiving.
+ * @pre This function must be called with a socket that has successfully started
+ *      receiving.
  */
 ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
 
@@ -547,7 +547,7 @@ ah_extern ah_err_t ah_udp_sock_recv_stop(ah_udp_sock_t* sock);
  *   <li>@ref AH_ESTATE           - @a sock is not open.
  * </ul>
  *
- * @warning This function must be called with a successfully opened socket.
+ * @pre This function must be called with a successfully opened socket.
  */
 ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
 
@@ -570,7 +570,7 @@ ah_extern ah_err_t ah_udp_sock_send(ah_udp_sock_t* sock, ah_udp_out_t* out);
  *   <li>@ref AH_ESTATE - @a sock is already in a closing or closed state.
  * </ul>
  *
- * @warning This function must be called with a successfully opened socket.
+ * @pre This function must be called with a successfully opened socket.
  */
 ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
 
@@ -589,7 +589,7 @@ ah_extern ah_err_t ah_udp_sock_close(ah_udp_sock_t* sock);
 *   <li>@ref AH_ESTATE - @a sock is not in a closed state.
 * </ul>
 *
-* @warning This function must be called with a successfully closed socket.
+* @pre This function must be called with a successfully closed socket.
 */
 ah_extern ah_err_t ah_udp_sock_term(ah_udp_sock_t* sock);
 
