@@ -37,3 +37,20 @@ systems or not having access to significant compute or memory facilities. While
 a WWW server will typically have at least hundreds of megabytes of RAM and disk
 storage, an Arrowhead system running this library may have a few hundred of
 kilobytes of RAM and ROM.
+
+### Dependencies
+
+Every supported platform may depend on particular libraries distributed by the
+creator of the platform. However, as these libraries tend to be distributed with
+the compiler for the platform, you will typically not need to do anything beyond
+making sure the compiler and/or appropriate SDKs to be installed and available.
+
+An exception to this is, however, the use of [io_uring][uring] on the Linux
+platform, which requires the `liburing` library. If you want to compile this
+library for Linux, `liburing-2.2` or later is required. If you have a working
+Internet connection, CMake will attempt to download and compile the library
+automatically. If, however, any version of `liburing` is already installed and
+available on your system, that version will be used without any download being
+initiated.
+
+[uring]: https://unixism.net/loti/what_is_io_uring.html

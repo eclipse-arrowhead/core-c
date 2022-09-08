@@ -1,4 +1,4 @@
-# Eclipse Arrowhead C libraries
+# Eclipse Arrowhead™ Core C Libraries
 
-Here, libraries are gathered meant to help develop Arrowhead systems in the C99 programming
-language. 
+Here, libraries are gathered meant to help develop Arrowhead systems in the C99
+programming language.  
