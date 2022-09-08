@@ -429,15 +429,11 @@ static void s_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtl
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
     if (ctx->is_accepted) {
         // Peer is listener/server.
-        if (ah_unit_assert_eq_uintmax(AH_UNIT_CTX, res, ah_i_mbedtls_test_cln_crt_size, peer_chain->raw.len)) {
-            (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, ah_i_mbedtls_test_cln_crt_data, peer_chain->raw.len);
-        }
+        (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, peer_chain->raw.len, ah_i_mbedtls_test_cln_crt_data, ah_i_mbedtls_test_cln_crt_size);
     }
     else {
         // Peer is connection/cln.
-        if (ah_unit_assert_eq_uintmax(AH_UNIT_CTX, res, ah_i_mbedtls_test_srv_crt_size, peer_chain->raw.len)) {
-            (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, ah_i_mbedtls_test_srv_crt_data, peer_chain->raw.len);
-        }
+        (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, peer_chain->raw.len, ah_i_mbedtls_test_srv_crt_data, ah_i_mbedtls_test_srv_crt_size);
     }
 #else
     (void) ah_unit_assert(AH_UNIT_CTX, res, peer_chain == NULL, "peer_chain == NULL");
@@ -468,7 +464,7 @@ static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_mbedtls_client_t* c
 
         char errbuf[256u];
         mbedtls_strerror(mbedtls_err, errbuf, sizeof(errbuf));
-        ah_unit_print(ctx, "AH_EDEP caused by: -%#x; %s", -mbedtls_err, errbuf);
+        ah_unit_print_failure(ctx, "AH_EDEP caused by: -%#x; %s", -mbedtls_err, errbuf);
     }
 }
 

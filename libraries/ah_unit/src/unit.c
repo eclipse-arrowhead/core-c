@@ -10,7 +10,7 @@
 #include <string.h>
 
 static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va_list args);
-static void s_print(ah_unit_ctx_t ctx, const char* format, va_list args);
+static void s_print_failure(ah_unit_ctx_t ctx, const char* format, va_list args);
 
 bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_success, const char* format, ...)
 {
@@ -81,20 +81,20 @@ bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actua
     return false;
 }
 
-bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual_, const void* expected_, size_t size)
+bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual_, size_t actual_size, const void* expected_, size_t expected_size)
 {
     ah_assert_always(res != NULL);
 
     const unsigned char* actual = actual_;
     const unsigned char* expected = expected_;
 
-    if (memcmp(actual, expected, size) == 0) {
+    if (actual_size == expected_size && memcmp(actual, expected, expected_size) == 0) {
         ah_unit_pass(res);
         return true;
     }
 
     char actual_buf[128u];
-    const unsigned char* actual_end = &actual[size];
+    const unsigned char* actual_end = &actual[actual_size];
     size_t actual_i = 0u;
     while (actual_i < sizeof(actual_buf) - 4u && actual != actual_end) {
         (void) snprintf(&actual_buf[actual_i], 4u, "%02X ", actual[0u]);
@@ -106,7 +106,7 @@ bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* ac
     }
 
     char expected_buf[128u];
-    const unsigned char* expected_end = &expected[size];
+    const unsigned char* expected_end = &expected[expected_size];
     size_t expected_i = 0u;
     while (expected_i < sizeof(expected_buf) - 4u && expected != expected_end) {
         (void) snprintf(&expected_buf[expected_i], 4u, "%02X ", expected[0u]);
@@ -171,14 +171,6 @@ bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t 
     return false;
 }
 
-void ah_unit_print(ah_unit_ctx_t ctx, const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    s_print(ctx, format, args);
-    va_end(args);
-}
-
 void ah_unit_print_results(const struct ah_unit_res* res)
 {
     ah_assert_always(res != NULL);
@@ -215,11 +207,13 @@ static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va
 
     (void) fputs("FAIL ", stderr);
 
-    s_print(ctx, format, args);
+    s_print_failure(ctx, format, args);
 }
 
-static void s_print(ah_unit_ctx_t ctx, const char* format, va_list args)
+static void s_print_failure(ah_unit_ctx_t ctx, const char* format, va_list args)
 {
+    ah_assert_always(format != NULL);
+
     (void) fprintf(stderr, "%s:%d ", ctx.file, ctx.line);
     (void) vfprintf(stderr, format, args);
     (void) fputc('\n', stderr);

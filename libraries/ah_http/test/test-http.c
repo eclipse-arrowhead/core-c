@@ -258,7 +258,7 @@ void s_client_on_recv_data(void* ctx_, ah_http_client_t* cln, ah_tcp_in_t* in)
         if (ah_rw_get_readable_size(&in->rw) < 28u) {
             return; // Wait for more data to arrive.
         }
-        if (ah_unit_assert_eq_mem(AH_UNIT_CTX, res, in->rw.r, "{\"text\":\"Hello, Arrowhead!\"}", 28u)) {
+        if (ah_unit_assert_eq_mem(AH_UNIT_CTX, res, in->rw.r, 28u, "{\"text\":\"Hello, Arrowhead!\"}", 28u)) {
             (void) ah_rw_skipn(&in->rw, 28u);
         }
         ctx->received_body_count += 1u;
