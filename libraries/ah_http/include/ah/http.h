@@ -5,7 +5,7 @@
 
 /**
  * @file
- * HTTP/1 client and server.
+ * HTTP/1 cln and server.
  *
  * Here, data structures and functions are provided for representing, setting up
  * and communicating via HTTP/1 clients and servers. To learn more about HTTP/1,
@@ -17,11 +17,11 @@
  * HTTP clients are set up using ah_http_client_init(), ah_http_client_open()
  * and ah_http_client_connect(), in that order. Successfully initialized clients
  * are terminated with ah_http_client_term() and successfully opened clients are
- * closed with ah_http_client_close(). Every client receives data, and is
+ * closed with ah_http_client_close(). Every cln receives data, and is
  * notified of other events, via a callback set of type ah_http_client_cbs. To
- * send a message, you must provide a certain client with a @e head, a number of
+ * send a message, you must provide a certain cln with a @e head, a number of
  * <em>body parts</em> and indicate the end of the message. The head and body
- * parts are added to the <em>send queue</em> of the client, which is processed
+ * parts are added to the <em>send queue</em> of the cln, which is processed
  * and emptied asynchronously when possible. The message head, which consists of
  * a <em>start line</em> and zero or more headers, is added by a call to
  * ah_http_client_send_head(). After a head has been successfully submitted, you
@@ -41,13 +41,13 @@
  *
  * When sending and receiving @e metadata, such as start lines, headers and
  * chunks, that metadata is gathered automatically into dynamically allocated
- * buffers. Each client owns one such buffer it reuses for all data it receives.
+ * buffers. Each cln owns one such buffer it reuses for all data it receives.
  * Another is allocated for the duration of each on-going message send
  * procedure. If a certain metadata item, such as a header or chunk extension,
  * exceeds the size of its receive buffer, or a send buffer is too small to
  * contain @e all relevant metadata items, the message transmission is failed
  * with error code @ref AH_EOVERFLOW. Limiting sizes in this way helps reduce
- * the complexity the client implementation and works as a form of protection
+ * the complexity the cln implementation and works as a form of protection
  * from exploits that use large metadata items. Generally, the size of each of
  * these buffers will be limited by the page allocator page size, @c AH_PSIZE,
  * more of which you can read in the documentation for ah_palloc().
@@ -128,7 +128,7 @@ struct ah_http_client_obs {
 };
 
 /**
- * HTTP client.
+ * HTTP cln.
  *
  * Clients are either (1) initiated, opened and connected explicitly, or (2)
  * listened for using an ah_http_server instance.
@@ -143,7 +143,7 @@ struct ah_http_client {
 };
 
 /**
- * HTTP client callback set.
+ * HTTP cln callback set.
  *
  * A set of function pointers used to handle events on HTTP clients.
  */
@@ -151,7 +151,7 @@ struct ah_http_client_cbs {
     /**
      * @a cln has been opened, or the attempt failed.
      *
-     * @param cln Pointer to client.
+     * @param cln Pointer to cln.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                          - Client opened successfully.
      *   <li>@ref AH_EACCES [Darwin, Linux]         - Not permitted to open TCP connection.
@@ -181,11 +181,11 @@ struct ah_http_client_cbs {
      * @a cln has been connected to a specified remote host, or the attempt to
      * connect it has failed.
      *
-     * @param cln Pointer to client.
+     * @param cln Pointer to cln.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                             - Connection established successfully.
      *   <li>@ref AH_EADDRINUSE [Darwin, Linux, Win32] - Failed to bind a concrete local address.
-     *                                                   This error only occurs if the client was
+     *                                                   This error only occurs if the cln was
      *                                                   opened with the wildcard address, which
      *                                                   means that network interface binding is
      *                                                   delayed until connection.
@@ -227,7 +227,7 @@ struct ah_http_client_cbs {
      * which case @a err is @ref AH_ENONE, or if sending it failed, which should
      * prompt you to close @a cln using ah_http_client_close().
      *
-     * @param cln  Pointer to client.
+     * @param cln  Pointer to cln.
      * @param head Pointer to ah_http_head instance provided earlier to
      *             ah_http_client_send_head().
      * @param err  One of the following codes: <ul>
@@ -264,7 +264,7 @@ struct ah_http_client_cbs {
      *
      * A start line begins an HTTP message. Whether the start line is a request
      * line or a status line depends on whether the entity receiving the message
-     * is a client or a server. Clients you connect using
+     * is a cln or a server. Clients you connect using
      * ah_http_client_connect() receive status lines while clients accepted via
      * servers via ah_http_server_listen() receive request lines.
      *
@@ -272,7 +272,7 @@ struct ah_http_client_cbs {
      * ah_http_client_cbs::on_recv_end is called before this callback is ever
      * invoked.
      *
-     * @param cln     Pointer to client receiving start line.
+     * @param cln     Pointer to cln receiving start line.
      * @param line    Message start line.
      * @param version HTTP version indicator. The major version is always @c 1.
      *
@@ -302,7 +302,7 @@ struct ah_http_client_cbs {
      * ah_http_client_cbs::on_recv_headers, which is called after all regular
      * headers have been received.
      *
-     * @param cln    Pointer to client receiving header.
+     * @param cln    Pointer to cln receiving header.
      * @param header HTTP header, consisting of a name and a value.
      */
     void (*on_recv_header)(void* ctx, ah_http_client_t* cln, ah_http_header_t header);
@@ -310,7 +310,7 @@ struct ah_http_client_cbs {
     /**
      * @a cln has seen all headers in the currently received message.
      *
-     * @param cln Pointer to client.
+     * @param cln Pointer to cln.
      *
      * @note This callback is optional. Set if to @c NULL if not relevant.
      */
@@ -319,7 +319,7 @@ struct ah_http_client_cbs {
     /**
      * @a cln has received a chunk size and a chunk extension.
      *
-     * @param cln  Pointer to client.
+     * @param cln  Pointer to cln.
      * @param size Size, in bytes, of the incoming chunk.
      * @param ext  Chunk extension, provided as a NULL-terminated string if
      *             present in received chunk. Otherwise @c NULL.
@@ -353,7 +353,7 @@ struct ah_http_client_cbs {
      * @a cln using ah_tcp_in_detach(), which allocates a new input buffer for
      * @a cln.
      *
-     * @param cln Pointer to client.
+     * @param cln Pointer to cln.
      * @param in  Input buffer containing message body data.
      *
      * @note If you feel surprised by TCP data structures and functions
@@ -366,10 +366,10 @@ struct ah_http_client_cbs {
      * @a cln has finished receiving a message.
      *
      * If this callback is invoked with an error code (@a err is not equal to
-     * @ref AH_ENONE), or if connection keep-alive is disabled, the client will be
+     * @ref AH_ENONE), or if connection keep-alive is disabled, the cln will be
      * closed automatically at some point after this function returns.
      *
-     * @param cln Pointer to client.
+     * @param cln Pointer to cln.
      * @param err One of the following codes: <ul>
      *   <li>@ref AH_ENONE                      - Message received successfully.
      *   <li>@ref AH_EBADMSG                    - Message metadata violates HTTP specification.
@@ -486,15 +486,15 @@ struct ah_http_server_cbs {
     void (*on_listen)(void* ctx, ah_http_server_t* srv, ah_err_t err);
 
     /**
-     * @a srv has accepted the client @a cln.
+     * @a srv has accepted the cln @a cln.
      *
      * If @a err is @ref AH_ENONE, which indicates a successful acceptance, all
-     * further events related to @a cln will be dealt with via the client
+     * further events related to @a cln will be dealt with via the cln
      * callback set (see ah_http_client_cbs) provided when listening was started
      * via ah_http_server_listen().
      *
      * @param srv   Pointer to listener.
-     * @param cln   Pointer to accepted client, or @c NULL if @a err is not
+     * @param cln   Pointer to accepted cln, or @c NULL if @a err is not
      *              @ref AH_ENONE.
      * @param raddr Pointer to address of @a cln, or @c NULL if @a err is not
      *              @ref AH_ENONE.
@@ -694,10 +694,10 @@ struct ah_http_trailer {
 /**
  * Initializes @a cln for subsequent use.
  *
- * @param cln   Pointer to client.
+ * @param cln   Pointer to cln.
  * @param loop  Pointer to event loop.
  * @param trans Desired transport.
- * @param obs   Pointer to client event observer.
+ * @param obs   Pointer to cln event observer.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - @a cln successfully initialized.
  *   <li>@ref AH_EINVAL - @a cln or @a loop or @a cbs is @c NULL.
@@ -716,11 +716,11 @@ ah_extern ah_err_t ah_http_client_init(ah_http_client_t* cln, ah_loop_t* loop, a
  * attempt could indeed be scheduled, its result will eventually be presented
  * via the ah_http_client_cbs::on_open callback of @a cln.
  *
- * @param cln   Pointer to client.
+ * @param cln   Pointer to cln.
  * @param laddr Pointer to socket address representing a local network interface
- *              through which the client connection must later be established.
+ *              through which the cln connection must later be established.
  *              If opening is successful, the referenced address must remain
- *              valid for the entire lifetime of the created client. To bind to
+ *              valid for the entire lifetime of the created cln. To bind to
  *              all or any local network interface, provide the wildcard address
  *              (see ah_sockaddr_ipv4_wildcard and ah_sockaddr_ipv6_wildcard).
  *              If you want the platform to chose port number automatically,
@@ -747,9 +747,9 @@ ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_
  * could indeed be scheduled, its result will eventually be presented via the
  * ah_http_client_cbs::on_connect callback of @a cln.
  *
- * @param cln   Pointer to client.
+ * @param cln   Pointer to cln.
  * @param raddr Pointer to socket address representing the remote host to which
- *              the client connection is to be established. If connection is
+ *              the cln connection is to be established. If connection is
  *              successful, the referenced address must remain valid until
  *              @a cln is closed.
  * @return One of the following error codes: <ul>
@@ -762,7 +762,7 @@ ah_extern ah_err_t ah_http_client_open(ah_http_client_t* cln, const ah_sockaddr_
  *   <li>@ref AH_ESTATE       - @a cln is not open.
  * </ul>
  *
- * @warning This function must be called with a successfully opened client. An
+ * @warning This function must be called with a successfully opened cln. An
  *          appropriate place to call this function is often going to be in an
  *          ah_http_client_cbs::on_open callback after a check that opening was
  *          successful.
@@ -800,7 +800,7 @@ ah_extern ah_err_t ah_http_client_connect(ah_http_client_t* cln, const ah_sockad
  * possible to follow any of the above procedures. Please refer to the
  * documentation for the functions in the above table for further details.
  *
- * @param cln  Pointer to client.
+ * @param cln  Pointer to cln.
  * @param head Pointer to head, specifying a start line and set of headers.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE           - Transmission of @a head enqueued successfully.
@@ -823,7 +823,7 @@ ah_extern ah_err_t ah_http_client_send_head(ah_http_client_t* cln, ah_http_head_
  * function, before ah_http_client_send_end() is called with @a cln to end the
  * message.
  *
- * @param cln Pointer to client.
+ * @param cln Pointer to cln.
  * @param out Pointer to TCP output buffer.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - Transmission of @a out enqueued successfully.
@@ -848,7 +848,7 @@ ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_out_t*
  * ah_http_client_send_head() or ah_http_client_send_data() to indicate that the
  * current message is complete.
  *
- * @param cln Pointer to client.
+ * @param cln Pointer to cln.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Transmission of @a out ended successfully.
  *   <li>@ref AH_EINVAL - @a cln is @c NULL.
@@ -873,7 +873,7 @@ ah_extern ah_err_t ah_http_client_send_end(ah_http_client_t* cln);
  * @a cln as many times as you want before ending the sending procedure by
  * providing @a cln to ah_http_client_send_trailer().
  *
- * @param cln   Pointer to client.
+ * @param cln   Pointer to cln.
  * @param chunk Pointer to chunk.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - Transmission of @a out enqueued successfully.
@@ -908,7 +908,7 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
  * chunk and trailer, as well as to indicate that the current message is
  * complete.
  *
- * @param cln     Pointer to client.
+ * @param cln     Pointer to cln.
  * @param trailer Pointer to trailer.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE            - Transmission of @a trailer enqueued and current message ended
@@ -942,7 +942,7 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
  * closing could indeed be scheduled, its result will eventually be presented
  * via the ah_http_client_cbs::on_close callback of @a cln.
  *
- * @param cln Pointer to client.
+ * @param cln Pointer to cln.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE  - Close of @a cln successfully scheduled.
  *   <li>@ref AH_EINVAL - @a cln is @c NULL.
@@ -956,7 +956,7 @@ ah_extern ah_err_t ah_http_client_term(ah_http_client_t* cln);
 /**
  * Gets the TCP connection of @a cln.
  *
- * @param cln Pointer to client.
+ * @param cln Pointer to cln.
  * @return Pointer to TCP connection of @a cln, or @c NULL if @a cln is @c NULL.
  *
  * @note @a cln notably shares <em>user data pointer</em> and <em>receive
@@ -972,7 +972,7 @@ ah_extern ah_tcp_conn_t* ah_http_client_get_conn(ah_http_client_t* cln);
  * If @a cln was opened with a zero port, this function will report what
  * concrete port was assigned to @a cln.
  *
- * @param cln   Pointer to client.
+ * @param cln   Pointer to cln.
  * @param laddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
@@ -992,7 +992,7 @@ ah_extern ah_err_t ah_http_client_get_laddr(const ah_http_client_t* cln, ah_sock
 /**
  * Stores remote address of @a cln into @a raddr.
  *
- * @param cln   Pointer to client.
+ * @param cln   Pointer to cln.
  * @param raddr Pointer to socket address to be set by this operation.
  * @return One of the following error codes: <ul>
  *   <li>@ref AH_ENONE                   - The operation was successful.
@@ -1012,7 +1012,7 @@ ah_extern ah_err_t ah_http_client_get_raddr(const ah_http_client_t* cln, ah_sock
 /**
  * Gets pointer to event loop of @a cln.
  *
- * @param cln Pointer to client.
+ * @param cln Pointer to cln.
  * @return Pointer to event loop, or @c NULL if @a cln is @c NULL.
  *
  * @note This function gets the event loop pointer of the ah_tcp_conn owned by

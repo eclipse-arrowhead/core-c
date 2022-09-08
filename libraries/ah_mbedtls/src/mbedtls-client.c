@@ -77,17 +77,19 @@ ah_extern mbedtls_ssl_context* ah_mbedtls_client_get_ssl_context(ah_mbedtls_clie
 ah_extern ah_tcp_trans_t ah_mbedtls_client_as_tcp_trans(ah_mbedtls_client_t* cln)
 {
     return (ah_tcp_trans_t) {
-        .vtab = &ah_i_mbedtls_tcp_vtab,
+        .vtab = cln != NULL
+            ? &ah_i_mbedtls_tcp_vtab
+            : NULL,
         .ctx = cln,
     };
 }
 
-ah_extern ah_tcp_conn_t* ah_mbedtls_client_get_tcp_conn(ah_mbedtls_client_t* client)
+ah_extern ah_tcp_conn_t* ah_mbedtls_client_get_tcp_conn(ah_mbedtls_client_t* cln)
 {
-    if (client == NULL) {
+    if (cln == NULL) {
         return NULL;
     }
-    return client->_conn;
+    return cln->_conn;
 }
 
 ah_extern void ah_mbedtls_client_term(ah_mbedtls_client_t* cln)
@@ -275,6 +277,10 @@ ah_err_t ah_i_mbedtls_conn_init(void* cln_, ah_tcp_conn_t* conn, ah_loop_t* loop
     if (cln == NULL || cln->_trans.vtab == NULL || cln->_trans.vtab->conn_init == NULL
         || conn == NULL || !ah_tcp_conn_cbs_is_valid_for_connection(obs.cbs)) {
         return AH_EINVAL;
+    }
+
+    if (cln->_conn != NULL) {
+        return AH_ESTATE;
     }
 
     cln->_conn = conn;
@@ -552,6 +558,7 @@ static void s_conn_on_write(void* cln_, ah_tcp_conn_t* conn, ah_tcp_out_t* out, 
     }
     else if (entry->_kind == AH_S_MBEDTLS_SEND_QUEUE_ENTRY_KIND_CLOSE) {
         ah_assert_if_debug(cln != NULL && cln->_trans.vtab != NULL && cln->_trans.vtab->conn_close != NULL);
+        cln->_conn = NULL;
         err = cln->_trans.vtab->conn_close(cln->_trans.ctx, conn);
         switch (err) {
         case AH_ENONE:
@@ -649,6 +656,8 @@ ah_err_t ah_i_mbedtls_conn_close(void* cln_, ah_tcp_conn_t* conn)
     if (ah_tcp_conn_is_writable(conn)) {
         return s_client_close_notify(cln, AH_S_MBEDTLS_SEND_QUEUE_ENTRY_KIND_CLOSE);
     }
+
+    cln->_conn = NULL;
 
     return cln->_trans.vtab->conn_close(cln->_trans.ctx, conn);
 }

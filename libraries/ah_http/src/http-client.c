@@ -437,7 +437,7 @@ try_next:
         goto handle_err;
     }
 
-    // Only this client may free the output buffer we just allocated.
+    // Only this cln may free the output buffer we just allocated.
     head->_out->_owner = cln;
 
     ah_rw_t rw = ah_rw_from_writable_buf(&head->_out->buf);

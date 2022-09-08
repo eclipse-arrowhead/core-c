@@ -434,7 +434,7 @@ static void s_client_on_handshake_done(ah_mbedtls_client_t* client, const mbedtl
         }
     }
     else {
-        // Peer is connection/client.
+        // Peer is connection/cln.
         if (ah_unit_assert_eq_uintmax(AH_UNIT_CTX, res, ah_i_mbedtls_test_srv_crt_size, peer_chain->raw.len)) {
             (void) ah_unit_assert_eq_mem(AH_UNIT_CTX, res, peer_chain->raw.p, ah_i_mbedtls_test_srv_crt_data, peer_chain->raw.len);
         }
@@ -579,7 +579,7 @@ static void s_should_read_and_write_data(ah_unit_res_t* res)
         return;
     }
 
-    // Setup TLS client/connection.
+    // Setup TLS cln/connection.
 
     mbedtls_entropy_context lconn_entropy;
     mbedtls_entropy_init(&lconn_entropy);

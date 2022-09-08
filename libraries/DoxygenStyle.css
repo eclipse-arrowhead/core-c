@@ -400,7 +400,10 @@ p {
     margin-top: 2rem;
 }
 
-.contents.examples,
+.contents.examples {
+    padding-top: 2rem;
+}
+
 .contents.globals {
     column-count: var(--ahf-globals-column-count);
     padding-top: 2rem;
@@ -634,14 +637,24 @@ p {
     font-size: 0.9em;
 }
 
-.contents .memberdecls > tbody > tr > td.memItemLeft,
-.contents .memberdecls > tbody > tr > td.memItemRight {
-    font-weight: normal;
+.contents .memberdecls > tbody > tr > td.memItemLeft {
+    padding-right: 1rem;
     white-space: nowrap;
 }
 
-.contents .memberdecls > tbody > tr > td.memItemLeft {
-    padding-right: 0.5em;
+.contents .memberdecls > tbody > tr > td.memItemLeft,
+.contents .memberdecls > tbody > tr > td.memItemRight {
+    font-weight: 300;
+    font-size: 1rem;
+}
+
+.contents .memberdecls > tbody > tr > td.memItemLeft > a,
+.contents .memberdecls > tbody > tr > td.memItemRight > a {
+    font-weight: normal;
+}
+
+.contents .memberdecls > tbody > tr[class^="memitem:"] > td.memItemRight > a:first-of-type {
+    font-weight: bold;
 }
 
 .contents .memberdecls > tbody > tr > td.memSeparator {
@@ -680,9 +693,12 @@ p {
 
 .contents .memitem > .memproto {
     font-family: "Source Code Pro", monospace;
-    font-size: 1.125em;
-    font-weight: bold;
+    font-size: 0.9rem;
+    font-weight: normal;
     margin: 1rem;
+    background-color: var(--ahf-grey-light);
+    padding: 1rem;
+    border: 1px solid var(--ahf-grey-background);
 }
 
 .contents .memitem > .memdoc {

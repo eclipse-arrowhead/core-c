@@ -396,7 +396,7 @@ void s_server_on_listen(void* ctx_, ah_http_server_t* srv, ah_err_t err)
         return;
     }
 
-    // As we now have a server listening, we are ready to open the client that
+    // As we now have a server listening, we are ready to open the cln that
     // will connect to it. For it to know where to connect, we give it the
     // address of the server before we open it.
 
@@ -466,7 +466,7 @@ void s_server_on_accept(void* ctx_, ah_http_server_t* srv, ah_http_client_t* cln
     if (!ah_unit_assert(AH_UNIT_CTX, res, obs != NULL, "obs != NULL")) {
         goto handle_failure;
     }
-    if (!ah_unit_assert(AH_UNIT_CTX, res, cln != NULL, "client != NULL")) {
+    if (!ah_unit_assert(AH_UNIT_CTX, res, cln != NULL, "cln != NULL")) {
         goto handle_failure;
     }
     if (!ah_unit_assert(AH_UNIT_CTX, res, srv != NULL, "srv != NULL")) {
@@ -518,8 +518,8 @@ static void s_should_send_and_receive_short_message(ah_unit_res_t* res)
         return;
     }
 
-    // We increment this for each connected/accepted client, and decrement if
-    // for every closed client. When it transitions from 1 to 0, we terminate
+    // We increment this for each connected/accepted cln, and decrement if
+    // for every closed cln. When it transitions from 1 to 0, we terminate
     // `loop`.
     size_t client_count = 0u;
 
@@ -553,7 +553,7 @@ static void s_should_send_and_receive_short_message(ah_unit_res_t* res)
         return;
     }
 
-    // Setup local HTTP client.
+    // Setup local HTTP cln.
     struct s_client_obs_ctx lclient_obs_ctx = {
         .send_this_head_on_connect_if_not_null = &(ah_http_head_t) {
             .line = "GET /things/1234",
@@ -574,7 +574,7 @@ static void s_should_send_and_receive_short_message(ah_unit_res_t* res)
         return;
     }
 
-    // The server keeps a reference to `client` for us to be able to open it
+    // The server keeps a reference to `cln` for us to be able to open it
     // after `server` is ready to accept connecting clients.
     server_obs_ctx.open_this_client_on_listen = &lclient;
 

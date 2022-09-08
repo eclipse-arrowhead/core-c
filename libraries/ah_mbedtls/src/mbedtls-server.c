@@ -38,27 +38,11 @@ ah_extern ah_err_t ah_mbedtls_server_init(ah_mbedtls_server_t* srv, ah_tcp_trans
     return ah_i_slab_init(&srv->_client_slab, 1u, sizeof(ah_mbedtls_client_t));
 }
 
-ah_extern int ah_mbedtls_server_get_last_err(ah_mbedtls_server_t* srv)
-{
-    if (srv == NULL) {
-        return MBEDTLS_ERR_ERROR_GENERIC_ERROR;
-    }
-    return srv->_errs._last_mbedtls_err;
-}
-
-ah_extern mbedtls_ssl_config* ah_mbedtls_server_get_ssl_config(ah_mbedtls_server_t* srv)
-{
-    if (srv == NULL) {
-        return NULL;
-    }
-    return srv->_ssl_conf;
-}
-
-ah_extern ah_tcp_trans_t ah_mbedtls_server_as_tcp_trans(ah_mbedtls_server_t* server)
+ah_extern ah_tcp_trans_t ah_mbedtls_server_as_tcp_trans(ah_mbedtls_server_t* srv)
 {
     return (ah_tcp_trans_t) {
         .vtab = &ah_i_mbedtls_tcp_vtab,
-        .ctx = server,
+        .ctx = srv,
     };
 }
 
