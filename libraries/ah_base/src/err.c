@@ -1,12 +1,14 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include <ah/err.h>
+#include <string.h>
 
-ah_extern const char* ah_strerror(ah_err_t err)
+#if AH_IS_WIN32
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
+#endif
+
+ah_extern void ah_strerror_r(ah_err_t err, char* buf, size_t size)
 {
     const char* string;
 
@@ -15,19 +17,62 @@ ah_extern const char* ah_strerror(ah_err_t err)
         string = "no error";
         break;
 
-#define AH_I_ERR_E(NAME, CODE, STRING) \
- case AH_E##NAME:                      \
-  string = (STRING);                   \
-  break;
+    case AH_EDEP:
+        string = "dependency failed";
+        break;
 
-        AH_I_ERR_MAP(AH_I_ERR_E)
+    case AH_EDUP:
+        string = "duplicate exists";
+        break;
 
-#undef AH_I_ERR_E
+    case AH_EEOF:
+        string = "unexpected end";
+        break;
+
+    case AH_EINTERN:
+        string = "internal error";
+        break;
+
+    case AH_ERECONN:
+        string = "reconnecting";
+        break;
+
+    case AH_ESTATE:
+        string = "state invalid";
+        break;
+
+    case AH_ESYNTAX:
+        string = "syntax invalid";
+        break;
+
+#if AH_IS_DARWIN || AH_IS_LINUX
 
     default:
-        string = "unknown error";
-        break;
+        (void) strerror_r(err, buf, size);
+        return;
+
+#elif AH_IS_WIN32
+
+    default: {
+        if (size > MAXDWORD) {
+            size = MAXDWORD;
+        }
+        const WORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+        (void) FormatMessageA(flags, NULL, err, 0u, (LPTSTR) buf, (DWORD) size, NULL);
+        return;
     }
 
-    return string;
+#endif
+
+#undef AH_I_ERR_E
+    }
+
+#if AH_IS_WIN32
+    errno_t win32_err = strncpy_s(buf, size, string, _TRUNCATE);
+    if (win32_err != 0 && win32_err != STRUNCATE && size > 0u) {
+        buf[0u] = '\0';
+    }
+#else
+    (void) strncpy(buf, string, size);
+#endif
 }

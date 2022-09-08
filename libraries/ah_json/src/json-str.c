@@ -1,21 +1,21 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/json.h"
 
 #include <ah/assert.h>
 #include <ah/err.h>
+#include <ah/utf8.h>
+#include <string.h>
 
 static uint32_t s_integer_from_hex_digit(char hex_digit);
+static char s_integer_into_hex_digit(char i);
 static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char* dst, size_t* dst_length);
 
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length)
 {
-    ah_assert_if_debug(a != NULL || a_length == 0u);
-    ah_assert_if_debug(b != NULL || b_length == 0u);
+    if ((a == NULL && a_length != 0u) || (b == NULL && b_length != 0u)) {
+        return -1;
+    }
 
     while (a_length != 0u && b_length != 0u) {
         int diff = a[0u] - b[0u];
@@ -32,7 +32,12 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
 
         if (a[0u] == '\\') {
             size_t buf_length = sizeof(buf);
+
             size_t n_read = s_escape_sequence_to_utf8(a, a_length, buf, &buf_length);
+            if (n_read == 0u) {
+                return diff;
+            }
+
             diff = memcmp(buf, b, buf_length);
             if (diff == 0) {
                 a = &a[n_read];
@@ -45,7 +50,12 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
 
         if (b[0u] == '\\') {
             size_t buf_length = sizeof(buf);
+
             size_t n_read = s_escape_sequence_to_utf8(b, b_length, buf, &buf_length);
+            if (n_read == 0u) {
+                return diff;
+            }
+
             diff = memcmp(a, buf, buf_length);
             if (diff == 0) {
                 a = &a[buf_length];
@@ -73,7 +83,7 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
 static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char* dst, size_t* dst_length)
 {
     ah_assert_if_debug(src != NULL || src_length == 0u);
-    ah_assert_if_debug(dst_length != 0u);
+    ah_assert_if_debug(dst_length != NULL);
     ah_assert_if_debug(dst != NULL || *dst_length == 0u);
 
     if (src_length < 2u) {
@@ -117,7 +127,7 @@ static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char
         return 2u;
 
     case 'u':
-        if (src_length < 6) {
+        if (src_length < 6u) {
             *dst_length = 0u;
             return 0u;
         }
@@ -128,27 +138,7 @@ static size_t s_escape_sequence_to_utf8(const char* src, size_t src_length, char
             | (s_integer_from_hex_digit(src[4u]) << 4u)
             | (s_integer_from_hex_digit(src[5u]) << 0u);
 
-        if (codepoint < 0x80) {
-            // 0xxxxxxx
-            dst[0u] = (char) (codepoint & 0xFF);
-            *dst_length = 1u;
-            return 6u;
-        }
-
-        if (codepoint < 0x800) {
-            // 110xxxxx 10xxxxxx
-            dst[0u] = (char) (0xC0 | ((codepoint >> 6u) & 0x1F));
-            dst[1u] = (char) (0x80 | ((codepoint >> 0u) & 0x3F));
-            *dst_length = 2u;
-            return 6u;
-        }
-
-        if (codepoint < 0x100000) {
-            // 1110xxxx 10xxxxxx 10xxxxxx
-            dst[0u] = (char) (0xE0 | ((codepoint >> 12u) & 0x0F));
-            dst[1u] = (char) (0x80 | ((codepoint >> 6u) & 0x3F));
-            dst[2u] = (char) (0x80 | ((codepoint >> 0u) & 0x3F));
-            *dst_length = 3u;
+        if (ah_utf8_from_codepoint(codepoint, dst, dst_length) == AH_ENONE) {
             return 6u;
         }
 
@@ -177,11 +167,130 @@ static uint32_t s_integer_from_hex_digit(char hex_digit)
     return 0xFFFFFFFF; // No valid UTF-16 codepoint has this code.
 }
 
+ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* dst, size_t* dst_length)
+{
+    if (src == NULL && src_length != 0u) {
+        return AH_EINVAL;
+    }
+    if (dst_length == NULL) {
+        return AH_EINVAL;
+    }
+    if (dst == NULL && *dst_length != 0u) {
+        return AH_EINVAL;
+    }
+
+    ah_err_t err;
+
+    size_t dst_length0 = *dst_length;
+
+    while (src_length != 0u) {
+        if (dst_length0 == 0u) {
+            goto handle_overflow;
+        }
+
+        char ch = src[0u];
+
+        src = &src[1u];
+        src_length -= 1u;
+
+        if (((unsigned char) ch) >= 0x20 && ch != '"' && ch != '\\') {
+            dst[0u] = ch;
+            dst = &dst[1u];
+            dst_length0 -= 1u;
+            continue;
+        }
+
+        switch (ch) {
+        case '\b':
+            ch = 'b';
+            break;
+
+        case '\f':
+            ch = 'f';
+            break;
+
+        case '\n':
+            ch = 'n';
+            break;
+
+        case '\r':
+            ch = 'r';
+            break;
+
+        case '\t':
+            ch = 't';
+            break;
+
+        case '"':
+        case '/':
+        case '\\':
+            break;
+
+        default:
+            if (dst_length0 < 6u) {
+                goto handle_overflow;
+            }
+
+            dst[0u] = '\\';
+            dst[1u] = 'u';
+            dst[2u] = '0';
+            dst[3u] = '0';
+            dst[4u] = s_integer_into_hex_digit((char) ((ch & 0xf0) >> 4u));
+            dst[5u] = s_integer_into_hex_digit((char) ((ch & 0x0f) >> 0u));
+
+            dst = &dst[6u];
+            dst_length0 -= 6u;
+
+            continue;
+        }
+
+        if (dst_length0 < 2u) {
+            goto handle_overflow;
+        }
+
+        dst[0u] = '\\';
+        dst[1u] = ch;
+
+        dst = &dst[2u];
+        dst_length0 -= 2u;
+    }
+
+    err = AH_ENONE;
+    goto end;
+
+handle_overflow:
+    err = AH_EOVERFLOW;
+
+end:
+    *dst_length -= dst_length0;
+
+    return err;
+}
+
+static char s_integer_into_hex_digit(char i)
+{
+    if (i >= 0 && i <= 9) {
+        return (char) ('0' + i);
+    }
+
+    if (i >= 10 && i <= 15) {
+        return (char) ('A' + (i - 10));
+    }
+
+    ah_unreachable();
+}
+
 ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length)
 {
-    ah_assert_if_debug(src != NULL || src_length == 0u);
-    ah_assert_if_debug(dst_length != NULL);
-    ah_assert_if_debug(dst != NULL || *dst_length == 0u);
+    if (src == NULL && src_length != 0u) {
+        return AH_EINVAL;
+    }
+    if (dst_length == NULL) {
+        return AH_EINVAL;
+    }
+    if (dst == NULL && *dst_length != 0u) {
+        return AH_EINVAL;
+    }
 
     ah_err_t err;
 
@@ -210,7 +319,7 @@ ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char
 
         size_t n_read = s_escape_sequence_to_utf8(src, src_length, buf, &buf_length);
         if (n_read == 0u) {
-            err = AH_EILSEQ;
+            err = AH_ESYNTAX;
             goto handle_err;
         }
         src = &src[n_read];

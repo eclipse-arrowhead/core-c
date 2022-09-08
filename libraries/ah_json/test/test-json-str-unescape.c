@@ -1,83 +1,72 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/json.h"
 
 #include <ah/err.h>
 #include <ah/unit.h>
+#include <string.h>
 
 struct s_json_unescape_test {
+    ah_unit_ctx_t ctx;
     const char* input; // Terminated by \0.
     ah_err_t expected_err;
     const char* expected_output; // Terminated by \0.
 };
 
-void s_should_fail_to_unescape_invalid_strings(ah_unit_t* unit);
-void s_should_unescape_valid_strings(ah_unit_t* unit);
+void s_should_fail_to_unescape_invalid_strings(ah_unit_res_t* res);
+void s_should_unescape_valid_strings(ah_unit_res_t* res);
 
-void test_json_str_unescape(ah_unit_t* unit)
+void test_json_str_unescape(ah_unit_res_t* res)
 {
-    s_should_fail_to_unescape_invalid_strings(unit);
-    s_should_unescape_valid_strings(unit);
+    s_should_fail_to_unescape_invalid_strings(res);
+    s_should_unescape_valid_strings(res);
 }
 
-void s_assert_json_unescape_tests(ah_unit_t* unit, const char* label, struct s_json_unescape_test* tests)
+void s_assert_json_unescape_tests(ah_unit_res_t* res, struct s_json_unescape_test* tests)
 {
-    char buf[32u];
+    char actual[32u];
 
     size_t test_i = 0u;
     for (struct s_json_unescape_test* test = &tests[0u]; test->input != NULL; test = &test[1u], test_i += 1u) {
-        size_t actual_length = sizeof(buf);
+        memset(actual, 0, sizeof(actual));
+        size_t actual_length = sizeof(actual);
 
-        ah_err_t err = ah_json_str_unescape(test->input, strlen(test->input), buf, &actual_length);
-        if (err != test->expected_err) {
-            ah_unit_failf(unit, "%s [%zu]:\n\tparsing failed with error `%d: %s`; expected error `%d: %s`",
-                label, test_i, err, ah_strerror(err), test->expected_err, ah_strerror(test->expected_err));
-            continue;
+        ah_err_t err = ah_json_str_unescape(test->input, strlen(test->input), actual, &actual_length);
+        if (ah_unit_assert_eq_err(test->ctx, res, err, test->expected_err)) {
+            (void) ah_unit_assert_eq_str(test->ctx, res, actual, actual_length, test->expected_output, strlen(test->expected_output));
         }
-        ah_unit_pass(unit);
-
-        if (actual_length != strlen(test->expected_output) || memcmp(buf, test->expected_output, actual_length) != 0) {
-            ah_unit_failf(unit, "%s [%zu]:\n\texpected value `%s` not matching actual value `%s`",
-                label, test_i, test, test->expected_output, buf);
-            continue;
-        }
-        ah_unit_pass(unit);
     }
 }
 
-void s_should_fail_to_unescape_invalid_strings(ah_unit_t* unit)
+void s_should_fail_to_unescape_invalid_strings(ah_unit_res_t* res)
 {
-    s_assert_json_unescape_tests(unit, __func__,
+    s_assert_json_unescape_tests(res,
         (struct s_json_unescape_test[]) {
-            [0] = { "\\", AH_EILSEQ, "" },
-            [1] = { "\\0", AH_EILSEQ, "" },
-            [2] = { "\\0F", AH_EILSEQ, "" },
-            [3] = { "\\u00d", AH_EILSEQ, "" },
-            [4] = { "\\u?", AH_EILSEQ, "" },
-            [5] = { "\\u00FZ", AH_EILSEQ, "" },
-            [6] = { "Hello \\xFF!", AH_EILSEQ, "Hello " },
-            [7] = { "\\u", AH_EILSEQ, "" },
-            [8] = { "\\t\\x", AH_EILSEQ, "\t" },
-            [9] = { "\\x\\t", AH_EILSEQ, "" },
-            { 0u },
+            { AH_UNIT_CTX, "\\", AH_ESYNTAX, "" },
+            { AH_UNIT_CTX, "\\0", AH_ESYNTAX, "" },
+            { AH_UNIT_CTX, "\\0F", AH_ESYNTAX, "" },
+            { AH_UNIT_CTX, "\\u00d", AH_ESYNTAX, "" },
+            { AH_UNIT_CTX, "\\u?", AH_ESYNTAX, "" },
+            { AH_UNIT_CTX, "\\u00FZ", AH_ESYNTAX, "" },
+            { AH_UNIT_CTX, "Hello \\xFF!", AH_ESYNTAX, "Hello " },
+            { AH_UNIT_CTX, "\\u", AH_ESYNTAX, "" },
+            { AH_UNIT_CTX, "\\t\\x", AH_ESYNTAX, "\t" },
+            { AH_UNIT_CTX, "\\x\\t", AH_ESYNTAX, "" },
+            { { 0u }, NULL, 0u, NULL },
         });
 }
 
-void s_should_unescape_valid_strings(ah_unit_t* unit)
+void s_should_unescape_valid_strings(ah_unit_res_t* res)
 {
-    s_assert_json_unescape_tests(unit, __func__,
+    s_assert_json_unescape_tests(res,
         (struct s_json_unescape_test[]) {
-            [0] = { "", AH_ENONE, "" },
-            [1] = { "a", AH_ENONE, "a" },
-            [2] = { "\\u00f6", AH_ENONE, "ö" },
-            [3] = { "\\u00C4", AH_ENONE, "Ä" },
-            [4] = { "\\u732B", AH_ENONE, "猫" },
-            [5] = { "\\u00C5k!", AH_ENONE, "Åk!" },
-            [6] = { "\\\" \\\\ \\/ \\b \\f \\n \\r \\t", AH_ENONE, "\" \\ / \b \f \n \r \t" },
-            { 0u },
+            { AH_UNIT_CTX, "", AH_ENONE, "" },
+            { AH_UNIT_CTX, "a", AH_ENONE, "a" },
+            { AH_UNIT_CTX, "\\u00f6", AH_ENONE, "ö" },
+            { AH_UNIT_CTX, "\\u00C4", AH_ENONE, "Ä" },
+            { AH_UNIT_CTX, "\\u732B", AH_ENONE, "猫" },
+            { AH_UNIT_CTX, "\\u00C5k!", AH_ENONE, "Åk!" },
+            { AH_UNIT_CTX, "\\\" \\\\ \\/ \\b \\f \\n \\r \\t", AH_ENONE, "\" \\ / \b \f \n \r \t" },
+            { { 0u }, NULL, 0u, NULL },
         });
 }

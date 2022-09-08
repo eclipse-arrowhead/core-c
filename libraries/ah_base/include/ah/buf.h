@@ -1,22 +1,37 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #ifndef AH_BUF_H_
 #define AH_BUF_H_
 
+/**
+ * @file
+ * Platform buffer representation.
+ *
+ * This file provides a simple data structure, ah_buf, that is used to refer to
+ * contiguous chunks of memory. The data structure may be used internally by
+ * various platform APIs, for which reason its layout and fields may vary
+ * across platforms.
+ */
 #include "internal/_buf.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
+/** Largest size, in bytes, that can be represented by an ah_buf instance. */
 #define AH_BUF_SIZE_MAX AH_I_BUF_SIZE_MAX
 
+/**
+ * Sized reference to a contiguous chunk of memory.
+ *
+ * @warning The order of its fields, as well as the type of its @a size
+ *          field, may vary across supported platforms.
+ */
 struct ah_buf {
-#if AH_IS_WIN32
+#if defined(AH_DOXYGEN)
+    uint8_t* base; ///< Pointer to beginning of buffer memory region.
+    uintX_t size;  ///< Size, in bytes, of memory region referred to by @a base.
+#elif AH_IS_WIN32
     ULONG size; // Guaranteed to be of a size smaller than or equal to size_t.
     uint8_t* base;
 #else
@@ -25,15 +40,41 @@ struct ah_buf {
 #endif
 };
 
-// Error codes:
-// * AH_EINVAL            - `buf` is NULL or `base` is NULL and `size` is positive.
-// * AH_EOVERFLOW [Win32] - `size` is larger than AH_BUF_SIZE_MAX.
+/**
+ * Safely initializes @a buf with @a base pointer and @a size.
+ *
+ * @param buf  Pointer to initialized buffer.
+ * @param base Pointer to chunk of memory.
+ * @param size Size of chunk of memory referred to by @a base.
+ * @return One of the following error codes: <ul>
+ *   <li>@ref AH_ENONE             - If initialization was successful.
+ *   <li>@ref AH_EINVAL            - @a buf is @c NULL or @a base is @c NULL and @a size is
+ *                                   positive.
+ *   <li>@ref AH_EOVERFLOW [Win32] - @a size is larger than @c AH_BUF_SIZE_MAX.
+ * </ul>
+ */
 ah_extern ah_err_t ah_buf_init(ah_buf_t* buf, uint8_t* base, size_t size);
 
-// Note that `size` is always a 32-bit type, in contrast to the `size`
-// parameter of `ah_buf_init`.
+/**
+ * Creates new ah_buf from given @a base pointer and 32-bit @a size.
+ *
+ * @param base Pointer to chunk of memory.
+ * @param size Size of chunk of memory referred to by @a base.
+ * @return Created buffer.
+ *
+ * @note In contrast to ah_buf_init(), this function never fails. This is made
+ * possible by @a size always being a 32-bit type, which is small enough to be
+ * representable by every ah_buf.
+ */
 ah_extern ah_buf_t ah_buf_from(uint8_t* base, uint32_t size);
 
+/**
+ * Checks if @a buf has a @c NULL @c base or a @c size being @c 0.
+ *
+ * @param buf Pointer to checked buffer.
+ * @return @c true, only if @a buf is @c NULL, has a @c NULL @c base or @c a
+ *         @c size being @c 0. @c false otherwise.
+ */
 ah_extern bool ah_buf_is_empty(const ah_buf_t* buf);
 
 #endif

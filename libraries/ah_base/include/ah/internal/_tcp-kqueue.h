@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #ifndef AH_INTERNAL_KQUEUE_TCP_H_
@@ -11,11 +7,14 @@
 
 #define AH_I_TCP_CONN_PLATFORM_FIELDS \
  int _fd;                             \
+ uint32_t _ref_count;                 \
  struct ah_i_list _out_queue;         \
- struct ah_i_loop_evt* _read_evt;
+ struct ah_i_loop_evt* _read_evt;     \
+ struct ah_i_loop_evt* _write_evt;
 
 #define AH_I_TCP_LISTENER_PLATFORM_FIELDS \
  int _fd;                                 \
+ uint32_t _ref_count;                     \
  struct ah_i_loop_evt* _listen_evt;
 
 #define AH_I_TCP_OUT_PLATFORM_FIELDS \

@@ -1,0 +1,19 @@
+/**
+
+@dir ah_unit/include
+
+Unit testing library include folder.
+
+Add the path to this folder to your C compiler's include path when you use this
+library.
+
+@dir ah_unit/include/ah
+
+Arrowhead header folder.
+
+As a matter of organization, all official Arrowhead libraries keep their headers
+in a folder named @c ah directly inside an @c include folder. This makes it
+possible to include any of its headers using a C statement such as
+<code>\#include <ah/unit.h></code>.
+
+*/

@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/internal/collections/list.h"
@@ -47,7 +43,7 @@ void* ah_i_list_pop(struct ah_i_list* list, ptrdiff_t list_entry_offset)
 
 #endif
 
-    return &((uint8_t*) entry)[-list_entry_offset];;
+    return &((uint8_t*) entry)[-list_entry_offset];
 }
 
 void ah_i_list_push(struct ah_i_list* list, void* entry, ptrdiff_t list_entry_offset)

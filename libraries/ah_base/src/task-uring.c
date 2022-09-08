@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/task.h"
@@ -37,7 +33,7 @@ ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
     io_uring_sqe_set_data(sqe, NULL);
 }
 
-ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, struct ah_time baseline)
+ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, ah_time_t baseline)
 {
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;

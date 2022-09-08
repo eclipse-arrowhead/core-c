@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/tcp.h"
@@ -9,383 +5,308 @@
 #include "ah/assert.h"
 #include "ah/err.h"
 #include "ah/loop.h"
-#include "tcp-in.h"
+#include "ah/sock.h"
+#include "tcp-trans-default.h"
 
-ah_err_t ah_i_tcp_conn_open(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr);
-ah_err_t ah_i_tcp_conn_connect(void* ctx, ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr);
-ah_err_t ah_i_tcp_conn_read_start(void* ctx, ah_tcp_conn_t* conn);
-ah_err_t ah_i_tcp_conn_read_stop(void* ctx, ah_tcp_conn_t* conn);
-ah_err_t ah_i_tcp_conn_write(void* ctx, ah_tcp_conn_t* conn, ah_tcp_out_t* out);
-ah_err_t ah_i_tcp_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags);
-ah_err_t ah_i_tcp_conn_close(void* ctx, ah_tcp_conn_t* conn);
-
-ah_err_t ah_i_tcp_listener_open(void* ctx, ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr);
-ah_err_t ah_i_tcp_listener_listen(void* ctx, ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs);
-ah_err_t ah_i_tcp_listener_close(void* ctx, ah_tcp_listener_t* ln);
-
-ah_extern ah_tcp_trans_t ah_tcp_trans_get_default(void)
+ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_conn_obs_t obs)
 {
-    static const ah_tcp_vtab_t s_vtab = {
-        .conn_open = ah_i_tcp_conn_open,
-        .conn_connect = ah_i_tcp_conn_connect,
-        .conn_read_start = ah_i_tcp_conn_read_start,
-        .conn_read_stop = ah_i_tcp_conn_read_stop,
-        .conn_write = ah_i_tcp_conn_write,
-        .conn_shutdown = ah_i_tcp_conn_shutdown,
-        .conn_close = ah_i_tcp_conn_close,
-
-        .listener_open = ah_i_tcp_listener_open,
-        .listener_listen = ah_i_tcp_listener_listen,
-        .listener_close = ah_i_tcp_listener_close,
-    };
-
-    return (ah_tcp_trans_t) {
-        .vtab = &s_vtab,
-        .ctx = NULL,
-    };
-}
-
-ah_extern bool ah_tcp_vtab_is_valid(const ah_tcp_vtab_t* vtab)
-{
-    if (vtab == NULL) {
-        return false;
-    }
-    if (vtab->conn_open == NULL || vtab->conn_connect == NULL) {
-        return false;
-    }
-    if (vtab->conn_read_start == NULL || vtab->conn_read_stop == NULL || vtab->conn_write == NULL) {
-        return false;
-    }
-    if (vtab->conn_shutdown == NULL || vtab->conn_close == NULL) {
-        return false;
-    }
-    if (vtab->listener_open == NULL || vtab->listener_listen == NULL || vtab->listener_close == NULL) {
-        return false;
-    }
-    return true;
-}
-
-ah_extern ah_err_t ah_tcp_conn_init(ah_tcp_conn_t* conn, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_conn_cbs_t* cbs)
-{
-    if (conn == NULL || loop == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || cbs == NULL) {
-        return AH_EINVAL;
-    }
-    if (cbs->on_open == NULL || cbs->on_connect == NULL || cbs->on_close == NULL) {
+    if (ah_unlikely(conn == NULL || trans.vtab == NULL || trans.vtab->conn_init == NULL)) {
         return AH_EINVAL;
     }
 
-    *conn = (ah_tcp_conn_t) {
-        ._loop = loop,
-        ._trans = trans,
-        ._cbs = cbs,
-        ._state = AH_I_TCP_CONN_STATE_CLOSED,
-    };
+    (void) memset(conn, 0, sizeof(*conn));
 
-    return AH_ENONE;
+    return trans.vtab->conn_init(trans.ctx, conn, loop, trans, obs);
 }
 
 ah_extern ah_err_t ah_tcp_conn_open(ah_tcp_conn_t* conn, const ah_sockaddr_t* laddr)
 {
-    if (conn == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_open == NULL)) {
         return AH_EINVAL;
-    }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_open == NULL) {
-        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_open(conn->_trans.ctx, conn, laddr);
 }
 
 ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t* raddr)
 {
-    if (conn == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_connect == NULL)) {
         return AH_EINVAL;
-    }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_connect == NULL) {
-        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_connect(conn->_trans.ctx, conn, raddr);
 }
 
 ah_extern ah_err_t ah_tcp_conn_read_start(ah_tcp_conn_t* conn)
 {
-    if (conn == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_start == NULL)) {
         return AH_EINVAL;
-    }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_start == NULL) {
-        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_read_start(conn->_trans.ctx, conn);
 }
 
 ah_extern ah_err_t ah_tcp_conn_read_stop(ah_tcp_conn_t* conn)
 {
-    if (conn == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_stop == NULL)) {
         return AH_EINVAL;
-    }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_read_stop == NULL) {
-        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_read_stop(conn->_trans.ctx, conn);
 }
 
 ah_extern ah_err_t ah_tcp_conn_write(ah_tcp_conn_t* conn, ah_tcp_out_t* out)
 {
-    if (conn == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_write == NULL)) {
         return AH_EINVAL;
-    }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_write == NULL) {
-        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_write(conn->_trans.ctx, conn, out);
 }
 
-ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, ah_tcp_shutdown_t flags)
+ah_extern ah_err_t ah_tcp_conn_shutdown(ah_tcp_conn_t* conn, uint8_t flags)
 {
-    if (conn == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_shutdown == NULL)) {
         return AH_EINVAL;
-    }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_shutdown == NULL) {
-        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_shutdown(conn->_trans.ctx, conn, flags);
 }
 
 ah_extern ah_err_t ah_tcp_conn_close(ah_tcp_conn_t* conn)
 {
-    if (conn == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_close == NULL)) {
         return AH_EINVAL;
-    }
-    if (conn->_trans.vtab == NULL || conn->_trans.vtab->conn_close == NULL) {
-        return AH_ESTATE;
     }
     return conn->_trans.vtab->conn_close(conn->_trans.ctx, conn);
 }
 
+ah_extern ah_err_t ah_tcp_conn_term(ah_tcp_conn_t* conn)
+{
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_term == NULL)) {
+        return AH_EINVAL;
+    }
+    return conn->_trans.vtab->conn_term(conn->_trans.ctx, conn);
+}
+
+ah_extern int ah_tcp_conn_get_family(const ah_tcp_conn_t* conn)
+{
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_get_family == NULL)) {
+        return -1;
+    }
+    return conn->_trans.vtab->conn_get_family(conn->_trans.ctx, conn);
+}
+
+ah_extern ah_err_t ah_tcp_conn_get_laddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
+{
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_get_laddr == NULL)) {
+        return AH_EINVAL;
+    }
+    return conn->_trans.vtab->conn_get_laddr(conn->_trans.ctx, conn, laddr);
+}
+
+ah_extern ah_err_t ah_tcp_conn_get_raddr(const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
+{
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_get_raddr == NULL)) {
+        return AH_EINVAL;
+    }
+    return conn->_trans.vtab->conn_get_raddr(conn->_trans.ctx, conn, raddr);
+}
+
 ah_extern ah_loop_t* ah_tcp_conn_get_loop(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_loop;
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_get_loop == NULL)) {
+        return NULL;
+    }
+    return conn->_trans.vtab->conn_get_loop(conn->_trans.ctx, conn);
 }
 
-ah_extern ah_tcp_shutdown_t ah_tcp_conn_get_shutdown_flags(const ah_tcp_conn_t* conn)
+ah_extern void* ah_tcp_conn_get_obs_ctx(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_shutdown_flags;
-}
-
-ah_extern void* ah_tcp_conn_get_user_data(const ah_tcp_conn_t* conn)
-{
-    ah_assert(conn != NULL);
-
-    return conn->_user_data;
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_get_obs_ctx == NULL)) {
+        return NULL;
+    }
+    return conn->_trans.vtab->conn_get_obs_ctx(conn->_trans.ctx, conn);
 }
 
 ah_extern bool ah_tcp_conn_is_closed(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_state == AH_I_TCP_CONN_STATE_CLOSED;
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_is_closed == NULL)) {
+        return true;
+    }
+    return conn->_trans.vtab->conn_is_closed(conn->_trans.ctx, conn);
 }
 
 ah_extern bool ah_tcp_conn_is_readable(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
-        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RD) == 0u;
-}
-
-ah_extern bool ah_tcp_conn_is_readable_and_writable(const ah_tcp_conn_t* conn)
-{
-    ah_assert(conn != NULL);
-
-    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
-        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_RDWR) == 0u;
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_is_readable == NULL)) {
+        return false;
+    }
+    return conn->_trans.vtab->conn_is_readable(conn->_trans.ctx, conn);
 }
 
 ah_extern bool ah_tcp_conn_is_reading(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_state == AH_I_TCP_CONN_STATE_READING;
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_is_reading == NULL)) {
+        return false;
+    }
+    return conn->_trans.vtab->conn_is_reading(conn->_trans.ctx, conn);
 }
 
 ah_extern bool ah_tcp_conn_is_writable(const ah_tcp_conn_t* conn)
 {
-    ah_assert(conn != NULL);
-
-    return conn->_state >= AH_I_TCP_CONN_STATE_CONNECTED
-        && (conn->_shutdown_flags & AH_TCP_SHUTDOWN_WR) == 0u;
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_is_writable == NULL)) {
+        return false;
+    }
+    return conn->_trans.vtab->conn_is_writable(conn->_trans.ctx, conn);
 }
 
-ah_extern void ah_tcp_conn_set_user_data(ah_tcp_conn_t* conn, void* user_data)
+ah_extern ah_err_t ah_tcp_conn_set_keepalive(ah_tcp_conn_t* conn, bool is_enabled)
 {
-    ah_assert(conn != NULL);
-
-    conn->_user_data = user_data;
-}
-
-ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in)
-{
-    if (in == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_set_keepalive == NULL)) {
         return AH_EINVAL;
     }
-    if (in->_owner_ptr == NULL) {
-        return AH_ESTATE;
-    }
-
-    return ah_i_tcp_in_detach(in);
+    return conn->_trans.vtab->conn_set_keepalive(conn->_trans.ctx, conn, is_enabled);
 }
 
-ah_extern void ah_tcp_in_free(ah_tcp_in_t* in)
+ah_extern ah_err_t ah_tcp_conn_set_nodelay(ah_tcp_conn_t* conn, bool is_enabled)
 {
-    if (in != NULL) {
-        ah_i_tcp_in_free(in);
-    }
-}
-
-ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
-{
-    if (owner_ptr == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_set_nodelay == NULL)) {
         return AH_EINVAL;
     }
-    return ah_i_tcp_in_alloc_for(owner_ptr);
+    return conn->_trans.vtab->conn_set_nodelay(conn->_trans.ctx, conn, is_enabled);
 }
 
-ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in)
+ah_extern ah_err_t ah_tcp_conn_set_reuseaddr(ah_tcp_conn_t* conn, bool is_enabled)
 {
-    if (in == NULL) {
+    if (ah_unlikely(conn == NULL || conn->_trans.vtab == NULL || conn->_trans.vtab->conn_set_reuseaddr == NULL)) {
         return AH_EINVAL;
     }
-
-    ah_i_tcp_in_repackage(in);
-
-    return AH_ENONE;
+    return conn->_trans.vtab->conn_set_reuseaddr(conn->_trans.ctx, conn, is_enabled);
 }
 
-ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void)
+ah_extern bool ah_tcp_conn_cbs_is_valid_for_acceptance(const ah_tcp_conn_cbs_t* cbs)
 {
-    uint8_t* page = ah_palloc();
-    if (page == NULL) {
-        return NULL;
-    }
-
-    ah_tcp_out_t* out = (void*) page;
-
-    *out = (ah_tcp_out_t) {
-        .buf = ah_buf_from(&page[sizeof(ah_tcp_out_t)], AH_PSIZE - sizeof(ah_tcp_out_t)),
-    };
-
-    if (out->buf.size > AH_PSIZE) {
-        ah_pfree(page);
-        return NULL;
-    }
-
-    return out;
+    return cbs != NULL
+        && cbs->on_read != NULL
+        && cbs->on_write != NULL
+        && cbs->on_close != NULL;
 }
 
-ah_extern void ah_tcp_out_free(ah_tcp_out_t* out)
+ah_extern bool ah_tcp_conn_cbs_is_valid_for_connection(const ah_tcp_conn_cbs_t* cbs)
 {
-    if (out != NULL) {
-        ah_pfree(out);
-    }
+    return cbs != NULL
+        && cbs->on_open != NULL
+        && cbs->on_connect != NULL
+        && ah_tcp_conn_cbs_is_valid_for_acceptance(cbs);
 }
 
-ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, const ah_tcp_listener_cbs_t* cbs)
+ah_extern ah_err_t ah_tcp_listener_init(ah_tcp_listener_t* ln, ah_loop_t* loop, ah_tcp_trans_t trans, ah_tcp_listener_obs_t obs)
 {
-    if (ln == NULL || loop == NULL || !ah_tcp_vtab_is_valid(trans.vtab) || cbs == NULL) {
-        return AH_EINVAL;
-    }
-    if (cbs->on_open == NULL || cbs->on_listen == NULL || cbs->on_close == NULL) {
-        return AH_EINVAL;
-    }
-    if (cbs->on_accept == NULL) {
+    if (ah_unlikely(ln == NULL || trans.vtab == NULL || trans.vtab->listener_init == NULL)) {
         return AH_EINVAL;
     }
 
-    *ln = (ah_tcp_listener_t) {
-        ._loop = loop,
-        ._trans = trans,
-        ._cbs = cbs,
-        ._state = AH_I_TCP_LISTENER_STATE_CLOSED,
-    };
+    (void) memset(ln, 0, sizeof(*ln));
 
-    return ah_i_slab_init(&ln->_conn_slab, 1u, sizeof(ah_tcp_conn_t));
+    return trans.vtab->listener_init(trans.ctx, ln, loop, trans, obs);
 }
 
 ah_extern ah_err_t ah_tcp_listener_open(ah_tcp_listener_t* ln, const ah_sockaddr_t* laddr)
 {
-    if (ln == NULL) {
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_open == NULL)) {
         return AH_EINVAL;
-    }
-    if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_open == NULL) {
-        return AH_ESTATE;
     }
     return ln->_trans.vtab->listener_open(ln->_trans.ctx, ln, laddr);
 }
 
-ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog, const ah_tcp_conn_cbs_t* conn_cbs)
+ah_extern ah_err_t ah_tcp_listener_listen(ah_tcp_listener_t* ln, unsigned backlog)
 {
-    if (ln == NULL) {
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_listen == NULL)) {
         return AH_EINVAL;
     }
-    if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_listen == NULL) {
-        return AH_ESTATE;
-    }
-    return ln->_trans.vtab->listener_listen(ln->_trans.ctx, ln, backlog, conn_cbs);
+    return ln->_trans.vtab->listener_listen(ln->_trans.ctx, ln, backlog);
 }
 
 ah_extern ah_err_t ah_tcp_listener_close(ah_tcp_listener_t* ln)
 {
-    if (ln == NULL) {
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_close == NULL)) {
         return AH_EINVAL;
-    }
-    if (ln->_trans.vtab == NULL || ln->_trans.vtab->listener_close == NULL) {
-        return AH_ESTATE;
     }
     return ln->_trans.vtab->listener_close(ln->_trans.ctx, ln);
 }
 
 ah_extern ah_err_t ah_tcp_listener_term(ah_tcp_listener_t* ln)
 {
-    if (ln == NULL) {
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_term == NULL)) {
         return AH_EINVAL;
     }
-    if (ln->_state != AH_I_TCP_LISTENER_STATE_CLOSED) {
-        return AH_ESTATE;
+    return ln->_trans.vtab->listener_term(ln->_trans.ctx, ln);
+}
+
+ah_extern int ah_tcp_listener_get_family(const ah_tcp_listener_t* ln)
+{
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_get_family == NULL)) {
+        return -1;
     }
+    return ln->_trans.vtab->listener_get_family(ln->_trans.ctx, ln);
+}
 
-    ah_i_slab_term(&ln->_conn_slab, NULL);
-
-    return AH_ENONE;
+ah_extern ah_err_t ah_tcp_listener_get_laddr(const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr)
+{
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_get_laddr == NULL)) {
+        return -1;
+    }
+    return ln->_trans.vtab->listener_get_laddr(ln->_trans.ctx, ln, laddr);
 }
 
 ah_extern ah_loop_t* ah_tcp_listener_get_loop(const ah_tcp_listener_t* ln)
 {
-    ah_assert(ln != NULL);
-
-    return ln->_loop;
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_get_loop == NULL)) {
+        return NULL;
+    }
+    return ln->_trans.vtab->listener_get_loop(ln->_trans.ctx, ln);
 }
 
-ah_extern void* ah_tcp_listener_get_user_data(const ah_tcp_listener_t* ln)
+ah_extern void* ah_tcp_listener_get_obs_ctx(const ah_tcp_listener_t* ln)
 {
-    ah_assert(ln != NULL);
-
-    return ln->_user_data;
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_get_obs_ctx == NULL)) {
+        return NULL;
+    }
+    return ln->_trans.vtab->listener_get_obs_ctx(ln->_trans.ctx, ln);
 }
 
 ah_extern bool ah_tcp_listener_is_closed(ah_tcp_listener_t* ln)
 {
-    ah_assert(ln != NULL);
-
-    return ln->_state == AH_I_TCP_LISTENER_STATE_CLOSED;
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_is_closed == NULL)) {
+        return true;
+    }
+    return ln->_trans.vtab->listener_is_closed(ln->_trans.ctx, ln);
 }
 
-ah_extern void ah_tcp_listener_set_user_data(ah_tcp_listener_t* ln, void* user_data)
+ah_extern ah_err_t ah_tcp_listener_set_keepalive(ah_tcp_listener_t* ln, bool is_enabled)
 {
-    ah_assert(ln != NULL);
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_set_keepalive == NULL)) {
+        return AH_EINVAL;
+    }
+    return ln->_trans.vtab->listener_set_keepalive(ln->_trans.ctx, ln, is_enabled);
+}
 
-    ln->_user_data = user_data;
+ah_extern ah_err_t ah_tcp_listener_set_nodelay(ah_tcp_listener_t* ln, bool is_enabled)
+{
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_set_nodelay == NULL)) {
+        return AH_EINVAL;
+    }
+    return ln->_trans.vtab->listener_set_nodelay(ln->_trans.ctx, ln, is_enabled);
+}
+
+ah_extern ah_err_t ah_tcp_listener_set_reuseaddr(ah_tcp_listener_t* ln, bool is_enabled)
+{
+    if (ah_unlikely(ln == NULL || ln->_trans.vtab == NULL || ln->_trans.vtab->listener_set_reuseaddr == NULL)) {
+        return AH_EINVAL;
+    }
+    return ln->_trans.vtab->listener_set_reuseaddr(ln->_trans.ctx, ln, is_enabled);
+}
+
+ah_extern bool ah_tcp_listener_cbs_is_valid(const ah_tcp_listener_cbs_t* cbs)
+{
+    return cbs != NULL
+        && cbs->on_open != NULL
+        && cbs->on_listen != NULL
+        && cbs->on_accept != NULL
+        && cbs->on_close != NULL;
 }

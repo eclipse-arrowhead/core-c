@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="generator" content="Doxygen $doxygenversion"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>$title - $projectname</title>
+  <script src="$relpath^jquery.js"></script>
+  <script src="$relpath^dynsections.js"></script>
+  $search
+  <script>
+      window.addEventListener("load", () => {
+          let contents = document.querySelector("body > div.contents");
+          if (!contents) {
+            return;
+          }
+
+          document.querySelectorAll("#top ul > li.current > a > span").forEach((selectedMenuItem) => {
+            contents.classList.add(selectedMenuItem.innerText.trim().toLowerCase().replace(/\s+/, "-"));
+          });
+
+        for (let i = contents.childNodes.length - 1; i >= 0; i -= 1) {
+          let childNode = contents.childNodes.item(i);
+          if ((childNode.nodeType === 3 && childNode.textContent.trim().length === 0)
+                  || (childNode.nodeType === 1 && childNode.classList.contains("textblock") && childNode.textContent.trim().length === 0)) {
+            childNode.remove();
+          }
+        }
+      });
+  </script>
+  <link href="$relpath^tabs.css" rel="stylesheet" type="text/css"/>
+  <link href="$relpath^$stylesheet" rel="stylesheet" type="text/css"/>
+  $extrastylesheet
+</head>
+<body>
+<div id="top">
+  <header>
+    <img alt="Logo" src="$relpath^$projectlogo"/>
+    <h1>$projectname <span class="version">$projectnumber</span></h1>
+  </header>

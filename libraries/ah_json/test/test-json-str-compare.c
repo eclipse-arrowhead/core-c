@@ -1,74 +1,79 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/json.h"
 
 #include <ah/unit.h>
+#include <string.h>
 
 struct s_json_compare_test {
+    ah_unit_ctx_t ctx;
     const char* a; // Terminated by \0.
     const char* b; // Terminated by \0.
     int expected_result;
 };
 
-void s_should_consider_certain_strings_equal(ah_unit_t* unit);
-void s_should_consider_certain_strings_not_equal(ah_unit_t* unit);
+void s_should_consider_certain_strings_equal(ah_unit_res_t* res);
+void s_should_consider_certain_strings_not_equal(ah_unit_res_t* res);
 
-void test_json_str_compare(ah_unit_t* unit)
+void test_json_str_compare(ah_unit_res_t* res)
 {
-    s_should_consider_certain_strings_equal(unit);
-    s_should_consider_certain_strings_not_equal(unit);
+    s_should_consider_certain_strings_equal(res);
+    s_should_consider_certain_strings_not_equal(res);
 }
 
-void s_assert_json_compare_tests(ah_unit_t* unit, const char* label, struct s_json_compare_test* tests)
+void s_assert_json_compare_tests(ah_unit_res_t* res, struct s_json_compare_test* tests)
 {
-    size_t test_i = 0u;
-    for (struct s_json_compare_test* test = &tests[0u]; test->a != NULL; test = &test[1u], test_i += 1u) {
+    for (struct s_json_compare_test* test = &tests[0u]; test->a != NULL; test = &test[1u]) {
         int actual_result = ah_json_str_compare(test->a, strlen(test->a), test->b, strlen(test->b));
+
+        if (actual_result > 0) {
+            actual_result = 1;
+        }
+        else if (actual_result < 0) {
+            actual_result = -1;
+        }
+
         if (actual_result != test->expected_result) {
-            ah_unit_failf(unit, "%s [%zu]:\n\tcomparison of \"%s\" and \"%s\" produced %d; expected %d",
-                label, test_i, test->a, test->b, actual_result, test->expected_result);
+            ah_unit_fail(test->ctx, res, "comparison of \"%s\" and \"%s\" produced %d; expected %d",
+                test->a, test->b, actual_result, test->expected_result);
             continue;
         }
-        ah_unit_pass(unit);
+        ah_unit_pass(res);
     }
 }
 
-void s_should_consider_certain_strings_equal(ah_unit_t* unit)
+void s_should_consider_certain_strings_equal(ah_unit_res_t* res)
 {
-    s_assert_json_compare_tests(unit, __func__,
+    s_assert_json_compare_tests(res,
         (struct s_json_compare_test[]) {
-            [0] = { "", "", 0 },
-            [1] = { "a", "a", 0 },
-            [2] = { "B", "B", 0 },
-            [3] = { "cc", "cc", 0 },
-            [4] = { "DdDd", "DdDd", 0 },
-            [5] = { "Two words!", "Two words!", 0 },
-            [6] = { "\\u00f6", "ö", 0 },
-            [7] = { "Ä", "\\u00C4", 0 },
-            [8] = { "猫", "\\u732B", 0 },
-            [9] = { "Åk!", "\\u00C5k!", 0 },
-            { 0u },
+            { AH_UNIT_CTX, "", "", 0 },
+            { AH_UNIT_CTX, "a", "a", 0 },
+            { AH_UNIT_CTX, "B", "B", 0 },
+            { AH_UNIT_CTX, "cc", "cc", 0 },
+            { AH_UNIT_CTX, "DdDd", "DdDd", 0 },
+            { AH_UNIT_CTX, "Two words!", "Two words!", 0 },
+            { AH_UNIT_CTX, "\\u00f6", "ö", 0 },
+            { AH_UNIT_CTX, "Ä", "\\u00C4", 0 },
+            { AH_UNIT_CTX, "猫", "\\u732B", 0 },
+            { AH_UNIT_CTX, "Åk!", "\\u00C5k!", 0 },
+            { { 0u }, NULL, NULL, 0 },
         });
 }
 
-void s_should_consider_certain_strings_not_equal(ah_unit_t* unit)
+void s_should_consider_certain_strings_not_equal(ah_unit_res_t* res)
 {
-    s_assert_json_compare_tests(unit, __func__,
+    s_assert_json_compare_tests(res,
         (struct s_json_compare_test[]) {
-            [0] = { "0", "", 1 },
-            [1] = { "", "0", -1 },
-            [2] = { "Ba", "Bb", -1 },
-            [3] = { "aB", "bB", -1 },
-            [4] = { "2", "1", 1 },
-            [5] = { "Two words!!", "Two words!", 1 },
-            [6] = { "\\u00f6", "Ö", 32 },
-            [7] = { "ä", "\\u00C4", 32 },
-            [8] = { "猫", "\\u732C", -1 },
-            [9] = { "Åk?", "\\u00C5k!", 30 },
-            { 0u },
+            { AH_UNIT_CTX, "0", "", 1 },
+            { AH_UNIT_CTX, "", "0", -1 },
+            { AH_UNIT_CTX, "Ba", "Bb", -1 },
+            { AH_UNIT_CTX, "aB", "bB", -1 },
+            { AH_UNIT_CTX, "2", "1", 1 },
+            { AH_UNIT_CTX, "Two words!!", "Two words!", 1 },
+            { AH_UNIT_CTX, "\\u00f6", "Ö", 1 },
+            { AH_UNIT_CTX, "ä", "\\u00C4", 1 },
+            { AH_UNIT_CTX, "猫", "\\u732C", -1 },
+            { AH_UNIT_CTX, "Åk?", "\\u00C5k!", 1 },
+            { { 0u }, NULL, NULL, 0 },
         });
 }

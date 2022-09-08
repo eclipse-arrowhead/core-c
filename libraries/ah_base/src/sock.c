@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/sock.h"
@@ -31,7 +27,7 @@ ah_extern ah_err_t ah_sockaddr_init_ipv4(ah_sockaddr_t* sockaddr, uint16_t port,
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v6* ipaddr)
+ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port, const struct ah_ipaddr_v6* ipaddr, uint32_t zone_id)
 {
     if (sockaddr == NULL || ipaddr == NULL) {
         return AH_EINVAL;
@@ -42,7 +38,10 @@ ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port,
 #if AH_I_SOCKADDR_HAS_SIZE
         .size = sizeof(struct sockaddr_in6),
 #endif
-        .family = AH_SOCKFAMILY_IPV4, .port = port, .ipaddr = *ipaddr,
+        .family = AH_SOCKFAMILY_IPV6,
+        .port = port,
+        .ipaddr = *ipaddr,
+        .zone_id = zone_id,
     };
 
     return AH_ENONE;
@@ -50,13 +49,14 @@ ah_extern ah_err_t ah_sockaddr_init_ipv6(ah_sockaddr_t* sockaddr, uint16_t port,
 
 ah_extern bool ah_sockaddr_is_ip(const ah_sockaddr_t* sockaddr)
 {
-    ah_assert_if_debug(sockaddr != NULL);
-    return sockaddr->as_any.family == AH_SOCKFAMILY_IPV4 || sockaddr->as_any.family == AH_SOCKFAMILY_IPV6;
+    return sockaddr != NULL && (sockaddr->as_any.family == AH_SOCKFAMILY_IPV4 || sockaddr->as_any.family == AH_SOCKFAMILY_IPV6);
 }
 
 ah_extern bool ah_sockaddr_is_ip_wildcard(const ah_sockaddr_t* sockaddr)
 {
-    ah_assert_if_debug(sockaddr != NULL);
+    if (sockaddr == NULL) {
+        return false;
+    }
 
     switch (sockaddr->as_any.family) {
     case AH_SOCKFAMILY_IPV4:
@@ -72,7 +72,9 @@ ah_extern bool ah_sockaddr_is_ip_wildcard(const ah_sockaddr_t* sockaddr)
 
 ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr)
 {
-    ah_assert_if_debug(sockaddr != NULL);
+    if (sockaddr == NULL) {
+        return false;
+    }
 
     switch (sockaddr->as_any.family) {
     case AH_SOCKFAMILY_IPV4:
@@ -86,9 +88,9 @@ ah_extern bool ah_sockaddr_is_ip_with_port_zero(const ah_sockaddr_t* sockaddr)
 
 ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* dest, size_t* dest_size)
 {
-    ah_assert_if_debug(sockaddr != NULL);
-    ah_assert_if_debug(dest != NULL);
-    ah_assert_if_debug(dest_size != NULL);
+    if (sockaddr == NULL || dest == NULL || dest_size == NULL) {
+        return AH_EINVAL;
+    }
 
     ah_err_t err;
     size_t dest_rem = *dest_size;
@@ -106,11 +108,11 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         size_t port_size;
         const int n = snprintf(dest, dest_rem, ":%" PRIu16, sockaddr->as_ipv4.port);
         if (n < 0) {
-            return AH_EOPNOTSUPP;
+            return AH_EINTERN;
         }
         port_size = (size_t) n;
         if (port_size == dest_rem) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
 
         *dest_size = ipaddr_size + port_size;
@@ -119,7 +121,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
 
     case AH_SOCKFAMILY_IPV6: {
         if (dest_rem <= 1u) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
         dest[0u] = '[';
         dest = &dest[1u];
@@ -137,11 +139,11 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         if (sockaddr->as_ipv6.zone_id != 0u) {
             const int n = snprintf(dest, dest_rem, "%%25%" PRIu32, sockaddr->as_ipv6.zone_id);
             if (n < 0) {
-                return AH_EOPNOTSUPP;
+                return AH_EINTERN;
             }
             zone_id_size = (size_t) n;
             if (zone_id_size == dest_rem) {
-                return AH_ENOSPC;
+                return AH_EOVERFLOW;
             }
             dest = &dest[zone_id_size];
             dest_rem -= ipaddr_size;
@@ -151,7 +153,7 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         }
 
         if (dest_rem <= 1u) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
         dest[0u] = ']';
         dest = &dest[1u];
@@ -160,11 +162,11 @@ ah_extern ah_err_t ah_sockaddr_stringify(const ah_sockaddr_t* sockaddr, char* de
         size_t port_size;
         const int n = snprintf(dest, dest_rem, ":%" PRIu16, sockaddr->as_ipv4.port);
         if (n < 0) {
-            return AH_EOPNOTSUPP;
+            return AH_EINTERN;
         }
         port_size = (size_t) n;
         if (port_size == dest_rem) {
-            return AH_ENOSPC;
+            return AH_EOVERFLOW;
         }
 
         *dest_size = 1u + ipaddr_size + zone_id_size + 1u + port_size;

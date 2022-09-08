@@ -1,163 +1,201 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #ifndef AH_ERR_H_
 #define AH_ERR_H_
 
-#include "defs.h"
+/**
+ * @file
+ * Error management
+ *
+ * This file lists most, if not all, error codes that can be returned by the
+ * functions of this library and other libraries that depend on it.
+ *
+ * Apart from @ref AH_ENONE, which indicates no error at all, and some custom
+ * error codes, all error codes listed here come directly from the platforms
+ * supported by this library. When a Core C library function invokes a platform
+ * function internally, the convention is for any errors that cannot be dealt
+ * with by the function to be passed on to the caller of the Core C function. As
+ * a consequence, many functions in this library return different error codes on
+ * different platforms. Every function dealing with error codes should list
+ * which of them only occur on some supported platforms.
+ */
 
-#if AH_IS_WIN32
-# include <winerror.h>
-#else
-# include <errno.h>
+#include "internal/_err.h"
+
+/**
+ * No error.
+ */
+#define AH_ENONE 0
+
+/**
+ * @name Custom Errors
+ * @{
+ */
+#define AH_EDEP    5405 ///< Consult dependency for error details.
+#define AH_EDUP    5403 ///< Duplicate exists.
+#define AH_EEOF    5401 ///< Unexpected end of resource.
+#define AH_EINTERN 5404 ///< Internal error.
+#define AH_ERECONN 5406 ///< Reconnection underway.
+#define AH_ESTATE  5402 ///< State invalid.
+#define AH_ESYNTAX 5407 ///< Syntax invalid.
+/** @} */
+
+/**
+ * @name POSIX Errors
+ * @{
+ */
+#define AH_E2BIG           AH_I_ERR_ONE_OF(E2BIG, 5501)                         ///< Argument list too long.
+#define AH_EACCES          AH_I_ERR_ONE_OF(EACCES, WSAEACCES)                   ///< Permission denied.
+#define AH_EADDRINUSE      AH_I_ERR_ONE_OF(EADDRINUSE, WSAEADDRINUSE)           ///< Address in use.
+#define AH_EADDRNOTAVAIL   AH_I_ERR_ONE_OF(EADDRNOTAVAIL, WSAEADDRNOTAVAIL)     ///< Address not available.
+#define AH_EAFNOSUPPORT    AH_I_ERR_ONE_OF(EAFNOSUPPORT, WSAEAFNOSUPPORT)       ///< Address family not supported.
+#define AH_EAGAIN          AH_I_ERR_ONE_OF(EAGAIN, WSAEWOULDBLOCK)              ///< Try again.
+#define AH_EALREADY        AH_I_ERR_ONE_OF(EALREADY, WSAEALREADY)               ///< Already in progress.
+#define AH_EBADF           AH_I_ERR_ONE_OF(EBADF, WSAEBADF)                     ///< Bad file descriptor.
+#define AH_EBADMSG         AH_I_ERR_ONE_OF(EBADMSG, 5502)                       ///< Bad message.
+#define AH_EBUSY           AH_I_ERR_ONE_OF(EBUSY, 5503)                         ///< Device or resource busy.
+#define AH_ECANCELED       AH_I_ERR_ONE_OF(ECANCELED, WSAECANCELLED)            ///< Operation canceled.
+#define AH_ECHILD          AH_I_ERR_ONE_OF(ECHILD, 5504)                        ///< No child processes.
+#define AH_ECONNABORTED    AH_I_ERR_ONE_OF(ECONNABORTED, WSAECONNABORTED)       ///< Connection aborted.
+#define AH_ECONNREFUSED    AH_I_ERR_ONE_OF(ECONNREFUSED, WSAECONNREFUSED)       ///< Connection refused.
+#define AH_ECONNRESET      AH_I_ERR_ONE_OF(ECONNRESET, WSAECONNRESET)           ///< Connection reset.
+#define AH_EDEADLK         AH_I_ERR_ONE_OF(EDEADLK, 5505)                       ///< Deadlock would occur.
+#define AH_EDESTADDRREQ    AH_I_ERR_ONE_OF(EDESTADDRREQ, WSAEDESTADDRREQ)       ///< Destination address required.
+#define AH_EDOM            AH_I_ERR_ONE_OF(EDOM, 5506)                          ///< Arithmetic argument outside accepted domain.
+#define AH_EDQUOT          AH_I_ERR_ONE_OF(EDQUOT, WSAEDQUOT)                   ///< Disc quota exceeded.
+#define AH_EEXIST          AH_I_ERR_ONE_OF(EEXIST, 5507)                        ///< Already exists.
+#define AH_EFAULT          AH_I_ERR_ONE_OF(EFAULT, WSAEFAULT)                   ///< Bad pointer.
+#define AH_EFBIG           AH_I_ERR_ONE_OF(EFBIG, 5508)                         ///< File too large.
+#define AH_EHOSTDOWN       AH_I_ERR_ONE_OF(EHOSTDOWN, WSAEHOSTDOWN)             ///< Host down.
+#define AH_EHOSTUNREACH    AH_I_ERR_ONE_OF(EHOSTUNREACH, WSAEHOSTUNREACH)       ///< Host unreachable.
+#define AH_EIDRM           AH_I_ERR_ONE_OF(EIDRM, 5509)                         ///< Identifier removed.
+#define AH_EILSEQ          AH_I_ERR_ONE_OF(EILSEQ, 5510)                        ///< Illegal byte sequence.
+#define AH_EINPROGRESS     AH_I_ERR_ONE_OF(EINPROGRESS, WSAEINPROGRESS)         ///< Operation in progress.
+#define AH_EINTR           AH_I_ERR_ONE_OF(EINTR, WSAEINTR)                     ///< Interrupted.
+#define AH_EINVAL          AH_I_ERR_ONE_OF(EINVAL, WSAEINVAL)                   ///< Invalid argument.
+#define AH_EIO             AH_I_ERR_ONE_OF(EIO, 5511)                           ///< I/O error.
+#define AH_EISCONN         AH_I_ERR_ONE_OF(EISCONN, WSAEISCONN)                 ///< Already connected.
+#define AH_EISDIR          AH_I_ERR_ONE_OF(EISDIR, 5512)                        ///< Is a directory.
+#define AH_ELOOP           AH_I_ERR_ONE_OF(ELOOP, WSAELOOP)                     ///< Too many levels of symbolic links.
+#define AH_EMFILE          AH_I_ERR_ONE_OF(EMFILE, WSAEMFILE)                   ///< File descriptor value too large.
+#define AH_EMLINK          AH_I_ERR_ONE_OF(EMLINK, 5513)                        ///< Too many links.
+#define AH_EMSGSIZE        AH_I_ERR_ONE_OF(EMSGSIZE, WSAEMSGSIZE)               ///< Message too large.
+#define AH_EMULTIHOP       AH_I_ERR_ONE_OF(EMULTIHOP, 5514)                     ///< Incomplete route path.
+#define AH_ENAMETOOLONG    AH_I_ERR_ONE_OF(ENAMETOOLONG, WSAENAMETOOLONG)       ///< Name too long.
+#define AH_ENETDOWN        AH_I_ERR_ONE_OF(ENETDOWN, WSAENETDOWN)               ///< Network is down.
+#define AH_ENETRESET       AH_I_ERR_ONE_OF(ENETRESET, WSAENETRESET)             ///< Connection aborted by network.
+#define AH_ENETUNREACH     AH_I_ERR_ONE_OF(ENETUNREACH, WSAENETUNREACH)         ///< Network unreachable.
+#define AH_ENFILE          AH_I_ERR_ONE_OF(ENFILE, 5515)                        ///< Too many files open in system.
+#define AH_ENOBUFS         AH_I_ERR_ONE_OF(ENOBUFS, WSAENOBUFS)                 ///< No buffer space available.
+#define AH_ENODATA         AH_I_ERR_ONE_OF(ENODATA, 5516)                       ///< No data available.
+#define AH_ENODEV          AH_I_ERR_ONE_OF(ENODEV, 5517)                        ///< No such device.
+#define AH_ENOENT          AH_I_ERR_ONE_OF(ENOENT, 5518)                        ///< No such entry.
+#define AH_ENOEXEC         AH_I_ERR_ONE_OF(ENOEXEC, 5519)                       ///< Executable file format error.
+#define AH_ENOLCK          AH_I_ERR_ONE_OF(ENOLCK, 5520)                        ///< No locks available.
+#define AH_ENOLINK         AH_I_ERR_ONE_OF(ENOLINK, 5521)                       ///< Link severed.
+#define AH_ENOMEM          AH_I_ERR_ONE_OF(ENOMEM, ERROR_NOT_ENOUGH_MEMORY)     ///< Not enough memory.
+#define AH_ENOMSG          AH_I_ERR_ONE_OF(ENOMSG, 5522)                        ///< No such message.
+#define AH_ENOPROTOOPT     AH_I_ERR_ONE_OF(ENOPROTOOPT, WSAENOPROTOOPT)         ///< Protocol not available.
+#define AH_ENOSPC          AH_I_ERR_ONE_OF(ENOSPC, 5523)                        ///< No space left.
+#define AH_ENOSR           AH_I_ERR_ONE_OF(ENOSR, 5524)                         ///< No STREAM resources.
+#define AH_ENOSTR          AH_I_ERR_ONE_OF(ENOSTR, 5525)                        ///< Not a STREAM.
+#define AH_ENOSYS          AH_I_ERR_ONE_OF(ENOSYS, WSASYSCALLFAILURE)           ///< System call unsupported.
+#define AH_ENOTBLK         AH_I_ERR_ONE_OF(ENOTBLK, 5526)                       ///< Not a block device.
+#define AH_ENOTCONN        AH_I_ERR_ONE_OF(ENOTCONN, WSAENOTCONN)               ///< Not connected.
+#define AH_ENOTDIR         AH_I_ERR_ONE_OF(ENOTDIR, 5527)                       ///< Not a directory or a symbolic link to a directory.
+#define AH_ENOTEMPTY       AH_I_ERR_ONE_OF(ENOTEMPTY, 5528)                     ///< Not empty.
+#define AH_ENOTRECOVERABLE AH_I_ERR_ONE_OF(ENOTRECOVERABLE, 5529)               ///< Not recoverable.
+#define AH_ENOTSOCK        AH_I_ERR_ONE_OF(ENOTSOCK, WSAENOTSOCK)               ///< Not a socket.
+#define AH_ENXIO           AH_I_ERR_ONE_OF(ENXIO, 5530)                         ///< No such device or address.
+#define AH_EOPNOTSUPP      AH_I_ERR_ONE_OF(EOPNOTSUPP, WSAEOPNOTSUPP)           ///< Operation not supported.
+#define AH_EOVERFLOW       AH_I_ERR_ONE_OF(EOVERFLOW, 5531)                     ///< Value does not fit in target.
+#define AH_EOWNERDEAD      AH_I_ERR_ONE_OF(EOWNERDEAD, 5532)                    ///< Previous owner died.
+#define AH_EPERM           AH_I_ERR_ONE_OF(EPERM, 5533)                         ///< Not permitted.
+#define AH_EPFNOSUPPORT    AH_I_ERR_ONE_OF(EPFNOSUPPORT, WSAEPFNOSUPPORT)       ///< Protocol family not supported.
+#define AH_EPIPE           AH_I_ERR_ONE_OF(EPIPE, 5534)                         ///< Broken pipe.
+#define AH_EPROTO          AH_I_ERR_ONE_OF(EPROTO, 5535)                        ///< Protocol error.
+#define AH_EPROTONOSUPPORT AH_I_ERR_ONE_OF(EPROTONOSUPPORT, WSAEPROTONOSUPPORT) ///< Protocol not supported.
+#define AH_EPROTOTYPE      AH_I_ERR_ONE_OF(EPROTOTYPE, WSAEPROTOTYPE)           ///< Protocol type wrong.
+#define AH_ERANGE          AH_I_ERR_ONE_OF(ERANGE, 5536)                        ///< Arithmetic result outside accepted range.
+#define AH_EROFS           AH_I_ERR_ONE_OF(EROFS, 5537)                         ///< Read-only file system.
+#define AH_ESHUTDOWN       AH_I_ERR_ONE_OF(ESHUTDOWN, WSAESHUTDOWN)             ///< Has shut down.
+#define AH_ESOCKTNOSUPPORT AH_I_ERR_ONE_OF(ESOCKTNOSUPPORT, WSAESOCKTNOSUPPORT) ///< Socket type not supported.
+#define AH_ESPIPE          AH_I_ERR_ONE_OF(ESPIPE, 5538)                        ///< Broken pipe.
+#define AH_ESRCH           AH_I_ERR_ONE_OF(ESRCH, 5539)                         ///< Not found.
+#define AH_ESTALE          AH_I_ERR_ONE_OF(ESTALE, WSAESTALE)                   ///< Stale.
+#define AH_ETIME           AH_I_ERR_ONE_OF(ETIME, 5540)                         ///< Timeout.
+#define AH_ETIMEDOUT       AH_I_ERR_ONE_OF(ETIMEDOUT, WSAETIMEDOUT)             ///< Timed out.
+#define AH_ETOOMANYREFS    AH_I_ERR_ONE_OF(ETOOMANYREFS, WSAETOOMANYREFS)       ///< Too many references.
+#define AH_ETXTBSY         AH_I_ERR_ONE_OF(ETXTBSY, 5541)                       ///< Text file busy.
+#define AH_EUSERS          AH_I_ERR_ONE_OF(EUSERS, WSAEUSERS)                   ///< Too many users.
+#define AH_EXDEV           AH_I_ERR_ONE_OF(EXDEV, 5542)                         ///< Cross-device link.
+/** @} */
+
+#if AH_IS_DARWIN || defined(AH_DOXYGEN)
+/**
+ * @name Darwin Errors
+ * @{
+ */
+# define AH_EBADARCH      EBADARCH      ///< Bad CPU type in executable.
+# define AH_EBADEXEC      EBADEXEC      ///< Bad executable.
+# define AH_EBADMACHO     EBADMACHO     ///< Malformed Macho file.
+# define AH_EFTYPE        EFTYPE        ///< Inappropriate file type or format.
+# define AH_ENEEDAUTH     ENEEDAUTH     ///< Need authenticator.
+# define AH_EPROCLIM_D    EPROCLIM      ///< Process limit reached.
+# define AH_EPROCUNAVAIL  EPROCUNAVAIL  ///< Bad procedure for program.
+# define AH_EPROGMISMATCH EPROGMISMATCH ///< Program version wrong.
+# define AH_ESHLIBVERS    ESHLIBVERS    ///< Shared library version mismatch.
+/** @} */
 #endif
 
-#if AH_IS_WIN32
-# define AH_I_ERR_ONE_OF(POSIX_CODE, WIN32_CODE) WIN32_CODE
-#else
-# define AH_I_ERR_ONE_OF(POSIX_CODE, WIN32_CODE) POSIX_CODE
+#if AH_IS_LINUX || defined(AH_DOXYGEN)
+/**
+ * @name Linux Errors
+ * @{
+ */
+# define AH_ELIBACC  ELIBACC  ///< Needed shared library inaccessible.
+# define AH_ELIBBAD  ELIBBAD  ///< Shared library corrupted.
+# define AH_ELIBEXEC ELIBEXEC ///< Cannot execute shared library.
+# define AH_ELIBMAX  ELIBMAX  ///< Attempting to link in too many shared libraries.
+# define AH_ELIBSCN  ELIBSCN  ///< .lib section in a.out corrupted.
+# define AH_ENONET   ENONET   ///< Not on the network.
+# define AH_ENOTUNIQ ENOTUNIQ ///< Name not unique on network.
+# define AH_EREMCHG  EREMCHG  ///< Remote address changed.
+# define AH_ESTRPIPE ESTRPIPE ///< Streams pipe error.
+/** @} */
 #endif
 
-#if AH_IS_DARWIN
-# define AH_I_ERR_MAP_PLATFORM(E)                           \
-  E(BADARCH, EBADARCH, "bad CPU type in executable")        \
-  E(BADEXEC, EBADEXEC, "bad executable")                    \
-  E(BADMACHO, EBADMACHO, "malformed Macho file")            \
-  E(FTYPE, EFTYPE, "inappropriate file type or format")     \
-  E(NEEDAUTH, ENEEDAUTH, "need authenticator")              \
-  E(PROCLIM, EPROCLIM, "process limit reached")             \
-  E(PROCUNAVAIL, EPROCUNAVAIL, "bad procedure for program") \
-  E(PROGMISMATCH, EPROGMISMATCH, "program version wrong")   \
-  E(SHLIBVERS, ESHLIBVERS, "shared library version mismatch")
-
-#elif AH_IS_LINUX
-# define AH_I_ERR_MAP_PLATFORM(E)                                       \
-  E(LIBACC, ELIBACC, "needed shared library inaccessible")              \
-  E(LIBBAD, ELIBBAD, "shared library corrupted")                        \
-  E(LIBEXEC, ELIBEXEC, "cannot execute shared library")                 \
-  E(LIBMAX, ELIBMAX, "attempting to link in too many shared libraries") \
-  E(LIBSCN, ELIBSCN, ".lib section in a.out corrupted")                 \
-  E(NONET, ENONET, "not on the network")                                \
-  E(NOTUNIQ, ENOTUNIQ, "name not unique on network")                    \
-  E(REMCHG, EREMCHG, "remote address changed")                          \
-  E(STRPIPE, ESTRPIPE, "streams pipe error")
-
-#elif AH_IS_WIN32
-# define AH_I_ERR_MAP_PLATFORM(E)                                        \
-  E(DISCON, WSAEDISCON, "disconneted")                                   \
-  E(HOSTNOTFOUND, WSAHOST_NOT_FOUND, "host not found")                   \
-  E(PROCLIM, WSAEPROCLIM, "execution process limit reached")             \
-  E(SECHOSTNOTFOUND, WSA_SECURE_HOST_NOT_FOUND, "secure host not found") \
-  E(SYSNOTREADY, WSASYSNOTREADY, "networking system not ready")
-
+#if AH_IS_WIN32 || defined(AH_DOXYGEN)
+/**
+ * @name Win32 Errors
+ * @{
+ */
+# define AH_EDISCON             WSAEDISCON                ///< Disconneted.
+# define AH_EHOSTNOTFOUND       WSAHOST_NOT_FOUND         ///< Host not found.
+# define AH_EPROVIDERFAILEDINIT WSAEPROVIDERFAILEDINIT    ///< Network service provider failed to initialize.
+# define AH_ESECHOSTNOTFOUND    WSA_SECURE_HOST_NOT_FOUND ///< Secure host not found.
+# define AH_ESYSNOTREADY        WSASYSNOTREADY            ///< Networking system not ready.
+# define AH_EPROCLIM_W          WSAEPROCLIM               ///< Process limit reached.
+/** @} */
 #endif
 
-#define AH_I_ERR_MAP(E)                                                                               \
- E(DEP, 5405, "dependency error")                                                                     \
- E(DUP, 5403, "duplicate exists")                                                                     \
- E(EOF, 5401, "unexpected end of stream")                                                             \
- E(INTERN, 5404, "internal error")                                                                    \
- E(RECONN, 5406, "reconnecting")                                                                      \
- E(STATE, 5402, "state invalid")                                                                      \
-                                                                                                      \
- E(2BIG, AH_I_ERR_ONE_OF(E2BIG, 5501), "argument list too long")                                      \
- E(ACCES, AH_I_ERR_ONE_OF(EACCES, WSAEACCES), "permission denied")                                    \
- E(ADDRINUSE, AH_I_ERR_ONE_OF(EADDRINUSE, WSAEADDRINUSE), "address in use")                           \
- E(ADDRNOTAVAIL, AH_I_ERR_ONE_OF(EADDRNOTAVAIL, WSAEADDRNOTAVAIL), "address not available")           \
- E(AFNOSUPPORT, AH_I_ERR_ONE_OF(EAFNOSUPPORT, WSAEAFNOSUPPORT), "address family not supported")       \
- E(AGAIN, AH_I_ERR_ONE_OF(EAGAIN, WSAEWOULDBLOCK), "try again")                                       \
- E(ALREADY, AH_I_ERR_ONE_OF(EALREADY, WSAEALREADY), "already in progress")                            \
- E(BADF, AH_I_ERR_ONE_OF(EBADF, WSAEBADF), "bad file descriptor")                                     \
- E(BADMSG, AH_I_ERR_ONE_OF(EBADMSG, 5502), "bad message")                                             \
- E(BUSY, AH_I_ERR_ONE_OF(EBUSY, 5503), "device or resource busy")                                     \
- E(CANCELED, AH_I_ERR_ONE_OF(ECANCELED, WSAECANCELLED), "operation canceled")                         \
- E(CHILD, AH_I_ERR_ONE_OF(ECHILD, 5504), "no child processes")                                        \
- E(CONNABORTED, AH_I_ERR_ONE_OF(ECONNABORTED, WSAECONNABORTED), "connection aborted")                 \
- E(CONNREFUSED, AH_I_ERR_ONE_OF(ECONNREFUSED, WSAECONNREFUSED), "connection refused")                 \
- E(CONNRESET, AH_I_ERR_ONE_OF(ECONNRESET, WSAECONNRESET), "connection reset")                         \
- E(DEADLK, AH_I_ERR_ONE_OF(EDEADLK, 5505), "deadlock would occur")                                    \
- E(DESTADDRREQ, AH_I_ERR_ONE_OF(EDESTADDRREQ, WSAEDESTADDRREQ), "destination address required")       \
- E(DOM, AH_I_ERR_ONE_OF(EDOM, 5506), "arithmetic argument outside accepted domain")                   \
- E(DQUOT, AH_I_ERR_ONE_OF(EDQUOT, WSAEDQUOT), "disc quota exceeded")                                  \
- E(EXIST, AH_I_ERR_ONE_OF(EEXIST, 5507), "already exists")                                            \
- E(FAULT, AH_I_ERR_ONE_OF(EFAULT, WSAEFAULT), "bad pointer")                                          \
- E(FBIG, AH_I_ERR_ONE_OF(EFBIG, 5508), "file too large")                                              \
- E(HOSTDOWN, AH_I_ERR_ONE_OF(EHOSTDOWN, WSAEHOSTDOWN), "host down")                                   \
- E(HOSTUNREACH, AH_I_ERR_ONE_OF(EHOSTUNREACH, WSAEHOSTUNREACH), "host unreachable")                   \
- E(IDRM, AH_I_ERR_ONE_OF(EIDRM, 5509), "identifier removed")                                          \
- E(ILSEQ, AH_I_ERR_ONE_OF(EILSEQ, 5510), "illegal byte sequence")                                     \
- E(INPROGRESS, AH_I_ERR_ONE_OF(EINPROGRESS, WSAEINPROGRESS), "operation in progress")                 \
- E(INTR, AH_I_ERR_ONE_OF(EINTR, WSAEINTR), "interrupted")                                             \
- E(INVAL, AH_I_ERR_ONE_OF(EINVAL, WSAEINVAL), "invalid argument")                                     \
- E(IO, AH_I_ERR_ONE_OF(EIO, 5511), "I/O error")                                                       \
- E(ISCONN, AH_I_ERR_ONE_OF(EISCONN, WSAEISCONN), "already connected")                                 \
- E(ISDIR, AH_I_ERR_ONE_OF(EISDIR, 5512), "is a directory")                                            \
- E(LOOP, AH_I_ERR_ONE_OF(ELOOP, WSAELOOP), "too many levels of symbolic links")                       \
- E(MFILE, AH_I_ERR_ONE_OF(EMFILE, WSAEMFILE), "file descriptor value too large")                      \
- E(MLINK, AH_I_ERR_ONE_OF(EMLINK, 5513), "too many links")                                            \
- E(MSGSIZE, AH_I_ERR_ONE_OF(EMSGSIZE, WSAEMSGSIZE), "message too large")                              \
- E(MULTIHOP, AH_I_ERR_ONE_OF(EMULTIHOP, 5514), "incomplete route path")                               \
- E(NAMETOOLONG, AH_I_ERR_ONE_OF(ENAMETOOLONG, WSAENAMETOOLONG), "name too long")                      \
- E(NETDOWN, AH_I_ERR_ONE_OF(ENETDOWN, WSAENETDOWN), "network is down")                                \
- E(NETRESET, AH_I_ERR_ONE_OF(ENETRESET, WSAENETRESET), "connection aborted by network")               \
- E(NETUNREACH, AH_I_ERR_ONE_OF(ENETUNREACH, WSAENETUNREACH), "network unreachable")                   \
- E(NFILE, AH_I_ERR_ONE_OF(ENFILE, 5515), "too many files open in system")                             \
- E(NOBUFS, AH_I_ERR_ONE_OF(ENOBUFS, WSAENOBUFS), "no buffer space available")                         \
- E(NODATA, AH_I_ERR_ONE_OF(ENODATA, 5516), "no data available")                                       \
- E(NODEV, AH_I_ERR_ONE_OF(ENODEV, 5517), "no such device")                                            \
- E(NOENT, AH_I_ERR_ONE_OF(ENOENT, 5518), "no such entry")                                             \
- E(NOEXEC, AH_I_ERR_ONE_OF(ENOEXEC, 5519), "executable file format error")                            \
- E(NOLCK, AH_I_ERR_ONE_OF(ENOLCK, 5520), "no locks available")                                        \
- E(NOLINK, AH_I_ERR_ONE_OF(ENOLINK, 5521), "link severed")                                            \
- E(NOMEM, AH_I_ERR_ONE_OF(ENOMEM, ERROR_NOT_ENOUGH_MEMORY), "not enough memory")                      \
- E(NOMSG, AH_I_ERR_ONE_OF(ENOMSG, 5522), "no such message")                                           \
- E(NOPROTOOPT, AH_I_ERR_ONE_OF(ENOPROTOOPT, WSAENOPROTOOPT), "protocol not available")                \
- E(NOSPC, AH_I_ERR_ONE_OF(ENOSPC, 5523), "no space left")                                             \
- E(NOSR, AH_I_ERR_ONE_OF(ENOSR, 5524), "no STREAM resources")                                         \
- E(NOSTR, AH_I_ERR_ONE_OF(ENOSTR, 5525), "not a STREAM")                                              \
- E(NOSYS, AH_I_ERR_ONE_OF(ENOSYS, WSASYSCALLFAILURE), "system call unsupported")                      \
- E(NOTBLK, AH_I_ERR_ONE_OF(ENOTBLK, 5526), "not a block device")                                      \
- E(NOTCONN, AH_I_ERR_ONE_OF(ENOTCONN, WSAENOTCONN), "not connected")                                  \
- E(NOTDIR, AH_I_ERR_ONE_OF(ENOTDIR, 5527), "not a directory or a symbolic link to a directory")       \
- E(NOTEMPTY, AH_I_ERR_ONE_OF(ENOTEMPTY, 5528), "not empty")                                           \
- E(NOTRECOVERABLE, AH_I_ERR_ONE_OF(ENOTRECOVERABLE, 5529), "not recoverable")                         \
- E(NOTSOCK, AH_I_ERR_ONE_OF(ENOTSOCK, WSAENOTSOCK), "not a socket")                                   \
- E(NXIO, AH_I_ERR_ONE_OF(ENXIO, 5530), "no such device or address")                                   \
- E(OPNOTSUPP, AH_I_ERR_ONE_OF(EOPNOTSUPP, WSAEOPNOTSUPP), "operation not supported")                  \
- E(OVERFLOW, AH_I_ERR_ONE_OF(EOVERFLOW, 5531), "value does not fit in target")                        \
- E(OWNERDEAD, AH_I_ERR_ONE_OF(EOWNERDEAD, 5532), "previous owner died")                               \
- E(PERM, AH_I_ERR_ONE_OF(EPERM, 5533), "not permitted")                                               \
- E(PFNOSUPPORT, AH_I_ERR_ONE_OF(EPFNOSUPPORT, WSAEPFNOSUPPORT), "protocol family not supported")      \
- E(PIPE, AH_I_ERR_ONE_OF(EPIPE, 5534), "broken pipe")                                                 \
- E(PROTO, AH_I_ERR_ONE_OF(EPROTO, 5535), "protocol error")                                            \
- E(PROTONOSUPPORT, AH_I_ERR_ONE_OF(EPROTONOSUPPORT, WSAEPROTONOSUPPORT), "protocol not supported")    \
- E(PROTOTYPE, AH_I_ERR_ONE_OF(EPROTOTYPE, WSAEPROTOTYPE), "protocol type wrong")                      \
- E(RANGE, AH_I_ERR_ONE_OF(ERANGE, 5536), "arithmetic result outside accepted range")                  \
- E(ROFS, AH_I_ERR_ONE_OF(EROFS, 5537), "read-only file system")                                       \
- E(SHUTDOWN, AH_I_ERR_ONE_OF(ESHUTDOWN, WSAESHUTDOWN), "has shut down")                               \
- E(SOCKTNOSUPPORT, AH_I_ERR_ONE_OF(ESOCKTNOSUPPORT, WSAESOCKTNOSUPPORT), "socket type not supported") \
- E(SPIPE, AH_I_ERR_ONE_OF(ESPIPE, 5538), "broken pipe")                                               \
- E(SRCH, AH_I_ERR_ONE_OF(ESRCH, 5539), "not found")                                                   \
- E(STALE, AH_I_ERR_ONE_OF(ESTALE, WSAESTALE), "stale")                                                \
- E(TIME, AH_I_ERR_ONE_OF(ETIME, 5540), "timeout")                                                     \
- E(TIMEDOUT, AH_I_ERR_ONE_OF(ETIMEDOUT, WSAETIMEDOUT), "timed out")                                   \
- E(TOOMANYREFS, AH_I_ERR_ONE_OF(ETOOMANYREFS, WSAETOOMANYREFS), "too many references")                \
- E(TXTBSY, AH_I_ERR_ONE_OF(ETXTBSY, 5541), "text file busy")                                          \
- E(USERS, AH_I_ERR_ONE_OF(EUSERS, WSAEUSERS), "too many users")                                       \
- E(XDEV, AH_I_ERR_ONE_OF(EXDEV, 5542), "cross-device link")                                           \
- AH_I_ERR_MAP_PLATFORM(E)
-
-enum {
-    AH_ENONE = 0,
-
-#define AH_I_ERR_E(NAME, CODE, STRING) AH_E##NAME = (CODE),
-    AH_I_ERR_MAP(AH_I_ERR_E)
-#undef AH_I_ERR_E
-};
-
-ah_extern const char* ah_strerror(ah_err_t err);
+/**
+ * Writes human-readable representation of @a err to @a buf.
+ *
+ * If @a err is a custom error code, as listed in this file, or zero, the
+ * representation will be in the English language. If @a err is any other error
+ * code, the representation will adhere to the current platform locale.
+ *
+ * @param err Error code to represent as text.
+ * @param buf String buffer to receive string representation.
+ * @param size Size of @a buf, in bytes.
+ *
+ * @note @a buf will be NULL-terminated as long as @a size is greater than or
+ *       equal to @c 1. If the text representation does not fit, it will be
+ *       truncated.
+ *
+ * @note This function is thread safe on all supported platforms.
+ */
+ah_extern void ah_strerror_r(ah_err_t err, char* buf, size_t size);
 
 #endif

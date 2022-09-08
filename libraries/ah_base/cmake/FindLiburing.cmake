@@ -1,17 +1,17 @@
 include(FindPackageHandleStandardArgs)
 
-find_library(liburing_LIBRARY NAMES liburing uring)
-find_path(liburing_INCLUDE_DIR NAMES liburing/io_uring.h)
+find_library(Liburing_LIBRARY NAMES liburing uring)
+find_path(Liburing_INCLUDE_DIR NAMES liburing.h liburing/io_uring.h)
 
-find_package_handle_standard_args(liburing REQUIRED_VARS liburing_INCLUDE_DIR liburing_LIBRARY)
+find_package_handle_standard_args(Liburing REQUIRED_VARS Liburing_INCLUDE_DIR Liburing_LIBRARY)
 
-if (liburing_FOUND)
-    mark_as_advanced(liburing_INCLUDE_DIR)
-    mark_as_advanced(liburing_LIBRARY)
+if (Liburing_FOUND)
+    mark_as_advanced(Liburing_INCLUDE_DIR)
+    mark_as_advanced(Liburing_LIBRARY)
 
-    if (NOT TARGET liburing::liburing)
-        add_library(liburing::liburing IMPORTED STATIC)
-        set_property(TARGET liburing::liburing PROPERTY IMPORTED_LOCATION ${liburing_LIBRARY})
-        target_include_directories(liburing::liburing INTERFACE ${liburing_INCLUDE_DIR})
+    if (NOT TARGET Liburing::liburing)
+        add_library(Liburing::liburing IMPORTED STATIC)
+        set_property(TARGET Liburing::liburing PROPERTY IMPORTED_LOCATION ${Liburing_LIBRARY})
+        target_include_directories(Liburing::liburing INTERFACE ${Liburing_INCLUDE_DIR})
     endif()
 endif()

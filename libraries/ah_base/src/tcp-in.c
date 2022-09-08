@@ -1,19 +1,17 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
-#include "tcp-in.h"
+#include "ah/tcp.h"
 
-#include "ah/assert.h"
 #include "ah/err.h"
+#include "ah/intrin.h"
 
 #include <string.h>
 
-ah_err_t ah_i_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
+ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
 {
-    ah_assert_if_debug(owner_ptr != NULL);
+    if (owner_ptr == NULL) {
+        return AH_EINVAL;
+    }
 
     uint8_t* page = ah_palloc();
     if (page == NULL) {
@@ -41,11 +39,16 @@ ah_err_t ah_i_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_tcp_in_detach(ah_tcp_in_t* in)
+ah_extern ah_err_t ah_tcp_in_detach(ah_tcp_in_t* in)
 {
-    ah_assert_if_debug(in != NULL);
+    if (in == NULL) {
+        return AH_EINVAL;
+    }
+    if (in->_owner_ptr == NULL) {
+        return AH_ESTATE;
+    }
 
-    ah_err_t err = ah_i_tcp_in_alloc_for(in->_owner_ptr);
+    ah_err_t err = ah_tcp_in_alloc_for(in->_owner_ptr);
     if (err != AH_ENONE) {
         return err;
     }
@@ -55,40 +58,50 @@ ah_err_t ah_i_tcp_in_detach(ah_tcp_in_t* in)
     return AH_ENONE;
 }
 
-void ah_i_tcp_in_free(ah_tcp_in_t* in)
+ah_extern void ah_tcp_in_free(ah_tcp_in_t* in)
 {
-    ah_assert_if_debug(in != NULL);
-
+    if (in != NULL) {
 #ifndef NDEBUG
-    memset(in, 0, AH_PSIZE);
+        memset(in, 0, AH_PSIZE);
 #endif
-
-    ah_pfree(in);
+        ah_pfree(in);
+    }
 }
 
-void ah_i_tcp_in_repackage(ah_tcp_in_t* in)
+ah_extern ah_err_t ah_tcp_in_repackage(ah_tcp_in_t* in)
 {
-    ah_assert_if_debug(in != NULL);
+    if (in == NULL) {
+        return AH_EINVAL;
+    }
 
     uint8_t* r_off = in->rw.r;
     size_t r_size = ah_rw_get_readable_size(&in->rw);
 
-    ah_i_tcp_in_reset(in);
+    ah_tcp_in_reset(in);
+
+    if (in->rw.r == r_off) {
+        if (ah_unlikely(in->rw.w == in->rw.e)) {
+            return AH_EOVERFLOW;
+        }
+        return AH_ENONE;
+    }
 
     memmove(in->rw.r, r_off, r_size);
 
     in->rw.w = &in->rw.r[r_size];
+
+    return AH_ENONE;
 }
 
-void ah_i_tcp_in_reset(ah_tcp_in_t* in)
+ah_extern void ah_tcp_in_reset(ah_tcp_in_t* in)
 {
-    ah_assert_if_debug(in != NULL);
+    if (in == NULL) {
+        return;
+    }
 
     uint8_t* page = (uint8_t*) in;
 
     uint8_t* base = &page[sizeof(ah_tcp_in_t)];
     in->rw.r = base;
     in->rw.w = base;
-
-    ah_assert_if_debug(in->rw.e == &page[AH_PSIZE]);
 }

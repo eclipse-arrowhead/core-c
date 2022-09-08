@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #ifndef SRC_HTTP_CLIENT_H_
@@ -9,7 +5,15 @@
 
 #include "ah/http.h"
 
-void ah_i_http_client_init_accepted(ah_http_client_t* cln, ah_http_server_t* srv, const ah_sockaddr_t* raddr);
-const ah_tcp_conn_cbs_t* ah_i_http_client_get_conn_cbs();
+// Incoming message states.
+#define AH_I_HTTP_CLIENT_IN_STATE_INIT       0x01
+#define AH_I_HTTP_CLIENT_IN_STATE_LINE       0x02
+#define AH_I_HTTP_CLIENT_IN_STATE_HEADERS    0x04
+#define AH_I_HTTP_CLIENT_IN_STATE_DATA       0x08
+#define AH_I_HTTP_CLIENT_IN_STATE_CHUNK_LINE 0x10
+#define AH_I_HTTP_CLIENT_IN_STATE_CHUNK_DATA 0x20
+#define AH_I_HTTP_CLIENT_IN_STATE_TRAILER    0x40
+
+extern const ah_tcp_conn_cbs_t ah_i_http_conn_cbs;
 
 #endif

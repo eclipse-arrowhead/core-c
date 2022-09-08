@@ -1,0 +1,26 @@
+cmake_minimum_required(VERSION 3.15)
+
+project(liburing-download)
+
+include(ExternalProject)
+
+ExternalProject_Add(
+    Liburing
+    GIT_REPOSITORY          https://github.com/axboe/liburing.git
+    GIT_TAG                 liburing-2.2
+    GIT_PROGRESS            TRUE
+    USES_TERMINAL_DOWNLOAD  TRUE
+    USES_TERMINAL_UPDATE    TRUE
+    USES_TERMINAL_CONFIGURE TRUE
+    USES_TERMINAL_BUILD     TRUE
+    USES_TERMINAL_INSTALL   TRUE
+    SOURCE_DIR              "${CMAKE_CURRENT_BINARY_DIR}/liburing-src"
+    INSTALL_COMMAND         ""
+    TEST_COMMAND            ""
+    CONFIGURE_COMMAND       ./configure
+    BUILD_COMMAND           make
+    BUILD_IN_SOURCE         TRUE
+    BUILD_BYPRODUCTS        "<SOURCE_DIR>/src/liburing.a"
+)
+
+ExternalProject_Get_Property(Liburing SOURCE_DIR)

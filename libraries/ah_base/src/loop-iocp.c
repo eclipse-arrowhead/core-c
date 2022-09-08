@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/loop.h"
@@ -23,16 +19,16 @@ static ah_time_t* s_task_queue_peek_at_baseline(struct ah_i_loop_task_queue* que
 static void s_task_queue_heapify_down_from(struct ah_i_loop_task_queue* queue, const size_t index);
 static void s_task_queue_term(struct ah_i_loop_task_queue* queue);
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
+ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
 {
     ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(opts != NULL);
+    ah_assert_if_debug(capacity != NULL);
 
-    if (opts->capacity == 0u) {
-        opts->capacity = AH_CONF_IOCP_DEFAULT_CAPACITY;
+    if (*capacity == 0u) {
+        *capacity = AH_CONF_IOCP_DEFAULT_CAPACITY;
     }
 
-    ah_err_t err = s_task_queue_init(&loop->_task_queue, opts->capacity / 4u);
+    ah_err_t err = s_task_queue_init(&loop->_task_queue, *capacity);
     if (err != AH_ENONE) {
         return err;
     }
@@ -298,7 +294,7 @@ ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, 
             return AH_ENOMEM;
         }
 
-        struct ah_i_loop_task_entry* entries = realloc(queue->_entries, total_size);
+        struct ah_i_loop_task_entry* entries = ah_realloc(queue->_entries, total_size);
         if (entries == NULL) {
             return AH_ENOMEM;
         }

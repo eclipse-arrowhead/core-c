@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #ifndef AH_INTERNAL_LOOP_H_
@@ -20,11 +16,12 @@
 # include "_loop-uring.h"
 #endif
 
-#define AH_I_LOOP_STATE_INITIAL     0x01
-#define AH_I_LOOP_STATE_RUNNING     0x02
-#define AH_I_LOOP_STATE_STOPPED     0x04
-#define AH_I_LOOP_STATE_TERMINATING 0x08
-#define AH_I_LOOP_STATE_TERMINATED  0x10
+#define AH_I_LOOP_STATE_INITIAL     0
+#define AH_I_LOOP_STATE_RUNNING     1
+#define AH_I_LOOP_STATE_STOPPING    2
+#define AH_I_LOOP_STATE_STOPPED     3
+#define AH_I_LOOP_STATE_TERMINATING 4
+#define AH_I_LOOP_STATE_TERMINATED  5
 
 #define AH_I_LOOP_FIELDS     \
  struct ah_i_slab _evt_slab; \
@@ -35,18 +32,20 @@
                              \
  AH_I_LOOP_PLATFORM_FIELDS
 
+typedef struct ah_i_loop_evt ah_i_loop_evt_t;
+
 struct ah_i_loop_evt {
     AH_I_LOOP_EVT_PLATFORM_FIELDS
 
     void* _subject;
 };
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts);
+ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity);
 
 ah_extern ah_err_t ah_i_loop_get_pending_err(ah_loop_t* loop);
 ah_extern bool ah_i_loop_try_set_pending_err(ah_loop_t* loop, ah_err_t err);
 
-ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time);
+ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time);
 
 ah_extern ah_err_t ah_i_loop_evt_alloc(ah_loop_t* loop, ah_i_loop_evt_t** evt);
 ah_extern void ah_i_loop_evt_dealloc(ah_loop_t* loop, ah_i_loop_evt_t* evt);

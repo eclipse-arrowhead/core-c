@@ -1,18 +1,14 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
-#include "udp-in.h"
+#include "ah/udp.h"
 
-#include "ah/alloc.h"
-#include "ah/assert.h"
 #include "ah/err.h"
 
-ah_err_t ah_i_udp_in_alloc_for(ah_udp_in_t** owner_ptr)
+ah_extern ah_err_t ah_udp_in_alloc_for(ah_udp_in_t** owner_ptr)
 {
-    ah_assert_if_debug(owner_ptr != NULL);
+    if (owner_ptr == NULL) {
+        return AH_EINVAL;
+    }
 
     uint8_t* page = ah_palloc();
     if (page == NULL) {
@@ -23,7 +19,7 @@ ah_err_t ah_i_udp_in_alloc_for(ah_udp_in_t** owner_ptr)
 
     *in = (ah_udp_in_t) {
         .raddr = NULL,
-        .buf = ah_buf_from(&page[sizeof(ah_udp_in_t)], AH_PSIZE - sizeof(ah_udp_in_t)),
+        .buf = ah_buf_from(&page[sizeof(ah_udp_in_t)], AH_UDP_IN_BUF_SIZE),
         .nrecv = 0u,
         ._owner_ptr = owner_ptr,
     };
@@ -38,11 +34,16 @@ ah_err_t ah_i_udp_in_alloc_for(ah_udp_in_t** owner_ptr)
     return AH_ENONE;
 }
 
-ah_err_t ah_i_udp_in_detach(ah_udp_in_t* in)
+ah_extern ah_err_t ah_udp_in_detach(ah_udp_in_t* in)
 {
-    ah_assert_if_debug(in != NULL);
+    if (in == NULL) {
+        return AH_EINVAL;
+    }
+    if (in->_owner_ptr == NULL) {
+        return AH_ESTATE;
+    }
 
-    ah_err_t err = ah_i_udp_in_alloc_for(in->_owner_ptr);
+    ah_err_t err = ah_udp_in_alloc_for(in->_owner_ptr);
     if (err != AH_ENONE) {
         return err;
     }
@@ -52,20 +53,25 @@ ah_err_t ah_i_udp_in_detach(ah_udp_in_t* in)
     return AH_ENONE;
 }
 
-void ah_i_udp_in_free(ah_udp_in_t* in)
+ah_extern void ah_udp_in_free(ah_udp_in_t* in)
 {
-    ah_assert_if_debug(in != NULL);
-
-    ah_pfree(in);
+    if (in != NULL) {
+#ifndef NDEBUG
+        memset(in, 0, AH_PSIZE);
+#endif
+        ah_pfree(in);
+    }
 }
 
-void ah_i_udp_in_reset(ah_udp_in_t* in)
+ah_extern void ah_udp_in_reset(ah_udp_in_t* in)
 {
-    ah_assert_if_debug(in != NULL);
+    if (in == NULL) {
+        return;
+    }
 
     uint8_t* page = (uint8_t*) in;
 
     in->raddr = NULL;
-    in->buf = ah_buf_from(&page[sizeof(ah_udp_in_t)], AH_PSIZE - sizeof(ah_udp_in_t));
+    in->buf = ah_buf_from(&page[sizeof(ah_udp_in_t)], AH_UDP_IN_BUF_SIZE);
     in->nrecv = 0u;
 }

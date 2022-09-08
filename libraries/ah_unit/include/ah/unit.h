@@ -1,65 +1,255 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #ifndef AH_UNIT_H_
 #define AH_UNIT_H_
 
-#include "internal/_unit.h"
+/**
+ * @file
+ * Unit testing utilities.
+ *
+ * This file provides data structures and functions for writing <em>automated
+ * unit tests</em>. To use these utilities, you must first allocate an
+ * ah_unit_res instance and zero its memory. You then pass it to the assertion
+ * functions provided here, such as ah_unit_assert() or
+ * ah_unit_assert_eq_uintmax(). When all relevant assertions have been executed,
+ * you call ah_unit_print_results() with your result accumulator, which prints a
+ * summary of your assertion results.
+ *
+ * You are free to use the functions and structures here however you wish, and
+ * organize them in the manner best suited for the software you wish to test.
+ *
+ * @note On platforms where a distinction is made between regular printing and
+ *       error printing (such as @c STDOUT and @c STDERR on POSIX systems),
+ *       failure messages are printed to the latter.
+ */
 
-#define ah_unit_assert(unit, is_success, message) \
- ah_i_unit_assert(AH_I_UNIT_WRAP(unit), (is_success), (message))
+#include <ah/defs.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#define ah_unit_assertf(unit, is_success, format, ...) \
- ah_i_unit_assertf(AH_I_UNIT_WRAP(unit), (is_success), (format), __VA_ARGS__)
+/**
+ * Expands into a unit testing context.
+ *
+ * That context will contains information about the file and line at which the
+ * macro appears. It makes it easier for you to know where failed assertions are
+ * executed.
+ *
+ * @see ah_unit_ctx
+ */
+#define AH_UNIT_CTX \
+ ((ah_unit_ctx_t) { .file = __FILE__, .line = __LINE__ })
 
-#define ah_unit_assert_cstr_eq(unit, a, b) \
- ah_i_unit_assert_cstr_eq(AH_I_UNIT_WRAP(unit), (a), (b), #a " != " #b)
+typedef struct ah_unit_ctx ah_unit_ctx_t;
+typedef struct ah_unit_res ah_unit_res_t;
 
-#define ah_unit_assert_enum_eq(unit, a, b, tostr_cb) \
- ah_i_unit_assert_enum_eq(AH_I_UNIT_WRAP(unit), (a), (b), (tostr_cb))
+/**
+ * Unit testing context.
+ *
+ * Describes the location at which a certain assertion appears in a source code
+ * file.
+ *
+ * @note Instances of this structure can appropriately be created by using the
+ * @ref AH_UNIT_CTX macro.
+ */
+struct ah_unit_ctx {
+    /** The path of the file in which the assertion is executed. */
+    const char* file;
 
-#define ah_unit_assert_err_eq(unit, a, b) \
- ah_i_unit_assert_err_eq(AH_I_UNIT_WRAP(unit), (a), (b), #a " != " #b)
+    /** The line number in @a file where the assertion is executed. */
+    int line;
+};
 
-#define ah_unit_assert_mem_eq(unit, a, b, size) \
- ah_i_unit_assert_mem_eq(AH_I_UNIT_WRAP(unit), (a), (b), (size), #a " != " #b)
-
-#define ah_unit_assert_signed_eq(unit, a, b) \
- ah_i_unit_assert_signed_eq(AH_I_UNIT_WRAP(unit), (intmax_t) (a), (intmax_t) (b), #a " != " #b)
-
-#define ah_unit_assert_unsigned_eq(unit, a, b) \
- ah_i_unit_assert_unsigned_eq(AH_I_UNIT_WRAP(unit), (uintmax_t) (a), (uintmax_t) (b), #a " != " #b)
-
-#define ah_unit_fail(unit, message) \
- ((void) ah_i_unit_assert(AH_I_UNIT_WRAP(unit), false, (message)))
-
-#define ah_unit_failf(unit, format, ...) \
- ((void) ah_i_unit_assertf(AH_I_UNIT_WRAP(unit), false, (format), __VA_ARGS__))
-
-#define ah_unit_pass(unit)      \
- do {                           \
-  (unit)->assertion_count += 1; \
- } while (false)
-
-#define ah_unit_print(unit, message) \
- ah_i_unit_print(AH_I_UNIT_WRAP(unit), (message))
-
-#define ah_unit_printf(unit, format, ...) \
- ah_i_unit_printf(AH_I_UNIT_WRAP(unit), (format), __VA_ARGS__)
-
-#define AH_I_UNIT_WRAP(UNIT) \
- ((struct ah_i_unit) { .external = (UNIT), .file = __FILE__, .line = __LINE__, .func = __func__ })
-
-typedef struct ah_unit ah_unit_t;
-
-struct ah_unit {
+/**
+ * Unit testing result accumulator.
+ *
+ * Initialize instances of this type by setting all of their fields to zero.
+ */
+struct ah_unit_res {
+    /** The number of executed assertions. */
     int assertion_count;
+
+    /** The numner of executed assertions that failed. */
     int fail_count;
 };
 
-void ah_unit_print_results(const ah_unit_t* unit);
+/**
+ * Asserts that @a is_success is @c true or prints failure message.
+ *
+ * @param ctx        Unit testing context.
+ * @param res        Pointer to result accumulator.
+ * @param is_success Whether or not some arbitrary test was successful.
+ * @param format     Format string, accepting the same patterns as C99 printf().
+ * @param ...        @a format arguments.
+ * @return The value of @a is_success.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res or
+ *          @a format is @c NULL.
+ */
+bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_success, const char* format, ...);
+
+/**
+ * Asserts that @a actual is equal to @a expected or prints failure message.
+ *
+ * The comparison is made using C99 strcmp().
+ *
+ * @param ctx      Unit testing context.
+ * @param res      Pointer to result accumulator.
+ * @param actual   The string produced by your test.
+ * @param expected The string you expect your test to produce.
+ * @return @c true only if @a actual is equal to @a expected. @c false
+ *         otherwise.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res is
+ *          @c NULL.
+ */
+bool ah_unit_assert_eq_cstr(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, const char* expected);
+
+/**
+ * Asserts that @a actual is equal to @a expected or prints failure message.
+ *
+ * If the comparison fails, @a to_str is used to present @a actual and
+ * @a expected as strings in the printed failure message.
+ *
+ * @param ctx      Unit testing context.
+ * @param res      Pointer to result accumulator.
+ * @param actual   The enumerator produced by your test.
+ * @param expected The enumerator you expect your test to produce.
+ * @param to_str   Pointer to function able to produce a constant string
+ *                 representation of a given enumerator.
+ * @return @c true only if @a actual is equal to @a expected. @c false
+ *         otherwise.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res or
+ *          @a to_str is @c NULL.
+ */
+bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, int expected, const char* (*to_str)(int) );
+
+/**
+ * Asserts that @a actual is equal to @a expected or prints failure message.
+ *
+ * If the comparison fails, ah_strerror_r() is used to present @a actual and
+ * @a expected as strings in the printed failure message.
+ *
+ * @param ctx      Unit testing context.
+ * @param res      Pointer to result accumulator.
+ * @param actual   The enumerator produced by your test.
+ * @param expected The enumerator you expect your test to produce.
+ * @return @c true only if @a actual is equal to @a expected. @c false
+ *         otherwise.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res is
+ *          @c NULL.
+ */
+bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actual, ah_err_t expected);
+
+/**
+ * Asserts that @a actual is equal to @a expected or prints failure message.
+ *
+ * The comparison is made using C99 memcmp() after a check that @a actual_size
+ * is equal to @a expected_size.
+ *
+ * @param ctx           Unit testing context.
+ * @param res           Pointer to result accumulator.
+ * @param actual        The array of unsigned bytes produced by your test.
+ * @param actual_size   Size of @a actual, in bytes.
+ * @param expected      The array of unsigned bytes you expect your test to produce.
+ * @param expected_size Size of @a expected, in bytes.
+ * @return @c true only if @a actual is equal to @a expected. @c false
+ *         otherwise.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res is
+ *          @c NULL.
+ */
+bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual, size_t actual_size, const void* expected, size_t expected_size);
+
+/**
+ * Asserts that @a actual is equal to @a expected or prints failure message.
+ *
+ * @param ctx      Unit testing context.
+ * @param res      Pointer to result accumulator.
+ * @param actual   The signed integer produced by your test.
+ * @param expected The signed integer you expect your test to produce.
+ * @return @c true only if @a actual is equal to @a expected. @c false
+ *         otherwise.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res is
+ *          @c NULL.
+ */
+bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, intmax_t actual, intmax_t expected);
+
+/**
+ * Asserts that @a actual is equal to @a expected or prints failure message.
+ *
+ * The comparison is made using C99 memcmp() after a check that @a actual_size
+ * is equal to @a expected_size. The only difference between this function and
+ * ah_unit_assert_eq_mem() is that this function assumes @a actual and
+ * @a expected to contain printable characters.
+ *
+ * @param ctx             Unit testing context.
+ * @param res             Pointer to result accumulator.
+ * @param actual          The string produced by your test.
+ * @param actual_length   Size of @a actual, in bytes.
+ * @param expected        The string you expect your test to produce.
+ * @param expected_length Size of @a expected, in bytes.
+ * @return @c true only if @a actual is equal to @a expected. @c false
+ *         otherwise.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res is
+ *          @c NULL.
+ */
+bool ah_unit_assert_eq_str(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, size_t actual_length, const char* expected, size_t expected_length);
+
+/**
+ * Asserts that @a actual is equal to @a expected or prints failure message.
+ *
+ * @param ctx      Unit testing context.
+ * @param res      Pointer to result accumulator.
+ * @param actual   The unsigned integer produced by your test.
+ * @param expected The unsigned integer you expect your test to produce.
+ * @return @c true only if @a actual is equal to @a expected. @c false
+ *         otherwise.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res is
+ *          @c NULL.
+ */
+bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t actual, uintmax_t expected);
+
+/**
+ * Prints results accumulated in @a res.
+ *
+ * If @a res contains no failure, a regular message is printed. Otherwise a
+ * failure message is printed.
+ *
+ * @param res Pointer to result accumulator.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res is
+ *          @c NULL.
+ */
+void ah_unit_print_results(const ah_unit_res_t* res);
+
+/**
+ * Increments assertion count and failure count in @a res and prints failure
+ * message.
+ *
+ * @param ctx    Unit testing context.
+ * @param res    Pointer to result accumulator.
+ * @param format Format string, accepting the same patterns as C99 printf().
+ * @param ...    @a format arguments.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res or
+ *          @a format is @c NULL.
+ */
+void ah_unit_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, ...);
+
+/**
+ * Increments assertion count in @a res.
+ *
+ * @param res Pointer to result accumulator.
+ *
+ * @warning An error message is printed and ah_abort() is called if @a res is
+ *          @c NULL.
+ */
+void ah_unit_pass(ah_unit_res_t* res);
 
 #endif

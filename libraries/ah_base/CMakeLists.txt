@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(ah_base C)
 set(CMAKE_C_STANDARD 99)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 set(
@@ -13,6 +14,7 @@ set(
     include/ah/conf.h
     include/ah/defs.h
     include/ah/err.h
+    include/ah/internal/_err.h
     include/ah/internal/_loop.h
     include/ah/internal/_sock.h
     include/ah/internal/_task.h
@@ -33,6 +35,7 @@ set(
     include/ah/tcp.h
     include/ah/time.h
     include/ah/udp.h
+    include/ah/utf8.h
     src/abort.c
     src/buf.c
     src/collections/list.c
@@ -48,35 +51,42 @@ set(
     src/sock.c
     src/task.c
     src/tcp-in.c
-    src/tcp-in.h
+    src/tcp-out.c
+    src/tcp-trans-default.c
+    src/tcp-trans-default.h
+    src/tcp-trans.c
     src/tcp.c
     src/time.c
     src/udp-in.c
-    src/udp-in.h
+    src/udp-out.c
+    src/udp-trans-default.c
+    src/udp-trans-default.h
+    src/udp-trans.c
     src/udp.c
+    src/utf8.c
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/_sock-bsd.h
-        include/ah/internal/_time-darwin.h
+        include/ah/internal/_buf-posix.h
         include/ah/internal/_loop-kqueue.h
+        include/ah/internal/_sock-bsd.h
         include/ah/internal/_task-kqueue.h
         include/ah/internal/_tcp-kqueue.h
+        include/ah/internal/_time-darwin.h
         include/ah/internal/_udp-kqueue.h
-        include/ah/internal/_buf-posix.h
         src/abort-posix.c
         src/buf-posix.c
         src/loop-kqueue.c
         src/sock-bsd.c
         src/task-kqueue.c
-        src/tcp-bsd.c
-        src/tcp-kqueue.c
+        src/tcp-trans-default-bsd.c
+        src/tcp-trans-default-kqueue.c
         src/time-darwin.c
-        src/udp-bsd.c
-        src/udp-kqueue.c
+        src/udp-trans-default-bsd.c
+        src/udp-trans-default-kqueue.c
     )
 endif ()
 
@@ -84,9 +94,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/_sock-bsd.h
         include/ah/internal/_buf-posix.h
         include/ah/internal/_loop-uring.h
+        include/ah/internal/_sock-bsd.h
         include/ah/internal/_task-uring.h
         include/ah/internal/_tcp-uring.h
         include/ah/internal/_time-uring.h
@@ -96,11 +106,11 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         src/loop-uring.c
         src/sock-bsd.c
         src/task-uring.c
-        src/tcp-bsd.c
-        src/tcp-uring.c
+        src/tcp-trans-default-bsd.c
+        src/tcp-trans-default-uring.c
         src/time-uring.c
-        src/udp-bsd.c
-        src/udp-uring.c
+        src/udp-trans-default-bsd.c
+        src/udp-trans-default-uring.c
     )
 endif ()
 
@@ -108,23 +118,23 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(
         APPEND
         SOURCE_FILES
-        include/ah/internal/_sock-bsd.h
+        include/ah/internal/_buf-win32.h
         include/ah/internal/_loop-iocp.h
+        include/ah/internal/_sock-bsd.h
         include/ah/internal/_task-iocp.h
         include/ah/internal/_tcp-iocp.h
-        include/ah/internal/_udp-iocp.h
-        include/ah/internal/_buf-win32.h
         include/ah/internal/_time-win32.h
+        include/ah/internal/_udp-iocp.h
         src/abort-win32.c
         src/buf-win32.c
         src/loop-iocp.c
         src/sock-bsd.c
         src/task-iocp.c
-        src/tcp-bsd.c
-        src/tcp-iocp.c
+        src/tcp-trans-default-bsd.c
+        src/tcp-trans-default-iocp.c
         src/time-win32.c
-        src/udp-bsd.c
-        src/udp-iocp.c
+        src/udp-trans-default-bsd.c
+        src/udp-trans-default-iocp.c
         src/winapi.c
         src/winapi.h
     )
@@ -138,8 +148,13 @@ target_include_directories(
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    include(cmake/FindLiburing.cmake)
-    target_link_libraries(ah_base PRIVATE liburing::liburing)
+    # Try to find a local installation of liburing.
+    include(FindLiburing)
+    if (NOT Liburing_FOUND)
+        # If no such is available, download, install and then find the downloaded liburing version.
+        include(DownloadLiburing)
+    endif ()
+    target_link_libraries(ah_base PUBLIC Liburing::liburing)
 endif ()
 
 add_custom_target(mkdir_generated
@@ -173,7 +188,6 @@ set(
     test/test-buf.c
     test/test-collections-list.c
     test/test-collections-ring.c
-    test/test-err.c
     test/test-ip.c
     test/test-math.c
     test/test-sock.c
@@ -181,6 +195,7 @@ set(
     test/test-tcp.c
     test/test-time.c
     test/test-udp.c
+    test/test-utf8.c
 )
 
 add_executable(ah_base_tests ${TEST_FILES})

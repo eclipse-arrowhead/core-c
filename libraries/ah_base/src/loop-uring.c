@@ -1,7 +1,3 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/loop.h"
@@ -12,22 +8,21 @@
 
 #include <fcntl.h>
 #include <limits.h>
-#include <stdlib.h>
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, ah_loop_opts_t* opts)
+ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
 {
     ah_assert_if_debug(loop != NULL);
-    ah_assert_if_debug(opts != NULL);
+    ah_assert_if_debug(capacity != NULL);
 
-    if (opts->capacity == 0u) {
-        opts->capacity = AH_CONF_URING_DEFAULT_CAPACITY;
+    if (*capacity == 0u) {
+        *capacity = AH_CONF_URING_DEFAULT_CAPACITY;
     }
 
-    if (opts->capacity > UINT_MAX) {
+    if (*capacity > UINT_MAX) {
         return AH_EDOM;
     }
 
-    int err = io_uring_queue_init((unsigned) opts->capacity, &loop->_uring, 0u);
+    int err = io_uring_queue_init((unsigned) *capacity, &loop->_uring, 0u);
     if (err != 0) {
         return -err;
     }
@@ -51,7 +46,7 @@ exit_uring_and_return_err:
     return err;
 }
 
-ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct ah_time* time)
+ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
 {
     ah_assert_if_debug(loop != NULL);
 
@@ -80,15 +75,9 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, struct a
         timeout.tv_nsec = diff % 1000000000;
     }
 
-    // TODO: Replace these two calls with io_uring_submit_and_wait_timeout() when liburing-2.2 comes out.
-    res = io_uring_submit(&loop->_uring);
+    res = io_uring_submit_and_wait_timeout(&loop->_uring, &cqe, 1, time != NULL ? &timeout : NULL, NULL);
     if (res < 0) {
-        return -res;
-    }
-
-    res = io_uring_wait_cqes(&loop->_uring, &cqe, 1, time != NULL ? &timeout : NULL, NULL);
-    if (res == -ETIME) {
-        return AH_ENONE;
+        return res == -ETIME ? AH_ENONE : -res;
     }
 
     loop->_now = ah_time_now();

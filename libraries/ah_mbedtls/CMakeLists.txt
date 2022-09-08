@@ -4,9 +4,9 @@ set(CMAKE_C_STANDARD 99)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Try to find a local installation of MbedTLS and link to that.
+# Try to find a local installation of MbedTLS.
 include(FindMbedTLS)
-if (NOT mbedtls_IS_ALREADY_AVAILABLE)
+if (NOT MbedTLS_FOUND)
     # If no such is available, download, install and then find the downloaded MBedTLS version.
     include(DownloadMbedTLS)
 endif ()

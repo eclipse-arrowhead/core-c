@@ -1,21 +1,18 @@
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License 2.0 which is available at
-// http://www.eclipse.org/legal/epl-2.0.
-//
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/time.h"
-#include "ah/unit.h"
 
-void s_should_return_non_zero_time(ah_unit_t* unit);
+#include <ah/unit.h>
 
-void test_time(ah_unit_t* unit)
+void s_should_return_non_zero_time(ah_unit_res_t* res);
+
+void test_time(ah_unit_res_t* res)
 {
-    s_should_return_non_zero_time(unit);
+    s_should_return_non_zero_time(res);
 }
 
-void s_should_return_non_zero_time(ah_unit_t* unit)
+void s_should_return_non_zero_time(ah_unit_res_t* res)
 {
-    struct ah_time time = ah_time_now();
-    ah_unit_assert(unit, !ah_time_is_zero(time), "current time must not be zero");
+    ah_time_t time = ah_time_now();
+    ah_unit_assert(AH_UNIT_CTX, res, !ah_time_is_zero(time), "current time must not be zero");
 }
