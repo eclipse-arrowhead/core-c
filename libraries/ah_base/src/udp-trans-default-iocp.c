@@ -167,6 +167,8 @@ static void s_sock_unref(ah_udp_sock_t* sock)
 
     s_sock_recv_stop(sock);
 
+    sock->_state = AH_I_UDP_SOCK_STATE_CLOSED;
+
     sock->_obs.cbs->on_close(sock->_obs.ctx, sock, err);
 }
 
@@ -262,7 +264,7 @@ static void s_sock_on_send(ah_i_loop_evt_t* evt)
 
     out->nsent = nsent;
 
-    sock->_cbs->on_send(sock, out, err);
+    sock->_obs.cbs->on_send(sock->_obs.ctx, sock, out, err);
 }
 
 ah_err_t ah_i_udp_trans_default_sock_close(void* ctx, ah_udp_sock_t* sock)

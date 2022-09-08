@@ -17,6 +17,7 @@
  ah_udp_sock_t* _sock;
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS \
- SOCKET _fd;
+ SOCKET _fd;                          \
+ uint32_t _ref_count;
 
 #endif

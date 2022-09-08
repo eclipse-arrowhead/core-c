@@ -54,6 +54,10 @@ static const ah_udp_sock_cbs_t s_sock_cbs = {
     .on_send = s_on_send,
 };
 
+#if AH_IS_WIN32
+# pragma warning(disable : 6011)
+#endif
+
 static void s_on_open(void* ctx_, ah_udp_sock_t* sock, ah_err_t err)
 {
     struct s_sock_obs_ctx* ctx = ctx_;
@@ -307,4 +311,8 @@ static void s_should_use_same_data_layout_as_platform_mreq(ah_unit_res_t* res)
 
 # undef S_ASSERT_FIELD_OFFSET_SIZE_EQ
 }
+#endif
+
+#if AH_IS_WIN32
+# pragma warning(default : 6011)
 #endif

@@ -11,6 +11,7 @@
 
 #define AH_I_UDP_SOCK_PLATFORM_FIELDS \
  int _fd;                             \
+ uint32_t _ref_count;                 \
  ah_sockaddr_t _recv_addr;            \
  struct ah_i_loop_evt* _recv_evt;     \
  struct msghdr _recv_msghdr;
