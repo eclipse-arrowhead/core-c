@@ -26,10 +26,6 @@
 }
 
 html {
-    height: 100%;
-}
-
-body {
     --ahf-blue-background: #274872;
     --ahf-blue-highlight: #6583a2;
     --ahf-blue-text: #004676;
@@ -40,14 +36,23 @@ body {
     --ahf-red-highlight: #e02746;
     --ahf-yellow-highlight: #f1d01d;
 
+    --ahf-base-width-max: 64rem;
     --ahf-data-structure-index-column-count: 1;
     --ahf-globals-column-count: 1;
 
-    border: none;
+    background-color: var(--ahf-blue-background);
     display: flex;
     flex-direction: column;
+    min-height: 100%;
+}
+
+body {
+    border: none;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
     font-family: "Open Sans", sans-serif;
-    height: 100%;
     margin: 0;
     min-width: 40rem;
     padding: 0;
@@ -174,12 +179,6 @@ p {
     line-height: 1.25em;
     font-weight: 300;
     margin: 0 0 1rem 0;
-}
-
-#top,
-body > .header,
-body > .contents {
-    background-color: #FFF;
 }
 
 #top > header {
@@ -373,7 +372,6 @@ body > .contents {
 }
 
 .header {
-    background-color: white;
     padding: 1.25rem 1.5rem 0 1.5rem;
 }
 
@@ -393,10 +391,9 @@ body > .contents {
 }
 
 .contents {
-    background-color: white;
     font-weight: 300;
     line-height: 1.25em;
-    padding: 0 1.5rem;
+    padding: 0 1.5rem 2rem 1.5rem;
 }
 
 .contents > * {
@@ -406,7 +403,13 @@ body > .contents {
 .contents.examples,
 .contents.globals {
     column-count: var(--ahf-globals-column-count);
-    margin-top: 2rem;
+    padding-top: 2rem;
+}
+
+.contents.globals.all,
+.contents.globals.typedefs {
+    column-count: initial;
+    padding-top: 2rem;
 }
 
 .contents.examples > *,
@@ -724,7 +727,7 @@ body > .contents {
     flex-wrap: wrap;
     row-gap: 1rem;
     visibility: collapse;
-    width: calc(100% + 1rem);
+    width: calc(var(--ahf-base-width-max) + 1rem);
 }
 
 .contents > .qindex > a {
@@ -759,30 +762,96 @@ body > .contents {
 
 body > footer {
     align-items: center;
-    background-color: var(--ahf-grey-light);
+    background-color: var(--ahf-blue-background);
+    color: var(--ahf-grey-background);
     display: flex;
+    font-size: 0.8em;
     justify-content: right;
-    margin-top: 2rem;
     padding: 1rem 1.5rem;
 }
 
-body > footer > a > img {
-    margin: 0 0.5rem;
-    width: 6.5rem;
+body > footer > a {
+    color: var(--ahf-grey-light);
+    margin: 0 0.25rem;
 }
 
 #MSearchBox {
-    background: none;
-    display: block;
-    margin-top: calc((3rem - 19px) / 2 - 0.4rem);
-    margin-right: calc(1.5rem - 19px);
-    height: 19px;
-    position: relative;
+    display: flex;
+    font-size: 0.9em;
+    margin: 0.33rem 0 0 0;
 }
 
-#MSearchClose {
-    line-height: 0;
-    top: 4px;
+#MSearchBox.MSearchBoxActive > .left,
+#MSearchBox.MSearchBoxActive > .right {
+    background-color: white;
+}
+
+#MSearchBox > .left {
+    background-color: var(--ahf-grey-light);
+    border-radius: 0.25rem 0 0 0.25rem;
+    display: flex;
+    padding: 0.25rem 0 0.25rem 0.25rem;
+}
+
+#MSearchBox > .left > * {
+    display: block;
+    height: initial;
+}
+
+#MSearchBox > .left > #MSearchSelect {
+    background-image: url(search/mag.svg);
+    background-repeat: no-repeat;
+    background-position: 0.2rem center;
+    margin: 0;
+    cursor: pointer;
+}
+
+#MSearchBox > .right {
+    background-color: var(--ahf-grey-light);
+    border-radius: 0 0.25rem 0.25rem 0;
+    display: flex;
+    justify-content: center;
+    padding: 0.25rem 0.25rem 0.25rem 0;
+}
+
+#MSearchBox > .right > a {
+    display: flex !important;
+}
+
+#MSearchBox > .right > a > #MSearchCloseImg {
+    display: inline-block;
+    height: 0.8rem;
+    align-self: center;
+}
+
+#MSearchSelectWindow {
+    background-color: white;
+    padding: 0.25rem 0.75rem 0.5rem 0.5rem;
+    border: 0.0625rem solid var(--ahf-grey-light);
+    margin: 0.5rem 0 0 -0.25rem;
+}
+
+#MSearchSelectWindow > .SelectItem {
+    padding: 0;
+    margin: 0.25rem;
+    font-size: 0.8rem;
+}
+
+#MSearchResultsWindow {
+    background-color: white;
+    border: 0.0625rem solid var(--ahf-grey-background);
+    border-radius: 0.25rem;
+    box-shadow: 0.125rem 0.125rem 0.125rem #00000050;
+    margin-top: 0.67rem;
+}
+
+#MSearchResultsWindow .SRPage {
+    margin: 0;
+    padding: 0.5rem;
+}
+
+#MSearchResultsWindow .SRPage .SREntry {
+    font-size: 0.75rem;
 }
 
 @media (min-width: 43rem) {
@@ -810,6 +879,6 @@ body > footer > a > img {
     .contents,
     .header {
         margin: 0 auto;
-        width: 64rem;
+        width: var(--ahf-base-width-max);
     }
 }
