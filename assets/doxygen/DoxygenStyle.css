@@ -802,42 +802,69 @@ body > footer > a {
 }
 
 #MSearchBox {
+    background: none;
     display: flex;
     font-size: 0.9em;
-    margin: 0.33rem 0 0 0;
-}
-
-#MSearchBox.MSearchBoxActive > .left,
-#MSearchBox.MSearchBoxActive > .right {
-    background-color: white;
+    margin: 0 0 0 auto;
+    position: initial;
+    width: fit-content;
 }
 
 #MSearchBox > .left {
-    background-color: var(--ahf-grey-light);
+    background-color: white;
+    background-image: none;
     border-radius: 0.25rem 0 0 0.25rem;
     display: flex;
+    flex-grow: 1;
+    height: initial;
     padding: 0.25rem 0 0.25rem 0.25rem;
+    position: initial;
+    width: initial;
 }
 
 #MSearchBox > .left > * {
+    background-color: white;
+    background-image: none;
     display: block;
     height: initial;
+    margin: 0;
+}
+
+#MSearchBox > .left > #MSearchField {
+    flex-grow: 1;
+    font-family: "Open Sans", sans-serif;
+    font-size: 0.75rem;
+    height: initial;
+    line-height: 1.1875rem;
+    padding: 0;
+    position: initial;
+    width: initial;
 }
 
 #MSearchBox > .left > #MSearchSelect {
     background-image: url(search/mag.svg);
-    background-repeat: no-repeat;
     background-position: 0.2rem center;
-    margin: 0;
+    background-repeat: no-repeat;
     cursor: pointer;
+    height: initial;
+    position: initial;
+    width: auto;
 }
 
 #MSearchBox > .right {
-    background-color: var(--ahf-grey-light);
+    background: white none;
     border-radius: 0 0.25rem 0.25rem 0;
     display: flex;
+    height: initial;
     justify-content: center;
+    min-width: 1.05rem;
     padding: 0.25rem 0.25rem 0.25rem 0;
+    position: initial;
+    width: initial;
+}
+
+#MSearchBox > .right > a {
+    position: initial;
 }
 
 #MSearchBox > .right > a[style*="inline-block"] {
@@ -845,30 +872,31 @@ body > footer > a {
 }
 
 #MSearchBox > .right > a > #MSearchCloseImg {
+    align-self: center;
     display: inline-block;
     height: 0.8rem;
-    align-self: center;
 }
 
 #MSearchSelectWindow {
     background-color: white;
-    padding: 0.25rem 0.75rem 0.5rem 0.5rem;
     border: 0.0625rem solid var(--ahf-grey-light);
     margin: 0.5rem 0 0 -0.25rem;
+    padding: 0.25rem 0.75rem 0.5rem 0.5rem;
 }
 
 #MSearchSelectWindow > .SelectItem {
-    padding: 0;
-    margin: 0.25rem;
     font-size: 0.8rem;
+    margin: 0.25rem;
+    padding: 0;
 }
 
 #MSearchResultsWindow {
     background-color: white;
-    border: 0.0625rem solid var(--ahf-grey-background);
     border-radius: 0.25rem;
+    border: 0.0625rem solid var(--ahf-grey-background);
     box-shadow: 0.125rem 0.125rem 0.125rem #00000050;
     margin-top: 0.67rem;
+    right: 0.5rem;
 }
 
 #MSearchResultsWindow .SRPage {
