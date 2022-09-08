@@ -66,6 +66,8 @@ If you do contribute code, please observe the following:
    adequately documented. The documentation must be compatible with
    [Doxygen][dxyg] and must follow the Javadoc pattern already used in the
    existing libraries.
+4. Your contribution must be submitted in the form of a GitHub pull request to
+   the Eclipse Arrowhead™ [core-c][ghub] project repository.
 
 [claf]: https://clang.llvm.org/docs/ClangFormat.html
 [dxyg]: https://doxygen.org
