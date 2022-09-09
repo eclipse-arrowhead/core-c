@@ -35,6 +35,16 @@ fundamental utilities.
 [ghub]: https://github.com/eclipse-arrowhead/core-c
 [gorg]: https://github.com/eclipse-arrowhead
 
+## Documentation
+
+The documentation for all libraries can be compiled using [Doxygen][doxy]
+version 1.9.1 and later. The documentation can be generating by executing the
+`doxygen` command line operation with the `libraries` folder, introduced above,
+as the current working directory. The generated HTML documentation is gathered
+into a folder named `doxygen-build` in the repository root directory. The
+`doxygen-build` folder will contain an `index.html` file, which presents the
+documentation.
+
 ## Building and Installing
 
 All official libraries are built and installed using [CMake][cmak]. Each library
