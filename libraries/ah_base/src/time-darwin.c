@@ -23,13 +23,13 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
     }
 
     ah_timediff_t tmp_td;
-    if (ah_p_sub_overflow(a._mach_absolute_time, b._mach_absolute_time, &tmp_td)) {
+    if (ah_gcc_sub_overflow(a._mach_absolute_time, b._mach_absolute_time, &tmp_td)) {
         return AH_ERANGE;
     }
 
     mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
-    if (ah_p_mul_overflow(tmp_td, info.numer, &tmp_td)) {
+    if (ah_gcc_mul_overflow(tmp_td, info.numer, &tmp_td)) {
         return AH_ERANGE;
     }
     tmp_td /= info.denom;
@@ -77,10 +77,10 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
     mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
     uint64_t tmp = diff / info.numer;
-    if (ah_p_mul_overflow(tmp, info.denom, &tmp)) {
+    if (ah_gcc_mul_overflow(tmp, info.denom, &tmp)) {
         return AH_ERANGE;
     }
-    if (ah_p_add_overflow(time._mach_absolute_time, tmp, &tmp)) {
+    if (ah_gcc_add_overflow(time._mach_absolute_time, tmp, &tmp)) {
         return AH_ERANGE;
     }
 
@@ -98,10 +98,10 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
     mach_timebase_info_data_t info = s_get_mach_timebase_info_data();
 
     uint64_t tmp = diff / info.numer;
-    if (ah_p_mul_overflow(tmp, info.denom, &tmp)) {
+    if (ah_gcc_mul_overflow(tmp, info.denom, &tmp)) {
         return AH_ERANGE;
     }
-    if (ah_p_sub_overflow(time._mach_absolute_time, tmp, &tmp)) {
+    if (ah_gcc_sub_overflow(time._mach_absolute_time, tmp, &tmp)) {
         return AH_ERANGE;
     }
 
