@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_LIB_H_
-#define AH_LIB_H_
+#ifndef AH_META_H_
+#define AH_META_H_
 
 /**
  * @file
- * Library metadata.
+ * Compile-time metadata.
  *
- * This file provides details about the library that is determined when the
- * library is compiled.
+ * This file provides details determined when the library is compiled.
  */
 
 #include "defs.h"

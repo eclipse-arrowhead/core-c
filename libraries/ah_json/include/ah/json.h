@@ -206,6 +206,42 @@ struct ah_json_val {
 };
 
 /**
+ * @name JSON Construction Functions
+ * @{
+ */
+
+/**
+ * Substitutes any UTF-8 code point below 32, <code>"</code> and <code>\\</code>
+ * with its corresponding JSON escape sequence and writes the result to @a dst.
+ *
+ * The resulting string is safe to use as the characters of a JSON string. It
+ * will not be enclosed in double quotes (<code>"</code>), however.
+ *
+ * If the operation is successful, the value pointed at by @a dst_length is
+ * updated to reflect the final length of the string actually written to @a dst.
+ *
+ * @param src        Pointer to input buffer.
+ * @param src_length Length of @a src, excluding any NULL-terminator.
+ * @param dst        Pointer to output buffer.
+ * @param dst_length Pointer to length of @a dst, in bytes.
+ * @return One of the following error codes: <ul>
+ *   <li>@ref AH_ENONE     - The operation was successful.
+ *   <li>@ref AH_EINVAL    - @a src is @c NULL and @a src_length is not @c 0.
+ *   <li>@ref AH_EINVAL    - @a dst_length is @c NULL.
+ *   <li>@ref AH_EINVAL    - @a dst is @c NULL and the value pointed at by @a dst_length is not @c 0.
+ *   <li>@ref AH_EOVERFLOW - @a dst not large enough to hold the escaped string.
+ * </ul>
+ */
+ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* dst, size_t* dst_length);
+
+/** @} */
+
+/**
+ * @name JSON Interpretation Functions
+ * @{
+ */
+
+/**
  * Parses @a src into an array of ah_json_val instances stored in @a dst.
  *
  * This function operates either with or without dynamic memory reallocation
@@ -268,30 +304,6 @@ ah_extern ah_err_t ah_json_parse(ah_buf_t src, ah_json_buf_t* dst);
 ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b, size_t b_length);
 
 /**
- * Substitutes any UTF-8 code point below 32, <code>"</code> and <code>\\</code>
- * with its corresponding JSON escape sequence and writes the result to @a dst.
- *
- * The resulting string is safe to use as the characters of a JSON string. It
- * will not be enclosed in double quotes (<code>"</code>), however.
- *
- * If the operation is successful, the value pointed at by @a dst_length is
- * updated to reflect the final length of the string actually written to @a dst.
- *
- * @param src        Pointer to input buffer.
- * @param src_length Length of @a src, excluding any NULL-terminator.
- * @param dst        Pointer to output buffer.
- * @param dst_length Pointer to length of @a dst, in bytes.
- * @return One of the following error codes: <ul>
- *   <li>@ref AH_ENONE     - The operation was successful.
- *   <li>@ref AH_EINVAL    - @a src is @c NULL and @a src_length is not @c 0.
- *   <li>@ref AH_EINVAL    - @a dst_length is @c NULL.
- *   <li>@ref AH_EINVAL    - @a dst is @c NULL and the value pointed at by @a dst_length is not @c 0.
- *   <li>@ref AH_EOVERFLOW - @a dst not large enough to hold the escaped string.
- * </ul>
- */
-ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* dst, size_t* dst_length);
-
-/**
  * Substitutes any JSON escape sequences in @a src with their UTF-8 equivalents
  * and writes the result to @a dst.
  *
@@ -312,5 +324,42 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
  * </ul>
  */
 ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length);
+
+/** @} */
+
+/**
+ * @name JSON Library Version Details
+ * @{
+ */
+
+/**
+ * Gets human-readable representation of version of the JSON library.
+ *
+ * @return Constant string representation of version.
+ */
+ah_extern const char* ah_json_lib_version_str(void);
+
+/**
+ * Gets major version of the JSON library.
+ *
+ * @return Major version indicator.
+ */
+ah_extern unsigned short ah_json_lib_version_major(void);
+
+/**
+ * Gets minor version of the JSON library.
+ *
+ * @return Minor version indicator.
+ */
+ah_extern unsigned short ah_json_lib_version_minor(void);
+
+/**
+ * Gets patch version of the JSON library.
+ *
+ * @return Patch version indicator.
+ */
+ah_extern unsigned short ah_json_lib_version_patch(void);
+
+/** @} */
 
 #endif

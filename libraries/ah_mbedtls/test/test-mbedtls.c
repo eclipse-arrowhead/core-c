@@ -464,7 +464,7 @@ static void s_print_mbedtls_err_if_any(ah_unit_ctx_t ctx, ah_mbedtls_client_t* c
 
         char errbuf[256u];
         mbedtls_strerror(mbedtls_err, errbuf, sizeof(errbuf));
-        ah_unit_print_failure(ctx, "AH_EDEP caused by: -%#x; %s", -mbedtls_err, errbuf);
+        ah_unit_fail(ctx, NULL, "AH_EDEP caused by: -%#x; %s", -mbedtls_err, errbuf);
     }
 }
 

@@ -1327,4 +1327,39 @@ ah_extern bool ah_http_server_cbs_is_valid(const ah_http_server_cbs_t* cbs);
 
 /** @} */
 
+/**
+ * @name HTTP Library Version Details
+ * @{
+ */
+
+/**
+ * Gets human-readable representation of version of the HTTP library.
+ *
+ * @return Constant string representation of version.
+ */
+ah_extern const char* ah_http_lib_version_str(void);
+
+/**
+ * Gets major version of the HTTP library.
+ *
+ * @return Major version indicator.
+ */
+ah_extern unsigned short ah_http_lib_version_major(void);
+
+/**
+ * Gets minor version of the HTTP library.
+ *
+ * @return Minor version indicator.
+ */
+ah_extern unsigned short ah_http_lib_version_minor(void);
+
+/**
+ * Gets patch version of the HTTP library.
+ *
+ * @return Patch version indicator.
+ */
+ah_extern unsigned short ah_http_lib_version_patch(void);
+
+/** @} */
+
 #endif

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/lib.h"
+#include "ah/meta.h"
 
-#include "ah/defs.h"
 #include "ah_i_git_metadata.h"
 
 ah_extern const char* ah_lib_commit_str(void)

@@ -3,7 +3,7 @@
     <tab type="mainpage" visible="yes" title="Overview"/>
     <tab type="pages" visible="no" title="" intro=" "/>
     <tab type="modules" visible="no" title="" intro=" "/>
-    <tab type="filelist" visible="yes" title="Header Files" intro="The below listed header files are organized by library. At level 1, which is the leftmost level, you find the names of the libraries. The folders at levels 2 and 3 exist only for structural purposes. At level 4, you find the public header files of each library."/>
+    <tab type="filelist" visible="yes" title="Headers" intro="The below listed header files are organized by library. At level 1, which is the leftmost level, you find the names of the libraries. The folders at levels 2 and 3 exist only for structural purposes. At level 4, you find the public header files of each library."/>
     <tab type="classes" visible="yes" title="">
       <tab type="classlist" visible="yes" title="" intro="The data structures of all Core C libraries. Every data structure is prefixed with ah_ and the name of the header file in which it is declared. "/>
       <tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/>

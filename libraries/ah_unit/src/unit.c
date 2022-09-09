@@ -2,6 +2,8 @@
 
 #include "ah/unit.h"
 
+#include "ah_i_unit_lib_version.h"
+
 #include <ah/assert.h>
 #include <ah/err.h>
 #include <inttypes.h>
@@ -12,7 +14,7 @@
 static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va_list args);
 static void s_print_failure(ah_unit_ctx_t ctx, const char* format, va_list args);
 
-bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_success, const char* format, ...)
+ah_extern bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_success, const char* format, ...)
 {
     if (is_success) {
         ah_unit_pass(res);
@@ -27,7 +29,7 @@ bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_success, cons
     return false;
 }
 
-bool ah_unit_assert_eq_cstr(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, const char* expected)
+ah_extern bool ah_unit_assert_eq_cstr(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, const char* expected)
 {
     if (actual == expected) {
         goto pass;
@@ -48,9 +50,8 @@ fail:
     return false;
 }
 
-bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, int expected, const char* (*to_str)(int) )
+ah_extern bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, int expected, const char* (*to_str)(int) )
 {
-    ah_assert_always(res != NULL);
     ah_assert_always(to_str != NULL);
 
     if (actual == expected) {
@@ -62,10 +63,8 @@ bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, i
     return false;
 }
 
-bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actual, ah_err_t expected)
+ah_extern bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actual, ah_err_t expected)
 {
-    ah_assert_always(res != NULL);
-
     if (actual == expected) {
         ah_unit_pass(res);
         return true;
@@ -81,10 +80,8 @@ bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actua
     return false;
 }
 
-bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual_, size_t actual_size, const void* expected_, size_t expected_size)
+ah_extern bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual_, size_t actual_size, const void* expected_, size_t expected_size)
 {
-    ah_assert_always(res != NULL);
-
     const unsigned char* actual = actual_;
     const unsigned char* expected = expected_;
 
@@ -121,10 +118,8 @@ bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* ac
     return false;
 }
 
-bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, intmax_t actual, intmax_t expected)
+ah_extern bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, intmax_t actual, intmax_t expected)
 {
-    ah_assert_always(res != NULL);
-
     if (actual == expected) {
         ah_unit_pass(res);
         return true;
@@ -134,7 +129,7 @@ bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, intmax_t ac
     return false;
 }
 
-bool ah_unit_assert_eq_str(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, size_t actual_length, const char* expected, size_t expected_length)
+ah_extern bool ah_unit_assert_eq_str(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, size_t actual_length, const char* expected, size_t expected_length)
 {
     if (actual == expected) {
         goto pass;
@@ -158,10 +153,8 @@ fail:
     return false;
 }
 
-bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t actual, uintmax_t expected)
+ah_extern bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t actual, uintmax_t expected)
 {
-    ah_assert_always(res != NULL);
-
     if (actual == expected) {
         ah_unit_pass(res);
         return true;
@@ -171,9 +164,12 @@ bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t 
     return false;
 }
 
-void ah_unit_print_results(const struct ah_unit_res* res)
+ah_extern void ah_unit_print_results(const struct ah_unit_res* res)
 {
-    ah_assert_always(res != NULL);
+    if (res == NULL) {
+        (void) puts("Nothing to report; res is NULL.");
+        return;
+    }
 
     if (res->fail_count == 0) {
         (void) printf("Passed all %d executed assertions.\n", res->assertion_count);
@@ -183,7 +179,7 @@ void ah_unit_print_results(const struct ah_unit_res* res)
     }
 }
 
-void ah_unit_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, ...)
+ah_extern void ah_unit_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -191,19 +187,19 @@ void ah_unit_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, ...
     va_end(args);
 }
 
-void ah_unit_pass(ah_unit_res_t* res)
+ah_extern void ah_unit_pass(ah_unit_res_t* res)
 {
-    ah_assert_always(res != NULL);
-
-    res->assertion_count += 1u;
+    if (res != NULL) {
+        res->assertion_count += 1u;
+    }
 }
 
 static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va_list args)
 {
-    ah_assert_always(res != NULL);
-
-    res->assertion_count += 1u;
-    res->fail_count += 1u;
+    if (res != NULL) {
+        res->assertion_count += 1u;
+        res->fail_count += 1u;
+    }
 
     (void) fputs("FAIL ", stderr);
 
@@ -217,4 +213,24 @@ static void s_print_failure(ah_unit_ctx_t ctx, const char* format, va_list args)
     (void) fprintf(stderr, "%s:%d ", ctx.file, ctx.line);
     (void) vfprintf(stderr, format, args);
     (void) fputc('\n', stderr);
+}
+
+ah_extern const char* ah_unit_lib_version_str(void)
+{
+    return AH_I_UNIT_LIB_VERSION_STR;
+}
+
+ah_extern unsigned short ah_unit_lib_version_major(void)
+{
+    return AH_I_UNIT_LIB_VERSION_MAJOR;
+}
+
+ah_extern unsigned short ah_unit_lib_version_minor(void)
+{
+    return AH_I_UNIT_LIB_VERSION_MINOR;
+}
+
+ah_extern unsigned short ah_unit_lib_version_patch(void)
+{
+    return AH_I_UNIT_LIB_VERSION_PATCH;
 }

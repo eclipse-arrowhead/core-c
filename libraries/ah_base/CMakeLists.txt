@@ -1,15 +1,19 @@
 cmake_minimum_required(VERSION 3.15)
-project(ah_base C)
+project(
+    ah_base
+    LANGUAGES C
+    VERSION 1.0.0
+)
 set(CMAKE_C_STANDARD 99)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 set(
     SOURCE_FILES
     include/ah/abort.h
     include/ah/alloc.h
     include/ah/assert.h
+    include/ah/base.h
     include/ah/buf.h
     include/ah/conf.h
     include/ah/defs.h
@@ -26,9 +30,9 @@ set(
     include/ah/internal/collections/slab.h
     include/ah/intrin.h
     include/ah/ip.h
-    include/ah/lib.h
     include/ah/loop.h
     include/ah/math.h
+    include/ah/meta.h
     include/ah/rw.h
     include/ah/sock.h
     include/ah/task.h
@@ -37,16 +41,17 @@ set(
     include/ah/udp.h
     include/ah/utf8.h
     src/abort.c
+    src/base.c
     src/buf.c
     src/collections/list.c
     src/collections/ring.c
     src/collections/slab.c
     src/err.c
     src/ip.c
-    src/lib.c
     src/loop-evt.h
     src/loop.c
     src/math.c
+    src/meta.c
     src/rw.c
     src/sock.c
     src/task.c
@@ -144,7 +149,7 @@ add_library(ah_base STATIC ${SOURCE_FILES})
 target_include_directories(
     ah_base
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PUBLIC $<BUILD_INTERFACE:${GENERATED_DIR}>
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -157,18 +162,20 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(ah_base PUBLIC Liburing::liburing)
 endif ()
 
-add_custom_target(mkdir_generated
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${GENERATED_DIR}"
-    BYPRODUCTS "${GENERATED_DIR}"
-    VERBATIM
+file(
+    GENERATE
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/ah_i_base_lib_version.h
+    CONTENT "\
+#define AH_I_BASE_LIB_VERSION_STR \"${PROJECT_VERSION}\";\r\n\
+#define AH_I_BASE_LIB_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}u;\r\n\
+#define AH_I_BASE_LIB_VERSION_MINOR ${PROJECT_VERSION_MINOR}u;\r\n\
+#define AH_I_BASE_LIB_VERSION_PATCH ${PROJECT_VERSION_PATCH}u;\r\n"
+    TARGET ah_base
 )
 
-add_dependencies(ah_base mkdir_generated)
-
 include(FindGit)
-
 if (GIT_FOUND)
-    set(GIT_METADATA_HEADER "${GENERATED_DIR}/ah_i_git_metadata.h")
+    set(GIT_METADATA_HEADER "${CMAKE_CURRENT_BINARY_DIR}/include/ah_i_git_metadata.h")
     add_custom_target(
         generate_git_metadata_header
         COMMAND git_metadata_to_header "${GIT_METADATA_HEADER}" AH_I_
