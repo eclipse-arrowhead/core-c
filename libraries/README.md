@@ -37,12 +37,16 @@ fundamental utilities.
 
 ## Documentation
 
-The documentation for all libraries can be compiled using [Doxygen][doxy]
-version 1.9.1 and later. From a command line, execute the `doxygen` command with
-the `libraries` folder, introduced above, as current working directory. The
-generated HTML documentation is gathered into a folder named `doxygen-build` in
-the repository root directory. The `doxygen-build` folder will contain an
-`index.html` file, which presents the documentation.
+The documentation for all libraries is currently made available here:
+
+https://arrowhead-f.github.io/core-c-lib-docs
+
+You may compile the documentation yourself using [Doxygen][doxy] version 1.9.1
+or later. From a command line, execute the `doxygen` command from within the
+`libraries` folder we introduced above. The generated HTML documentation is
+gathered into a folder named `doxygen-build` in the repository root directory.
+The `doxygen-build` folder will contain an `index.html` file, which presents the
+documentation.
 
 [doxy]: https://doxygen.org
 
