@@ -18,7 +18,7 @@
  *
  * @return Constant string representation of source code version.
  */
-ah_extern const char* ah_lib_commit_str(void);
+ah_extern const char* ah_meta_commit_str(void);
 
 /**
  * Gets human-readable identifier representing the platform for which this
@@ -26,6 +26,6 @@ ah_extern const char* ah_lib_commit_str(void);
  *
  * @return Constant string representation of targeted platform.
  */
-ah_extern const char* ah_lib_platform_str(void);
+ah_extern const char* ah_meta_platform_str(void);
 
 #endif

@@ -9,7 +9,7 @@
 #include <string.h>
 #include <time.h>
 
-ah_extern ah_time_t ah_time_now()
+ah_extern ah_time_t ah_time_now(void)
 {
     struct timespec timespec;
     if (clock_gettime(CLOCK_MONOTONIC, &timespec) != 0) {
@@ -31,23 +31,23 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
     }
 
     struct __kernel_timespec tmp_ts;
-    if (ah_p_sub_overflow(a._timespec.tv_sec, b._timespec.tv_sec, &tmp_ts.tv_sec)) {
+    if (ah_gcc_sub_overflow(a._timespec.tv_sec, b._timespec.tv_sec, &tmp_ts.tv_sec)) {
         return AH_ERANGE;
     }
 
     tmp_ts.tv_nsec = a._timespec.tv_nsec - b._timespec.tv_nsec;
     if (tmp_ts.tv_nsec < 0) {
-        if (ah_p_sub_overflow(tmp_ts.tv_sec, 1, &tmp_ts.tv_sec)) {
+        if (ah_gcc_sub_overflow(tmp_ts.tv_sec, 1, &tmp_ts.tv_sec)) {
             return AH_ERANGE;
         }
         tmp_ts.tv_nsec += 1000000000;
     }
 
     ah_timediff_t tmp_td;
-    if (ah_p_mul_overflow(tmp_ts.tv_sec, 1000000000, &tmp_td)) {
+    if (ah_gcc_mul_overflow(tmp_ts.tv_sec, 1000000000, &tmp_td)) {
         return AH_ERANGE;
     }
-    if (ah_p_add_overflow(tmp_ts.tv_nsec, tmp_td, &tmp_td)) {
+    if (ah_gcc_add_overflow(tmp_ts.tv_nsec, tmp_td, &tmp_td)) {
         return AH_ERANGE;
     }
 
@@ -89,19 +89,19 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
     }
 
     struct __kernel_timespec tmp;
-    if (ah_p_add_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
+    if (ah_gcc_add_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
         return AH_ERANGE;
     }
     tmp.tv_nsec = time._timespec.tv_nsec + (diff % 1000000000);
     if (tmp.tv_nsec < 0) {
         tmp.tv_nsec += 1000000000;
-        if (ah_p_sub_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
+        if (ah_gcc_sub_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
             return AH_ERANGE;
         }
     }
     else if (tmp.tv_nsec >= 1000000000) {
         tmp.tv_nsec -= 1000000000;
-        if (ah_p_add_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
+        if (ah_gcc_add_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
             return AH_ERANGE;
         }
     }
@@ -118,19 +118,19 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
     }
 
     struct __kernel_timespec tmp;
-    if (ah_p_sub_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
+    if (ah_gcc_sub_overflow(time._timespec.tv_sec, diff / 1000000000, &tmp.tv_sec)) {
         return AH_ERANGE;
     }
     tmp.tv_nsec = time._timespec.tv_nsec - (diff % 1000000000);
     if (tmp.tv_nsec < 0) {
         tmp.tv_nsec += 1000000000;
-        if (ah_p_sub_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
+        if (ah_gcc_sub_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
             return AH_ERANGE;
         }
     }
     else if (tmp.tv_nsec >= 1000000000) {
         tmp.tv_nsec -= 1000000000;
-        if (ah_p_add_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
+        if (ah_gcc_add_overflow(tmp.tv_sec, 1, &tmp.tv_sec)) {
             return AH_ERANGE;
         }
     }

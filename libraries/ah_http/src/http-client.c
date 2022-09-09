@@ -611,7 +611,7 @@ ah_extern ah_err_t ah_http_client_send_data(ah_http_client_t* cln, ah_tcp_out_t*
         return AH_ESTATE;
     }
 
-    err = ah_add_uint16(head->_n_pending_tcp_outs, 1u, &head->_n_pending_tcp_outs);
+    err = ah_math_add_uint16(head->_n_pending_tcp_outs, 1u, &head->_n_pending_tcp_outs);
     if (err != AH_ENONE) {
         return err;
     }
@@ -686,7 +686,7 @@ ah_extern ah_err_t ah_http_client_send_chunk(ah_http_client_t* cln, ah_http_chun
     // Prepare message with chunk line.
     chunk->_out->buf = ah_rw_get_readable_as_buf(&rw);
 
-    err = ah_add_uint16(head->_n_pending_tcp_outs, 2u, &head->_n_pending_tcp_outs);
+    err = ah_math_add_uint16(head->_n_pending_tcp_outs, 2u, &head->_n_pending_tcp_outs);
     if (err != AH_ENONE) {
         goto report_err_and_try_next;
     }
@@ -768,7 +768,7 @@ ah_extern ah_err_t ah_http_client_send_trailer(ah_http_client_t* cln, ah_http_tr
         goto report_err_and_try_next;
     }
 
-    err = ah_add_uint16(head->_n_pending_tcp_outs, 1u, &head->_n_pending_tcp_outs);
+    err = ah_math_add_uint16(head->_n_pending_tcp_outs, 1u, &head->_n_pending_tcp_outs);
     if (err != AH_ENONE) {
         goto report_err_and_try_next;
     }

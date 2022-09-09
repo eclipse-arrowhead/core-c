@@ -123,7 +123,7 @@ static ah_err_t s_sock_ref(ah_udp_sock_t* sock)
     if (sock == NULL) {
         return AH_EINTERN;
     }
-    return ah_add_uint32(sock->_ref_count, 1u, &sock->_ref_count);
+    return ah_math_add_uint32(sock->_ref_count, 1u, &sock->_ref_count);
 }
 
 static void s_sock_unref(ah_udp_sock_t* sock)

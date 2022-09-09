@@ -215,7 +215,7 @@ static ah_err_t s_conn_ref(ah_tcp_conn_t* conn)
     if (conn == NULL) {
         return AH_EINTERN;
     }
-    return ah_add_uint32(conn->_ref_count, 1u, &conn->_ref_count);
+    return ah_math_add_uint32(conn->_ref_count, 1u, &conn->_ref_count);
 }
 
 static void s_conn_unref(ah_tcp_conn_t* conn)
@@ -528,7 +528,7 @@ static ah_err_t s_listener_ref(ah_tcp_listener_t* ln)
     if (ln == NULL) {
         return AH_EINTERN;
     }
-    return ah_add_uint32(ln->_ref_count, 1u, &ln->_ref_count);
+    return ah_math_add_uint32(ln->_ref_count, 1u, &ln->_ref_count);
 }
 
 static void s_listener_unref(ah_tcp_listener_t* ln)

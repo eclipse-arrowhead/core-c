@@ -30,7 +30,7 @@ ah_extern ah_err_t ah_time_diff(const ah_time_t a, const ah_time_t b, ah_timedif
     }
 
     ah_timediff_t tmp_td;
-    if (ah_sub_int64(a._performance_count, b._performance_count, &tmp_td) != AH_ENONE) {
+    if (ah_math_sub_int64(a._performance_count, b._performance_count, &tmp_td) != AH_ENONE) {
         return AH_ERANGE;
     }
 
@@ -81,7 +81,7 @@ ah_extern ah_err_t ah_time_add(const ah_time_t time, const ah_timediff_t diff, a
 
     const int64_t tmp = (int64_t) (((double) diff) / s_get_ns_per_performance_tick());
 
-    return ah_add_int64(time._performance_count, tmp, &result->_performance_count);
+    return ah_math_add_int64(time._performance_count, tmp, &result->_performance_count);
 }
 
 ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, ah_time_t* result)
@@ -92,7 +92,7 @@ ah_extern ah_err_t ah_time_sub(const ah_time_t time, const ah_timediff_t diff, a
 
     const int64_t tmp = (int64_t) (((double) diff) / s_get_ns_per_performance_tick());
 
-    return ah_sub_int64(time._performance_count, tmp, &result->_performance_count);
+    return ah_math_sub_int64(time._performance_count, tmp, &result->_performance_count);
 }
 
 ah_extern bool ah_time_is_after(const ah_time_t a, const ah_time_t b)

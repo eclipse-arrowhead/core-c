@@ -304,7 +304,7 @@ static ah_err_t s_parse_string(struct s_parser* parser, ah_json_val_t* parent, u
             case 'n':
             case 'r':
             case 't':
-                if (ah_add_size(length, 2u, &length) != AH_ENONE) {
+                if (ah_math_add_size(length, 2u, &length) != AH_ENONE) {
                     err = AH_EOVERFLOW;
                     goto handle_done;
                 }
@@ -324,7 +324,7 @@ static ah_err_t s_parse_string(struct s_parser* parser, ah_json_val_t* parent, u
                     goto handle_done;
                 }
 
-                if (ah_add_size(length, 6u, &length) != AH_ENONE) {
+                if (ah_math_add_size(length, 6u, &length) != AH_ENONE) {
                     err = AH_EOVERFLOW;
                     goto handle_done;
                 }
@@ -341,7 +341,7 @@ static ah_err_t s_parse_string(struct s_parser* parser, ah_json_val_t* parent, u
             break;
 
         default:
-            if (ah_add_size(length, 1u, &length) != AH_ENONE) {
+            if (ah_math_add_size(length, 1u, &length) != AH_ENONE) {
                 err = AH_EOVERFLOW;
                 goto handle_done;
             }
@@ -535,13 +535,13 @@ static ah_err_t s_alloc_value(struct s_parser* parser, ah_json_val_t* parent, ui
             new_capacity_in_values = 8u;
         }
         else {
-            if (ah_add_size(dst->capacity, dst->capacity / 2u, &new_capacity_in_values) != AH_ENONE) {
+            if (ah_math_add_size(dst->capacity, dst->capacity / 2u, &new_capacity_in_values) != AH_ENONE) {
                 return AH_ENOMEM;
             }
         }
 
         size_t new_capacity_in_bytes;
-        if (ah_mul_size(new_capacity_in_values, sizeof(ah_json_val_t), &new_capacity_in_bytes) != AH_ENONE) {
+        if (ah_math_mul_size(new_capacity_in_values, sizeof(ah_json_val_t), &new_capacity_in_bytes) != AH_ENONE) {
             return AH_ENOMEM;
         }
 
@@ -595,7 +595,7 @@ static uint8_t s_peek_byte_or_zero_at_offset(struct s_parser* parser, uintptr_t 
     ah_assert_if_debug(parser != NULL);
 
     uintptr_t off;
-    if (ah_add_uintptr((uintptr_t) parser->src_off, offset, &off) != AH_ENONE) {
+    if (ah_math_add_uintptr((uintptr_t) parser->src_off, offset, &off) != AH_ENONE) {
         return '\0';
     }
     if ((const uint8_t*) off > parser->src_end) {
@@ -648,7 +648,7 @@ static bool s_skip_n_bytes(struct s_parser* parser, size_t n)
 #endif
 
     uintptr_t off;
-    if (ah_add_uintptr((uintptr_t) parser->src_off, n, &off) != AH_ENONE) {
+    if (ah_math_add_uintptr((uintptr_t) parser->src_off, n, &off) != AH_ENONE) {
         return false;
     }
     if ((const uint8_t*) off > parser->src_end) {

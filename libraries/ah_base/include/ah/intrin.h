@@ -57,16 +57,26 @@
 /**
  * [Clang, GCC] Adds @a a and @a b, storing the sum to @a result.
  *
+ * Conceptually, @a a and @a b are both turned into infinite precision integer
+ * types before being added together. The function returns @c true if the result
+ * of the addition is outside the range representable by the type of the
+ * variable pointed at by @a result.
+ *
  * @param a Value of an arbitrary integer type.
  * @param b Value of an arbitrary integer type.
  * @param result Pointer to value of an arbitrary integer type.
  * @return @c true if the sum of @a a and @a b cannot be represented by
  *         @a result. @c false otherwise.
  */
-# define ah_p_add_overflow(a, b, result)
+# define ah_gcc_add_overflow(a, b, result)
 
 /**
  * [Clang, GCC] Multiplties @a a and @a b, storing the product to @a result.
+ *
+ * Conceptually, @a a and @a b are both turned into infinite precision integer
+ * types before being multiplied. The function returns @c true if the result of
+ * the multiplication is outside the range representable by the type of the
+ * variable pointed at by @a result.
  *
  * @param a Value of an arbitrary integer type.
  * @param b Value of an arbitrary integer type.
@@ -74,10 +84,15 @@
  * @return @c true if the product of @a a and @a b cannot be represented by
  *         @a result. @c false otherwise.
  */
-# define ah_p_mul_overflow(a, b, result)
+# define ah_gcc_mul_overflow(a, b, result)
 
 /**
  * [Clang, GCC] Subtracts @a a and @a b, storing the difference to @a result.
+ *
+ * Conceptually, @a a and @a b are both turned into infinite precision integer
+ * types before @a b is subtracted from @a a. The function returns @c true if
+ * the result of the subtraction is outside the range representable by the type
+ * of the variable pointed at by @a result.
  *
  * @param a Value of an arbitrary integer type.
  * @param b Value of an arbitrary integer type.
@@ -85,7 +100,7 @@
  * @return @c true if the difference of @a a and @a b cannot be represented by
  *         @a result. @c false otherwise.
  */
-# define ah_p_sub_overflow(a, b, result)
+# define ah_gcc_sub_overflow(a, b, result)
 
 #elif AH_VIA_CLANG || AH_VIA_GCC
 
@@ -94,9 +109,9 @@
 # define ah_unlikely(expr) __builtin_expect(!!(expr), 0)
 # define ah_unreachable()  __builtin_unreachable()
 
-# define ah_p_add_overflow(a, b, result) __builtin_add_overflow((a), (b), (result))
-# define ah_p_mul_overflow(a, b, result) __builtin_mul_overflow((a), (b), (result))
-# define ah_p_sub_overflow(a, b, result) __builtin_sub_overflow((a), (b), (result))
+# define ah_gcc_add_overflow(a, b, result) __builtin_add_overflow((a), (b), (result))
+# define ah_gcc_mul_overflow(a, b, result) __builtin_mul_overflow((a), (b), (result))
+# define ah_gcc_sub_overflow(a, b, result) __builtin_sub_overflow((a), (b), (result))
 
 #elif AH_VIA_MSVC
 # pragma intrinsic(__debugbreak)
