@@ -45,6 +45,8 @@ into a folder named `doxygen-build` in the repository root directory. The
 `doxygen-build` folder will contain an `index.html` file, which presents the
 documentation.
 
+[doxy]: https://doxygen.org
+
 ## Building and Installing
 
 All official libraries are built and installed using [CMake][cmak]. Each library
