@@ -4,12 +4,12 @@
 
 #include "ah_i_git_metadata.h"
 
-ah_extern const char* ah_lib_commit_str(void)
+ah_extern const char* ah_meta_commit_str(void)
 {
     return AH_I_GIT_DESCRIBE_ALWAYS;
 }
 
-ah_extern const char* ah_lib_platform_str(void)
+ah_extern const char* ah_meta_platform_str(void)
 {
 #if AH_IS_DARWIN
     return "darwin";

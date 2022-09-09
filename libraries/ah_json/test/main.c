@@ -19,7 +19,7 @@ int main(void)
         "- Version:       %s\n"
         "- Source Commit: %s\n"
         "- Platform:      %s\n",
-        ah_json_lib_version_str(), ah_lib_commit_str(), ah_lib_platform_str());
+        ah_json_lib_version_str(), ah_meta_commit_str(), ah_meta_platform_str());
 
     struct ah_unit_res res = { 0 };
 
