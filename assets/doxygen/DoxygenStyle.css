@@ -892,6 +892,11 @@ body > footer > a {
     height: 0.8rem;
 }
 
+iframe#MSearchResults {
+    display: block;
+    width: 100% !important;
+}
+
 #MSearchSelectWindow {
     background-color: white;
     border: 0.0625rem solid var(--ahf-grey-light);

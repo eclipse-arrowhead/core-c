@@ -15,7 +15,7 @@ ah_err_t ah_i_ring_init(struct ah_i_ring* ring, size_t entry_capacity, size_t en
         return AH_EDOM;
     }
 
-    if (ah_add_size(entry_capacity, 1u, &entry_capacity) != AH_ENONE) {
+    if (ah_math_add_size(entry_capacity, 1u, &entry_capacity) != AH_ENONE) {
         return AH_ENOMEM;
     }
 
@@ -24,7 +24,7 @@ ah_err_t ah_i_ring_init(struct ah_i_ring* ring, size_t entry_capacity, size_t en
     }
 
     size_t entry_capacity_in_bytes;
-    if (ah_mul_size(entry_capacity, entry_size, &entry_capacity_in_bytes) != AH_ENONE) {
+    if (ah_math_mul_size(entry_capacity, entry_size, &entry_capacity_in_bytes) != AH_ENONE) {
         return AH_ENOMEM;
     }
 

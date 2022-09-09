@@ -285,12 +285,12 @@ ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, 
         if (queue->_capacity == 0u) {
             new_queue_capacity = 8u;
         }
-        else if (ah_add_size(queue->_capacity, queue->_capacity / 2u, &new_queue_capacity) != AH_ENONE) {
+        else if (ah_math_add_size(queue->_capacity, queue->_capacity / 2u, &new_queue_capacity) != AH_ENONE) {
             return AH_ENOMEM;
         }
 
         size_t total_size;
-        if (ah_mul_size(new_queue_capacity, sizeof(struct ah_i_loop_task_entry), &total_size) != AH_ENONE) {
+        if (ah_math_mul_size(new_queue_capacity, sizeof(struct ah_i_loop_task_entry), &total_size) != AH_ENONE) {
             return AH_ENOMEM;
         }
 
