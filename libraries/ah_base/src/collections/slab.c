@@ -46,7 +46,7 @@ ah_err_t ah_i_slab_init(struct ah_i_slab* slab, size_t initial_slot_capacity, si
             ah_i_slab_term(slab, NULL);
             return AH_ENOMEM;
         }
-        if (ah_sub_size(initial_slot_capacity, cache_slot_capacity, &initial_slot_capacity) != AH_ENONE) {
+        if (ah_math_sub_size(initial_slot_capacity, cache_slot_capacity, &initial_slot_capacity) != AH_ENONE) {
             break;
         }
     }

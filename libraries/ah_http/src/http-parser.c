@@ -61,12 +61,12 @@ ah_err_t ah_i_http_parse_chunk_line(ah_rw_t* rw, size_t* size, const char** ext)
             return AH_ESYNTAX;
         }
 
-        err = ah_mul_size(size0, 16u, &size0);
+        err = ah_math_mul_size(size0, 16u, &size0);
         if (err != AH_ENONE) {
             return err;
         }
 
-        err = ah_add_size(size0, inc, &size0);
+        err = ah_math_add_size(size0, inc, &size0);
         if (err != AH_ENONE) {
             return err;
         }
@@ -411,12 +411,12 @@ ah_err_t ah_i_http_header_value_to_size(const char* value, size_t* size)
             return AH_ESYNTAX;
         }
 
-        err = ah_mul_size(size0, 10u, &size0);
+        err = ah_math_mul_size(size0, 10u, &size0);
         if (err != AH_ENONE) {
             return err;
         }
 
-        err = ah_add_size(size0, ch - '0', &size0);
+        err = ah_math_add_size(size0, ch - '0', &size0);
         if (err != AH_ENONE) {
             return err;
         }
