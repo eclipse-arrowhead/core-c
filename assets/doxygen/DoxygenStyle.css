@@ -392,7 +392,7 @@ p {
 .header > .headertitle > .title {
     color: var(--ahf-blue-text);
     font-family: "Oswald", sans-serif;
-    font-size: 1.5em;
+    font-size: 1.6em;
 }
 
 .header > :last-child {
@@ -736,16 +736,31 @@ p {
     margin-top: 1rem;
 }
 
-.contents .textblock > h3 {
+.contents .textblock > h1 {
     margin-top: 2rem;
 }
 
-.contents .textblock > h3:first-child {
+.contents .textblock > h1:first-child {
     margin-top: 0;
 }
 
 .contents .textblock > .fragment {
     padding: 1rem;
+}
+
+.contents .textblock > table.markdownTable {
+    border: 1px solid var(--ahf-grey-background);
+    border-spacing: 0;
+}
+
+.contents .textblock > table.markdownTable > tbody > tr > * {
+    padding: 0.25rem 0.75rem;
+}
+
+.contents .textblock > table.markdownTable > tbody > tr > th {
+    background-color: var(--ahf-grey-light);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
 }
 
 .contents > .qindex {
@@ -816,7 +831,7 @@ body > footer > a {
     border-radius: 0.25rem 0 0 0.25rem;
     display: flex;
     flex-grow: 1;
-    height: initial;
+    height: 1.5rem;
     padding: 0.25rem 0 0.25rem 0.25rem;
     position: initial;
     width: initial;
@@ -848,7 +863,7 @@ body > footer > a {
     cursor: pointer;
     height: initial;
     position: initial;
-    width: auto;
+    width: 1.25rem;
 }
 
 #MSearchBox > .right {
@@ -857,7 +872,7 @@ body > footer > a {
     display: flex;
     height: initial;
     justify-content: center;
-    min-width: 1.05rem;
+    min-width: 1.34rem;
     padding: 0.25rem 0.25rem 0.25rem 0;
     position: initial;
     width: initial;
@@ -895,8 +910,9 @@ body > footer > a {
     border-radius: 0.25rem;
     border: 0.0625rem solid var(--ahf-grey-background);
     box-shadow: 0.125rem 0.125rem 0.125rem #00000050;
-    margin-top: 0.67rem;
+    margin-top: 1rem;
     right: 0.5rem;
+    width: initial !important;
 }
 
 #MSearchResultsWindow .SRPage {
