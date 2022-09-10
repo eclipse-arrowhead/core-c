@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 add_subdirectory(ah_base)
-add_subdirectory(ah_consumer_service_discovery)
+add_subdirectory(ah_c_service_discovery)
 add_subdirectory(ah_http)
 add_subdirectory(ah_json)
 add_subdirectory(ah_mbedtls)

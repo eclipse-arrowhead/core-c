@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/consumer/http/json/service-discovery.h"
+#include "ah-c/service-discovery.h"
 
 #include <ah/meta.h>
 #include <ah/unit.h>
@@ -14,8 +14,8 @@ int main(void)
         "- Version:       %s\n"
         "- Source Commit: %s\n"
         "- Platform:      %s\n\n",
-        ah_consumer_http_json_service_discovery_lib_version_str(),
-        ah_lib_commit_str(), ah_lib_platform_str());
+        ah_c_service_discovery_lib_version_str(),
+        ah_meta_commit_str(), ah_meta_platform_str());
 
     struct ah_unit_res res = { 0 };
 
