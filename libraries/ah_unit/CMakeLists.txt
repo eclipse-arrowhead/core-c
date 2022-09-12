@@ -20,13 +20,8 @@ target_include_directories(
 )
 target_link_libraries(ah_unit PRIVATE ah_base)
 
-file(
-    GENERATE
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/ah_i_unit_lib_version.h
-    CONTENT "\
-#define AH_I_UNIT_LIB_VERSION_STR \"${PROJECT_VERSION}\";\r\n\
-#define AH_I_UNIT_LIB_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}u;\r\n\
-#define AH_I_UNIT_LIB_VERSION_MINOR ${PROJECT_VERSION_MINOR}u;\r\n\
-#define AH_I_UNIT_LIB_VERSION_PATCH ${PROJECT_VERSION_PATCH}u;\r\n"
-    TARGET ah_unit
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_unit.gen.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_unit.gen
+    @ONLY
 )

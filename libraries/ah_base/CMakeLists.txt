@@ -13,7 +13,6 @@ set(
     include/ah/abort.h
     include/ah/alloc.h
     include/ah/assert.h
-    include/ah/base.h
     include/ah/buf.h
     include/ah/conf.h
     include/ah/defs.h
@@ -32,7 +31,7 @@ set(
     include/ah/ip.h
     include/ah/loop.h
     include/ah/math.h
-    include/ah/meta.h
+    include/ah/base.h
     include/ah/rw.h
     include/ah/sock.h
     include/ah/task.h
@@ -41,7 +40,6 @@ set(
     include/ah/udp.h
     include/ah/utf8.h
     src/abort.c
-    src/base.c
     src/buf.c
     src/collections/list.c
     src/collections/ring.c
@@ -51,7 +49,6 @@ set(
     src/loop-evt.h
     src/loop.c
     src/math.c
-    src/meta.c
     src/rw.c
     src/sock.c
     src/task.c
@@ -162,32 +159,27 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(ah_base PUBLIC Liburing::liburing)
 endif ()
 
-file(
-    GENERATE
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/ah_i_base_lib_version.h
-    CONTENT "\
-#define AH_I_BASE_LIB_VERSION_STR \"${PROJECT_VERSION}\";\r\n\
-#define AH_I_BASE_LIB_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}u;\r\n\
-#define AH_I_BASE_LIB_VERSION_MINOR ${PROJECT_VERSION_MINOR}u;\r\n\
-#define AH_I_BASE_LIB_VERSION_PATCH ${PROJECT_VERSION_PATCH}u;\r\n"
-    TARGET ah_base
-)
-
 include(FindGit)
 if (GIT_FOUND)
-    set(GIT_METADATA_HEADER "${CMAKE_CURRENT_BINARY_DIR}/include/ah_i_git_metadata.h")
-    add_custom_target(
-        generate_git_metadata_header
-        COMMAND git_metadata_to_header "${GIT_METADATA_HEADER}" AH_I_
-        BYPRODUCTS "${GIT_METADATA_HEADER}"
-        DEPENDS "${CMAKE_SOURCE_DIR}/.git/refs/heads/master"
-        COMMENT "Generating ${GIT_METADATA_HEADER}"
-        VERBATIM
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" describe --always
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        RESULT_VARIABLE GIT_DESCRIBE_ALWAYS_RESULT
+        OUTPUT_VARIABLE GIT_DESCRIBE_ALWAYS_OUTPUT
+        ERROR_VARIABLE GIT_DESCRIBE_ALWAYS_ERROR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_STRIP_TRAILING_WHITESPACE
     )
-    add_dependencies(ah_base generate_git_metadata_header)
-else ()
-    message(FATAL_ERROR "`git` not found. Required.")
+    if (NOT ${GIT_DESCRIBE_ALWAYS_RESULT} EQUAL 0)
+        message(WARNING "Failed to execute `${GIT_EXECUTABLE} describe --always`; ${GIT_DESCRIBE_ALWAYS_ERROR}")
+    endif ()
 endif ()
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_base.gen.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_base.gen
+    @ONLY
+)
 
 set(
     TEST_FILES

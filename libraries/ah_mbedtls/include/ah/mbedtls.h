@@ -63,6 +63,38 @@
 #include <ah/tcp.h>
 #include <stdbool.h>
 
+/**
+ * Major version of this library, represented by an unsigned integer literal.
+ *
+ * @note This is @e not the major version of MbedTLS itself, but of this
+ *       integration library.
+ */
+#define AH_MBEDTLS_VERSION_MAJOR AH_I_MBEDTLS_VERSION_MAJOR
+
+/**
+ * Minor version of this library, represented by an unsigned integer literal.
+ *
+ * @note This is @e not the minor version of MbedTLS itself, but of this
+ *       integration library.
+ */
+#define AH_MBEDTLS_VERSION_MINOR AH_I_MBEDTLS_VERSION_MINOR
+
+/**
+ * Patch version of this library, represented by an unsigned integer literal.
+ *
+ * @note This is @e not the patch version of MbedTLS itself, but of this
+ *       integration library.
+ */
+#define AH_MBEDTLS_VERSION_PATCH AH_I_MBEDTLS_VERSION_PATCH
+
+/**
+ * Constant string representation of this library version.
+ *
+ * @note This is @e not the version of MbedTLS itself, but of this integration
+ *       library.
+ */
+#define AH_MBEDTLS_VERSION_STR AH_I_MBEDTLS_VERSION_STR
+
 typedef struct ah_mbedtls_client ah_mbedtls_client_t;
 typedef struct ah_mbedtls_server ah_mbedtls_server_t;
 
@@ -279,45 +311,6 @@ ah_extern ah_tcp_trans_t ah_mbedtls_server_as_tcp_trans(ah_mbedtls_server_t* srv
  * @param srv Pointer to server.
  */
 ah_extern void ah_mbedtls_server_term(ah_mbedtls_server_t* srv);
-
-/** @} */
-
-/**
- * @name MbedTLS Library Version Details
- *
- * Version information about @e this library, and @e not about the version of
- * MbedTLS it is currently using.
- *
- * @{
- */
-
-/**
- * Gets human-readable representation of version of this MbedTLS library.
- *
- * @return Constant string representation of version.
- */
-ah_extern const char* ah_mbedtls_lib_version_str(void);
-
-/**
- * Gets major version of this MbedTLS library.
- *
- * @return Major version indicator.
- */
-ah_extern unsigned short ah_mbedtls_lib_version_major(void);
-
-/**
- * Gets minor version of this MbedTLS library.
- *
- * @return Minor version indicator.
- */
-ah_extern unsigned short ah_mbedtls_lib_version_minor(void);
-
-/**
- * Gets patch version of this MbedTLS library.
- *
- * @return Patch version indicator.
- */
-ah_extern unsigned short ah_mbedtls_lib_version_patch(void);
 
 /** @} */
 

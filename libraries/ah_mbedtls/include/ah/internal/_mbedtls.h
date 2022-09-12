@@ -3,6 +3,8 @@
 #ifndef AH_INTERNAL_TLS_H_
 #define AH_INTERNAL_TLS_H_
 
+#include "_mbedtls.gen"
+
 #include <ah/internal/collections/ring.h>
 #include <ah/internal/collections/slab.h>
 #include <mbedtls/ctr_drbg.h>
