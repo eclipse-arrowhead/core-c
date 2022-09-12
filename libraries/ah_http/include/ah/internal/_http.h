@@ -3,6 +3,8 @@
 #ifndef AH_INTERNAL_HTTP_H_
 #define AH_INTERNAL_HTTP_H_
 
+#include "_http.gen"
+
 #include <ah/buf.h>
 #include <ah/defs.h>
 #include <ah/internal/collections/list.h>

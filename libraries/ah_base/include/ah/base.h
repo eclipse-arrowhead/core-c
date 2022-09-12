@@ -5,39 +5,50 @@
 
 /**
  * @file
- * Base library metadata.
+ * Compile-time metadata.
  *
- * This file provides details about this library.
+ * This file provides details determined when this library is compiled.
+ *
+ * @warning If you compile this library in any other way than the one officially
+ *          supported, the macros defined here may present arbitrary default
+ *          values when used.
  */
 
-#include "defs.h"
-
-/**
- * Gets human-readable representation of version of the Base library.
- *
- * @return Constant string representation of version.
- */
-ah_extern const char* ah_base_lib_version_str(void);
+#include "internal/_base.gen"
 
 /**
- * Gets major version of the Base library.
- *
- * @return Major version indicator.
+ * Constant string representation of the source code version from which this
+ * library was compiled.
  */
-ah_extern unsigned short ah_base_lib_version_major(void);
+#define AH_BASE_COMMIT_STR AH_I_BASE_COMMIT_STR
 
 /**
- * Gets minor version of the Base library.
- *
- * @return Minor version indicator.
+ * Constant string identifier representing the platform for which this library
+ * was compiled.
  */
-ah_extern unsigned short ah_base_lib_version_minor(void);
+#define AH_BASE_PLATFORM_STR AH_I_BASE_PLATFORM_STR
 
 /**
- * Gets patch version of the Base library.
- *
- * @return Patch version indicator.
+ * Major version of the base library, represented by an unsigned integer
+ * literal.
  */
-ah_extern unsigned short ah_base_lib_version_patch(void);
+#define AH_BASE_VERSION_MAJOR AH_I_BASE_VERSION_MAJOR
+
+/**
+ * Minor version of the base library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_BASE_VERSION_MINOR AH_I_BASE_VERSION_MINOR
+
+/**
+ * Patch version of the base library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_BASE_VERSION_PATCH AH_I_BASE_VERSION_PATCH
+
+/**
+ * Constant string representation of the base library version.
+ */
+#define AH_BASE_VERSION_STR AH_I_BASE_VERSION_STR
 
 #endif

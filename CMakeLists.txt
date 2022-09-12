@@ -20,4 +20,3 @@ elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 endif ()
 
 add_subdirectory(libraries)
-add_subdirectory(tools)

@@ -21,7 +21,6 @@ set(
     include/ah/mbedtls.h
     src/mbedtls-client.c
     src/mbedtls-client.h
-    src/mbedtls-lib-version.c
     src/mbedtls-server.c
     src/mbedtls-server.h
     src/mbedtls-utils.c
@@ -36,15 +35,10 @@ target_include_directories(
 )
 target_link_libraries(ah_mbedtls PUBLIC ah_base MbedTLS::mbedtls)
 
-file(
-    GENERATE
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/ah_i_mbedtls_lib_version.h
-    CONTENT "\
-#define AH_I_MBEDTLS_LIB_VERSION_STR \"${PROJECT_VERSION}\";\r\n\
-#define AH_I_MBEDTLS_LIB_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}u;\r\n\
-#define AH_I_MBEDTLS_LIB_VERSION_MINOR ${PROJECT_VERSION_MINOR}u;\r\n\
-#define AH_I_MBEDTLS_LIB_VERSION_PATCH ${PROJECT_VERSION_PATCH}u;\r\n"
-    TARGET ah_mbedtls
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_mbedtls.gen.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_mbedtls.gen
+    @ONLY
 )
 
 set(
