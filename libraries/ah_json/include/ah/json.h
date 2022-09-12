@@ -3,6 +3,8 @@
 #ifndef AH_JSON_H_
 #define AH_JSON_H_
 
+#include "internal/_json.gen"
+
 /**
  * @file
  * JavaScript Object Notation (JSON) utilities.
@@ -57,6 +59,29 @@
  */
 
 #include <ah/buf.h>
+
+/**
+ * Major version of the JSON library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_JSON_VERSION_MAJOR AH_I_JSON_VERSION_MAJOR
+
+/**
+ * Minor version of the JSON library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_JSON_VERSION_MINOR AH_I_JSON_VERSION_MINOR
+
+/**
+ * Patch version of the JSON library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_JSON_VERSION_PATCH AH_I_JSON_VERSION_PATCH
+
+/**
+ * Constant string representation of the JSON library version.
+ */
+#define AH_JSON_VERSION_STR AH_I_JSON_VERSION_STR
 
 #ifdef AH_DOXYGEN
 
@@ -324,41 +349,6 @@ ah_extern int ah_json_str_compare(const char* a, size_t a_length, const char* b,
  * </ul>
  */
 ah_extern ah_err_t ah_json_str_unescape(const char* src, size_t src_length, char* dst, size_t* dst_length);
-
-/** @} */
-
-/**
- * @name JSON Library Version Details
- * @{
- */
-
-/**
- * Gets human-readable representation of version of the JSON library.
- *
- * @return Constant string representation of version.
- */
-ah_extern const char* ah_json_lib_version_str(void);
-
-/**
- * Gets major version of the JSON library.
- *
- * @return Major version indicator.
- */
-ah_extern unsigned short ah_json_lib_version_major(void);
-
-/**
- * Gets minor version of the JSON library.
- *
- * @return Minor version indicator.
- */
-ah_extern unsigned short ah_json_lib_version_minor(void);
-
-/**
- * Gets patch version of the JSON library.
- *
- * @return Patch version indicator.
- */
-ah_extern unsigned short ah_json_lib_version_patch(void);
 
 /** @} */
 

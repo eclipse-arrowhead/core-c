@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: EPL-2.0
+
+#ifndef AH_INTERNAL_BASE_GEN_
+#define AH_INTERNAL_BASE_GEN_
+
+#define AH_I_BASE_COMMIT_STR    "c18a71a"
+#define AH_I_BASE_PLATFORM_STR  "Linux"
+#define AH_I_BASE_VERSION_MAJOR 1u
+#define AH_I_BASE_VERSION_MINOR 0u
+#define AH_I_BASE_VERSION_PATCH 0u
+#define AH_I_BASE_VERSION_STR   "1.0.0"
+
+#endif

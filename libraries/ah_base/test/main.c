@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: EPL-2.0
 
 #include "ah/base.h"
-#include "ah/meta.h"
 #include "ah/unit.h"
 
 #include <stdio.h>
@@ -21,12 +20,11 @@ void test_utf8(ah_unit_res_t* res);
 
 int main(void)
 {
-    (void) printf(
+    (void) puts(
         "Arrowhead Base C Library Unit Tests\n"
-        "- Version:       %s\n"
-        "- Source Commit: %s\n"
-        "- Platform:      %s\n\n",
-        ah_base_lib_version_str(), ah_meta_commit_str(), ah_meta_platform_str());
+        "- Version:       " AH_BASE_VERSION_STR "\n"
+        "- Source Commit: " AH_BASE_COMMIT_STR "\n"
+        "- Platform:      " AH_BASE_PLATFORM_STR "\n");
 
     struct ah_unit_res res = { 0 };
 

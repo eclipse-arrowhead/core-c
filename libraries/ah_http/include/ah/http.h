@@ -110,6 +110,29 @@
 #include <stdint.h>
 #include <string.h>
 
+/**
+ * Major version of the HTTP library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_HTTP_VERSION_MAJOR AH_I_HTTP_VERSION_MAJOR
+
+/**
+ * Minor version of the HTTP library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_HTTP_VERSION_MINOR AH_I_HTTP_VERSION_MINOR
+
+/**
+ * Patch version of the HTTP library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_HTTP_VERSION_PATCH AH_I_HTTP_VERSION_PATCH
+
+/**
+ * Constant string representation of the HTTP library version.
+ */
+#define AH_HTTP_VERSION_STR AH_I_HTTP_VERSION_STR
+
 typedef struct ah_http_chunk ah_http_chunk_t;
 typedef struct ah_http_client ah_http_client_t;
 typedef struct ah_http_client_cbs ah_http_client_cbs_t;
@@ -1324,41 +1347,6 @@ ah_extern void* ah_http_server_get_obs_ctx(const ah_http_server_t* srv);
  * @return @c true only if @a cbs is @e valid. @c false otherwise.
  */
 ah_extern bool ah_http_server_cbs_is_valid(const ah_http_server_cbs_t* cbs);
-
-/** @} */
-
-/**
- * @name HTTP Library Version Details
- * @{
- */
-
-/**
- * Gets human-readable representation of version of the HTTP library.
- *
- * @return Constant string representation of version.
- */
-ah_extern const char* ah_http_lib_version_str(void);
-
-/**
- * Gets major version of the HTTP library.
- *
- * @return Major version indicator.
- */
-ah_extern unsigned short ah_http_lib_version_major(void);
-
-/**
- * Gets minor version of the HTTP library.
- *
- * @return Minor version indicator.
- */
-ah_extern unsigned short ah_http_lib_version_minor(void);
-
-/**
- * Gets patch version of the HTTP library.
- *
- * @return Patch version indicator.
- */
-ah_extern unsigned short ah_http_lib_version_patch(void);
 
 /** @} */
 

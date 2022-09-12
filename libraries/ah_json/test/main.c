@@ -2,7 +2,7 @@
 
 #include "ah/json.h"
 
-#include <ah/meta.h>
+#include <ah/base.h>
 #include <ah/unit.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,12 +14,11 @@ void test_json_str_unescape(ah_unit_res_t* res);
 
 int main(void)
 {
-    (void) printf(
+    (void) puts(
         "Arrowhead JSON C Library Unit Tests\n"
-        "- Version:       %s\n"
-        "- Source Commit: %s\n"
-        "- Platform:      %s\n",
-        ah_json_lib_version_str(), ah_meta_commit_str(), ah_meta_platform_str());
+        "- Version:       " AH_JSON_VERSION_STR "\n"
+        "- Source Commit: " AH_BASE_COMMIT_STR "\n"
+        "- Platform:      " AH_BASE_PLATFORM_STR "\n");
 
     struct ah_unit_res res = { 0 };
 

@@ -9,7 +9,6 @@ set(CMAKE_C_STANDARD 99)
 set(
     SOURCE_FILES
     include/ah/json.h
-    src/json-lib-version.c
     src/json-parse.c
     src/json-str.c
 )
@@ -22,15 +21,10 @@ target_include_directories(
 )
 target_link_libraries(ah_json PRIVATE ah_base)
 
-file(
-    GENERATE
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/ah_i_json_lib_version.h
-    CONTENT "\
-#define AH_I_JSON_LIB_VERSION_STR \"${PROJECT_VERSION}\";\r\n\
-#define AH_I_JSON_LIB_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}u;\r\n\
-#define AH_I_JSON_LIB_VERSION_MINOR ${PROJECT_VERSION_MINOR}u;\r\n\
-#define AH_I_JSON_LIB_VERSION_PATCH ${PROJECT_VERSION_PATCH}u;\r\n"
-    TARGET ah_json
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_json.gen.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_json.gen
+    @ONLY
 )
 
 set(

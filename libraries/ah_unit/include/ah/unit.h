@@ -23,10 +23,35 @@
  *       failure messages are printed to the latter.
  */
 
+#include "internal/_unit.gen"
+
 #include <ah/defs.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+/**
+ * Major version of the Unit library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_UNIT_VERSION_MAJOR AH_I_UNIT_VERSION_MAJOR
+
+/**
+ * Minor version of the Unit library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_UNIT_VERSION_MINOR AH_I_UNIT_VERSION_MINOR
+
+/**
+ * Patch version of the Unit library, represented by an unsigned integer
+ * literal.
+ */
+#define AH_UNIT_VERSION_PATCH AH_I_UNIT_VERSION_PATCH
+
+/**
+ * Constant string representation of the Unit library version.
+ */
+#define AH_UNIT_VERSION_STR AH_I_UNIT_VERSION_STR
 
 /**
  * Expands into a unit testing context.
