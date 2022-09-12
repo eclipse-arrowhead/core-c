@@ -10,7 +10,6 @@ set(
     SOURCE_FILES
     include/ah-c/service-discovery.h
     include/ah-c/internal/_service-discovery.h
-    src/service-discovery-lib-version.c
     src/service-discovery.c
 )
 
@@ -22,15 +21,10 @@ target_include_directories(
 )
 target_link_libraries(ah_c_service_discovery PRIVATE ah_base ah_http ah_json)
 
-file(
-    GENERATE
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/ah_i_c_service_discovery_lib_version.h
-    CONTENT "\
-#define AH_I_C_SERVICE_DISCOVERY_LIB_VERSION_STR \"${PROJECT_VERSION}\";\r\n\
-#define AH_I_C_SERVICE_DISCOVERY_LIB_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}u;\r\n\
-#define AH_I_C_SERVICE_DISCOVERY_LIB_VERSION_MINOR ${PROJECT_VERSION_MINOR}u;\r\n\
-#define AH_I_C_SERVICE_DISCOVERY_LIB_VERSION_PATCH ${PROJECT_VERSION_PATCH}u;\r\n"
-    TARGET ah_c_service_discovery
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah-c/internal/_service-discovery.gen.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah-c/internal/_service-discovery.gen
+    @ONLY
 )
 
 set(

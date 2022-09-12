@@ -3,6 +3,7 @@
 #ifndef AH_INTERNAL_CONSUMER_SERVICE_DISCOVERY_H_
 #define AH_INTERNAL_CONSUMER_SERVICE_DISCOVERY_H_
 
+#include "_service-discovery.gen"
 #include "ah/defs.h"
 
 #define AH_I_C_SERVICE_DISCOVERY_INTERNAL \

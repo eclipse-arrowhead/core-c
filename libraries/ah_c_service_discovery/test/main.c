@@ -2,20 +2,18 @@
 
 #include "ah-c/service-discovery.h"
 
-#include <ah/meta.h>
+#include <ah/base.h>
 #include <ah/unit.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(void)
 {
-    (void) printf(
+    (void) puts(
         "Arrowhead Service Discovery HTTP/JSON Consumer C Library Unit Tests\n"
-        "- Version:       %s\n"
-        "- Source Commit: %s\n"
-        "- Platform:      %s\n\n",
-        ah_c_service_discovery_lib_version_str(),
-        ah_meta_commit_str(), ah_meta_platform_str());
+        "- Version:       " AH_C_SERVICE_DISCOVERY_VERSION_STR "\n"
+        "- Source Commit: " AH_BASE_COMMIT_STR "\n"
+        "- Platform:      " AH_BASE_PLATFORM_STR "\n");
 
     struct ah_unit_res res = { 0 };
 
