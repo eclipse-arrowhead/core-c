@@ -3,69 +3,75 @@
 This repository gathers C99 libraries officially developed by the Eclipse
 Arrowhead project. These libraries build on top of the C99 standard library to
 provide cross-platform asynchronous I/O, support for various encodings and
-protocols, as  well as code directly dealing with the provision and consumption
-of Arrowhead services.
+protocols. It is also meant to provide code for directly dealing with the
+provision and consumption of Arrowhead services, even though no such libraries
+have been implemented at the time of writing.
 
-These libraries are designed to be deployable on both embedded and more capable
-hardware. In case of the former, we expect a few hundred kilobytes of RAM and
-ROM/flash to be sufficient, while on more traditional servers and desktop
-computers, we expect at least hundreds of megabytes of RAM to be available and
-even more disk.
+The advantages of using these libraries in comparison to any other, such as
+[libuv][lbuv], are as follows:
 
-At the time of writing, this repository is still quite new and unencumbered by
-significant adoption. As a consequence, you are likely to find bugs and other
-problems as you evaluate and deploy these libraries. We would love you to help
-report and mitigate any such issues you may find. A brief description of how to
-go about to provide us with such help is given at the bottom of this page.
+[lbuv]: https://libuv.org/
+
+1.  They are designed to be able to run well on platforms ranging from smaller
+    embedded systems having only microcontrollers and hundreds of kilobytes of 
+    RAM to high-end server solutions with several multicore CPUs and terabytes
+    of RAM.
+2.  They are under the stewardship of the [Arrowhead Project][arrp], which means
+    that they will be planned, developed, bundled and distributed in ways that
+    are beneficial primarily to the Arrowhead community.
+
+[arrp]: https://arrowhead.eu/
 
 ## Repository Organization
 
 The Eclipse Arrowhead Core C libraries are all located in `libraries` folder of
 the [core-c][ghub] project of the official Arrowhead framework
-[GitHub organization][gorg]. folder contains this README file and configuration
-files at its root. Additionally, it contains a number of folders whose name
-start with `ah_`. Each of those folders contains its own Arrowhead library,
-complete with its own documentation and build files. Some of these libraries
-depend on each other, while others can be used in isolation. In the few cases
-where they depend on 3rd party libraries, it should be clearly documented. Most
-libraries depend on the `ah_base` library, directly or indirectly, which
-provides cross-platform networking, error management, and other similarly
-fundamental utilities.
+[GitHub organization][gorg]. If you are reading this document on GitHub, it is
+located inside this `libraries` folder. The folder contains this document and
+configuration files at its root. Additionally, it contains a number of folders
+whose name start with `ah_`. Each of those folders contains its own Arrowhead
+library, complete with its own documentation and build files. If you are reading
+the generated [Doxygen][dxyg] documentation, the documentation associated with
+each of these libraries are available via the _Headers_ link in the main
+navigation menu. Some libraries depend on each other, while others can be used
+in isolation. In the few cases where they depend on third party libraries, it
+should be clearly documented. Most libraries depend on the `ah_base` library,
+directly or indirectly, which provides cross-platform networking, error
+management, and other similarly fundamental utilities.
 
+[dxyg]: https://doxygen.org
 [ghub]: https://github.com/eclipse-arrowhead/core-c
 [gorg]: https://github.com/eclipse-arrowhead
 
 ## Documentation
 
-The documentation for all libraries is currently made available here:
+The generated [Doxygen][dxyg] documentation is currently made available here:
 
 https://arrowhead-f.github.io/core-c-lib-docs
 
-You may compile the documentation yourself using [Doxygen][doxy] version 1.9.1
+You may compile the documentation yourself using [Doxygen][dxyg] version 1.9.1
 or later. From a command line, execute the `doxygen` command from within the
 `libraries` folder we introduced above. The generated HTML documentation is
 gathered into a folder named `doxygen-build` in the repository root directory.
 The `doxygen-build` folder will contain an `index.html` file, which presents the
 documentation.
 
-[doxy]: https://doxygen.org
-
 ## Building and Installing
 
 All official libraries are built and installed using [CMake][cmak]. Each library
 we provide is designed to be _linked statically_.
 
+[cmak]: https://cmake.org/
+
 ## Platform and Compiler Support
 
 We currently support the following platforms and compilers:
-
-[cmak]: https://cmake.org/
 
 | Platform       | Supported versions        | Supported Compilers |
 |:---------------|---------------------------|:--------------------|
 | [Darwin][darw] | 16.0 and later*           | Clang, GCC          |
 | [Linux][linu]  | Kernel 5.15 LTS and later | Clang, GCC          |
-| [Win32][wind]  | Windows 10 and later      | MSVC                |
+| [Win32][wind]  | Windows 10 and later      | MSVC++              |
 
 *These versions of Darwin are used by macOS v10.12.0 and later, as well as by
  iOS 10.0.1 and later.
@@ -154,9 +160,13 @@ If you wish to contribute code, please observe the following:
    with [Doxygen][dxyg] and must follow the Javadoc pattern already used in the
    existing libraries.
 4. You must adhere to our versioning schema, described earlier in this document.
+   The version of each library is indicated in its CMake configuration file,
+   `CMakeLists.txt`. In particular, each project declaration, produced via an
+   invocation of the `project` command, is to include the `VERSION` option.
+   Please refer to https://cmake.org/cmake/help/latest/command/project.html for
+   more details.
 5. Your contribution must be submitted in the form of a GitHub pull request to
    the Eclipse Arrowhead [core-c][ghub] project repository.
 
 [lead]: https://projects.eclipse.org/projects/iot.arrowhead/who
 [claf]: https://clang.llvm.org/docs/ClangFormat.html
-[dxyg]: https://doxygen.org

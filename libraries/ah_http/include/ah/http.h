@@ -49,7 +49,7 @@
  * with error code @ref AH_EOVERFLOW. Limiting sizes in this way helps reduce
  * the complexity the client implementation and works as a form of protection
  * from exploits that use large metadata items. Generally, the size of each of
- * these buffers will be limited by the page allocator page size, @c AH_PSIZE,
+ * these buffers will be limited by the page allocator page size, @ref AH_PSIZE,
  * more of which you can read in the documentation for ah_palloc().
  *
  * <h3>Servers</h3>
@@ -1107,9 +1107,9 @@ ah_extern ah_loop_t* ah_http_client_get_loop(const ah_http_client_t* cln);
 /**
  * Gets the context pointer of the client observer associated with @a srv.
  *
- * @param srv Pointer to client.
- * @return Context pointer, or @c NULL if @a srv is @c NULL or the transport of
- *         @a srv is missing a required function in its virtual function table.
+ * @param cln Pointer to client.
+ * @return Context pointer, or @c NULL if @a cln is @c NULL or the transport of
+ *         @a cln is missing a required function in its virtual function table.
  *         Also returns @c NULL if the context pointer itself is @c NULL.
  */
 ah_extern void* ah_http_client_get_obs_ctx(const ah_http_client_t* cln);
@@ -1162,7 +1162,7 @@ ah_extern bool ah_http_client_cbs_is_valid(const ah_http_client_cbs_t* cbs);
  *   <li>@ref AH_EINVAL    - @c on_open, @c on_listen, @c on_accept or @c on_close of @a cbs is
  *                           @c NULL.
  *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.
- *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both
+ *   <li>@ref AH_EOVERFLOW - @ref AH_PSIZE is too small for it to be possible to store both
 / *                          metadata @e and have room for at least one incoming connection in a
  *                           single page provided by the page allocator (see ah_palloc()).
  * </ul>

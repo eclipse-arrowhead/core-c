@@ -7,7 +7,7 @@
  * @file
  * UTF-8 utilities.
  *
- * This file provides functions for dealing with the UTF-8 character encoding.
+ * Functions for dealing with the UTF-8 character encoding.
  *
  * @see https://rfc-editor.org/rfc/rfc3629
  */

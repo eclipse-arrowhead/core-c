@@ -1,7 +1,5 @@
     @dir ah_unit @brief Unit testing library.
 
-## Arrowhead Core Unit Testing Library
-
 Whatever the purpose of your software, you are likely going to have to test it
 at some point. There are many ways to appropriately test software, depending on
 what kind of software it is and how you intend it to be used. This particular

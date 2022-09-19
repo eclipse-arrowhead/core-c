@@ -69,12 +69,12 @@
  * Indicates whether or not a BSD sockets implementation is available on the
  * targeted platform.
  */
-#define AH_HAS_BSD_SOCKETS (AH_USE_IOCP || AH_USE_KQUEUE || AH_USE_URING)
+#define AH_HAS_BSD_SOCKETS (AH_IS_DARWIN || AH_IS_LINUX || AH_IS_WIN32)
 
 /**
  * Indicates whether the targeted platform is at least loosely POSIX-compliant.
  */
-#define AH_HAS_POSIX (AH_USE_KQUEUE || AH_USE_URING)
+#define AH_HAS_POSIX (AH_IS_DARWIN || AH_IS_LINUX)
 
 #if defined(AH_DOXYGEN)
 // Do nothing.
@@ -111,7 +111,7 @@
 #endif
 #ifndef AH_VIA_MSVC
 /**
- * Indicates whether or not the Microsoft Visual Studio compiler is being used.
+ * Indicates whether or not the Microsoft Visual Studio compiler (MSVC++) is being used.
  */
 # define AH_VIA_MSVC 0
 #endif

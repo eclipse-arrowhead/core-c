@@ -1,7 +1,5 @@
     @dir ah_mbedtls @brief MbetTLS integration library.
 
-## Arrowhead Core MbedTLS Integration Library
-
 Transport Layer Security (TLS) is an important suite of standards used to form
 secure connections over untrusted media. It makes up part of what could be
 considered the foundation of the modern World Wide Web by being the security

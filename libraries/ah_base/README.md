@@ -1,7 +1,5 @@
     @dir ah_base @brief Base library.
 
-##  Arrowhead Core C Base Library
-
 This library provides the foundation upon which most other Core C libraries
 depend. It most significantly exposes a cross-platform API over some I/O
 utilities provided by the targeted platforms, such as TCP/IP networking. Most of
@@ -35,8 +33,8 @@ applications, or system-of-systems. Many of those machines may have limited
 software and hardware capabilities, such as not being able to run full operating
 systems or not having access to significant compute or memory facilities. While
 a WWW server will typically have at least hundreds of megabytes of RAM and disk
-storage, an Arrowhead system running this library may have a few hundred of
-kilobytes of RAM and ROM.
+storage, an Arrowhead system running this library may have hundreds of kilobytes
+of RAM and ROM.
 
 ### Dependencies
 

@@ -5,18 +5,16 @@
 
 /**
  * @file
- * BSD Socket utilities.
+ * Socket utilities.
  *
- * The networking API for the BSD operating systems have become influential to
- * the degree that most operating systems today borrow the designs of their
- * networking APIs from it. To make it more straightforward to manage some of
- * the constructs of the BSD sockets API, some of its constructs are provided
- * here.
- *
- * This file most significantly contain representations for <em>socket
- * addresses</em>, which unions over a set of supported address formats. The
- * file additionally contains relevant constants and functions for dealing with
- * such addresses.
+ * A "socket" is a handle representing the ability to communicate over some
+ * supported medium. The term is taken from the BSD operating system family,
+ * which popularized the concept and the API that came with it. Every
+ * communication facility provided by the base library conceptually provides a
+ * form of sockets. This file provides functions and other utilities primarily
+ * for dealing with <em>socket addresses</em>, which are used to indicate where
+ * messages sent or received via a socket is destined or is expected to come
+ * from.
  */
 
 #include "internal/_sock.h"

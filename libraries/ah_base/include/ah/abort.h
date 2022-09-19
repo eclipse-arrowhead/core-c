@@ -11,8 +11,8 @@
  * typically to indicate that some irrecoverable behavior has been observed.
  *
  * @note In contrast to the abort() function of the C99 standard library, the
- * functions here must have well-defined behavior on each platform they are
- * implemented for.
+ * functions here must be able to guarantee what the results of calling them
+ * are.
  */
 
 #include "defs.h"
@@ -20,7 +20,7 @@
 /**
  * Aborts application process without a message.
  *
- * The function triggers the following behaviors depending on the current
+ * Invoking this function results in the following reactions on each supported
  * platform:
  *
  * @li [Darwin, Linux] The @c SIGABRT signal is unblocked and then raised.
