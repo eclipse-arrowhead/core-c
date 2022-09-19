@@ -10,9 +10,9 @@
  * A compiler intrinsic is a special function provided by the compiler, causing
  * it to optimize or add to its output. This file provides two categories of
  * intrinsics, (1) such supported by all supported compilers and (2) those only
- * supported by some supported compilers. The former category are prefixed with
- * the usual "ah_", while the latter category have the slightly longer "ah_p_"
- * prefix.
+ * supported by GCC-compatible compilers. The former category are prefixed with
+ * the usual @c ah_, while the latter category have the slightly longer
+ * @c ah_gcc_ prefix.
  */
 
 #include "defs.h"

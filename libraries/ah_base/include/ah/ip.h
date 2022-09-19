@@ -14,7 +14,7 @@
  * This file provides structures, constants and functions useful for
  * representing and checking IP addresses.
  *
- * @see https://rfc-editor.org/rfc/rfc791
+ * @see https://rfc-editor.org/rfc/rfc791.html
  * @see https://rfc-editor.org/rfc/rfc8200.html
  */
 #include "defs.h"

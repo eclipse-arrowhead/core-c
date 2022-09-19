@@ -56,7 +56,7 @@ struct ah_time {
 typedef int64_t ah_timediff_t;
 
 /**
- * Gets the current time, as reported by the platform.
+ * Gets the current monotonic time, as reported by the platform.
  *
  * What concrete platform provision is consulted varies with the targeted
  * platform. The following table outlines what time sources are used on the

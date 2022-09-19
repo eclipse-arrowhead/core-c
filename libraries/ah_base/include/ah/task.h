@@ -7,14 +7,8 @@
  * @file
  * Task scheduling.
  *
- * In this file, a data structure and a set of functions are provided for
- * formulating and scheduling @e tasks, which are functions to be executed
- * after certain @e baselines, which are specific points in time. No guarantees
- * are given about how close to its baseline any given task will execute, only
- * that it will execute at or after that baseline, as reported by the platform
- * clock (see ah_time_now()). Additionally, the event loop used to schedule any
- * task in question must be executing at or after the baseline until the task
- * is executed.
+ * A @e task is a function that is to be executed after a certain @e baseline
+ * with a certain @e context, concretely represented by a user data pointer.
  */
 
 #include "internal/_task.h"
@@ -119,6 +113,13 @@ ah_extern bool ah_task_cancel(ah_task_t* task);
  *   <li>@ref AH_ESTATE                        - @a task is already scheduled and has not yet been
  *                                               cancelled or executed.
  * </ul>
+ *
+ * @warning If the ah_loop provided to @a task is not given opportunity to
+ *          execute at or after @a baseline, as reported by ah_time_now(), @a
+ *          task will never be executed. Note, however, that @a task will be
+ *          invoked with @ref AH_ECANCELED if the event loop is terminated. For
+ *          @a task to never be executed, the event loop must never be given
+ *          enough time to execute after @a baseline and never be terminated.
  */
 ah_extern ah_err_t ah_task_schedule_at(ah_task_t* task, ah_time_t baseline);
 

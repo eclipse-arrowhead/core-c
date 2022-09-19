@@ -7,8 +7,8 @@
  * @file
  * Safe integer operations.
  *
- * This file provides a rather long list of functions that can be used to
- * ensure that certain integer operations never produce undefined behavior.
+ * This file provides functions that can be used to ensure that certain integer
+ * operations never produce undefined behavior.
  */
 
 #include "defs.h"
@@ -57,7 +57,7 @@ ah_extern ah_err_t ah_math_add_uintptr(uintptr_t a, uintptr_t b, uintptr_t* resu
  *   <li>@ref AH_ENONE  - Operation successful.
  *   <li>@ref AH_EDOM   - @a b is @c 0.
  *   <li>@ref AH_EINVAL - @a result is @c NULL.
- *   <li>@ref AH_ERANGE - Operation result outside representable range.
+ *   <li>@ref AH_ERANGE - @a a is the lowest representable number and @a b is @c -1.
  * </ul>
  */
 
@@ -123,7 +123,7 @@ ah_extern ah_err_t ah_math_mul_uintptr(uintptr_t a, uintptr_t b, uintptr_t* resu
 /** @} */
 
 /**
- * @name Multiplication Functions
+ * @name Subtraction Functions
  * @{
  * Subtract @a a with @a b and writes the result to @a result.
  *

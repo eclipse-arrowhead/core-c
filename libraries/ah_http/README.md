@@ -1,7 +1,5 @@
     @dir ah_http @brief HTTP library.
 
-## Arrowhead Core HTTP Library
-
 The HyperText Transfer Protocol (HTTP) is a file-transfer protocol made famous
 due to its key role in facilitating the World Wide Web (WWW). It is designed to
 allow for web browsers and web servers to negotiate about and transfer the files

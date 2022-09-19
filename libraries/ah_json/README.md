@@ -1,7 +1,5 @@
     @dir ah_json @brief JSON library.
 
-## Arrowhead Core JSON Library
-
 JSON, or JavaScript Object Notation, is a human-readable and open data
 interchange format. It was popularized partly because of its simplicity and
 partly because of its adoption by the prevailing World Wide Web browser

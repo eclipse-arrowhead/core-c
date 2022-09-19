@@ -7,17 +7,16 @@
  * @file
  * Error management
  *
- * This file lists most, if not all, error codes that can be returned by the
- * functions of this library and other libraries that depend on it.
+ * This file is meant to list every error code that could be returned or
+ * provided when the @ref ah_err_t type is used as return or parameter type.
  *
- * Apart from @ref AH_ENONE, which indicates no error at all, and some custom
- * error codes, all error codes listed here come directly from the platforms
- * supported by this library. When a Core C library function invokes a platform
- * function internally, the convention is for any errors that cannot be dealt
- * with by the function to be passed on to the caller of the Core C function. As
- * a consequence, many functions in this library return different error codes on
- * different platforms. Every function dealing with error codes should list
- * which of them only occur on some supported platforms.
+ * Apart from a smaller set of error codes specific to this library, most codes
+ * come directly from the platforms supported by this library. In fact, the
+ * convention is for every platform error code to be propagated as-is to the
+ * user of this library. As a consequence, many functions in this library return
+ * different error codes on different platforms. However, as every function that
+ * may return error codes must list every code it could present, it should be
+ * trivial to handle.
  */
 
 #include "internal/_err.h"
@@ -29,6 +28,10 @@
 
 /**
  * @name Custom Errors
+ *
+ * These error codes are specific to the base library and have no equivalents on
+ * its supported platforms.
+ *
  * @{
  */
 #define AH_EDEP    5405 ///< Consult dependency for error details.
@@ -42,6 +45,10 @@
 
 /**
  * @name POSIX Errors
+ *
+ * These error codes originate from the POSIX specifications but are ported to
+ * all supported platforms.
+ *
  * @{
  */
 #define AH_E2BIG           AH_I_ERR_ONE_OF(E2BIG, 5501)                         ///< Argument list too long.
@@ -134,6 +141,9 @@
 #if AH_IS_DARWIN || defined(AH_DOXYGEN)
 /**
  * @name Darwin Errors
+ *
+ * These error codes could only ever be relevant on the Darwin platform.
+ *
  * @{
  */
 # define AH_EBADARCH      EBADARCH      ///< Bad CPU type in executable.
@@ -151,6 +161,9 @@
 #if AH_IS_LINUX || defined(AH_DOXYGEN)
 /**
  * @name Linux Errors
+ *
+ * These error codes could only ever be relevant on the Linux platform.
+ *
  * @{
  */
 # define AH_ELIBACC  ELIBACC  ///< Needed shared library inaccessible.
@@ -168,6 +181,9 @@
 #if AH_IS_WIN32 || defined(AH_DOXYGEN)
 /**
  * @name Win32 Errors
+ *
+ * These error codes could only ever be relevant on the Win32 platform.
+ *
  * @{
  */
 # define AH_EDISCON             WSAEDISCON                ///< Disconneted.

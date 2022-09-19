@@ -798,7 +798,7 @@ ah_extern ah_err_t ah_tcp_conn_connect(ah_tcp_conn_t* conn, const ah_sockaddr_t*
  *   <li>@ref AH_ENETDOWN [Win32] - The network subsystem has failed.
  *   <li>@ref AH_ENOBUFS          - Not enough buffer space available.
  *   <li>@ref AH_ENOMEM           - Not enough heap memory available.
- *   <li>@ref AH_EOVERFLOW        - @c AH_PSIZE is too small for it to be possible to store both
+ *   <li>@ref AH_EOVERFLOW        - @ref AH_PSIZE is too small for it to be possible to store both
  *                                  required metadata @e and read data in a single page provided
  *                                  by the page allocator (see ah_palloc()).
  *   <li>@ref AH_ESTATE           - @a conn is not connected or its read direction is shut down.
@@ -1229,7 +1229,7 @@ ah_extern bool ah_tcp_conn_cbs_is_valid_for_connection(const ah_tcp_conn_cbs_t* 
  *   <li>@ref AH_ENONE     - The operation was successful.
  *   <li>@ref AH_EINVAL    - @a owner_ptr is @c NULL.
  *   <li>@ref AH_ENOMEM    - No enough heap memory available (ah_palloc() returned @c NULL).
- *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both an
+ *   <li>@ref AH_EOVERFLOW - @ref AH_PSIZE is too small for it to be possible to store both an
  *                           ah_tcp_in instance @e and have room for input data in a single page
  *                           provided by the page allocator (see ah_palloc()).
  * </ul>
@@ -1252,7 +1252,7 @@ ah_extern ah_err_t ah_tcp_in_alloc_for(ah_tcp_in_t** owner_ptr);
  *   <li>@ref AH_ENONE     - The operation was successful.
  *   <li>@ref AH_EINVAL    - @a in is @c NULL.
  *   <li>@ref AH_ENOMEM    - No enough heap memory available (ah_palloc() returned @c NULL).
- *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both an
+ *   <li>@ref AH_EOVERFLOW - @ref AH_PSIZE is too small for it to be possible to store both an
  *                           ah_tcp_in instance @e and have room for input data in a single page
  *                           provided by the page allocator (see ah_palloc()).
  *   <li>@ref AH_ESTATE    - @a in is currently not owned and cannot be detached.
@@ -1355,7 +1355,7 @@ ah_extern void ah_tcp_in_reset(ah_tcp_in_t* in);
  *   <li>@ref AH_EINVAL    - @a obs @c ->cbs is invalid, as reported by
  *                           ah_tcp_listener_cbs_is_valid().
  *   <li>@ref AH_ENOMEM    - Heap memory could not be allocated for storing incoming connections.
- *   <li>@ref AH_EOVERFLOW - @c AH_PSIZE is too small for it to be possible to store both metadata
+ *   <li>@ref AH_EOVERFLOW - @ref AH_PSIZE is too small for it to be possible to store both metadata
  *                           @e and have room for at least one incoming connection in a single page
  *                           provided by the page allocator (see ah_palloc()).
  * </ul>
@@ -1693,7 +1693,7 @@ ah_extern bool ah_tcp_listener_cbs_is_valid(const ah_tcp_listener_cbs_t* cbs);
  *
  * @return Pointer to new output buffer, or @c NULL if the allocation failed.
  *
- * @warning If @c AH_PSIZE is configured to a too small value (see conf.h),
+ * @warning If @ref AH_PSIZE is configured to a too small value (see conf.h),
  *          this function always fails.
  */
 ah_extern ah_tcp_out_t* ah_tcp_out_alloc(void);
