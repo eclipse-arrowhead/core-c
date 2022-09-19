@@ -36,8 +36,9 @@ html {
     --ahf-red-highlight: #e02746;
     --ahf-yellow-highlight: #f1d01d;
 
-    --ahf-base-width-max: 64rem;
     --ahf-data-structure-index-column-count: 1;
+    --ahf-default-horizontal-space: 1.5em;
+    --ahf-default-vertical-space: 2em;
     --ahf-globals-column-count: 1;
 
     background-color: var(--ahf-blue-background);
@@ -53,8 +54,8 @@ body {
     flex-direction: column;
     flex-grow: 1;
     font-family: "Open Sans", sans-serif;
+    font-size: 1rem;
     margin: 0;
-    min-width: 40rem;
     padding: 0;
 }
 
@@ -89,34 +90,34 @@ dl {
     display: flex;
     flex-direction: column;
     font-weight: 300;
-    margin: 1rem;
+    margin: 1em;
 }
 
 dl.note {
-    border-left: 0.25rem solid var(--ahf-yellow-highlight);
+    border-left: 0.25em solid var(--ahf-yellow-highlight);
     margin-left: 0;
-    padding-left: 0.75rem;
+    padding-left: 0.75em;
 }
 
 dl.pre {
-    border-left: 0.25rem solid var(--ahf-blue-highlight);
+    border-left: 0.25em solid var(--ahf-blue-highlight);
     margin-left: 0;
-    padding-left: 0.75rem;
+    padding-left: 0.75em;
 }
 
 dl.warning {
-    border-left: 0.25rem solid var(--ahf-red-highlight);
+    border-left: 0.25em solid var(--ahf-red-highlight);
     margin-left: 0;
-    padding-left: 0.75rem;
+    padding-left: 0.75em;
 }
 
 dl > dt {
     font-weight: bold;
-    margin: 0 0.5rem 0.5rem 0;
+    margin: 0 0.5em 0.5em 0;
 }
 
 dl > dd {
-    margin: 0 0.5rem 0.5rem 1rem;
+    margin: 0 0.5em 0.5em 1em;
 }
 
 dl > dd:last-child {
@@ -131,7 +132,7 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--ahf-blue-text);
     font-family: "Oswald", sans-serif;
     font-weight: normal;
-    margin: 0 0 1rem 0;
+    margin: 0 0 1em 0;
 }
 
 h1 {
@@ -161,14 +162,14 @@ h6 {
 hr {
     background-color: var(--ahf-blue-background);
     border: none;
-    height: 0.125rem;
-    margin: 2rem 0;
+    height: 0.125em;
+    margin: var(--ahf-default-vertical-space) 0;
 }
 
 ol, ul {
-    margin-bottom: 0.25rem;
-    margin-top: 0.25rem;
-    padding-left: 1.5em;
+    margin-bottom: 0.25em;
+    margin-top: 0.25em;
+    padding-left: var(--ahf-default-horizontal-space);
 }
 
 ol > li,
@@ -184,7 +185,7 @@ ul > li:last-child {
 p {
     line-height: 1.5em;
     font-weight: 300;
-    margin: 0 0 1rem 0;
+    margin: 0 0 1em 0;
 }
 
 #top > header {
@@ -194,20 +195,24 @@ p {
 }
 
 #top > header > img {
-    width: 4rem;
-    margin: 1rem 1.375rem 0.875rem 1.5rem;
+    width: 4em;
+    margin-bottom: calc(var(--ahf-default-vertical-space) - 0.625em);
+    margin-left: var(--ahf-default-horizontal-space);
+    margin-right: calc(var(--ahf-default-horizontal-space) - 0.125em);
+    margin-top: calc(var(--ahf-default-vertical-space) - 0.5em);
 }
 
 #top > header > h1 {
     color: white;
+    display: flex;
     font-family: "Oswald", sans-serif;
-    font-size: 1.875rem;
+    font-size: 1.875em;
     margin: 0;
 }
 
 #top > header > h1 > .version {
-    margin-left: 1rem;
-    font-size: 1.5rem;
+    margin-left: 1em;
+    font-size: 1.5em;
 }
 
 #top > .tabs,
@@ -236,14 +241,14 @@ p {
 #top > .tabs3 > .tablist {
     display: flex;
     flex-wrap: wrap;
-    padding-right: 0.5rem;
+    padding-right: 0.5em;
 }
 
 #top > .tabs > .tablist > li,
 #top > .tabs2 > .tablist > li,
 #top > .tabs3 > .tablist > li {
     display: block;
-    margin: 0 0 0 0.5rem;
+    margin: 0 0 0 0.5em;
 }
 
 #top > .tabs > .tablist > li > a,
@@ -258,23 +263,25 @@ p {
 }
 
 #top > .tabs > .tablist > li {
+    align-items: flex-end;
     border-bottom-color: var(--ahf-blue-background);
     border-bottom-style: solid;
-    border-bottom-width: 0.25rem;
-    line-height: 2.25rem;
+    border-bottom-width: 0.25em;
+    display: flex;
+    line-height: 2.25em;
     padding: 0;
 }
 
-#top > .tabs > .tablist > li:hover:not(:last-child) {
+#top > .tabs > .tablist > li:last-child {
+    border-bottom-width: 0.425em;
+}
+
+#top > .tabs > .tablist > li:hover:not(:last-child):not(.current) {
     border-bottom-color: var(--ahf-blue-highlight);
 }
 
-#top > .tabs > .tablist > li:hover:not(:last-child) > a {
+#top > .tabs > .tablist > li:hover:not(:last-child):not(.current) > a {
     background-color: var(--ahf-blue-highlight);
-}
-
-#top > .tabs > .tablist > li:last-child {
-    flex-grow: 1;
 }
 
 #top > .tabs > .tablist > li.current {
@@ -287,23 +294,23 @@ p {
 }
 
 #top > .tabs > .tablist > li > a {
-    border-top-left-radius: 0.25rem;
-    border-top-right-radius: 0.25rem;
+    border-top-left-radius: 0.25em;
+    border-top-right-radius: 0.25em;
     color: white;
-    padding: 0 1rem;
+    padding: 0 1em;
 }
 
 #top > .tabs2 {
     background-color: white;
-    padding-top: 0.25rem;
+    padding-top: 0.5em;
     font-size: 0.8em;
 }
 
 #top > .tabs2 > .tablist > li {
     border-bottom-color: white;
-    border-bottom-width: 0.25rem;
+    border-bottom-width: 0.25em;
     border-bottom-style: solid;
-    line-height: 2rem;
+    line-height: 2em;
 }
 
 #top > .tabs2 > .tablist > li:hover {
@@ -316,7 +323,7 @@ p {
 
 #top > .tabs2 > .tablist > li > a {
     color: var(--ahf-blue-text);
-    padding: 0 1rem;
+    padding: 0 1em;
 }
 
 #navrow2, #navrow3, #nav-path {
@@ -325,15 +332,15 @@ p {
 
 #top > .tabs3 {
     background-color: white;
-    padding-top: 0.125rem;
+    padding-top: 0.125em;
     font-size: 0.75em;
 }
 
 #top > .tabs3 > .tablist > li {
     border-bottom-color: white;
-    border-bottom-width: 0.125rem;
+    border-bottom-width: 0.125em;
     border-bottom-style: solid;
-    line-height: 1.75rem;
+    line-height: 1.75em;
 }
 
 #top > .tabs3 > .tablist > li:hover {
@@ -346,7 +353,7 @@ p {
 
 #top > .tabs3 > .tablist > li > a {
     color: var(--ahf-blue-text);
-    padding: 0 0.667rem;
+    padding: 0 0.667em;
 }
 
 #top > .navpath {
@@ -357,7 +364,7 @@ p {
 #top > .navpath > ul {
     display: flex;
     margin: 0;
-    padding: 1rem 1.5rem;
+    padding: 1em var(--ahf-default-horizontal-space);
 }
 
 #top > .navpath > ul > li {
@@ -366,27 +373,27 @@ p {
 }
 
 #top > .navpath > ul > li:first-child:before {
-    padding: 0 0.125rem 0 0;
+    padding: 0 0.125em 0 0;
 }
 
 #top > .navpath > ul > li:before {
     content: '/';
     font-weight: bold;
-    padding: 0 0.125rem;
+    padding: 0 0.125em;
 }
 
 #top > .navpath > ul > li:last-child:after {
     content: '/';
     font-weight: bold;
-    padding: 0 0 0 0.125rem;
+    padding: 0 0 0 0.125em;
 }
 
 .header {
-    padding: 1.25rem 1.5rem 0 1.5rem;
+    padding: calc(var(--ahf-default-vertical-space) * (5.0 / 8.0)) var(--ahf-default-horizontal-space) 0 var(--ahf-default-horizontal-space);
 }
 
 .header > .summary {
-    margin: 0 0 1rem 0;
+    margin: 0 0 1em 0;
 }
 
 .header > .headertitle > .title {
@@ -397,42 +404,43 @@ p {
 
 .header > :last-child {
     border-bottom: 0.125rem solid var(--ahf-blue-background);
-    padding-bottom: 1rem;
+    padding-bottom: 1em;
 }
 
 .contents {
     font-weight: 300;
     line-height: 1.5em;
-    padding: 0 1.5rem 2rem 1.5rem;
+    overflow-x: scroll;
+    padding: 0 var(--ahf-default-horizontal-space) var(--ahf-default-vertical-space) var(--ahf-default-horizontal-space);
 }
 
 .contents > * {
-    margin-top: 2rem;
+    margin-top: var(--ahf-default-vertical-space);
 }
 
 .contents.examples {
-    padding-top: 2rem;
+    padding-top: var(--ahf-default-vertical-space);
 }
 
 .contents.globals {
     column-count: var(--ahf-globals-column-count);
-    padding-top: 2rem;
+    padding-top: var(--ahf-default-vertical-space);
 }
 
 .contents.globals.all,
 .contents.globals.typedefs {
     column-count: initial;
-    padding-top: 2rem;
+    padding-top: var(--ahf-default-vertical-space);
 }
 
 .contents.examples > *,
 .contents.globals > * {
-    margin: 0 0 2rem 0;
+    margin: 0 0 var(--ahf-default-vertical-space) 0;
 }
 
 .contents.examples > h3,
 .contents.globals > h3 {
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.5em 0;
 }
 
 .contents > a:not(:empty) {
@@ -440,7 +448,7 @@ p {
 }
 
 .contents > p + p {
-    margin-top: 1rem;
+    margin-top: 1em;
 }
 
 .contents .classindex > .alphachar > a {
@@ -467,13 +475,13 @@ p {
 
 .contents .classindex > dl {
     break-inside: avoid-column;
-    margin: 0 0 2rem 0;
+    margin: 0 0 var(--ahf-default-vertical-space) 0;
 }
 
 .contents .directory > .levels {
     font-size: 0.9em;
-    line-height: 2rem;
-    margin: -2rem 0 0 0;
+    line-height: 2em;
+    margin: calc(var(--ahf-default-vertical-space) * -1.0) 0 0 0;
     text-align: right;
 }
 
@@ -482,7 +490,7 @@ p {
     cursor: pointer;
     display: inline-block;
     font-weight: bold;
-    padding: 0 0.25rem 0 0;
+    padding: 0 0.25em 0 0;
 }
 
 .contents .directory > .levels > span:hover {
@@ -500,8 +508,14 @@ p {
 }
 
 .contents table.directory > tbody > tr > td {
-    padding: 0.5rem 0.75rem;
+    padding: 0.5em 0.75em;
 }
+
+.contents table.directory > tbody > tr > .entry {
+    vertical-align: top;
+    white-space: pre;
+}
+
 
 .contents table.directory > tbody > tr > .entry > .icona {
     display: none;
@@ -512,12 +526,12 @@ p {
     border-spacing: 0;
     margin-left: auto;
     margin-right: auto;
-    padding: 1rem;
+    padding: 1em;
 }
 
 .contents .doxtable > caption {
     font-style: italic;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.5em;
 }
 
 .contents .doxtable > tbody > tr > * {
@@ -529,14 +543,14 @@ p {
 }
 
 .contents .doxtable > tbody > tr > th {
-    padding-right: 1.5rem;
-    padding-bottom: 0.75rem;
+    padding-right: var(--ahf-default-horizontal-space);
+    padding-bottom: 0.75em;
     text-align: left;
 }
 
 .contents .doxtable > tbody > tr > td {
-    padding-right: 1.5rem;
-    padding-bottom: 0.25rem;
+    padding-right: var(--ahf-default-horizontal-space);
+    padding-bottom: 0.25em;
     text-align: left;
 }
 
@@ -559,7 +573,7 @@ p {
 
 .contents .fragment > .line {
     margin-left: 10em;
-    padding-right: 1rem;
+    padding-right: 1em;
     text-indent: -10em;
     white-space: pre-wrap;
 }
@@ -592,8 +606,8 @@ p {
     border-right: 0.125rem solid var(--ahf-grey-background);
     color: var(--ahf-color-code-lineno);
     display: inline-block;
-    margin-right: 1rem;
-    padding-right: 0.5rem;
+    margin-right: 1em;
+    padding-right: 0.5em;
     text-align: right;
     white-space: normal;
     width: 3em;
@@ -622,25 +636,25 @@ p {
 }
 
 .contents .memberdecls {
-    margin-top: 2rem;
+    margin-top: var(--ahf-default-vertical-space);
 }
 
-.contents .memberdecls [class^=separator] + tr > td > .groupHeader  {
-    margin-top: 2rem;
+.contents .memberdecls [class^=separator] + tr > td > .groupHeader {
+    margin-top: var(--ahf-default-vertical-space);
 }
 
 .contents .memberdecls .groupHeader {
     font-weight: bold;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.5em;
 }
 
 .contents .memberdecls .groupText {
     border-left: 0.25rem solid var(--ahf-grey-background);
-    padding-left: 1rem;
+    padding-left: 1em;
 }
 
 .contents .memberdecls .groupText > :last-child {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.5em;
 }
 
 .contents .memberdecls > tbody > :not(.heading) {
@@ -648,14 +662,14 @@ p {
 }
 
 .contents .memberdecls > tbody > tr > td.memItemLeft {
-    padding-right: 1rem;
+    padding-right: 1em;
     white-space: nowrap;
 }
 
 .contents .memberdecls > tbody > tr > td.memItemLeft,
 .contents .memberdecls > tbody > tr > td.memItemRight {
     font-weight: 300;
-    font-size: 1rem;
+    font-size: 1em;
 }
 
 .contents .memberdecls > tbody > tr > td.memItemLeft > a,
@@ -669,12 +683,21 @@ p {
 
 .contents .memberdecls > tbody > tr > td.memSeparator {
     font-size: 0;
-    height: 0.25rem;
+    height: 0.25em;
     line-height: 0;
 }
 
 .contents .memberdecls > tbody > tr:last-child > td.memSeparator {
     display: none;
+}
+
+.contents a:target + .memtitle {
+    color: black;
+    font-weight: bold;
+}
+
+.contents a:target + .memtitle::before {
+    content: '#';
 }
 
 .contents .memtitle {
@@ -684,7 +707,7 @@ p {
     font-family: "Open Sans", sans-serif;
     font-size: 1em;
     margin: 0;
-    padding: 0.75rem 1.125rem 0.625rem 1.125rem;
+    padding: 0.75em 1.125em 0.625em 1.125em;
 }
 
 .contents .memtitle > span:first-child {
@@ -693,7 +716,7 @@ p {
 
 .contents .memitem {
     border: 0.125rem solid var(--ahf-grey-background);
-    margin: 0 0 2rem 0;
+    margin: 0 0 var(--ahf-default-vertical-space) 0;
     padding: 0;
 }
 
@@ -703,41 +726,41 @@ p {
 
 .contents .memitem > .memproto {
     font-family: "Source Code Pro", monospace;
-    font-size: 0.9rem;
+    font-size: 0.9em;
     font-weight: normal;
-    margin: 1rem;
+    margin: 1em;
     background-color: var(--ahf-grey-light);
-    padding: 1rem;
+    padding: 1em;
     border: 1px solid var(--ahf-grey-background);
 }
 
 .contents .memitem > .memdoc {
     font-size: 0.9em;
-    margin: 1rem;
+    margin: 1em;
 }
 
 .contents .memitem > .memdoc > * {
-    margin-bottom: 1rem;
+    margin-bottom: 1em;
 }
 
 .contents .memitem > .memdoc > .fragment {
-    padding: 1rem;
+    padding: 1em;
 }
 
 .contents .memitem > .memdoc > .params .paramname {
     font-style: italic;
     font-weight: normal;
-    padding-right: 1rem;
+    padding-right: 1em;
     vertical-align: top;
 }
 
 .contents .textblock > * {
-    margin-bottom: 1rem;
-    margin-top: 1rem;
+    margin-bottom: 1em;
+    margin-top: 1em;
 }
 
 .contents .textblock > h1 {
-    margin-top: 2rem;
+    margin-top: var(--ahf-default-vertical-space);
 }
 
 .contents .textblock > h1:first-child {
@@ -745,49 +768,50 @@ p {
 }
 
 .contents .textblock > .fragment {
-    padding: 1rem;
+    padding: 1em;
 }
 
 .contents .textblock > table.markdownTable {
     border: 1px solid var(--ahf-grey-background);
     border-spacing: 0;
+    margin: 0 auto;
 }
 
 .contents .textblock > table.markdownTable > tbody > tr > * {
-    padding: 0.25rem 0.75rem;
+    padding: 0.25em 0.75em;
 }
 
 .contents .textblock > table.markdownTable > tbody > tr > th {
     background-color: var(--ahf-grey-light);
-    padding: 0.5rem 0.75rem;
+    padding: 0.5em 0.75em;
     text-align: left;
 }
 
 .contents > .qindex {
     display: flex;
     flex-wrap: wrap;
-    row-gap: 1rem;
+    row-gap: 1em;
     visibility: collapse;
-    width: calc(var(--ahf-base-width-max) + 1rem);
+    width: calc(100% + 1em);
 }
 
 .contents > .qindex > a {
     background-color: var(--ahf-grey-light);
     border: 0.125rem solid var(--ahf-grey-light);
-    border-radius: 0.25rem;
+    border-radius: 0.25em;
     display: block;
-    font-size: 1.125rem;
-    margin-right: 1rem;
-    padding: 0.375rem 0.625rem;
+    font-size: 1.125em;
+    margin-right: 1em;
+    padding: 0.375em 0.625em;
     text-align: center;
     text-transform: lowercase;
     visibility: visible;
-    width: 3.4rem;
+    width: 3.4em;
 }
 
 .contents > .qindex + .classindex {
     column-count: var(--ahf-data-structure-index-column-count);
-    column-gap: 2rem;
+    column-gap: var(--ahf-default-horizontal-space);
 }
 
 .contents > #details,
@@ -808,12 +832,12 @@ body > footer {
     display: flex;
     font-size: 0.8em;
     justify-content: right;
-    padding: 1rem 1.5rem;
+    padding: 1em var(--ahf-default-horizontal-space);
 }
 
 body > footer > a {
     color: var(--ahf-grey-light);
-    margin: 0 0.25rem;
+    margin: 0 0.25em;
 }
 
 #MSearchBox {
@@ -822,17 +846,16 @@ body > footer > a {
     font-size: 0.9em;
     margin: 0 0 0 auto;
     position: initial;
-    width: fit-content;
 }
 
 #MSearchBox > .left {
     background-color: white;
     background-image: none;
-    border-radius: 0.25rem 0 0 0.25rem;
+    border-radius: 0.25em 0 0 0.25em;
     display: flex;
     flex-grow: 1;
     height: 1.5rem;
-    padding: 0.25rem 0 0.25rem 0.25rem;
+    padding: 0.125em 0 0.125em 0.125em;
     position: initial;
     width: initial;
 }
@@ -868,12 +891,12 @@ body > footer > a {
 
 #MSearchBox > .right {
     background: white none;
-    border-radius: 0 0.25rem 0.25rem 0;
+    border-radius: 0 0.25em 0.25em 0;
     display: flex;
     height: initial;
     justify-content: center;
-    min-width: 1.34rem;
-    padding: 0.25rem 0.25rem 0.25rem 0;
+    min-width: 1.34em;
+    padding: 0.125em 0.125em 0.125em 0;
     position: initial;
     width: initial;
 }
@@ -915,7 +938,7 @@ iframe#MSearchResults {
     border-radius: 0.25rem;
     border: 0.0625rem solid var(--ahf-grey-background);
     box-shadow: 0.125rem 0.125rem 0.125rem #00000050;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
     right: 0.5rem;
     width: initial !important;
 }
@@ -927,6 +950,62 @@ iframe#MSearchResults {
 
 #MSearchResultsWindow .SRPage .SREntry {
     font-size: 0.75rem;
+}
+
+@media (max-width: 50rem) {
+    body {
+        --ahf-default-horizontal-space: 1em;
+        --ahf-default-vertical-space: 1.5em;
+
+        font-size: 0.9rem;
+    }
+
+    #top > header > img {
+        width: 3em;
+    }
+
+    #top > header > h1 {
+        font-size: 1.5em;
+        white-space: pre;
+    }
+
+    #top > .tabs > .tablist > li {
+        border-bottom: none;
+        margin-bottom: 0.5em;
+    }
+
+    #top > .tabs > .tablist > li:last-child {
+        display: none;
+    }
+
+    #top > .tabs > .tablist > li > a {
+        border-radius: 0.25em;
+        padding: 0 0.75em;
+    }
+}
+
+@media (max-width: 40rem) {
+    #top > header > h1 {
+        font-size: 1.15em;
+    }
+
+    #top > .tabs > .tablist {
+        font-size: 0.8rem;
+        overflow-x: scroll;
+    }
+
+    .contents .fragment {
+        font-size: 0.8rem;
+    }
+
+    .contents .fragment > .line {
+        margin-left: 5em;
+        text-indent: -5em;
+    }
+
+    .contents .fragment > .line > .lineno {
+        display: none;
+    }
 }
 
 @media (min-width: 43rem) {
@@ -954,6 +1033,6 @@ iframe#MSearchResults {
     .contents,
     .header {
         margin: 0 auto;
-        width: var(--ahf-base-width-max);
+        width: 64rem;
     }
 }

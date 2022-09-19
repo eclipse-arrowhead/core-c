@@ -24,8 +24,8 @@ The advantages of using these libraries in comparison to any other, such as
 
 ## Repository Organization
 
-The Eclipse Arrowhead Core C libraries are all located in `libraries` folder of
-the [core-c][ghub] project of the official Arrowhead framework
+The Eclipse Arrowhead Core C libraries are all located in the `libraries` folder
+of the [core-c][ghub] project of the official Arrowhead framework
 [GitHub organization][gorg]. If you are reading this document on GitHub, it is
 located inside this `libraries` folder. The folder contains this document and
 configuration files at its root. Additionally, it contains a number of folders
