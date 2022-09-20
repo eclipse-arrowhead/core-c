@@ -20,12 +20,12 @@
 # if __has_include("internal/_base.gen")
 #  include "internal/_base.gen"
 # else
-#  define AH_BASE_COMMIT_STR    "unknown"
-#  define AH_BASE_PLATFORM_STR  "unknown"
-#  define AH_BASE_VERSION_MAJOR 0u
-#  define AH_BASE_VERSION_MINOR 0u
-#  define AH_BASE_VERSION_PATCH 0u
-#  define AH_BASE_VERSION_STR   "0.0.0"
+#  define AH_I_BASE_COMMIT_STR    "unknown"
+#  define AH_I_BASE_PLATFORM_STR  "unknown"
+#  define AH_I_BASE_VERSION_MAJOR 0u
+#  define AH_I_BASE_VERSION_MINOR 0u
+#  define AH_I_BASE_VERSION_PATCH 0u
+#  define AH_I_BASE_VERSION_STR   "0.0.0"
 # endif
 #else
 # include "internal/_base.gen"

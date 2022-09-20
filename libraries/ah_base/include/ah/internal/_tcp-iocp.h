@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_IOCP_TCP_H_
-#define AH_INTERNAL_IOCP_TCP_H_
+#ifndef AH_INTERNAL_TCP_IOCP_H_
+#define AH_INTERNAL_TCP_IOCP_H_
 
 #include <winsock2.h>
 

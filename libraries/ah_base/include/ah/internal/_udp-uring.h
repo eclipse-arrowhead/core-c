@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_URING_UDP_H_
-#define AH_INTERNAL_URING_UDP_H_
+#ifndef AH_INTERNAL_UDP_URING_H_
+#define AH_INTERNAL_UDP_URING_H_
 
 #define AH_I_UDP_IN_PLATFORM_FIELDS
 

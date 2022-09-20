@@ -21,7 +21,7 @@
  * takes an mbedtls_ssl_config instance as argument, which you must prepare by
  * setting its @e endpoint to <em>client mode</em> and by providing other
  * relevant configuration details. Setting the endpoint of the MbedTLS
- * configuration can be performed using the mbedtls_ssl_config_defaults()
+ * configuration can be performed using the @c mbedtls_ssl_config_defaults()
  * function. For more details about how to set up an MbedTLS configuration
  * objects, please refer to the <a href="https://tls.mbed.org">MbedTLS</a>
  * documentation.

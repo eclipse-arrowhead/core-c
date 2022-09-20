@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_KQUEUE_TCP_H_
-#define AH_INTERNAL_KQUEUE_TCP_H_
+#ifndef AH_INTERNAL_TCP_KQUEUE_H_
+#define AH_INTERNAL_TCP_KQUEUE_H_
 
 #include "collections/list.h"
 

@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: EPL-2.0
 
-// SPDX-License-Identifier: EPL-2.0
-
-#ifndef AH_INTERNAL_POSIX_SOCK_H_
-#define AH_INTERNAL_POSIX_SOCK_H_
+#ifndef AH_INTERNAL_SOCK_BSD_H_
+#define AH_INTERNAL_SOCK_BSD_H_
 
 #include "../defs.h"
 
@@ -31,7 +29,7 @@ typedef SOCKET ah_i_sockfd_t;
 typedef int ah_i_socklen_t;
 #endif
 
-ah_extern ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr);
+ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr);
 
 static inline ah_sockaddr_t* ah_i_sockaddr_from_bsd(struct sockaddr* sockaddr)
 {
@@ -53,15 +51,15 @@ static inline const struct sockaddr* ah_i_sockaddr_const_into_bsd(const ah_socka
     return (const struct sockaddr*) sockaddr;
 }
 
-ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, int sockfamily, int type, ah_i_sockfd_t* fd);
-ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd);
-ah_extern ah_err_t ah_i_sock_close(ah_i_sockfd_t fd);
+ah_err_t ah_i_sock_open(ah_loop_t* loop, int sockfamily, int type, ah_i_sockfd_t* fd);
+ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd);
+ah_err_t ah_i_sock_close(ah_i_sockfd_t fd);
 
-ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr);
-ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* raddr);
+ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr);
+ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* raddr);
 
-ah_extern ah_err_t ah_i_sock_setsockopt(ah_i_sockfd_t fd, int level, int name, const void* value, ah_i_socklen_t size);
+ah_err_t ah_i_sock_setsockopt(ah_i_sockfd_t fd, int level, int name, const void* value, ah_i_socklen_t size);
 
-ah_extern ah_err_t ah_i_sock_shutdown(ah_i_sockfd_t fd, int flags);
+ah_err_t ah_i_sock_shutdown(ah_i_sockfd_t fd, int flags);
 
 #endif

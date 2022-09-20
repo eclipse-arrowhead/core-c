@@ -19,7 +19,7 @@ static ah_time_t* s_task_queue_peek_at_baseline(struct ah_i_loop_task_queue* que
 static void s_task_queue_heapify_down_from(struct ah_i_loop_task_queue* queue, const size_t index);
 static void s_task_queue_term(struct ah_i_loop_task_queue* queue);
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
+ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(capacity != NULL);
@@ -157,7 +157,7 @@ ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
     return AH_ENONE;
 }
 
-ah_extern void ah_i_loop_term(ah_loop_t* loop)
+void ah_i_loop_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
@@ -269,7 +269,7 @@ static void s_task_queue_term(struct ah_i_loop_task_queue* queue)
 }
 
 #pragma warning(disable : 6386)
-ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task)
+ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(task != NULL);
@@ -325,7 +325,7 @@ ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, 
 }
 #pragma warning(default : 6386)
 
-ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task)
+bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(task != NULL);
@@ -348,7 +348,7 @@ ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task)
     return false;
 }
 
-ah_extern ah_err_t ah_i_loop_evt_get_wsa_result(ah_i_loop_evt_t* evt, SOCKET fd, DWORD* n_bytes_transferred)
+ah_err_t ah_i_loop_evt_get_wsa_result(ah_i_loop_evt_t* evt, SOCKET fd, DWORD* n_bytes_transferred)
 {
     ah_assert_if_debug(evt != NULL);
     ah_assert_if_debug(n_bytes_transferred != NULL);

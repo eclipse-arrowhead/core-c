@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
+ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(capacity != NULL);
@@ -65,7 +65,7 @@ close_fd_and_return_err:
     return err;
 }
 
-ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
+ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
 {
     ah_assert_if_debug(loop != NULL);
 
@@ -134,7 +134,7 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev)
+ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct kevent** kev)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
@@ -162,7 +162,7 @@ ah_extern ah_err_t ah_i_loop_evt_alloc_with_kev(ah_loop_t* loop, ah_i_loop_evt_t
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_loop_alloc_kev(ah_loop_t* loop, struct kevent** kev)
+ah_err_t ah_i_loop_alloc_kev(ah_loop_t* loop, struct kevent** kev)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(kev != NULL);
@@ -201,7 +201,7 @@ ah_extern ah_err_t ah_i_loop_alloc_kev(ah_loop_t* loop, struct kevent** kev)
     return AH_ENONE;
 }
 
-ah_extern void ah_i_loop_term(ah_loop_t* loop)
+void ah_i_loop_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 
