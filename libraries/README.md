@@ -80,6 +80,9 @@ We currently support the following platforms and compilers:
 [linu]: https://www.kernel.org/
 [wind]: https://docs.microsoft.com/en-us/windows/win32/api/
 
+If you want an additional platform to be supported, please refer to the section
+on _Porting_ in the documentation for the `ah_base` library.
+
 | Compiler       | Supported versions |
 |:---------------|:-------------------|
 | [Clang][clan]  | 13.0 and later     |
