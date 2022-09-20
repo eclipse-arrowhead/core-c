@@ -39,7 +39,7 @@
  * <ol>
  *   <li>returns valid pointers when allocating new memory (if the requested number of bytes of heap
  *       memory are available),
- *   <li>fails every attempt to reallocate memory (i.e. the first argument to realloc() is not
+ *   <li>fails every attempt to reallocate memory (i.e. the first argument to @c realloc() is not
  *       @c NULL), and
  *   <li>ignores any attempt to free memory.
  * </ol>

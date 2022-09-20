@@ -109,7 +109,7 @@ struct ah_unit_res {
  * @param ctx        Unit testing context.
  * @param res        Pointer to result accumulator, or @c NULL.
  * @param is_success Whether or not some arbitrary test was successful.
- * @param format     Format string, accepting the same patterns as C99 printf().
+ * @param format     Format string, accepting the same patterns as @c printf().
  * @param ...        @a format arguments.
  * @return The value of @a is_success.
  *
@@ -121,7 +121,7 @@ ah_extern bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_suc
 /**
  * Asserts that @a actual is equal to @a expected or prints failure message.
  *
- * The comparison is made using C99 strcmp().
+ * The comparison is made using C99@c strcmp().
  *
  * @param ctx      Unit testing context.
  * @param res      Pointer to result accumulator, or @c NULL.
@@ -170,7 +170,7 @@ ah_extern bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_e
 /**
  * Asserts that @a actual is equal to @a expected or prints failure message.
  *
- * The comparison is made using C99 memcmp() after a check that @a actual_size
+ * The comparison is made using C99@c memcmp() after a check that @a actual_size
  * is equal to @a expected_size.
  *
  * @param ctx           Unit testing context.
@@ -199,7 +199,7 @@ ah_extern bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, i
 /**
  * Asserts that @a actual is equal to @a expected or prints failure message.
  *
- * The comparison is made using C99 memcmp() after a check that @a actual_size
+ * The comparison is made using C99@c memcmp() after a check that @a actual_size
  * is equal to @a expected_size. The only difference between this function and
  * ah_unit_assert_eq_mem() is that this function assumes @a actual and
  * @a expected to contain printable characters.
@@ -233,7 +233,7 @@ ah_extern bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, 
  *
  * @param ctx    Unit testing context.
  * @param res    Pointer to result accumulator, or @c NULL.
- * @param format Format string, accepting the same patterns as C99 printf().
+ * @param format Format string, accepting the same patterns as C99 @c printf().
  * @param ...    @a format arguments.
  *
  * @warning An error message is printed and ah_abort() is called if @a format is

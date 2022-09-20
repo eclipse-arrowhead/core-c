@@ -41,6 +41,8 @@ html {
     --ahf-default-vertical-space: 2em;
     --ahf-globals-column-count: 1;
 
+    -webkit-text-size-adjust: none;
+
     background-color: var(--ahf-blue-background);
     display: flex;
     flex-direction: column;
@@ -311,6 +313,7 @@ p {
     border-bottom-width: 0.25em;
     border-bottom-style: solid;
     line-height: 2em;
+    padding-bottom: 0.25em;
 }
 
 #top > .tabs2 > .tablist > li:hover {
@@ -952,7 +955,7 @@ iframe#MSearchResults {
     font-size: 0.75rem;
 }
 
-@media (max-width: 50rem) {
+@media (max-width: 800px) {
     body {
         --ahf-default-horizontal-space: 1em;
         --ahf-default-vertical-space: 1.5em;
@@ -984,7 +987,7 @@ iframe#MSearchResults {
     }
 }
 
-@media (max-width: 40rem) {
+@media (max-width: 640px) {
     #top > header > h1 {
         font-size: 1.15em;
     }

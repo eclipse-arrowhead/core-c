@@ -7,7 +7,7 @@
  * @file
  * Assertion macros.
  *
- * Provides macros analogous to the C99 assert() macro. The key differences
+ * Provides macros analogous to the C99 @c assert() macro. The key differences
  * being, however, that a variant exists that is not stripped when compiling
  * with @c -DNDEBUG and that ah_abortf() is used to report the result of failed
  * assertions.

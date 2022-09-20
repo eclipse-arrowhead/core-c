@@ -32,7 +32,8 @@
 #endif
 #ifndef AH_CONF_IS_CONSTRAINED
 /**
- * Indicates whether or not the targeted platform qualifies as being @e "constrained".
+ * Indicates whether or not the targeted platform qualifies as being
+ * @e "constrained".
  *
  * If set to @c 1, internal buffers and other resources may be configured to
  * require less memory.
@@ -42,7 +43,7 @@
 
 #ifndef AH_CONF_CALLOC
 /**
- * Used C99 calloc() implementation.
+ * Used C99 @c calloc() implementation.
  *
  * Allocates zeroed memory for arrays.
  */
@@ -54,7 +55,7 @@
 
 #ifndef AH_CONF_FREE
 /**
- * Used C99 free() implementation.
+ * Used C99 @c free() implementation.
  *
  * Releases memory allocated via the functions specified by @c AH_CONF_CALLOC
  * and @c AH_CONF_MALLOC.
@@ -109,7 +110,7 @@
 
 #ifndef AH_CONF_MALLOC
 /**
- * Used C99 malloc() implementation.
+ * Used C99 @c malloc() implementation.
  *
  * Allocates uninitialized chunks of memory.
  */
@@ -157,7 +158,7 @@
 
 #ifndef AH_CONF_REALLOC
 /**
- * Used C99 realloc() implementation.
+ * Used C99 @c realloc() implementation.
  *
  * Reallocates previously allocated chunks of memory.
  */

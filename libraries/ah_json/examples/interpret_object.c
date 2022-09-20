@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: EPL-2.0
 
 /**
- * @example ah_json/examples/interpret_object.c
- *
- * An example of how to interpret a JSON representation using our
- * ah_json_parse() function and some relevant utility functions.
+ * @example{lineno} ah_json/examples/interpret_object.c
  *
  * @see ah_json/include/ah/json.h
  */
 
+// An example of how to interpret a JSON representation using our
+// ah_json_parse() function and some relevant utility functions.
+
 #include <ah/err.h>
 #include <ah/json.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,19 +53,21 @@ int main(void)
     for (size_t i = 1u; i < buf.length; i += 1u) {
         ah_json_val_t* val = &buf.values[i];
 
-        // As long as the level is unchanged, the current value is going to be a string and the next
-        // value is guaranteed to have the same level. Why? Because we know that there is an object
-        // at level 0u, and objects are guaranteed to always have even numbers of child values where
-        // even children (beginning with the 0th child) is a key of type string.
+        // As long as the level is unchanged, the current value is going to be a
+        // string and the next value is guaranteed to have the same level. Why?
+        // Because we know that there is an object at level 0u, and objects are
+        // guaranteed to always have even numbers of child values where even
+        // children (beginning with the 0th child) is a key of type string.
         if (val->level != 1u) {
             continue;
         }
 
-        // Is the key string equal to "sensor-id"? If so, make sure we have not seen a sensor-id
-        // before and that the next value is of type string. Save that value to the `sensor_id`
-        // variable. To improve performance, you may choose to use memcmp() directly instead of
-        // ah_json_str_compare(). That does require the sender not to use any escape sequences in
-        // this particular key, however.
+        // Is the key string equal to "sensor-id"? If so, make sure we have not
+        // seen a sensor-id before and that the next value is of type string.
+        // Save that value to the `sensor_id` variable. To improve performance,
+        // you may choose to use memcmp() directly instead of
+        // ah_json_str_compare(). This requires the sender not to use any escape
+        // sequences in this particular key, however.
         if (ah_json_str_compare("sensor-id", 9u, val->base, val->length) == 0u) {
             if (has_sensor_id) {
                 err = AH_EDUP;
@@ -96,9 +99,9 @@ int main(void)
             continue;
         }
 
-        // Is the key string equal to "kelvin"? If so, make sure we have not seen a kelvin key
-        // before and that the next value is of type number. Parse that value to the `kelvin`
-        // variable.
+        // Is the key string equal to "kelvin"? If so, make sure we have not
+        // seen a kelvin key before and that the next value is of type number.
+        // Parse that value to the `kelvin` variable.
         if (ah_json_str_compare("kelvin", 6u, val->base, val->length) == 0u) {
             if (has_kelvin) {
                 err = AH_EDUP;

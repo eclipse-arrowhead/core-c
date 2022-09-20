@@ -10,7 +10,7 @@
  * Various functions for abnormally terminating the application process,
  * typically to indicate that some irrecoverable behavior has been observed.
  *
- * @note In contrast to the abort() function of the C99 standard library, the
+ * @note In contrast to the @c abort() function of the C99 standard library, the
  * functions here must be able to guarantee what the results of calling them
  * are.
  */
@@ -35,7 +35,7 @@ ah_extern ah_noreturn void ah_abort(void);
  * message is written to that file.
  *
  * @param format A format string, specified using the same patterns as those
- *               supported by the C99 printf() function.
+ *               supported by the C99 @c printf() function.
  * @param ...    Format arguments.
  */
 ah_extern ah_noreturn void ah_abortf(const char* format, ...);

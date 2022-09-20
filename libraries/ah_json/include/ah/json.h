@@ -10,31 +10,31 @@
  * JavaScript Object Notation (JSON) utilities.
  *
  * As a data interchange format, JSON is mainly dealt with directly in two
- * cases: (1) when constructing JSON representations and (2) when interpreting
- * JSON representations. Here, we primarily provide utilities for interpreting
- * JSON. That being said, we do describe how to accomplish both construction and
- * interpretation using only this and the C99 standard library here.
+ * cases: (1) when @e constructing JSON representations and (2) when
+ * @e interpreting JSON representations. Most of the utilities we provide here
+ * are for interpreting JSON.
  *
- * <h3>JSON Construction</h3>
+ * <h3>Construction</h3>
  *
  * To construct JSON objects, you must produce code that take whatever data
  * structures or values you need to encode and writes them as JSON to a buffer.
- *
  * To help you, this library most significantly provides the
- * ah_json_str_escape() function, which takes an arbitrary C string produces a
- * copy with any characters that are not allowed to occur in a JSON string
- * replaced by their JSON escape sequences. The C99 standard library provides
- * the printf() family of functions, which are able to produce JSON-compliant
- * numbers from C variables. However, the current locale, configurable via the
- * C99 setlocale() function, must use the dot character (<code>.</code>) as
- * <em>radix character</em>, or numbers with fractions will be represented
- * incorrectly. The default C locale does use this radix character, which means
- * that you only need to consider it if you ever change the locale.
+ * ah_json_str_escape() function, which takes an arbitrary C string and produces
+ * a copy of if with control characters, backslashes and double quotes replaced
+ * by JSON escape sequences.
+ *
+ * The C99 standard library provides the @c printf() family of functions, which
+ * are able to produce JSON-compliant numbers from C variables. However, the
+ * current locale, configurable via the C99 @c setlocale() function, must use
+ * the dot character (<code>.</code>) as <em>radix character</em>, or numbers
+ * with fractions will be represented incorrectly. The default C locale does use
+ * this radix character, which means that you only need to consider the radix
+ * character if you change the locale.
  *
  * An example of a JSON representation being constructed is available at
  * @ref ah_json/examples/construct_object.c.
  *
- * <h3>JSON Interpretation</h3>
+ * <h3>Interpretation</h3>
  *
  * Just as in the case of constructing JSON values, interpreting them requires
  * you to provide code for each value you want to handle. A major difference,
@@ -48,9 +48,9 @@
  * and comparing JSON strings, ah_json_str_unescape() and ah_json_str_compare().
  * Another limitation of this library is that it does not automatically parse
  * JSON numbers. You may do that with C99 standard library functions, such as
- * strtoul() and strtod(). When using strtod() and strtof(), the same caveat
- * applies regarding the locale radix character having to be the dot character
- * as when constructing JSON using the printf() family of function.
+ * @c strtoul() and @c strtod(). When using @c strtod() and @c strtof(), the
+ * same caveat applies regarding the locale radix character having to be the dot
+ * character as when constructing JSON using the @c printf() family of function.
  *
  * An example of a JSON representation being interpreted is available at
  * @ref ah_json/examples/interpret_object.c.
@@ -270,7 +270,7 @@ ah_extern ah_err_t ah_json_str_escape(const char* src, size_t src_length, char* 
  * Parses @a src into an array of ah_json_val instances stored in @a dst.
  *
  * This function operates either with or without dynamic memory reallocation
- * using the C99 realloc() function. To enable the former, make sure that the
+ * using the C99 @c realloc() function. To enable the former, make sure that the
  * ah_json_buf::values field of @a dst is set to @c NULL and that
  * ah_json_buf::length is set to @c 0. The ah_json_buf::capacity field
  * determines the initially allocated capacity when dynamic allocation is
