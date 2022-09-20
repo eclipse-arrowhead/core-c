@@ -11,7 +11,7 @@
 
 static void s_on_execution(ah_i_loop_evt_t* evt, struct io_uring_cqe* cqe);
 
-ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
+void ah_i_task_cancel_scheduled(ah_task_t* task)
 {
     ah_assert_if_debug(task != NULL);
     ah_assert_if_debug(task->_state == AH_I_TASK_STATE_SCHEDULED);
@@ -33,7 +33,7 @@ ah_extern void ah_i_task_cancel_scheduled(ah_task_t* task)
     io_uring_sqe_set_data(sqe, NULL);
 }
 
-ah_extern ah_err_t ah_i_task_schedule_at(ah_task_t* task, ah_time_t baseline)
+ah_err_t ah_i_task_schedule_at(ah_task_t* task, ah_time_t baseline)
 {
     ah_i_loop_evt_t* evt;
     struct io_uring_sqe* sqe;

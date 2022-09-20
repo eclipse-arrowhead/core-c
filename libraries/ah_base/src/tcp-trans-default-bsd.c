@@ -47,7 +47,7 @@ ah_err_t ah_i_tcp_trans_default_conn_open(void* ctx, ah_tcp_conn_t* conn, const 
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, uint8_t flags)
+ah_err_t ah_i_tcp_trans_default_conn_shutdown(void* ctx, ah_tcp_conn_t* conn, uint8_t flags)
 {
     (void) ctx;
 
@@ -102,7 +102,7 @@ ah_extern ah_err_t ah_i_tcp_trans_default_conn_shutdown(void* ctx, ah_tcp_conn_t
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_conn_get_laddr(void* ctx, const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_trans_default_conn_get_laddr(void* ctx, const ah_tcp_conn_t* conn, ah_sockaddr_t* laddr)
 {
     (void) ctx;
 
@@ -115,7 +115,7 @@ ah_extern ah_err_t ah_i_tcp_trans_default_conn_get_laddr(void* ctx, const ah_tcp
     return ah_i_sock_getsockname(conn->_fd, laddr);
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_conn_get_raddr(void* ctx, const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
+ah_err_t ah_i_tcp_trans_default_conn_get_raddr(void* ctx, const ah_tcp_conn_t* conn, ah_sockaddr_t* raddr)
 {
     (void) ctx;
 
@@ -128,7 +128,7 @@ ah_extern ah_err_t ah_i_tcp_trans_default_conn_get_raddr(void* ctx, const ah_tcp
     return ah_i_sock_getpeername(conn->_fd, raddr);
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_conn_set_keepalive(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
+ah_err_t ah_i_tcp_trans_default_conn_set_keepalive(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
 {
     (void) ctx;
 
@@ -142,7 +142,7 @@ ah_extern ah_err_t ah_i_tcp_trans_default_conn_set_keepalive(void* ctx, ah_tcp_c
     return ah_i_sock_setsockopt(conn->_fd, SOL_SOCKET, SO_KEEPALIVE, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_conn_set_nodelay(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
+ah_err_t ah_i_tcp_trans_default_conn_set_nodelay(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
 {
     (void) ctx;
 
@@ -156,7 +156,7 @@ ah_extern ah_err_t ah_i_tcp_trans_default_conn_set_nodelay(void* ctx, ah_tcp_con
     return ah_i_sock_setsockopt(conn->_fd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_conn_set_reuseaddr(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
+ah_err_t ah_i_tcp_trans_default_conn_set_reuseaddr(void* ctx, ah_tcp_conn_t* conn, bool is_enabled)
 {
     (void) ctx;
 
@@ -196,7 +196,7 @@ ah_err_t ah_i_tcp_trans_default_listener_open(void* ctx, ah_tcp_listener_t* ln, 
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_listener_get_laddr(void* ctx, const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr)
+ah_err_t ah_i_tcp_trans_default_listener_get_laddr(void* ctx, const ah_tcp_listener_t* ln, ah_sockaddr_t* laddr)
 {
     (void) ctx;
 
@@ -209,7 +209,7 @@ ah_extern ah_err_t ah_i_tcp_trans_default_listener_get_laddr(void* ctx, const ah
     return ah_i_sock_getsockname(ln->_fd, laddr);
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_listener_set_keepalive(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
+ah_err_t ah_i_tcp_trans_default_listener_set_keepalive(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
 {
     (void) ctx;
 
@@ -223,7 +223,7 @@ ah_extern ah_err_t ah_i_tcp_trans_default_listener_set_keepalive(void* ctx, ah_t
     return ah_i_sock_setsockopt(ln->_fd, SOL_SOCKET, SO_KEEPALIVE, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_listener_set_nodelay(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
+ah_err_t ah_i_tcp_trans_default_listener_set_nodelay(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
 {
     (void) ctx;
 
@@ -237,7 +237,7 @@ ah_extern ah_err_t ah_i_tcp_trans_default_listener_set_nodelay(void* ctx, ah_tcp
     return ah_i_sock_setsockopt(ln->_fd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
 }
 
-ah_extern ah_err_t ah_i_tcp_trans_default_listener_set_reuseaddr(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
+ah_err_t ah_i_tcp_trans_default_listener_set_reuseaddr(void* ctx, ah_tcp_listener_t* ln, bool is_enabled)
 {
     (void) ctx;
 

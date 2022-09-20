@@ -20,7 +20,7 @@
 # define close closesocket
 #endif
 
-ah_extern ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
+ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
 {
     ah_assert_if_debug(sockaddr != NULL);
 
@@ -42,7 +42,7 @@ ah_extern ah_i_socklen_t ah_i_sockaddr_get_size(const ah_sockaddr_t* sockaddr)
     }
 }
 
-ah_extern ah_err_t ah_i_sock_open(ah_loop_t* loop, const int sockfamily, const int type, ah_i_sockfd_t* fd)
+ah_err_t ah_i_sock_open(ah_loop_t* loop, const int sockfamily, const int type, ah_i_sockfd_t* fd)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(fd != NULL);
@@ -112,7 +112,7 @@ close_fd0_and_return:
 #endif
 }
 
-ah_extern ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd)
+ah_err_t ah_i_sock_open_bind(ah_loop_t* loop, const ah_sockaddr_t* laddr, int type, ah_i_sockfd_t* fd)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(laddr != NULL);
@@ -152,7 +152,7 @@ close_fd0_and_return:
     return err;
 }
 
-ah_extern ah_err_t ah_i_sock_close(ah_i_sockfd_t fd)
+ah_err_t ah_i_sock_close(ah_i_sockfd_t fd)
 {
     if (close(fd) != 0) {
 #if AH_IS_WIN32
@@ -165,7 +165,7 @@ ah_extern ah_err_t ah_i_sock_close(ah_i_sockfd_t fd)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr)
+ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr)
 {
     ah_assert_if_debug(laddr != NULL);
 
@@ -197,7 +197,7 @@ ah_extern ah_err_t ah_i_sock_getsockname(ah_i_sockfd_t fd, ah_sockaddr_t* laddr)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* raddr)
+ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* raddr)
 {
     ah_assert_if_debug(raddr != NULL);
 
@@ -218,7 +218,7 @@ ah_extern ah_err_t ah_i_sock_getpeername(ah_i_sockfd_t fd, ah_sockaddr_t* raddr)
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_sock_setsockopt(ah_i_sockfd_t fd, int level, int name, const void* value, ah_i_socklen_t size)
+ah_err_t ah_i_sock_setsockopt(ah_i_sockfd_t fd, int level, int name, const void* value, ah_i_socklen_t size)
 {
     if (setsockopt(fd, level, name, value, size) != 0) {
 #if AH_IS_WIN32
@@ -231,7 +231,7 @@ ah_extern ah_err_t ah_i_sock_setsockopt(ah_i_sockfd_t fd, int level, int name, c
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_sock_shutdown(ah_i_sockfd_t fd, int how)
+ah_err_t ah_i_sock_shutdown(ah_i_sockfd_t fd, int how)
 {
     if (shutdown(fd, how) != 0) {
 #if AH_IS_WIN32

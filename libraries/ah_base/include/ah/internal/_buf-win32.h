@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_WIN32_BUF_H_
-#define AH_INTERNAL_WIN32_BUF_H_
+#ifndef AH_INTERNAL_BUF_WIN32_H_
+#define AH_INTERNAL_BUF_WIN32_H_
 
 #include "../defs.h"
 

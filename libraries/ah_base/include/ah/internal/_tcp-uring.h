@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_URING_TCP_H_
-#define AH_INTERNAL_URING_TCP_H_
+#ifndef AH_INTERNAL_TCP_URING_H_
+#define AH_INTERNAL_TCP_URING_H_
 
 #include "../sock.h"
 

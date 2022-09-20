@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <limits.h>
 
-ah_extern ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
+ah_err_t ah_i_loop_init(ah_loop_t* loop, size_t* capacity)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(capacity != NULL);
@@ -46,7 +46,7 @@ exit_uring_and_return_err:
     return err;
 }
 
-ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
+ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_t* time)
 {
     ah_assert_if_debug(loop != NULL);
 
@@ -115,7 +115,7 @@ ah_extern ah_err_t ah_i_loop_poll_no_longer_than_until(ah_loop_t* loop, ah_time_
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe)
+ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t** evt, struct io_uring_sqe** sqe)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(evt != NULL);
@@ -143,7 +143,7 @@ ah_extern ah_err_t ah_i_loop_evt_alloc_with_sqe(ah_loop_t* loop, ah_i_loop_evt_t
     return AH_ENONE;
 }
 
-ah_extern ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sqe)
+ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sqe)
 {
     ah_assert_if_debug(loop != NULL);
     ah_assert_if_debug(sqe != NULL);
@@ -177,7 +177,7 @@ ah_extern ah_err_t ah_i_loop_alloc_sqe(ah_loop_t* loop, struct io_uring_sqe** sq
     return AH_ENONE;
 }
 
-ah_extern void ah_i_loop_term(ah_loop_t* loop)
+void ah_i_loop_term(ah_loop_t* loop)
 {
     ah_assert_if_debug(loop != NULL);
 

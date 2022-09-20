@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_INTERNAL_IOCP_LOOP_H_
-#define AH_INTERNAL_IOCP_LOOP_H_
+#ifndef AH_INTERNAL_LOOP_IOCP_H_
+#define AH_INTERNAL_LOOP_IOCP_H_
 
 #include "../time.h"
 
@@ -34,9 +34,9 @@ struct ah_i_loop_task_queue {
 
 struct ah_i_loop_evt;
 
-ah_extern ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task);
-ah_extern bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task);
+ah_err_t ah_i_loop_schedule_task(ah_loop_t* loop, ah_time_t baseline, ah_task_t* task);
+bool ah_i_loop_try_cancel_task(ah_loop_t* loop, ah_task_t* task);
 
-ah_extern ah_err_t ah_i_loop_evt_get_wsa_result(struct ah_i_loop_evt* evt, SOCKET fd, DWORD* n_bytes_transferred);
+ah_err_t ah_i_loop_evt_get_wsa_result(struct ah_i_loop_evt* evt, SOCKET fd, DWORD* n_bytes_transferred);
 
 #endif
